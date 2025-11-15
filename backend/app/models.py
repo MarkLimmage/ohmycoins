@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -14,6 +16,11 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    # OMC-specific profile fields
+    timezone: str | None = Field(default="UTC", max_length=50)
+    preferred_currency: str | None = Field(default="AUD", max_length=10)
+    risk_tolerance: str | None = Field(default="medium", max_length=20)  # low, medium, high
+    trading_experience: str | None = Field(default="beginner", max_length=20)  # beginner, intermediate, advanced
 
 
 # Properties to receive via API on creation
@@ -36,6 +43,11 @@ class UserUpdate(UserBase):
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
+    # OMC-specific profile updates
+    timezone: str | None = Field(default=None, max_length=50)
+    preferred_currency: str | None = Field(default=None, max_length=10)
+    risk_tolerance: str | None = Field(default=None, max_length=20)
+    trading_experience: str | None = Field(default=None, max_length=20)
 
 
 class UpdatePassword(SQLModel):
@@ -56,7 +68,9 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
-    coinspot_credentials: "CoinspotCredentials | None" = Relationship(back_populates="user")
+    coinspot_credentials: "CoinspotCredentials" | None = Relationship(
+        back_populates="user", sa_relationship_kwargs={"uselist": False}
+    )
 
 
 # Properties to return via API, id is always required
@@ -67,6 +81,38 @@ class UserPublic(UserBase):
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
+
+
+# ============================================================================
+# User Profile Models (Phase 2) - Extended profile with trading preferences
+# ============================================================================
+
+class UserProfilePublic(SQLModel):
+    """Public user profile response with OMC-specific fields"""
+    email: str
+    full_name: str | None = None
+    timezone: str
+    preferred_currency: str
+    risk_tolerance: str
+    trading_experience: str
+    has_coinspot_credentials: bool = False
+
+
+class UserProfileUpdate(SQLModel):
+    """User profile update request with validation"""
+    full_name: str | None = Field(default=None, max_length=255)
+    timezone: str | None = Field(default=None, max_length=50)
+    preferred_currency: str | None = Field(default=None, max_length=10)
+    risk_tolerance: str | None = Field(default=None, max_length=20)
+    trading_experience: str | None = Field(default=None, max_length=20)
+    
+    @property
+    def validate_fields(self) -> None:
+        """Validate profile fields"""
+        if self.risk_tolerance and self.risk_tolerance not in ["low", "medium", "high"]:
+            raise ValueError("risk_tolerance must be one of: low, medium, high")
+        if self.trading_experience and self.trading_experience not in ["beginner", "intermediate", "advanced"]:
+            raise ValueError("trading_experience must be one of: beginner, intermediate, advanced")
 
 
 # Shared properties

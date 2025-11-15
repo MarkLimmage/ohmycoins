@@ -23,6 +23,8 @@ from app.models import (
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
+    UserProfilePublic,
+    UserProfileUpdate,
 )
 from app.utils import generate_new_account_email, send_email
 
@@ -123,6 +125,61 @@ def read_user_me(current_user: CurrentUser) -> Any:
     Get current user.
     """
     return current_user
+
+
+@router.get("/me/profile", response_model=UserProfilePublic)
+def read_user_profile(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Get current user's full profile including OMC-specific fields.
+    """
+    # Check if user has Coinspot credentials
+    from app.models import CoinspotCredentials
+    
+    credentials = session.exec(
+        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+    ).first()
+    
+    return UserProfilePublic(
+        email=current_user.email,
+        full_name=current_user.full_name,
+        timezone=current_user.timezone or "UTC",
+        preferred_currency=current_user.preferred_currency or "AUD",
+        risk_tolerance=current_user.risk_tolerance or "medium",
+        trading_experience=current_user.trading_experience or "beginner",
+        has_coinspot_credentials=credentials is not None
+    )
+
+
+@router.patch("/me/profile", response_model=UserProfilePublic)
+def update_user_profile(
+    *, session: SessionDep, profile_in: UserProfileUpdate, current_user: CurrentUser
+) -> Any:
+    """
+    Update current user's profile with OMC-specific fields.
+    """
+    # Update user fields
+    profile_data = profile_in.model_dump(exclude_unset=True)
+    current_user.sqlmodel_update(profile_data)
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    
+    # Check credentials for response
+    from app.models import CoinspotCredentials
+    
+    credentials = session.exec(
+        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+    ).first()
+    
+    return UserProfilePublic(
+        email=current_user.email,
+        full_name=current_user.full_name,
+        timezone=current_user.timezone or "UTC",
+        preferred_currency=current_user.preferred_currency or "AUD",
+        risk_tolerance=current_user.risk_tolerance or "medium",
+        trading_experience=current_user.trading_experience or "beginner",
+        has_coinspot_credentials=credentials is not None
+    )
 
 
 @router.delete("/me", response_model=Message)

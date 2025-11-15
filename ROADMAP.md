@@ -127,7 +127,11 @@ This roadmap outlines the systematic development of Oh My Coins (OMC!), an algor
 
 ### 2.1 User Service Enhancement
 - [x] Extend template's user model with OMC-specific fields
-- [ ] Implement user profile management API
+  - Added timezone, preferred_currency, risk_tolerance, trading_experience
+  - Migration: `8abf25dd5d93_add_user_profile_fields.py`
+- [x] Implement user profile management API
+  - GET /api/v1/users/me/profile - Read full profile
+  - PATCH /api/v1/users/me/profile - Update profile with validation
 
 ### 2.2 Coinspot Credentials Management
 - [x] Design database schema for API credentials
@@ -150,8 +154,9 @@ This roadmap outlines the systematic development of Oh My Coins (OMC!), an algor
   - Credential API tests (11 tests)
 
 **Deliverables**:
-- Secure credential storage system
-- Working Coinspot API authentication
+- ✅ Secure credential storage system
+- ✅ Working Coinspot API authentication
+- ✅ User profile management with trading preferences
 
 ---
 
