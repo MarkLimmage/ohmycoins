@@ -139,11 +139,15 @@ This roadmap outlines the systematic development of Oh My Coins (OMC!), an algor
   - PUT /api/v1/credentials/coinspot
   - DELETE /api/v1/credentials/coinspot
 - [x] Implement HMAC-SHA512 signing utility for Coinspot API
-- [ ] Test Coinspot API authentication
-  - Endpoint: `/api/ro/my/balances/:cointype`
+- [x] Test Coinspot API authentication
+  - Endpoint: `/api/v2/ro/my/balances`
   - Verify nonce and signature generation
-- [ ] Add credential validation endpoints
-- [ ] Write security tests
+- [x] Add credential validation endpoints
+  - POST /api/v1/credentials/coinspot/validate
+- [x] Write security tests
+  - Encryption service tests (12 tests)
+  - Coinspot auth tests (13 tests)
+  - Credential API tests (11 tests)
 
 **Deliverables**:
 - Secure credential storage system
