@@ -155,8 +155,130 @@ This roadmap outlines the systematic development of Oh My Coins (OMC!), an algor
 
 ---
 
-## Phase 3: The Lab (Algorithm Development Platform)
-**Goal**: Create a sandbox environment for developing and backtesting trading algorithms.
+## Phase 3: The Lab - Agentic Data Science Capability (NEW PRIORITY)
+**Goal**: Add autonomous multi-agent system for AI-powered algorithm development.
+
+### 3.0 Agentic AI System (Weeks 1-14)
+This new capability transforms The Lab into an autonomous "data scientist" that can understand high-level trading goals, formulate plans, execute data science workflows, and deliver evaluated models with minimal human intervention.
+
+**Reference Documents**:
+- `AGENTIC_REQUIREMENTS.md` - Detailed requirements specification
+- `AGENTIC_ARCHITECTURE.md` - Technical architecture design
+- `AGENTIC_IMPLEMENTATION_PLAN.md` - Week-by-week implementation plan
+
+#### Foundation Setup (Weeks 1-2)
+- [ ] Install and configure LangChain/LangGraph framework
+- [ ] Set up Redis for agent state management
+- [ ] Create database schema for agent sessions
+  - Table: `agent_sessions`
+  - Table: `agent_session_messages`
+  - Table: `agent_artifacts`
+- [ ] Create project structure for agent system
+- [ ] Implement SessionManager for lifecycle management
+- [ ] Create basic AgentOrchestrator skeleton
+- [ ] Implement API routes for agent sessions
+  - POST /api/v1/lab/agent/sessions
+  - GET /api/v1/lab/agent/sessions/{id}
+  - DELETE /api/v1/lab/agent/sessions/{id}
+  - WS /api/v1/lab/agent/sessions/{id}/stream
+
+#### Data Agents (Weeks 3-4)
+- [ ] Implement DataRetrievalAgent
+  - Tool: fetch_price_data (query price_data_5min)
+  - Tool: get_available_coins
+  - Tool: get_data_statistics
+- [ ] Implement DataAnalystAgent
+  - Tool: calculate_technical_indicators (SMA, EMA, RSI, MACD)
+  - Tool: clean_data (handle missing values, outliers)
+  - Tool: perform_eda (exploratory data analysis)
+  - Tool: create_features (feature engineering)
+
+#### Modeling Agents (Weeks 5-6)
+- [ ] Implement ModelTrainingAgent
+  - Tool: train_classification_model (LogisticRegression, RandomForest, XGBoost)
+  - Tool: train_regression_model
+  - Tool: cross_validate_model
+  - Support for scikit-learn API
+- [ ] Implement ModelEvaluatorAgent
+  - Tool: evaluate_model (accuracy, F1, precision, recall, AUC-ROC)
+  - Tool: tune_hyperparameters (GridSearchCV)
+  - Tool: compare_models (side-by-side comparison)
+  - Tool: calculate_feature_importance
+
+#### Orchestration & ReAct Loop (Weeks 7-8)
+- [ ] Implement LangGraph state machine
+  - Define AgentState with all workflow states
+  - Create workflow nodes (planning, retrieval, analysis, training, evaluation, reporting)
+  - Define state transitions and conditional edges
+- [ ] Implement ReAct (Reason-Act-Observe) loop
+  - Iterative refinement capabilities
+  - Model selection and hyperparameter tuning logic
+  - Error handling and recovery
+- [ ] Connect all agents to orchestrator
+- [ ] End-to-end workflow testing
+
+#### Human-in-the-Loop (Weeks 9-10)
+- [ ] Implement clarification system
+  - Detect ambiguous inputs and data issues
+  - Generate clarification questions
+  - Handle user responses
+- [ ] Implement choice presentation
+  - Present model comparison with pros/cons
+  - Show performance tradeoffs
+  - Provide recommendations
+- [ ] Implement user override mechanism
+  - Override model selection
+  - Modify hyperparameters
+  - Restart from specific steps
+- [ ] Add approval gates
+  - Configurable approval points in workflow
+  - Auto-approve vs manual modes
+
+#### Reporting & Completion (Weeks 11-12)
+- [ ] Implement ReportingAgent
+  - Tool: generate_summary (natural language summaries)
+  - Tool: create_comparison_report
+  - Tool: generate_recommendations
+- [ ] Implement artifact management
+  - Save trained models (.pkl, .joblib)
+  - Save generated plots (.png)
+  - Save final reports (Markdown/HTML)
+- [ ] Implement secure code sandbox
+  - RestrictedPython environment
+  - Resource limits (CPU, memory, time)
+  - Allowed imports whitelist
+  - Safety validation
+
+#### Testing & Documentation (Weeks 13-14)
+- [ ] Comprehensive unit tests (80%+ coverage)
+- [ ] Integration tests (end-to-end workflows)
+- [ ] Performance testing (concurrent sessions)
+- [ ] Security audit and validation
+- [ ] API documentation (OpenAPI/Swagger)
+- [ ] User guides and tutorials
+- [ ] Best practices documentation
+
+**Deliverables**:
+- Autonomous multi-agent system operational
+- Natural language goal understanding
+- Automated data science workflow execution
+- Model training and evaluation
+- Human-in-the-loop features
+- Comprehensive reporting
+- 80%+ test coverage
+- Complete documentation
+
+**Dependencies**:
+- LangChain, LangGraph (agent framework)
+- OpenAI or Anthropic API (LLM provider)
+- Redis (state management)
+- pandas, scikit-learn, xgboost (data science)
+- matplotlib, seaborn (visualization)
+
+---
+
+## Phase 4: The Lab - Manual Algorithm Development (Original Phase 3)
+**Goal**: Create a sandbox environment for manual algorithm development and backtesting.
 
 ### 3.1 Algorithm Development Infrastructure
 - [ ] Design algorithm database schema
