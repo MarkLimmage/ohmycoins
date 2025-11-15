@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 import logging
 from typing import Any
-import uuid
 import asyncio
 
 import httpx
@@ -143,7 +142,6 @@ class CoinspotCollector:
                                 continue
                             
                             price_record = PriceData5Min(
-                                id=uuid.uuid4(),
                                 coin_type=coin_type,
                                 bid=bid,
                                 ask=ask,

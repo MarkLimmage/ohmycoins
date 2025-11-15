@@ -126,24 +126,28 @@ This roadmap outlines the systematic development of Oh My Coins (OMC!), an algor
 **Goal**: Secure user management and encrypted storage of Coinspot API credentials.
 
 ### 2.1 User Service Enhancement
-- [ ] Extend template's user model with OMC-specific fields
+- [x] Extend template's user model with OMC-specific fields
 - [ ] Implement user profile management API
 
 ### 2.2 Coinspot Credentials Management
-- [ ] Design database schema for API credentials
+- [x] Design database schema for API credentials
   - Table: `coinspot_credentials` (user_id, api_key_encrypted, api_secret_encrypted)
   - Encryption at rest using industry standards (Fernet/AES-256)
-- [ ] Implement credential CRUD APIs
+- [x] Implement credential CRUD APIs
   - POST /api/v1/credentials/coinspot
   - GET /api/v1/credentials/coinspot (masked)
   - PUT /api/v1/credentials/coinspot
   - DELETE /api/v1/credentials/coinspot
-- [ ] Implement HMAC-SHA512 signing utility for Coinspot API
-- [ ] Test Coinspot API authentication
-  - Endpoint: `/api/ro/my/balances/:cointype`
+- [x] Implement HMAC-SHA512 signing utility for Coinspot API
+- [x] Test Coinspot API authentication
+  - Endpoint: `/api/v2/ro/my/balances`
   - Verify nonce and signature generation
-- [ ] Add credential validation endpoints
-- [ ] Write security tests
+- [x] Add credential validation endpoints
+  - POST /api/v1/credentials/coinspot/validate
+- [x] Write security tests
+  - Encryption service tests (12 tests)
+  - Coinspot auth tests (13 tests)
+  - Credential API tests (11 tests)
 
 **Deliverables**:
 - Secure credential storage system
