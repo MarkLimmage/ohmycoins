@@ -84,7 +84,39 @@ This means:
 - ✅ Code changes in `backend/app/` are immediately reflected in the running container
 - ✅ No need to rebuild after editing Python files
 - ✅ FastAPI's `--reload` flag automatically restarts on changes
-- ⚠️  New dependencies require rebuilding: `docker compose build backend`
+- ⚠️  New dependencies require rebuilding (see below)
+
+### Adding New Dependencies
+
+When you add new Python packages to `pyproject.toml`:
+
+1. **Rebuild the Docker image without cache:**
+   ```bash
+   docker compose build --no-cache backend
+   ```
+
+2. **Stop and restart the backend** (not just `restart`):
+   ```bash
+   docker compose stop backend
+   docker compose up -d backend
+   ```
+
+**Why this is necessary:**
+- Volume mounts provide live code changes but don't install Python packages
+- `docker compose restart` may use cached layers from the old image
+- A full stop/start cycle ensures the newly built image is used
+- Without `--no-cache`, Docker may skip the package installation step
+
+**Example workflow:**
+```bash
+# After adding 'apscheduler = "^3.10.4"' to pyproject.toml
+docker compose build --no-cache backend
+docker compose stop backend
+docker compose up -d backend
+
+# Verify the package is installed
+docker compose logs backend --tail=20
+```
 
 ### Making Database Changes
 
