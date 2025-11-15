@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from pydantic import EmailStr
@@ -124,9 +124,9 @@ class NewPassword(SQLModel):
 class PriceDataBase(SQLModel):
     """Base model for cryptocurrency price data from Coinspot API"""
     coin_type: str = Field(index=True, max_length=20)
-    bid: Decimal = Field(sa_column=Column(DECIMAL(precision=18, scale=8)))
-    ask: Decimal = Field(sa_column=Column(DECIMAL(precision=18, scale=8)))
-    last: Decimal = Field(sa_column=Column(DECIMAL(precision=18, scale=8)))
+    bid: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=8)))
+    ask: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=8)))
+    last: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=8)))
 
 
 # Database model for 5-minute price data
@@ -139,10 +139,15 @@ class PriceData5Min(PriceDataBase, table=True):
     """
     __tablename__ = "price_data_5min"
     
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     timestamp: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
         description="UTC timestamp when data was collected"
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        description="Timestamp when record was inserted into database"
     )
     
     __table_args__ = (
@@ -162,8 +167,9 @@ class PriceData5MinCreate(PriceDataBase):
 # Properties to return via API
 class PriceData5MinPublic(PriceDataBase):
     """Schema for returning price data via API"""
-    id: uuid.UUID
+    id: int
     timestamp: datetime
+    created_at: datetime
 
 
 # List response

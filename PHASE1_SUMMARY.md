@@ -24,10 +24,11 @@ Phase 1 focused on establishing the project foundation and implementing the data
   - Data validation (positive prices, required fields)
 
 - ✅ **Database Schema** (`price_data_5min` table)
-  - Time-series optimized design
+  - Time-series optimized design with BIGSERIAL primary key
   - Composite indexes for efficient queries
   - Unique constraints to prevent duplicates
-  - DECIMAL(18,8) precision for price accuracy
+  - DECIMAL(20,8) precision for price accuracy per architecture spec
+  - Created_at field for audit tracking
 
 - ✅ **APScheduler Integration** (`backend/app/services/scheduler.py`)
   - Cron trigger: runs every 5 minutes (at :00, :05, :10, etc.)
@@ -163,3 +164,19 @@ The foundation is complete and the data pipeline is operational. Phase 2 will fo
 Phase 1 has successfully established a solid foundation for Oh My Coins (OMC!). The automated data collection service is operational, gathering cryptocurrency price data every 5 minutes with robust error handling and comprehensive test coverage. The development environment is optimized for rapid iteration with live code reloading, and the CI/CD pipeline ensures code quality through automated testing and linting.
 
 **Phase 1 Status**: ✅ Complete and Operational
+
+## Architecture Alignment Review (November 15, 2025)
+
+A comprehensive review was conducted to ensure Phase 1 implementation aligns with ARCHITECTURE.md and ROADMAP.md specifications:
+
+### Corrections Made:
+1. **Primary Key Optimization**: Changed from UUID to BIGSERIAL (auto-incrementing integer) for better time-series database performance and reduced storage overhead
+2. **Precision Enhancement**: Updated DECIMAL precision from (18,8) to (20,8) to match architecture specification and provide more headroom for extreme cryptocurrency price ranges
+3. **Audit Trail**: Added `created_at` field to track when records are inserted into the database, separate from the measurement timestamp
+
+### Migration: `b5pu1jf8qzda_align_price_data_5min_with_architecture.py`
+- Safely migrates existing data to new schema
+- Preserves all historical price data
+- Maintains indexes and constraints
+
+These changes ensure Phase 1 is fully aligned with the architecture specification and properly prepared for Phase 2 (User Authentication & API Credential Management) and subsequent phases.
