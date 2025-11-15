@@ -5,6 +5,7 @@ from decimal import Decimal
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel, Column
 from sqlalchemy import DECIMAL, DateTime, Index
+import sqlalchemy as sa
 
 
 # Shared properties
@@ -46,7 +47,16 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    coinspot_credentials: "CoinspotCredentials | None" = Relationship(back_populates="user")
 
 
 # Properties to return via API, id is always required
@@ -177,4 +187,73 @@ class PriceData5MinList(SQLModel):
     """Paginated list of price data"""
     data: list[PriceData5MinPublic]
     count: int
+
+
+# ============================================================================
+# Coinspot Credentials Models (Phase 2)
+# ============================================================================
+
+# Shared properties for Coinspot credentials
+class CoinspotCredentialsBase(SQLModel):
+    """Base model for Coinspot API credentials"""
+    is_validated: bool = False
+
+
+# Database model for Coinspot credentials
+class CoinspotCredentials(CoinspotCredentialsBase, table=True):
+    """
+    Stores encrypted Coinspot API credentials for users.
+    
+    Credentials are encrypted at rest using Fernet (AES-256).
+    The api_key and api_secret are stored as encrypted bytes.
+    """
+    __tablename__ = "coinspot_credentials"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", unique=True
+    )
+    api_key_encrypted: bytes = Field(sa_column=Column(sa.LargeBinary, nullable=False))
+    api_secret_encrypted: bytes = Field(sa_column=Column(sa.LargeBinary, nullable=False))
+    last_validated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    
+    # Relationships
+    user: User = Relationship(back_populates="coinspot_credentials")
+
+
+# Properties to receive via API on creation
+class CoinspotCredentialsCreate(SQLModel):
+    """Schema for creating Coinspot credentials"""
+    api_key: str = Field(min_length=1, max_length=255)
+    api_secret: str = Field(min_length=1, max_length=255)
+
+
+# Properties to receive via API on update
+class CoinspotCredentialsUpdate(SQLModel):
+    """Schema for updating Coinspot credentials"""
+    api_key: str | None = Field(default=None, min_length=1, max_length=255)
+    api_secret: str | None = Field(default=None, min_length=1, max_length=255)
+
+
+# Properties to return via API (masked for security)
+class CoinspotCredentialsPublic(CoinspotCredentialsBase):
+    """Schema for returning Coinspot credentials via API (with masked values)"""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    api_key_masked: str = Field(description="Masked API key (last 4 characters visible)")
+    is_validated: bool
+    last_validated_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
 
