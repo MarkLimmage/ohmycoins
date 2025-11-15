@@ -5,9 +5,11 @@ Provides CRUD operations for securely storing and managing Coinspot API credenti
 """
 from typing import Any
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+import httpx
 
 from app.api.deps import CurrentUser, get_db
 from app.models import (
@@ -18,6 +20,7 @@ from app.models import (
     Message,
 )
 from app.services.encryption import encryption_service
+from app.services.coinspot_auth import CoinspotAuthenticator
 
 logger = logging.getLogger(__name__)
 
@@ -222,3 +225,107 @@ def delete_credentials(
     session.commit()
     
     return Message(message="Coinspot credentials deleted successfully")
+
+
+@router.post("/validate", response_model=Message)
+async def validate_credentials(
+    *,
+    session: Session = Depends(get_db),
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Validate Coinspot API credentials by testing them against the Coinspot API.
+    
+    Tests credentials by calling the Coinspot read-only balance endpoint.
+    Updates the validation status in the database if successful.
+    """
+    # Get user's credentials
+    credentials = session.exec(
+        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+    ).first()
+    
+    if not credentials:
+        raise HTTPException(
+            status_code=404,
+            detail="Coinspot credentials not found. Please add credentials first."
+        )
+    
+    # Decrypt credentials
+    try:
+        api_key = encryption_service.decrypt(credentials.api_key_encrypted)
+        api_secret = encryption_service.decrypt(credentials.api_secret_encrypted)
+    except Exception as e:
+        logger.error(f"Failed to decrypt credentials: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to decrypt credentials"
+        )
+    
+    # Test credentials with Coinspot API
+    authenticator = CoinspotAuthenticator(api_key, api_secret)
+    
+    # Use the read-only balance endpoint to test credentials
+    # This endpoint doesn't require a specific coin type and won't affect the account
+    coinspot_url = "https://www.coinspot.com.au/api/v2/ro/my/balances"
+    
+    try:
+        headers, payload = authenticator.prepare_request()
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                coinspot_url,
+                headers=headers,
+                json=payload
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # Check if the response indicates success
+            if data.get("status") == "ok":
+                # Update validation status
+                credentials.is_validated = True
+                credentials.last_validated_at = datetime.now(timezone.utc)
+                session.add(credentials)
+                session.commit()
+                
+                logger.info(f"Successfully validated credentials for user {current_user.id}")
+                return Message(message="Credentials validated successfully")
+            else:
+                # API returned error status
+                error_message = data.get("message", "Unknown error")
+                logger.warning(f"Coinspot API returned error: {error_message}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Credentials validation failed: {error_message}"
+                )
+                
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error validating credentials: {e.response.status_code}")
+        if e.response.status_code == 401:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid credentials. Please check your API key and secret."
+            )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to validate credentials: HTTP {e.response.status_code}"
+        )
+    except httpx.TimeoutException:
+        logger.error("Timeout validating credentials")
+        raise HTTPException(
+            status_code=504,
+            detail="Request to Coinspot API timed out. Please try again."
+        )
+    except httpx.RequestError as e:
+        logger.error(f"Request error validating credentials: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Failed to connect to Coinspot API. Please try again later."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error validating credentials: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred during validation"
+        )
