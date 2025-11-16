@@ -148,7 +148,7 @@ class SessionManager:
             role=role,
             content=content,
             agent_name=agent_name,
-            metadata=metadata,
+            metadata_json=metadata,
         )
         db.add(message)
         db.commit()

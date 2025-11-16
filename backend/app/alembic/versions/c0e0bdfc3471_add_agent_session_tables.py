@@ -46,7 +46,7 @@ def upgrade():
         sa.Column('role', sa.String(length=20), nullable=False),
         sa.Column('content', sa.String(), nullable=False),
         sa.Column('agent_name', sa.String(length=100), nullable=True),
-        sa.Column('metadata', sa.String(), nullable=True),
+        sa.Column('metadata_json', sa.String(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(['session_id'], ['agent_sessions.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
@@ -65,7 +65,7 @@ def upgrade():
         sa.Column('file_path', sa.String(length=500), nullable=True),
         sa.Column('mime_type', sa.String(length=100), nullable=True),
         sa.Column('size_bytes', sa.Integer(), nullable=True),
-        sa.Column('metadata', sa.String(), nullable=True),
+        sa.Column('metadata_json', sa.String(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(['session_id'], ['agent_sessions.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')

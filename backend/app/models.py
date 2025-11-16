@@ -366,7 +366,7 @@ class AgentSessionMessage(SQLModel, table=True):
     role: str = Field(max_length=20, description="user, assistant, system, function")
     content: str = Field(description="Message content")
     agent_name: str | None = Field(default=None, max_length=100, description="Name of agent that sent message")
-    metadata: str | None = Field(default=None, description="JSON metadata for message")
+    metadata_json: str | None = Field(default=None, description="JSON metadata for message")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
@@ -388,7 +388,7 @@ class AgentArtifact(SQLModel, table=True):
     file_path: str | None = Field(default=None, max_length=500, description="Path to artifact file")
     mime_type: str | None = Field(default=None, max_length=100, description="MIME type of artifact")
     size_bytes: int | None = Field(default=None, description="File size in bytes")
-    metadata: str | None = Field(default=None, description="JSON metadata for artifact")
+    metadata_json: str | None = Field(default=None, description="JSON metadata for artifact")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
