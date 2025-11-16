@@ -1,0 +1,35 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: ohmycoins-runners-production
+  namespace: actions-runner-system
+spec:
+  # More replicas for production reliability
+  replicas: 2
+  template:
+    spec:
+      repository: MarkLimmage/ohmycoins
+      # Production-specific labels
+      labels:
+        - self-hosted
+        - eks
+        - production
+      # Higher resource allocation for production
+      resources:
+        limits:
+          cpu: "4.0"
+          memory: "8Gi"
+        requests:
+          cpu: "2.0"
+          memory: "4Gi"
+      # Use Kubernetes Docker-in-Docker for container builds
+      dockerdWithinRunnerContainer: true
+      # Ephemeral runners (destroyed after each job for clean state)
+      ephemeral: true
+      # Environment-specific settings
+      env:
+        - name: ENVIRONMENT
+          value: "production"
+      # Production-specific node affinity (if using dedicated nodes)
+      # nodeSelector:
+      #   workload: production

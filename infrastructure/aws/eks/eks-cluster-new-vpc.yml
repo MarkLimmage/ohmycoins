@@ -1,0 +1,23 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: copilot-test-cluster
+  region: us-west-2  # Set your desired AWS region
+
+managedNodeGroups:
+  - name: arc-runner-nodes
+    instanceType: t3.large # Start with t3.large or m5.large
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 5
+    # Enable IMDSv2 for enhanced security
+    instanceMetadata:
+      httpPutResponseHopLimit: 2
+      httpTokens: required
+    # Tags for cost tracking and organization
+    tags:
+      Environment: test
+      Project: ohmycoins
+      ManagedBy: eksctl
+      Purpose: github-actions-runners
