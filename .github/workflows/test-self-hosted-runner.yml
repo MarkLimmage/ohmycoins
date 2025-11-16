@@ -14,11 +14,16 @@ on:
       - 'infrastructure/aws/eks/**'
       - '.github/workflows/test-self-hosted-runner.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test-runner-environment:
     name: Test Runner Environment
     runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -149,6 +154,8 @@ jobs:
     runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
     timeout-minutes: 15
     needs: test-runner-environment
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -184,6 +191,8 @@ jobs:
     runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
     timeout-minutes: 10
     needs: test-runner-environment
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -234,6 +243,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-runner-environment, test-docker-build, test-workflow-checkout]
     if: always()
+    permissions:
+      contents: read
 
     steps:
       - name: Report results
