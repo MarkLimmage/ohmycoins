@@ -4,3 +4,9 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# AWS Infrastructure - Exclude sensitive files
+infrastructure/aws/eks/arc-manifests/github-auth-secret.yaml
+infrastructure/aws/eks/**/*.pem
+infrastructure/aws/eks/**/*-key.pem
+*.kubeconfig

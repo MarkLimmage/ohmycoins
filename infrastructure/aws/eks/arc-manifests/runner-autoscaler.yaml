@@ -1,0 +1,25 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: ohmycoins-runners-autoscaler
+  namespace: actions-runner-system
+spec:
+  scaleTargetRef:
+    name: ohmycoins-runners
+  # Minimum number of runners to keep running
+  minReplicas: 1
+  # Maximum number of runners to scale up to
+  maxReplicas: 5
+  # Autoscaling metrics
+  metrics:
+  - type: PercentageRunnersBusy
+    # Scale up when 75% of runners are busy
+    scaleUpThreshold: '0.75'
+    # Scale down when only 25% of runners are busy
+    scaleDownThreshold: '0.25'
+    # Scale up by 2x when threshold is reached
+    scaleUpFactor: '2'
+    # Scale down by 50% when threshold is reached
+    scaleDownFactor: '0.5'
+  # Prevent rapid scaling down after scaling up (5 minutes)
+  scaleDownDelaySecondsAfterScaleOut: 300
