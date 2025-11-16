@@ -6,4 +6,4 @@ Weeks 3-6 implementation.
 """
 
 # Placeholder for tools implementation
-__all__ = []
+__all__: list[str] = []

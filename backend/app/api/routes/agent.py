@@ -7,19 +7,19 @@ Provides endpoints for creating, managing, and interacting with agent sessions.
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException
+from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
+    AgentArtifactPublic,
     AgentSession,
     AgentSessionCreate,
+    AgentSessionMessagePublic,
     AgentSessionPublic,
     AgentSessionsPublic,
-    AgentSessionMessagePublic,
-    AgentArtifactPublic,
 )
-from app.services.agent import SessionManager, AgentOrchestrator
+from app.services.agent import AgentOrchestrator, SessionManager
 
 router = APIRouter()
 
@@ -53,7 +53,7 @@ async def create_agent_session(
     session = await session_manager.create_session(
         db, current_user.id, session_in
     )
-    
+
     # Start the agent workflow asynchronously
     # TODO: Use background tasks or celery for production
     try:
@@ -64,7 +64,7 @@ async def create_agent_session(
             db, session.id, "failed", error_message=str(e)
         )
         raise HTTPException(status_code=500, detail=f"Failed to start session: {e}")
-    
+
     return session
 
 
@@ -90,18 +90,18 @@ async def list_agent_sessions(
     statement = (
         select(AgentSession)
         .where(AgentSession.user_id == current_user.id)
-        .order_by(AgentSession.created_at.desc())
+        .order_by(AgentSession.created_at.desc())  # type: ignore[attr-defined]
         .offset(skip)
         .limit(limit)
     )
     sessions = db.exec(statement).all()
-    
+
     count_statement = (
         select(AgentSession)
         .where(AgentSession.user_id == current_user.id)
     )
     count = len(db.exec(count_statement).all())
-    
+
     return AgentSessionsPublic(data=sessions, count=count)
 
 
@@ -127,13 +127,13 @@ async def get_agent_session(
         HTTPException: If session not found or user doesn't have access
     """
     session = await session_manager.get_session(db, session_id)
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this session")
-    
+
     return session
 
 
@@ -161,21 +161,21 @@ async def delete_agent_session(
         HTTPException: If session not found or user doesn't have access
     """
     session = await session_manager.get_session(db, session_id)
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this session")
-    
+
     # Cancel if running
     if session.status == "running":
         await orchestrator.cancel_session(db, session_id)
-    
+
     # Delete from database (cascade will delete messages and artifacts)
     db.delete(session)
     db.commit()
-    
+
     return {"message": "Session deleted successfully"}
 
 
@@ -201,13 +201,13 @@ async def get_session_messages(
         HTTPException: If session not found or user doesn't have access
     """
     session = await session_manager.get_session(db, session_id)
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this session")
-    
+
     return session.messages
 
 
@@ -233,13 +233,13 @@ async def get_session_artifacts(
         HTTPException: If session not found or user doesn't have access
     """
     session = await session_manager.get_session(db, session_id)
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this session")
-    
+
     return session.artifacts
 
 
@@ -265,16 +265,16 @@ async def cancel_agent_session(
         HTTPException: If session not found or user doesn't have access
     """
     session = await session_manager.get_session(db, session_id)
-    
+
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     if session.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to cancel this session")
-    
+
     if session.status not in ["pending", "running"]:
         raise HTTPException(status_code=400, detail="Session is not active")
-    
+
     await orchestrator.cancel_session(db, session_id)
-    
+
     return {"message": "Session cancelled successfully"}

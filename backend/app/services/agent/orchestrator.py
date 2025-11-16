@@ -9,15 +9,15 @@ from typing import Any
 
 from sqlmodel import Session
 
-from app.core.config import settings
-from app.models import AgentSession, AgentSessionStatus
+from app.models import AgentSessionStatus
+
 from .session_manager import SessionManager
 
 
 class AgentOrchestrator:
     """
     Orchestrates multiple specialized agents to accomplish user goals.
-    
+
     This is a placeholder implementation for Week 1-2. Full implementation
     will include LangGraph state machine and ReAct loop in Weeks 7-8.
     """
@@ -100,7 +100,7 @@ class AgentOrchestrator:
 
         # TODO: Implement actual agent workflow with LangGraph
         # This is a placeholder that will be replaced in Weeks 7-8
-        
+
         iteration = state.get("iteration", 0) + 1
         state["iteration"] = iteration
         state["current_step"] = f"processing_step_{iteration}"

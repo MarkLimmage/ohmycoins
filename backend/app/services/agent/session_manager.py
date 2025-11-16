@@ -31,7 +31,7 @@ class SessionManager:
     async def connect(self) -> None:
         """Connect to Redis for state management."""
         if self.redis_client is None:
-            self.redis_client = await redis.from_url(
+            self.redis_client = await redis.from_url(  # type: ignore[no-untyped-call]
                 settings.REDIS_URL,
                 encoding="utf-8",
                 decode_responses=True,
@@ -105,18 +105,18 @@ class SessionManager:
         statement = select(AgentSession).where(AgentSession.id == session_id)
         result = db.exec(statement)
         session = result.first()
-        
+
         if session:
             session.status = status
             session.updated_at = datetime.now(timezone.utc)
-            
+
             if error_message:
                 session.error_message = error_message
             if result_summary:
                 session.result_summary = result_summary
             if status in [AgentSessionStatus.COMPLETED, AgentSessionStatus.FAILED, AgentSessionStatus.CANCELLED]:
                 session.completed_at = datetime.now(timezone.utc)
-            
+
             db.add(session)
             db.commit()
 
@@ -167,13 +167,14 @@ class SessionManager:
         """
         if not self.redis_client:
             await self.connect()
-        
+
         if self.redis_client:
             state_key = f"agent:session:{session_id}:state"
             state_data = await self.redis_client.get(state_key)
             if state_data:
                 import json
-                return json.loads(state_data)
+                result: dict[str, Any] = json.loads(state_data)
+                return result
         return None
 
     async def save_session_state(
@@ -188,7 +189,7 @@ class SessionManager:
         """
         if not self.redis_client:
             await self.connect()
-        
+
         if self.redis_client:
             import json
             state_key = f"agent:session:{session_id}:state"
@@ -206,7 +207,7 @@ class SessionManager:
         """
         if not self.redis_client:
             await self.connect()
-        
+
         if self.redis_client:
             state_key = f"agent:session:{session_id}:state"
             await self.redis_client.delete(state_key)
