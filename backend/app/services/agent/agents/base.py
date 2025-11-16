@@ -10,7 +10,7 @@ from typing import Any
 class BaseAgent:
     """
     Base class for all specialized agents in the system.
-    
+
     Each agent has a specific responsibility in the data science workflow.
     """
 

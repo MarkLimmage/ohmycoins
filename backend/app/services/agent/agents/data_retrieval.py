@@ -12,7 +12,7 @@ from .base import BaseAgent
 class DataRetrievalAgent(BaseAgent):
     """
     Agent responsible for retrieving data from the database.
-    
+
     Tools:
     - fetch_price_data: Query price_data_5min table
     - get_available_coins: List all available cryptocurrencies
