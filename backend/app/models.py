@@ -303,3 +303,251 @@ class CoinspotCredentialsPublic(CoinspotCredentialsBase):
     created_at: datetime
     updated_at: datetime
 
+
+# ============================================================================
+# Comprehensive Data Collection Models (Phase 2.5 - The 4 Ledgers)
+# ============================================================================
+
+# Glass Ledger: Protocol Fundamentals
+class ProtocolFundamentals(SQLModel, table=True):
+    """
+    Stores fundamental data for DeFi protocols (TVL, fees, revenue).
+    Data source: DeFiLlama API
+    """
+    __tablename__ = "protocol_fundamentals"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    protocol: str = Field(max_length=50, nullable=False, index=True)
+    tvl_usd: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=2)))
+    fees_24h: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=2)))
+    revenue_24h: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=2)))
+    collected_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
+        description="UTC timestamp when data was collected"
+    )
+    
+    __table_args__ = (
+        # Unique constraint: one entry per protocol per day
+        Index('uq_protocol_fundamentals_protocol_date', 
+              'protocol', 
+              sa.text("DATE(collected_at)"),
+              unique=True),
+    )
+
+
+# Glass Ledger: On-Chain Metrics
+class OnChainMetrics(SQLModel, table=True):
+    """
+    Stores on-chain metrics (active addresses, transaction volumes, etc.).
+    Data sources: Glassnode, Santiment (scraped from public dashboards)
+    """
+    __tablename__ = "on_chain_metrics"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    asset: str = Field(max_length=10, nullable=False, index=True)
+    metric_name: str = Field(max_length=50, nullable=False, index=True)
+    metric_value: Decimal = Field(sa_column=Column(DECIMAL(precision=30, scale=8)))
+    source: str = Field(max_length=50, nullable=False)
+    collected_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
+        description="UTC timestamp when data was collected"
+    )
+    
+    __table_args__ = (
+        Index('ix_on_chain_metrics_asset_metric_time', 'asset', 'metric_name', 'collected_at'),
+    )
+
+
+# Human Ledger: News Sentiment
+class NewsSentiment(SQLModel, table=True):
+    """
+    Stores cryptocurrency news articles with sentiment analysis.
+    Data sources: CryptoPanic API, Newscatcher API
+    """
+    __tablename__ = "news_sentiment"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    title: str = Field(sa_column=Column(sa.Text, nullable=False))
+    source: str | None = Field(default=None, max_length=100)
+    url: str | None = Field(default=None, sa_column=Column(sa.Text, unique=True))
+    published_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    sentiment: str | None = Field(default=None, max_length=20)
+    sentiment_score: Decimal | None = Field(
+        default=None,
+        sa_column=Column(DECIMAL(precision=5, scale=4))
+    )
+    currencies: list[str] | None = Field(
+        default=None,
+        sa_column=Column(sa.ARRAY(sa.String))
+    )
+    collected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    
+    __table_args__ = (
+        Index('ix_news_sentiment_published_at', 'published_at'),
+    )
+
+
+# Human Ledger: Social Sentiment
+class SocialSentiment(SQLModel, table=True):
+    """
+    Stores social media sentiment data (Reddit, Twitter/X).
+    Data sources: Reddit API, X scraper
+    """
+    __tablename__ = "social_sentiment"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    platform: str = Field(max_length=50, nullable=False, index=True)
+    content: str | None = Field(default=None, sa_column=Column(sa.Text))
+    author: str | None = Field(default=None, max_length=100)
+    score: int | None = Field(default=None)
+    sentiment: str | None = Field(default=None, max_length=20)
+    currencies: list[str] | None = Field(
+        default=None,
+        sa_column=Column(sa.ARRAY(sa.String))
+    )
+    posted_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    collected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    
+    __table_args__ = (
+        Index('ix_social_sentiment_platform_posted', 'platform', 'posted_at'),
+    )
+
+
+# Catalyst Ledger: Catalyst Events
+class CatalystEvents(SQLModel, table=True):
+    """
+    Stores high-impact market events (SEC filings, exchange listings, etc.).
+    Data sources: SEC API, CoinSpot announcements scraper
+    """
+    __tablename__ = "catalyst_events"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    event_type: str = Field(max_length=50, nullable=False, index=True)
+    title: str = Field(sa_column=Column(sa.Text, nullable=False))
+    description: str | None = Field(default=None, sa_column=Column(sa.Text))
+    source: str | None = Field(default=None, max_length=100)
+    currencies: list[str] | None = Field(
+        default=None,
+        sa_column=Column(sa.ARRAY(sa.String))
+    )
+    impact_score: int | None = Field(
+        default=None,
+        sa_column=Column(sa.Integer, sa.CheckConstraint('impact_score >= 1 AND impact_score <= 10'))
+    )
+    detected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    
+    __table_args__ = (
+        Index('ix_catalyst_events_type_detected', 'event_type', 'detected_at'),
+    )
+
+
+# Collector Metadata
+class CollectorRuns(SQLModel, table=True):
+    """
+    Tracks collector execution history for monitoring and debugging.
+    """
+    __tablename__ = "collector_runs"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    collector_name: str = Field(max_length=100, nullable=False, index=True)
+    status: str = Field(max_length=20, nullable=False, index=True)
+    started_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    completed_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    records_collected: int | None = Field(default=None)
+    error_message: str | None = Field(default=None, sa_column=Column(sa.Text))
+    
+    __table_args__ = (
+        Index('ix_collector_runs_name_started', 'collector_name', 'started_at'),
+    )
+
+
+# API Response Models for Phase 2.5
+
+class ProtocolFundamentalsPublic(SQLModel):
+    """Public schema for protocol fundamentals"""
+    id: int
+    protocol: str
+    tvl_usd: Decimal | None
+    fees_24h: Decimal | None
+    revenue_24h: Decimal | None
+    collected_at: datetime
+
+
+class OnChainMetricsPublic(SQLModel):
+    """Public schema for on-chain metrics"""
+    id: int
+    asset: str
+    metric_name: str
+    metric_value: Decimal
+    source: str
+    collected_at: datetime
+
+
+class NewsSentimentPublic(SQLModel):
+    """Public schema for news sentiment"""
+    id: int
+    title: str
+    source: str | None
+    url: str | None
+    published_at: datetime | None
+    sentiment: str | None
+    sentiment_score: Decimal | None
+    currencies: list[str] | None
+    collected_at: datetime
+
+
+class SocialSentimentPublic(SQLModel):
+    """Public schema for social sentiment"""
+    id: int
+    platform: str
+    content: str | None
+    author: str | None
+    score: int | None
+    sentiment: str | None
+    currencies: list[str] | None
+    posted_at: datetime | None
+    collected_at: datetime
+
+
+class CatalystEventsPublic(SQLModel):
+    """Public schema for catalyst events"""
+    id: int
+    event_type: str
+    title: str
+    description: str | None
+    source: str | None
+    currencies: list[str] | None
+    impact_score: int | None
+    detected_at: datetime
+
+
+class CollectorRunsPublic(SQLModel):
+    """Public schema for collector runs"""
+    id: int
+    collector_name: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None
+    records_collected: int | None
+    error_message: str | None
+
