@@ -1,0 +1,265 @@
+name: Test Self-Hosted EKS Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_labels:
+        description: 'Runner labels (comma-separated)'
+        required: false
+        default: 'self-hosted,eks,test'
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/aws/eks/**'
+      - '.github/workflows/test-self-hosted-runner.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-runner-environment:
+    name: Test Runner Environment
+    runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Display runner information
+        run: |
+          echo "=== Runner Information ==="
+          echo "Runner name: $RUNNER_NAME"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner architecture: $RUNNER_ARCH"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo ""
+
+      - name: Check system resources
+        run: |
+          echo "=== System Resources ==="
+          echo "CPU cores: $(nproc)"
+          echo "Memory:"
+          free -h
+          echo ""
+          echo "Disk space:"
+          df -h /
+          echo ""
+
+      - name: Check system information
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo ""
+          echo "Distribution:"
+          cat /etc/os-release || echo "OS release info not available"
+          echo ""
+
+      - name: Verify Docker availability
+        run: |
+          echo "=== Docker Information ==="
+          docker --version
+          docker info
+          echo ""
+          echo "Running containers:"
+          docker ps
+          echo ""
+
+      - name: Test Docker functionality
+        run: |
+          echo "=== Testing Docker ==="
+          docker run --rm hello-world
+          echo "Docker test successful!"
+          echo ""
+
+      - name: Check network connectivity
+        run: |
+          echo "=== Network Connectivity ==="
+          echo "Testing GitHub API:"
+          curl -I https://api.github.com
+          echo ""
+          echo "Testing GitHub container registry:"
+          curl -I https://ghcr.io
+          echo ""
+          echo "Testing Docker Hub:"
+          curl -I https://hub.docker.com
+          echo ""
+
+      - name: Verify development tools
+        run: |
+          echo "=== Development Tools ==="
+          echo "Git version:"
+          git --version
+          echo ""
+          echo "Curl version:"
+          curl --version | head -1
+          echo ""
+          echo "Available shells:"
+          cat /etc/shells
+          echo ""
+
+      - name: Test Python environment (if available)
+        continue-on-error: true
+        run: |
+          echo "=== Python Environment ==="
+          if command -v python3 &> /dev/null; then
+            python3 --version
+            echo "Pip version:"
+            python3 -m pip --version 2>/dev/null || echo "Pip not available"
+          else
+            echo "Python3 not available in runner image"
+          fi
+          echo ""
+
+      - name: Test Node.js environment (if available)
+        continue-on-error: true
+        run: |
+          echo "=== Node.js Environment ==="
+          if command -v node &> /dev/null; then
+            node --version
+            echo "npm version:"
+            npm --version
+          else
+            echo "Node.js not available in runner image"
+          fi
+          echo ""
+
+      - name: Check environment variables
+        run: |
+          echo "=== GitHub Environment Variables ==="
+          echo "GITHUB_ACTOR: $GITHUB_ACTOR"
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_SHA: $GITHUB_SHA"
+          echo "GITHUB_WORKFLOW: $GITHUB_WORKFLOW"
+          echo ""
+
+      - name: Test file operations
+        run: |
+          echo "=== File Operations Test ==="
+          echo "Creating test file..."
+          echo "Test content from self-hosted runner" > /tmp/test-file.txt
+          echo "Reading test file:"
+          cat /tmp/test-file.txt
+          echo "Cleaning up..."
+          rm /tmp/test-file.txt
+          echo "File operations successful!"
+          echo ""
+
+  test-docker-build:
+    name: Test Docker Build
+    runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
+    timeout-minutes: 15
+    needs: test-runner-environment
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test Docker build (backend)
+        run: |
+          echo "=== Testing Docker Build ==="
+          cd backend
+          docker build -t test-backend:latest .
+          echo "Backend Docker build successful!"
+          echo ""
+          echo "Image details:"
+          docker images test-backend:latest
+          echo ""
+
+      - name: Test running built image
+        run: |
+          echo "=== Testing Built Image ==="
+          docker run --rm test-backend:latest python --version
+          echo "Image execution successful!"
+          echo ""
+
+      - name: Cleanup test images
+        if: always()
+        run: |
+          echo "=== Cleanup ==="
+          docker rmi test-backend:latest || true
+          echo "Cleanup complete!"
+
+  test-workflow-checkout:
+    name: Test Workflow Checkout and Actions
+    runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
+    timeout-minutes: 10
+    needs: test-runner-environment
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify repository structure
+        run: |
+          echo "=== Repository Structure ==="
+          echo "Repository root contents:"
+          ls -la
+          echo ""
+          echo "Infrastructure directory:"
+          ls -la infrastructure/aws/eks/ || echo "Infrastructure directory not found"
+          echo ""
+
+      - name: Test git operations
+        run: |
+          echo "=== Git Operations ==="
+          git status
+          echo ""
+          echo "Recent commits:"
+          git log --oneline -5
+          echo ""
+          echo "Current branch:"
+          git branch --show-current
+          echo ""
+
+      - name: Test cache action (if needed in future)
+        uses: actions/cache@v3
+        with:
+          path: /tmp/test-cache
+          key: test-cache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            test-cache-${{ runner.os }}-
+
+      - name: Create and verify cache
+        run: |
+          echo "=== Cache Test ==="
+          mkdir -p /tmp/test-cache
+          echo "Cache test data" > /tmp/test-cache/test.txt
+          cat /tmp/test-cache/test.txt
+          echo "Cache test successful!"
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-runner-environment, test-docker-build, test-workflow-checkout]
+    if: always()
+    permissions:
+      contents: read
+
+    steps:
+      - name: Report results
+        run: |
+          echo "=== Self-Hosted Runner Test Summary ==="
+          echo ""
+          echo "✅ Runner environment test: ${{ needs.test-runner-environment.result }}"
+          echo "✅ Docker build test: ${{ needs.test-docker-build.result }}"
+          echo "✅ Workflow checkout test: ${{ needs.test-workflow-checkout.result }}"
+          echo ""
+          if [ "${{ needs.test-runner-environment.result }}" == "success" ] && \
+             [ "${{ needs.test-docker-build.result }}" == "success" ] && \
+             [ "${{ needs.test-workflow-checkout.result }}" == "success" ]; then
+            echo "🎉 All tests passed! Self-hosted EKS runners are working correctly."
+          else
+            echo "❌ Some tests failed. Please check the job logs above."
+            exit 1
+          fi

@@ -1,0 +1,19 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: ohmycoins-runners-production-autoscaler
+  namespace: actions-runner-system
+spec:
+  scaleTargetRef:
+    name: ohmycoins-runners-production
+  # Keep at least 2 runners for production
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: PercentageRunnersBusy
+      scaleUpThreshold: '0.70'
+      scaleDownThreshold: '0.30'
+      scaleUpFactor: '2'
+      scaleDownFactor: '0.5'
+  # Longer delay for production stability
+  scaleDownDelaySecondsAfterScaleOut: 600
