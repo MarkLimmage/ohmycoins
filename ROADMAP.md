@@ -1,7 +1,7 @@
 # Oh My Coins (OMC!) - Development Roadmap
 
 ## Progress Summary
-**Last Updated**: November 15, 2025
+**Last Updated**: November 16, 2025
 
 ### Phase 1 Status: ✅ Complete (100%)
 - ✅ **Foundation Setup**: Full-stack template integrated, Docker environment configured
@@ -11,12 +11,34 @@
 - ✅ **Testing**: 15 passing tests with unit and integration coverage
 - ✅ **CI/CD**: GitHub Actions workflows for testing and Docker builds
 
+### Phase 2 Status: ✅ Complete (100%)
+- ✅ **User Profiles**: Extended user model with trading preferences
+- ✅ **Credential Storage**: Secure encryption (AES-256) for API credentials
+- ✅ **Coinspot Auth**: HMAC-SHA512 authentication implementation
+- ✅ **Testing**: 36+ tests for encryption, auth, and credential management
+
+### Phase 2.5 Status: 🔄 In Progress (~40% Complete)
+- ✅ **Database Schema**: All 4 Ledgers schema created (Glass, Human, Catalyst, Exchange)
+- ✅ **Collector Framework**: Base classes and orchestrator implemented
+- ✅ **DeFiLlama**: Protocol fundamentals collector (Glass Ledger)
+- ✅ **CryptoPanic**: News sentiment collector (Human Ledger)
+- ❌ **Remaining**: Reddit API, SEC API, CoinSpot announcements, scrapers
+
+### Phase 3 Status: 🔄 Foundation Only (~15% Complete)
+- ✅ **Database Schema**: Agent session tables created
+- ✅ **Session Manager**: Lifecycle management implemented
+- ✅ **Project Structure**: Agent framework scaffolded
+- ❌ **Remaining**: LangGraph integration, agent tools, ReAct loop, HiTL features
+
 **Key Achievements**:
 - Complete development environment with live reload
 - Automated data collection from Coinspot API every 5 minutes
 - Robust error handling with retry logic
-- Comprehensive test suite (15 tests passing)
+- Comprehensive test suite (50+ tests passing)
 - CI/CD pipeline with linting, testing, and Docker builds
+- Secure credential management with encryption
+- Foundation for comprehensive data collection (4 Ledgers)
+- Foundation for agentic AI system
 
 ---
 
@@ -161,6 +183,8 @@ This roadmap outlines the systematic development of Oh My Coins (OMC!), an algor
 ---
 
 ## Phase 2.5: Comprehensive Data Collection - The 4 Ledgers (PREREQUISITE FOR ADVANCED FEATURES)
+**Status**: 🔄 IN PROGRESS (~40% Complete)
+
 **Goal**: Upgrade from basic price collection to comprehensive market intelligence system.
 
 **Strategic Context**: Price data alone is a lagging indicator. To build predictive algorithms and enable the agentic system to make informed decisions, we need to collect the data that actually drives market movements. This phase implements the "4 Ledgers" framework for comprehensive cryptocurrency market intelligence.
@@ -180,10 +204,11 @@ This phase implements four distinct types of market data collection:
 Transparent view into blockchain networks and protocol fundamentals.
 
 **Data Sources**:
-- [ ] DeFiLlama API (Free) - Protocol TVL, revenue, fees
+- [x] DeFiLlama API (Free) - Protocol TVL, revenue, fees ✅ IMPLEMENTED
   - 3,000+ protocols covered
   - Real-time TVL and fundamental metrics
   - Implementation: `backend/app/services/collectors/glass/defillama.py`
+  - Tests: `backend/tests/services/collectors/glass/test_defillama.py`
 - [ ] Dashboard scrapers (Complexity tier)
   - Glassnode public dashboards (active addresses, transaction volumes)
   - Santiment public metrics (social volume, development activity)
@@ -194,8 +219,9 @@ Transparent view into blockchain networks and protocol fundamentals.
   - Token holder analysis
 
 **Database Schema**:
-- [ ] Table: `protocol_fundamentals` (tvl, revenue, fees, users)
-- [ ] Table: `on_chain_metrics` (active_addresses, transaction_volume, network_fees)
+- [x] Table: `protocol_fundamentals` (tvl, revenue, fees, users) ✅ CREATED
+- [x] Table: `on_chain_metrics` (active_addresses, transaction_volume, network_fees) ✅ CREATED
+- Migration: `c3d4e5f6g7h8_add_comprehensive_data_tables_phase_2_5.py`
 
 **Collection Frequency**: Daily updates (off-peak hours)
 
@@ -203,7 +229,7 @@ Transparent view into blockchain networks and protocol fundamentals.
 Collective opinion and emotional state of market participants.
 
 **Data Sources**:
-- [ ] CryptoPanic API (Free) - Crypto news aggregation
+- [x] CryptoPanic API (Free) - Crypto news aggregation ✅ IMPLEMENTED
   - News articles from 1,000+ sources
   - Pre-categorized (bullish/bearish/neutral)
   - Implementation: `backend/app/services/collectors/human/cryptopanic.py`
@@ -221,8 +247,9 @@ Collective opinion and emotional state of market participants.
   - Better categorization
 
 **Database Schema**:
-- [ ] Table: `news_sentiment` (title, source, sentiment, published_at)
-- [ ] Table: `social_sentiment` (platform, content, author, sentiment, engagement)
+- [x] Table: `news_sentiment` (title, source, sentiment, published_at) ✅ CREATED
+- [x] Table: `social_sentiment` (platform, content, author, sentiment, engagement) ✅ CREATED
+- Migration: `c3d4e5f6g7h8_add_comprehensive_data_tables_phase_2_5.py`
 
 **Collection Frequency**: 5-15 minute intervals
 
@@ -245,7 +272,8 @@ Discrete, high-impact events that trigger immediate market reactions.
   - Network upgrade schedules
 
 **Database Schema**:
-- [ ] Table: `catalyst_events` (event_type, entity, description, impact_score, timestamp)
+- [x] Table: `catalyst_events` (event_type, entity, description, impact_score, timestamp) ✅ CREATED
+- Migration: `c3d4e5f6g7h8_add_comprehensive_data_tables_phase_2_5.py`
 
 **Collection Frequency**: Near-real-time (< 1 minute latency for critical events)
 
@@ -261,7 +289,7 @@ Real-time price and order execution data from CoinSpot.
   - Implementation: Enhance `backend/app/services/collector.py`
 
 **Database Schema**:
-- [ ] Enhance `price_data_5min` table with bid/ask/volume
+- [x] Enhance `price_data_5min` table with bid/ask/volume ✅ CREATED (Phase 1)
 - [ ] Table: `order_book_snapshots` (optional, for advanced strategies)
 
 **Collection Frequency**: 10-second intervals (enhanced from 5-minute)
@@ -270,23 +298,25 @@ Real-time price and order execution data from CoinSpot.
 
 #### Tier 1: Zero-Budget Implementation (Weeks 1-4)
 **Cost**: $0/month | **Complexity**: High (web scraping required)
+**Status**: 🔄 PARTIALLY COMPLETE
 
-- [ ] Week 1: Foundation & Enhanced Exchange Ledger
-  - Create database schema for all 4 ledgers
-  - Implement base collector framework
-  - Enhance CoinSpot API client
-  - Set up Collection Orchestrator with APScheduler
+- [x] Week 1: Foundation & Enhanced Exchange Ledger ✅ COMPLETE
+  - [x] Create database schema for all 4 ledgers
+  - [x] Implement base collector framework
+  - [x] Enhance CoinSpot API client
+  - [x] Set up Collection Orchestrator with APScheduler
+  - Files: `backend/app/services/collectors/base.py`, `orchestrator.py`, `api_collector.py`
 - [ ] Week 2: Catalyst Ledger (Highest ROI)
-  - SEC API integration
-  - CoinSpot announcements scraper
-  - Event detection pipeline
-- [ ] Week 3: Glass Ledger (Free tier)
-  - DeFiLlama API integration
-  - Basic dashboard scrapers
-- [ ] Week 4: Human Ledger (Free tier)
-  - CryptoPanic API integration
-  - Reddit API integration
-  - Basic sentiment analysis
+  - [ ] SEC API integration
+  - [ ] CoinSpot announcements scraper
+  - [ ] Event detection pipeline
+- [x] Week 3: Glass Ledger (Free tier) ✅ PARTIAL
+  - [x] DeFiLlama API integration
+  - [ ] Basic dashboard scrapers
+- [x] Week 4: Human Ledger (Free tier) ✅ PARTIAL
+  - [x] CryptoPanic API integration
+  - [ ] Reddit API integration
+  - [ ] Basic sentiment analysis
 
 **Deliverables**:
 - All 4 ledgers operational with free data sources
@@ -387,6 +417,8 @@ Real-time price and order execution data from CoinSpot.
 ---
 
 ## Phase 3: The Lab - Agentic Data Science Capability (ENHANCED WITH COMPREHENSIVE DATA)
+**Status**: 🔄 FOUNDATION ONLY (~15% Complete)
+
 **Goal**: Add autonomous multi-agent system for AI-powered algorithm development.
 
 **Strategic Context**: With comprehensive data from Phase 2.5, the agentic system can analyze multiple data sources (prices, sentiment, on-chain metrics, events) to build sophisticated predictive models. Without Phase 2.5, agents are limited to price-only analysis.
@@ -400,15 +432,21 @@ This new capability transforms The Lab into an autonomous "data scientist" that 
 - `AGENTIC_IMPLEMENTATION_PLAN.md` - Week-by-week implementation plan
 
 #### Foundation Setup (Weeks 1-2)
+**Status**: 🔄 PARTIALLY COMPLETE
 - [ ] Install and configure LangChain/LangGraph framework
 - [ ] Set up Redis for agent state management
-- [ ] Create database schema for agent sessions
-  - Table: `agent_sessions`
-  - Table: `agent_session_messages`
-  - Table: `agent_artifacts`
-- [ ] Create project structure for agent system
-- [ ] Implement SessionManager for lifecycle management
-- [ ] Create basic AgentOrchestrator skeleton
+- [x] Create database schema for agent sessions ✅ CREATED
+  - [x] Table: `agent_sessions`
+  - [x] Table: `agent_session_messages`
+  - [x] Table: `agent_artifacts`
+  - Migration: `c0e0bdfc3471_add_agent_session_tables.py`
+- [x] Create project structure for agent system ✅ CREATED
+  - Files: `backend/app/services/agent/`
+- [x] Implement SessionManager for lifecycle management ✅ IMPLEMENTED
+  - File: `backend/app/services/agent/session_manager.py`
+  - Tests: `backend/tests/services/agent/test_session_manager.py`
+- [x] Create basic AgentOrchestrator skeleton ✅ CREATED
+  - File: `backend/app/services/agent/orchestrator.py`
 - [ ] Implement API routes for agent sessions
   - POST /api/v1/lab/agent/sessions
   - GET /api/v1/lab/agent/sessions/{id}
@@ -416,17 +454,20 @@ This new capability transforms The Lab into an autonomous "data scientist" that 
   - WS /api/v1/lab/agent/sessions/{id}/stream
 
 #### Data Agents (Weeks 3-4)
-- [ ] Implement DataRetrievalAgent
-  - Tool: fetch_price_data (query price_data_5min)
-  - Tool: fetch_sentiment_data (query news_sentiment, social_sentiment) [requires Phase 2.5]
-  - Tool: fetch_on_chain_metrics (query on_chain_metrics, protocol_fundamentals) [requires Phase 2.5]
-  - Tool: fetch_catalyst_events (query catalyst_events) [requires Phase 2.5]
-  - Tool: get_available_coins
-  - Tool: get_data_statistics
+**Status**: 🔄 MINIMAL IMPLEMENTATION
+- [x] Implement DataRetrievalAgent ✅ PARTIAL
+  - File: `backend/app/services/agent/agents/data_retrieval.py`
+  - Base structure created, tools not fully implemented
+  - [ ] Tool: fetch_price_data (query price_data_5min)
+  - [ ] Tool: fetch_sentiment_data (query news_sentiment, social_sentiment) [requires Phase 2.5]
+  - [ ] Tool: fetch_on_chain_metrics (query on_chain_metrics, protocol_fundamentals) [requires Phase 2.5]
+  - [ ] Tool: fetch_catalyst_events (query catalyst_events) [requires Phase 2.5]
+  - [ ] Tool: get_available_coins
+  - [ ] Tool: get_data_statistics
 - [ ] Implement DataAnalystAgent
-  - Tool: calculate_technical_indicators (SMA, EMA, RSI, MACD)
-  - Tool: analyze_sentiment_trends (sentiment correlation with price) [requires Phase 2.5]
-  - Tool: analyze_on_chain_signals (address activity, TVL changes) [requires Phase 2.5]
+  - [ ] Tool: calculate_technical_indicators (SMA, EMA, RSI, MACD)
+  - [ ] Tool: analyze_sentiment_trends (sentiment correlation with price) [requires Phase 2.5]
+  - [ ] Tool: analyze_on_chain_signals (address activity, TVL changes) [requires Phase 2.5]
   - Tool: detect_catalyst_impact (event-driven analysis) [requires Phase 2.5]
   - Tool: clean_data (handle missing values, outliers)
   - Tool: perform_eda (exploratory data analysis)
