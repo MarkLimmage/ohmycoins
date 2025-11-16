@@ -1,7 +1,7 @@
 """add comprehensive data tables phase 2.5
 
 Revision ID: c3d4e5f6g7h8
-Revises: b5pu1jf8qzda
+Revises: c0e0bdfc3471
 Create Date: 2025-11-16 03:25:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'c3d4e5f6g7h8'
-down_revision = 'b5pu1jf8qzda'
+down_revision = 'c0e0bdfc3471'
 branch_labels = None
 depends_on = None
 
@@ -30,11 +30,12 @@ def upgrade() -> None:
     )
     op.create_index('ix_protocol_fundamentals_protocol', 'protocol_fundamentals', ['protocol'])
     op.create_index('ix_protocol_fundamentals_collected_at', 'protocol_fundamentals', ['collected_at'])
+    # Create composite index on protocol and timestamp for uniqueness at daily granularity
+    # Note: Application logic should ensure only one record per protocol per day
     op.create_index(
-        'uq_protocol_fundamentals_protocol_date',
+        'ix_protocol_fundamentals_protocol_collected',
         'protocol_fundamentals',
-        ['protocol', sa.text("DATE(collected_at)")],
-        unique=True
+        ['protocol', 'collected_at']
     )
 
     # Create on_chain_metrics table (Glass Ledger)

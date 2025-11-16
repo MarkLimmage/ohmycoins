@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from pydantic import EmailStr
+from pydantic import EmailStr, field_validator
 from sqlmodel import Field, Relationship, SQLModel, Column
 from sqlalchemy import DECIMAL, DateTime, Index
 import sqlalchemy as sa
@@ -67,10 +67,6 @@ class User(UserBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
-    coinspot_credentials: "CoinspotCredentials" | None = Relationship(
-        back_populates="user", sa_relationship_kwargs={"uselist": False}
-    )
 
 
 # Properties to return via API, id is always required
@@ -106,49 +102,48 @@ class UserProfileUpdate(SQLModel):
     risk_tolerance: str | None = Field(default=None, max_length=20)
     trading_experience: str | None = Field(default=None, max_length=20)
     
-    @property
-    def validate_fields(self) -> None:
-        """Validate profile fields"""
-        if self.risk_tolerance and self.risk_tolerance not in ["low", "medium", "high"]:
+    @field_validator('timezone')
+    @classmethod
+    def validate_timezone(cls, v: str | None) -> str | None:
+        """Validate timezone field using pytz"""
+        if v is not None:
+            try:
+                import pytz
+                pytz.timezone(v)
+            except pytz.exceptions.UnknownTimeZoneError:
+                raise ValueError(f"Invalid timezone: {v}")
+        return v
+    
+    @field_validator('preferred_currency')
+    @classmethod
+    def validate_currency(cls, v: str | None) -> str | None:
+        """Validate currency field - must be 3-letter currency code"""
+        if v is not None:
+            # Common cryptocurrency and fiat currencies
+            valid_currencies = {
+                "AUD", "USD", "EUR", "GBP", "JPY", "CNY", "CAD", "NZD", "SGD",
+                "BTC", "ETH", "USDT", "USDC", "BNB"
+            }
+            if v.upper() not in valid_currencies:
+                raise ValueError(f"Invalid currency: {v}. Must be one of: {', '.join(sorted(valid_currencies))}")
+        return v
+    
+    @field_validator('risk_tolerance')
+    @classmethod
+    def validate_risk_tolerance(cls, v: str | None) -> str | None:
+        """Validate risk_tolerance field"""
+        if v is not None and v not in ["low", "medium", "high"]:
             raise ValueError("risk_tolerance must be one of: low, medium, high")
-        if self.trading_experience and self.trading_experience not in ["beginner", "intermediate", "advanced"]:
+        return v
+    
+    @field_validator('trading_experience')
+    @classmethod
+    def validate_trading_experience(cls, v: str | None) -> str | None:
+        """Validate trading_experience field"""
+        if v is not None and v not in ["beginner", "intermediate", "advanced"]:
             raise ValueError("trading_experience must be one of: beginner, intermediate, advanced")
+        return v
 
-
-# Shared properties
-class ItemBase(SQLModel):
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-
-
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
-    pass
-
-
-# Properties to receive on item update
-class ItemUpdate(ItemBase):
-    title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
-
-
-# Properties to return via API, id is always required
-class ItemPublic(ItemBase):
-    id: uuid.UUID
-    owner_id: uuid.UUID
-
-
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
-    count: int
 
 
 # Generic message
@@ -274,8 +269,8 @@ class CoinspotCredentials(CoinspotCredentialsBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     
-    # Relationships
-    user: User = Relationship(back_populates="coinspot_credentials")
+    # Relationship to user (one-way, use queries to access from User)
+    user: User = Relationship()
 
 
 # Properties to receive via API on creation
@@ -591,16 +586,6 @@ class AgentSession(AgentSessionBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
-    # Relationships
-    messages: list["AgentSessionMessage"] = Relationship(
-        back_populates="session",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
-    )
-    artifacts: list["AgentArtifact"] = Relationship(
-        back_populates="session",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
-    )
-
 
 class AgentSessionMessage(SQLModel, table=True):
     """Database model for agent session messages (conversation history)"""
@@ -617,8 +602,8 @@ class AgentSessionMessage(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
-    # Relationship
-    session: AgentSession = Relationship(back_populates="messages")
+    # Relationship to session (one-way, query from AgentSession)
+    session: AgentSession = Relationship()
 
 
 class AgentArtifact(SQLModel, table=True):
@@ -639,8 +624,8 @@ class AgentArtifact(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
-    # Relationship
-    session: AgentSession = Relationship(back_populates="artifacts")
+    # Relationship to session (one-way, query from AgentSession)
+    session: AgentSession = Relationship()
 
 
 # API response models for agent sessions

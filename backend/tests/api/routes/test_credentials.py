@@ -9,22 +9,24 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.core.db import engine
-from app.models import CoinspotCredentials
+from app.models import CoinspotCredentials, UserCreate
 from app.main import app
-from tests.utils.user import create_user, get_user_authentication_headers
+from app import crud
+from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
 
 class TestCredentialsCreate:
     """Tests for POST /api/v1/credentials/coinspot"""
 
-    def test_create_credentials_success(self, client: TestClient) -> None:
+    def test_create_credentials_success(self, client: TestClient, db: Session) -> None:
         """Test successful credential creation"""
         # Create a test user and get auth headers
         user_email = random_email()
         user_password = random_lower_string()
-        user = create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        user = crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create credentials
         data = {
@@ -47,12 +49,13 @@ class TestCredentialsCreate:
         assert "created_at" in content
         assert "updated_at" in content
 
-    def test_create_credentials_already_exist(self, client: TestClient) -> None:
+    def test_create_credentials_already_exist(self, client: TestClient, db: Session) -> None:
         """Test that creating credentials when they already exist fails"""
         user_email = random_email()
         user_password = random_lower_string()
-        user = create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        user = crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         data = {
             "api_key": "test_api_key",
@@ -93,12 +96,13 @@ class TestCredentialsCreate:
 class TestCredentialsGet:
     """Tests for GET /api/v1/credentials/coinspot"""
 
-    def test_get_credentials_success(self, client: TestClient) -> None:
+    def test_get_credentials_success(self, client: TestClient, db: Session) -> None:
         """Test successful credential retrieval"""
         user_email = random_email()
         user_password = random_lower_string()
-        user = create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        user = crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create credentials
         data = {
@@ -115,12 +119,13 @@ class TestCredentialsGet:
         assert content["api_key_masked"].endswith("cdef")
         assert "api_secret" not in content  # Secret should never be returned
 
-    def test_get_credentials_not_found(self, client: TestClient) -> None:
+    def test_get_credentials_not_found(self, client: TestClient, db: Session) -> None:
         """Test getting credentials when none exist"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         response = client.get("/api/v1/credentials/coinspot", headers=headers)
         
@@ -136,12 +141,13 @@ class TestCredentialsGet:
 class TestCredentialsUpdate:
     """Tests for PUT /api/v1/credentials/coinspot"""
 
-    def test_update_credentials_success(self, client: TestClient) -> None:
+    def test_update_credentials_success(self, client: TestClient, db: Session) -> None:
         """Test successful credential update"""
         user_email = random_email()
         user_password = random_lower_string()
-        user = create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        user = crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create initial credentials
         data = {
@@ -167,12 +173,13 @@ class TestCredentialsUpdate:
         # Validation status should be reset
         assert content["is_validated"] is False
 
-    def test_update_credentials_partial(self, client: TestClient) -> None:
+    def test_update_credentials_partial(self, client: TestClient, db: Session) -> None:
         """Test partial credential update (only API key)"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create initial credentials
         data = {
@@ -193,12 +200,13 @@ class TestCredentialsUpdate:
         content = response.json()
         assert content["api_key_masked"].endswith("8888")
 
-    def test_update_credentials_not_found(self, client: TestClient) -> None:
+    def test_update_credentials_not_found(self, client: TestClient, db: Session) -> None:
         """Test updating credentials when none exist"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         update_data = {
             "api_key": "new_api_key",
@@ -217,12 +225,13 @@ class TestCredentialsUpdate:
 class TestCredentialsDelete:
     """Tests for DELETE /api/v1/credentials/coinspot"""
 
-    def test_delete_credentials_success(self, client: TestClient) -> None:
+    def test_delete_credentials_success(self, client: TestClient, db: Session) -> None:
         """Test successful credential deletion"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create credentials
         data = {
@@ -241,12 +250,13 @@ class TestCredentialsDelete:
         get_response = client.get("/api/v1/credentials/coinspot", headers=headers)
         assert get_response.status_code == 404
 
-    def test_delete_credentials_not_found(self, client: TestClient) -> None:
+    def test_delete_credentials_not_found(self, client: TestClient, db: Session) -> None:
         """Test deleting credentials when none exist"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         response = client.delete("/api/v1/credentials/coinspot", headers=headers)
         
@@ -258,12 +268,13 @@ class TestCredentialsValidation:
     """Tests for POST /api/v1/credentials/coinspot/validate"""
 
     @pytest.mark.asyncio
-    async def test_validate_credentials_success(self, client: TestClient) -> None:
+    async def test_validate_credentials_success(self, client: TestClient, db: Session) -> None:
         """Test successful credential validation"""
         user_email = random_email()
         user_password = random_lower_string()
-        user = create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        user = crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create credentials
         data = {
@@ -301,12 +312,13 @@ class TestCredentialsValidation:
             assert credentials.is_validated is True
             assert credentials.last_validated_at is not None
 
-    def test_validate_credentials_not_found(self, client: TestClient) -> None:
+    def test_validate_credentials_not_found(self, client: TestClient, db: Session) -> None:
         """Test validation when credentials don't exist"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         response = client.post(
             "/api/v1/credentials/coinspot/validate",
@@ -317,12 +329,13 @@ class TestCredentialsValidation:
         assert "not found" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
-    async def test_validate_credentials_invalid(self, client: TestClient) -> None:
+    async def test_validate_credentials_invalid(self, client: TestClient, db: Session) -> None:
         """Test validation with invalid credentials"""
         user_email = random_email()
         user_password = random_lower_string()
-        create_user(email=user_email, password=user_password)
-        headers = get_user_authentication_headers(client, user_email, user_password)
+        user_in = UserCreate(email=user_email, password=user_password)
+        crud.create_user(session=db, user_create=user_in)
+        headers = user_authentication_headers(client=client, email=user_email, password=user_password)
         
         # Create credentials
         data = {
