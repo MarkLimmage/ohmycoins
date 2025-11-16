@@ -1,0 +1,31 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: ohmycoins-runners-staging
+  namespace: actions-runner-system
+spec:
+  replicas: 1
+  template:
+    spec:
+      repository: MarkLimmage/ohmycoins
+      # Staging-specific labels
+      labels:
+        - self-hosted
+        - eks
+        - staging
+      # Resource allocation for staging
+      resources:
+        limits:
+          cpu: "2.0"
+          memory: "4Gi"
+        requests:
+          cpu: "1.0"
+          memory: "2Gi"
+      # Use Kubernetes Docker-in-Docker for container builds
+      dockerdWithinRunnerContainer: true
+      # Ephemeral runners (destroyed after each job for clean state)
+      ephemeral: true
+      # Environment-specific settings
+      env:
+        - name: ENVIRONMENT
+          value: "staging"

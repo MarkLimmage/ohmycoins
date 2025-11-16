@@ -140,6 +140,40 @@ docker compose exec backend pytest
 docker compose exec frontend npm run test
 ```
 
+## AWS Infrastructure for CI/CD
+
+The project includes infrastructure for running GitHub Actions workflows on self-hosted runners in AWS EKS. This provides:
+
+- **Controlled Environment**: Run CI/CD in a managed Kubernetes cluster
+- **AWS Integration**: Direct access to AWS resources
+- **Cost Control**: Scale runners based on demand
+- **Better Performance**: Dedicated compute resources
+
+### Setting Up AWS EKS Test Server
+
+See the comprehensive guides in `infrastructure/aws/eks/`:
+
+1. **[README.md](infrastructure/aws/eks/README.md)** - Overview and quick start
+2. **[STEP0_CREATE_CLUSTER.md](infrastructure/aws/eks/STEP0_CREATE_CLUSTER.md)** - Create EKS cluster with new VPC
+3. **[STEP1_INSTALL_ARC.md](infrastructure/aws/eks/STEP1_INSTALL_ARC.md)** - Install Actions Runner Controller
+4. **[STEP2_UPDATE_WORKFLOWS.md](infrastructure/aws/eks/STEP2_UPDATE_WORKFLOWS.md)** - Update workflows to use self-hosted runners
+
+**Quick Start:**
+```bash
+# 1. Create EKS cluster (~20 minutes)
+cd infrastructure/aws/eks
+eksctl create cluster -f eks-cluster-new-vpc.yml
+
+# 2. Install Actions Runner Controller (~10 minutes)
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+helm repo add actions-runner-controller https://actions-runner-controller.github.io/actions-runner-controller
+helm install arc --namespace actions-runner-system --create-namespace actions-runner-controller/actions-runner-controller
+
+# 3. Deploy runners
+kubectl apply -f arc-manifests/runner-deployment.yaml
+kubectl apply -f arc-manifests/runner-autoscaler.yaml
+```
+
 ## Next Steps
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan.
