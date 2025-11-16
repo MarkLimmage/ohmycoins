@@ -94,6 +94,34 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
+    # Redis configuration for agent state management (Phase 3)
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: str | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def REDIS_URL(self) -> str:
+        """Build Redis connection URL."""
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    # LLM Provider configuration (Phase 3)
+    LLM_PROVIDER: Literal["openai", "anthropic", "azure", "local"] = "openai"
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4-turbo-preview"
+    ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_MODEL: str = "claude-3-sonnet-20240229"
+    MAX_TOKENS_PER_REQUEST: int = 4000
+    ENABLE_STREAMING: bool = True
+
+    # Agent system configuration
+    AGENT_MAX_ITERATIONS: int = 10
+    AGENT_TIMEOUT_SECONDS: int = 300
+    AGENT_CODE_EXECUTION_TIMEOUT: int = 60
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
