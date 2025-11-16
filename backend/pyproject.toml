@@ -26,6 +26,17 @@ dependencies = [
     # Phase 2.5: Comprehensive Data Collection
     "aiohttp<4.0.0,>=3.9.0",
     "beautifulsoup4<5.0.0,>=4.12.0",
+    # Phase 3: Agentic Data Science dependencies
+    "langchain<1.0.0,>=0.1.0",
+    "langchain-openai<1.0.0,>=0.0.5",
+    "langgraph<1.0.0,>=0.0.20",
+    "redis<6.0.0,>=5.0.0",
+    "pandas<3.0.0,>=2.0.0",
+    "scikit-learn<2.0.0,>=1.3.0",
+    "xgboost<3.0.0,>=2.0.0",
+    "matplotlib<4.0.0,>=3.7.0",
+    "seaborn<1.0.0,>=0.12.0",
+    "ta<1.0.0,>=0.11.0",
 ]
 
 [tool.uv]
