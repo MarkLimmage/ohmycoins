@@ -19,11 +19,11 @@ jobs:
     name: Test Runner Environment
     runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Display runner information
         run: |
           echo "=== Runner Information ==="
@@ -32,7 +32,7 @@ jobs:
           echo "Runner architecture: $RUNNER_ARCH"
           echo "Workspace: $GITHUB_WORKSPACE"
           echo ""
-          
+
       - name: Check system resources
         run: |
           echo "=== System Resources ==="
@@ -43,7 +43,7 @@ jobs:
           echo "Disk space:"
           df -h /
           echo ""
-          
+
       - name: Check system information
         run: |
           echo "=== System Information ==="
@@ -52,7 +52,7 @@ jobs:
           echo "Distribution:"
           cat /etc/os-release || echo "OS release info not available"
           echo ""
-          
+
       - name: Verify Docker availability
         run: |
           echo "=== Docker Information ==="
@@ -62,14 +62,14 @@ jobs:
           echo "Running containers:"
           docker ps
           echo ""
-          
+
       - name: Test Docker functionality
         run: |
           echo "=== Testing Docker ==="
           docker run --rm hello-world
           echo "Docker test successful!"
           echo ""
-          
+
       - name: Check network connectivity
         run: |
           echo "=== Network Connectivity ==="
@@ -82,7 +82,7 @@ jobs:
           echo "Testing Docker Hub:"
           curl -I https://hub.docker.com
           echo ""
-          
+
       - name: Verify development tools
         run: |
           echo "=== Development Tools ==="
@@ -95,7 +95,7 @@ jobs:
           echo "Available shells:"
           cat /etc/shells
           echo ""
-          
+
       - name: Test Python environment (if available)
         continue-on-error: true
         run: |
@@ -108,7 +108,7 @@ jobs:
             echo "Python3 not available in runner image"
           fi
           echo ""
-          
+
       - name: Test Node.js environment (if available)
         continue-on-error: true
         run: |
@@ -121,7 +121,7 @@ jobs:
             echo "Node.js not available in runner image"
           fi
           echo ""
-          
+
       - name: Check environment variables
         run: |
           echo "=== GitHub Environment Variables ==="
@@ -131,7 +131,7 @@ jobs:
           echo "GITHUB_SHA: $GITHUB_SHA"
           echo "GITHUB_WORKFLOW: $GITHUB_WORKFLOW"
           echo ""
-          
+
       - name: Test file operations
         run: |
           echo "=== File Operations Test ==="
@@ -143,17 +143,17 @@ jobs:
           rm /tmp/test-file.txt
           echo "File operations successful!"
           echo ""
-  
+
   test-docker-build:
     name: Test Docker Build
     runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
     timeout-minutes: 15
     needs: test-runner-environment
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Test Docker build (backend)
         run: |
           echo "=== Testing Docker Build ==="
@@ -164,14 +164,14 @@ jobs:
           echo "Image details:"
           docker images test-backend:latest
           echo ""
-          
+
       - name: Test running built image
         run: |
           echo "=== Testing Built Image ==="
           docker run --rm test-backend:latest python --version
           echo "Image execution successful!"
           echo ""
-          
+
       - name: Cleanup test images
         if: always()
         run: |
@@ -184,13 +184,13 @@ jobs:
     runs-on: ${{ fromJSON(format('["{0}"]', inputs.runner_labels || 'self-hosted,eks,test')) }}
     timeout-minutes: 10
     needs: test-runner-environment
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Verify repository structure
         run: |
           echo "=== Repository Structure ==="
@@ -200,7 +200,7 @@ jobs:
           echo "Infrastructure directory:"
           ls -la infrastructure/aws/eks/ || echo "Infrastructure directory not found"
           echo ""
-          
+
       - name: Test git operations
         run: |
           echo "=== Git Operations ==="
@@ -212,7 +212,7 @@ jobs:
           echo "Current branch:"
           git branch --show-current
           echo ""
-          
+
       - name: Test cache action (if needed in future)
         uses: actions/cache@v3
         with:
@@ -220,7 +220,7 @@ jobs:
           key: test-cache-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
             test-cache-${{ runner.os }}-
-      
+
       - name: Create and verify cache
         run: |
           echo "=== Cache Test ==="
@@ -234,7 +234,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-runner-environment, test-docker-build, test-workflow-checkout]
     if: always()
-    
+
     steps:
       - name: Report results
         run: |
