@@ -550,4 +550,143 @@ class CollectorRunsPublic(SQLModel):
     completed_at: datetime | None
     records_collected: int | None
     error_message: str | None
+# Agent Session Models (Phase 3) - Agentic Data Science Capability
+# ============================================================================
+
+class AgentSessionStatus(str):
+    """Enum for agent session status"""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class AgentSessionBase(SQLModel):
+    """Base model for agent sessions"""
+    user_goal: str = Field(description="Natural language trading goal from user")
+    status: str = Field(default=AgentSessionStatus.PENDING, max_length=20)
+
+
+class AgentSession(AgentSessionBase, table=True):
+    """Database model for agent sessions"""
+    __tablename__ = "agent_sessions"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    user_goal: str = Field(description="Natural language trading goal from user")
+    status: str = Field(default=AgentSessionStatus.PENDING, max_length=20)
+    error_message: str | None = Field(default=None, description="Error message if failed")
+    result_summary: str | None = Field(default=None, description="Natural language summary of results")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    completed_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+
+    # Relationships
+    messages: list["AgentSessionMessage"] = Relationship(
+        back_populates="session",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
+    artifacts: list["AgentArtifact"] = Relationship(
+        back_populates="session",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
+
+
+class AgentSessionMessage(SQLModel, table=True):
+    """Database model for agent session messages (conversation history)"""
+    __tablename__ = "agent_session_messages"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    session_id: uuid.UUID = Field(foreign_key="agent_sessions.id", nullable=False)
+    role: str = Field(max_length=20, description="user, assistant, system, function")
+    content: str = Field(description="Message content")
+    agent_name: str | None = Field(default=None, max_length=100, description="Name of agent that sent message")
+    metadata_json: str | None = Field(default=None, description="JSON metadata for message")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+    # Relationship
+    session: AgentSession = Relationship(back_populates="messages")
+
+
+class AgentArtifact(SQLModel, table=True):
+    """Database model for agent artifacts (models, plots, reports)"""
+    __tablename__ = "agent_artifacts"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    session_id: uuid.UUID = Field(foreign_key="agent_sessions.id", nullable=False)
+    artifact_type: str = Field(max_length=50, description="model, plot, report, code, data")
+    name: str = Field(max_length=255, description="Artifact name")
+    description: str | None = Field(default=None, description="Artifact description")
+    file_path: str | None = Field(default=None, max_length=500, description="Path to artifact file")
+    mime_type: str | None = Field(default=None, max_length=100, description="MIME type of artifact")
+    size_bytes: int | None = Field(default=None, description="File size in bytes")
+    metadata_json: str | None = Field(default=None, description="JSON metadata for artifact")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+    # Relationship
+    session: AgentSession = Relationship(back_populates="artifacts")
+
+
+# API response models for agent sessions
+class AgentSessionCreate(SQLModel):
+    """Schema for creating a new agent session"""
+    user_goal: str = Field(min_length=1, max_length=5000, description="Natural language trading goal")
+
+
+class AgentSessionPublic(AgentSessionBase):
+    """Schema for returning agent session via API"""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    status: str
+    error_message: str | None
+    result_summary: str | None
+    created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None
+
+
+class AgentSessionsPublic(SQLModel):
+    """Schema for returning multiple agent sessions"""
+    data: list[AgentSessionPublic]
+    count: int
+
+
+class AgentSessionMessagePublic(SQLModel):
+    """Schema for returning agent session message via API"""
+    id: uuid.UUID
+    session_id: uuid.UUID
+    role: str
+    content: str
+    agent_name: str | None
+    created_at: datetime
+
+
+class AgentArtifactPublic(SQLModel):
+    """Schema for returning agent artifact via API"""
+    id: uuid.UUID
+    session_id: uuid.UUID
+    artifact_type: str
+    name: str
+    description: str | None
+    file_path: str | None
+    mime_type: str | None
+    size_bytes: int | None
+    created_at: datetime
+
 
