@@ -83,7 +83,7 @@ class EncryptionService:
         if not api_key:
             return "****"
         
-        if len(api_key) <= 4:
+        if len(api_key) < 4:
             return "*" * len(api_key)
         
         visible_chars = 4
