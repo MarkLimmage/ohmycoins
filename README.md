@@ -152,11 +152,14 @@ For detailed setup instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 ## 📖 Documentation
 
-### 🎯 Planning & Next Steps (NEW)
-- **[QUICK_START_NEXT_STEPS.md](./QUICK_START_NEXT_STEPS.md)** - Quick overview of immediate actions
-- **[NEXT_STEPS.md](./NEXT_STEPS.md)** - Detailed 16-week plan with priorities  
-- **[PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md)** - Coordination strategies for parallel work
-- **[ROADMAP_VALIDATION.md](./ROADMAP_VALIDATION.md)** - Current status validation
+### 🎯 Planning & Next Steps (NEW - 2025-11-17)
+> 📚 **Start here:** [PLANNING_INDEX.md](./PLANNING_INDEX.md) - Central index for all planning documentation
+
+- **[QUICK_START_NEXT_STEPS.md](./QUICK_START_NEXT_STEPS.md)** - Quick overview of immediate actions ⚡
+- **[ROADMAP_REVIEW_SUMMARY.md](./ROADMAP_REVIEW_SUMMARY.md)** - Visual overview with progress bars 📊
+- **[NEXT_STEPS.md](./NEXT_STEPS.md)** - Detailed 16-week plan with priorities 📋
+- **[PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md)** - Coordination strategies for parallel work 🔀
+- **[ROADMAP_VALIDATION.md](./ROADMAP_VALIDATION.md)** - Current status validation ✅
 
 ### Core Documentation
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and design principles
