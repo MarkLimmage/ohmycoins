@@ -1,0 +1,40 @@
+# Production Environment Configuration
+# Copy this file to terraform.tfvars and fill in the values
+
+aws_region = "ap-southeast-2"
+
+# Database password - CHANGE THIS TO A STRONG PASSWORD!
+master_password = "CHANGE_ME_VERY_SECURE_PASSWORD"
+
+# Redis auth token - CHANGE THIS!
+redis_auth_token_enabled = true
+redis_auth_token         = "CHANGE_ME_REDIS_AUTH_TOKEN"
+
+# Domain configuration - Update with your production domains
+domain              = "ohmycoins.com"
+backend_domain      = "api.ohmycoins.com"
+frontend_host       = "https://dashboard.ohmycoins.com"
+backend_cors_origins = "https://dashboard.ohmycoins.com"
+
+# ACM Certificate ARN for HTTPS - REQUIRED for production
+certificate_arn = "arn:aws:acm:ap-southeast-2:ACCOUNT_ID:certificate/CERT_ID"
+
+# GitHub configuration (OIDC provider should already exist from staging)
+github_repo                = "MarkLimmage/ohmycoins"
+create_github_oidc_provider = false
+github_oidc_provider_arn    = "arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+
+# Container images (use specific versions for production)
+backend_image      = "ghcr.io/marklimmage/ohmycoins-backend"
+backend_image_tag  = "v1.0.0"  # Use specific version tags
+frontend_image     = "ghcr.io/marklimmage/ohmycoins-frontend"
+frontend_image_tag = "v1.0.0"  # Use specific version tags
+
+# Database configuration
+rds_instance_class    = "db.t3.small"
+rds_allocated_storage = 50
+create_read_replica   = false  # Set to true for read-heavy workloads
+replica_instance_class = "db.t3.small"
+
+# Redis configuration
+redis_node_type = "cache.t3.small"
