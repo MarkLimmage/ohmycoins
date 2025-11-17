@@ -2,22 +2,67 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: copilot-test-cluster
-  region: us-west-2  # Set your desired AWS region
+  name: OMC-test
+  region: ap-southeast-2
+
+# managedNodeGroups:
+#   - name: arc-runner-nodes
+#     instanceType: t3.large
+#     desiredCapacity: 1
+#     minSize: 1
+#     maxSize: 5
+
+#     # SOLUTION: Use the 'eksctl' abstract field
+#     # This sets httpTokens: required and hop limit to 2
+#     disableIMDSv1: true
+
+#     tags:
+#       Environment: test
+#       Project: ohmycoins
+#       ManagedBy: eksctl
+#       Purpose: github-actions-runners
 
 managedNodeGroups:
-  - name: arc-runner-nodes
-    instanceType: t3.large # Start with t3.large or m5.large
-    desiredCapacity: 1
+  # 1. Your system node group (unchanged)
+  - name: system-nodes
+    instanceType: t3.medium
     minSize: 1
-    maxSize: 5
-    # Enable IMDSv2 for enhanced security
-    instanceMetadata:
-      httpPutResponseHopLimit: 2
-      httpTokens: required
-    # Tags for cost tracking and organization
+    maxSize: 2
+    desiredCapacity: 1
+    disableIMDSv1: true
+    taints:
+      - key: "CriticalAddonsOnly"
+        value: "true"
+        effect: "NoSchedule"
     tags:
       Environment: test
       Project: ohmycoins
       ManagedBy: eksctl
+      Purpose: cluster-system-pods
+
+  # 2. Your runner node group (corrected for v1alpha5)
+  - name: arc-runner-nodes
+    instanceType: t3.large
+    desiredCapacity: 0
+    minSize: 0
+    maxSize: 5
+    disableIMDSv1: true
+    taints:
+      - key: "github-runners"
+        value: "true"
+        effect: "NoSchedule"
+        
+    # --- THIS IS THE FIX ---
+    # The 'autoScaling: true' field is removed.
+    # The required ASG tags are added here:
+    tags:
+      # Your original tags:
+      Environment: test
+      Project: ohmycoins
+      ManagedBy: eksctl
       Purpose: github-actions-runners
+      
+      # ADDED: Required tags for Cluster Autoscaler
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/OMC-test: "owned"
+    # --- END OF FIX ---

@@ -17,6 +17,8 @@ env:
 jobs:
   build-backend:
     name: Build Backend Image
+    # Strategy 1: Keep Docker builds on GitHub-hosted runners
+    # Reason: Benefits from GitHub's cache infrastructure and Docker layer caching
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -61,6 +63,8 @@ jobs:
   
   build-frontend:
     name: Build Frontend Image
+    # Strategy 1: Keep Docker builds on GitHub-hosted runners
+    # Reason: Benefits from GitHub's cache infrastructure and Docker layer caching
     runs-on: ubuntu-latest
     permissions:
       contents: read
