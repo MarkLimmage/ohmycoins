@@ -445,6 +445,11 @@ class CatalystEvents(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
     )
+    url: str | None = Field(default=None, max_length=500)
+    collected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
     
     __table_args__ = (
         Index('ix_catalyst_events_type_detected', 'event_type', 'detected_at'),
@@ -534,6 +539,8 @@ class CatalystEventsPublic(SQLModel):
     currencies: list[str] | None
     impact_score: int | None
     detected_at: datetime
+    url: str | None
+    collected_at: datetime
 
 
 class CollectorRunsPublic(SQLModel):

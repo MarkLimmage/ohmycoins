@@ -8,6 +8,7 @@ import logging
 from app.services.collectors.orchestrator import get_orchestrator
 from app.services.collectors.glass import DeFiLlamaCollector
 from app.services.collectors.human import CryptoPanicCollector
+from app.services.collectors.catalyst import SECAPICollector, CoinSpotAnnouncementsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +53,34 @@ def setup_collectors() -> None:
         logger.error(f"✗ Failed to register CryptoPanic collector: {str(e)}")
         logger.info("  Get a free API key at: https://cryptopanic.com/developers/api/")
     
+    # Catalyst Ledger: SEC API
+    # Collects daily at 9 AM UTC (after market open)
+    try:
+        sec_api = SECAPICollector()
+        orchestrator.register_collector(
+            sec_api,
+            schedule_type="cron",
+            hour=9,
+            minute=0,
+        )
+        logger.info("✓ Registered SEC API collector (Catalyst Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register SEC API collector: {str(e)}")
+    
+    # Catalyst Ledger: CoinSpot Announcements
+    # Collects every hour for new announcements
+    try:
+        coinspot_announcements = CoinSpotAnnouncementsCollector()
+        orchestrator.register_collector(
+            coinspot_announcements,
+            schedule_type="interval",
+            hours=1,
+        )
+        logger.info("✓ Registered CoinSpot Announcements collector (Catalyst Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register CoinSpot Announcements collector: {str(e)}")
+    
     # TODO: Add more collectors as they are implemented
-    # - SEC API (Catalyst Ledger)
-    # - CoinSpot Announcements (Catalyst Ledger)
     # - Reddit API (Human Ledger)
     # - Enhanced CoinSpot Client (Exchange Ledger)
     
