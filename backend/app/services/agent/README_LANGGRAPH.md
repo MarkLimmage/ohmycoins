@@ -7,6 +7,7 @@ This document describes the LangGraph foundation implementation by Developer B a
 **Timeline:**
 - **Week 1-2**: LangGraph foundation with basic workflow
 - **Week 3-4**: Enhanced with DataRetrievalAgent tools and new DataAnalystAgent
+- **Week 5-6**: Added ModelTrainingAgent and ModelEvaluatorAgent for complete ML pipeline
 
 ## Architecture
 
@@ -31,21 +32,28 @@ This document describes the LangGraph foundation implementation by Developer B a
 
 ### Workflow Nodes
 
-**Week 3-4 Enhanced Workflow** consists of four nodes:
+**Week 5-6 Complete ML Pipeline** consists of six nodes:
 
 1. **initialize**: Sets up initial state and prepares for execution
 2. **retrieve_data**: Executes DataRetrievalAgent (enhanced with comprehensive tools)
-3. **analyze_data**: Executes DataAnalystAgent (NEW in Week 3-4)
-4. **finalize**: Completes workflow and prepares results with insights
+3. **analyze_data**: Executes DataAnalystAgent (Week 3-4)
+4. **train_model**: Executes ModelTrainingAgent (NEW in Week 5-6)
+5. **evaluate_model**: Executes ModelEvaluatorAgent (NEW in Week 5-6)
+6. **finalize**: Completes workflow and prepares results with full ML insights
 
 ### State Flow
 
-**Week 3-4 Enhanced Flow:**
+**Week 5-6 Complete ML Pipeline:**
+```
+START → initialize → retrieve_data → analyze_data → train_model → evaluate_model → finalize → END
+```
+
+**Week 3-4 Flow:**
 ```
 START → initialize → retrieve_data → analyze_data → finalize → END
 ```
 
-**Previous (Week 1-2) Flow:**
+**Week 1-2 Flow:**
 ```
 START → initialize → retrieve_data → finalize → END
 ```
@@ -98,6 +106,67 @@ Performs comprehensive data analysis and generates actionable insights.
 - "Overall sentiment is bullish, positive market outlook"
 - "active_addresses is increasing by 25.3%"
 - "Recent catalyst events had positive impact (avg 3.2% price change)"
+
+### ModelTrainingAgent (NEW in Week 5-6)
+
+**Location**: `backend/app/services/agent/agents/model_training.py`
+
+Trains machine learning models on cryptocurrency data for predictive analytics.
+
+**Tools** (`backend/app/services/agent/tools/model_training_tools.py`):
+- `train_classification_model()`: Train models for price direction prediction
+  - Supports: Random Forest, Logistic Regression, Decision Tree, Gradient Boosting, SVM
+  - Automatic feature scaling and train/test splitting
+  - Comprehensive metrics: accuracy, precision, recall, F1, ROC-AUC
+- `train_regression_model()`: Train models for price value prediction
+  - Supports: Random Forest, Linear, Ridge, Lasso, Decision Tree, Gradient Boosting, SVR
+  - Regression metrics: MSE, RMSE, MAE, R²
+- `cross_validate_model()`: K-fold cross-validation for model performance estimation
+
+**Capabilities:**
+- Automatic task type detection (classification vs regression)
+- Configurable hyperparameters
+- Feature scaling with StandardScaler
+- Train/test splitting with stratification
+- Cross-validation support
+- Generates training summary with performance metrics
+
+**Model Types Supported:**
+- Classification: Random Forest, Logistic Regression, Decision Tree, Gradient Boosting, SVM
+- Regression: Random Forest, Linear Regression, Ridge, Lasso, Decision Tree, Gradient Boosting, SVR
+
+### ModelEvaluatorAgent (NEW in Week 5-6)
+
+**Location**: `backend/app/services/agent/agents/model_evaluator.py`
+
+Evaluates and compares trained models to select the best performing model.
+
+**Tools** (`backend/app/services/agent/tools/model_evaluation_tools.py`):
+- `evaluate_model()`: Comprehensive model evaluation on test data
+  - Classification: accuracy, precision, recall, F1, ROC-AUC, confusion matrix
+  - Regression: MSE, RMSE, MAE, R²
+- `tune_hyperparameters()`: Automated hyperparameter tuning
+  - Grid search and random search support
+  - Cross-validation for optimal parameter selection
+- `compare_models()`: Compare multiple models side-by-side
+  - Ranking by any metric
+  - Best model identification
+- `calculate_feature_importance()`: Feature importance analysis
+  - Identifies most predictive features
+  - Returns top N features ranked by importance
+
+**Capabilities:**
+- Comprehensive model evaluation metrics
+- Hyperparameter tuning (grid/random search)
+- Multi-model comparison and ranking
+- Feature importance analysis for interpretability
+- Automatic insight generation
+
+**Example Insights Generated:**
+- "✓ Model shows strong performance with 78.5% accuracy"
+- "✓ Strong discriminative ability with ROC-AUC of 0.843"
+- "Top predictive features: rsi, macd, ema_20"
+- "Hyperparameter tuning achieved best CV score of 0.8234"
 
 ## Configuration
 
@@ -155,25 +224,44 @@ from app.services.agent.langgraph_workflow import LangGraphWorkflow, AgentState
 # Initialize workflow
 workflow = LangGraphWorkflow()
 
-# Prepare initial state
+# Prepare initial state (Week 5-6 complete state)
 initial_state: AgentState = {
     "session_id": "test-session",
-    "user_goal": "Analyze Bitcoin trends",
+    "user_goal": "Build a model to predict Bitcoin price movements",
     "status": "running",
     "current_step": "start",
     "iteration": 0,
     "data_retrieved": False,
+    "analysis_completed": False,
+    "model_trained": False,
+    "model_evaluated": False,
     "messages": [],
     "result": None,
     "error": None,
+    "retrieved_data": None,
+    "analysis_results": None,
+    "insights": None,
+    "trained_models": None,
+    "evaluation_results": None,
+    "retrieval_params": {},
+    "analysis_params": {},
+    "training_params": {},
+    "evaluation_params": {},
+    "training_summary": None,
+    "evaluation_insights": None,
 }
 
-# Execute
+# Execute complete ML pipeline
 final_state = await workflow.execute(initial_state)
+
+# Access results
+print(final_state["training_summary"])
+print(final_state["evaluation_insights"])
 
 # Stream execution (for real-time updates)
 async for state_update in workflow.stream_execute(initial_state):
     print(f"Current step: {state_update.get('current_step')}")
+```
 ```
 
 ## Integration with Existing System
@@ -231,23 +319,87 @@ assert workflow.graph is not None
 assert workflow.data_retrieval_agent is not None
 ```
 
-## Future Enhancements (Week 3-8)
+## Future Enhancements (Week 7-12)
 
-### Week 3-4: Additional Agents
-- Integrate DataAnalystAgent
-- Add more sophisticated data retrieval tools
-- Connect Phase 2.5 data sources
+### Week 7-8: ReAct Loop & Orchestration
+- Implement full ReAct (Reason-Act-Observe) loop
+- Add dynamic tool selection logic
+- Enhance orchestration with conditional agent execution
+- Add error recovery and retry mechanisms
 
-### Week 5-6: Modeling Agents
-- Add ModelTrainingAgent
-- Add ModelEvaluatorAgent
-- Implement model evaluation workflow
+### Week 9-10: Human-in-the-Loop
+- Add clarification request system
+- Implement choice presentation for user decisions
+- Add approval gates for model deployment
+- User override mechanisms
 
-### Week 7-8: ReAct Loop
-- Implement reasoning loop
-- Add tool selection logic
-- Enhance orchestration with dynamic agent selection
-- Add human-in-the-loop capabilities
+### Week 11-12: Reporting & Completion
+- Add ReportingAgent for comprehensive reports
+- Implement artifact management for trained models
+- Add secure code sandbox for custom algorithms
+- API endpoints for agent session management
+- Final integration testing and documentation
+
+## Week 5-6 Summary
+
+### Implementation Completed
+
+**New Agents (2):**
+1. ModelTrainingAgent - Trains classification and regression models
+2. ModelEvaluatorAgent - Evaluates, tunes, and compares models
+
+**New Tools (7):**
+1. `train_classification_model()` - 5 model types supported
+2. `train_regression_model()` - 7 model types supported
+3. `cross_validate_model()` - K-fold cross-validation
+4. `evaluate_model()` - Comprehensive evaluation metrics
+5. `tune_hyperparameters()` - Grid/random search
+6. `compare_models()` - Multi-model comparison
+7. `calculate_feature_importance()` - Interpretability analysis
+
+**Workflow Enhancements:**
+- Added 2 new workflow nodes (train_model, evaluate_model)
+- Enhanced AgentState with 8 new fields
+- Updated orchestrator for complete ML pipeline
+- Enhanced finalize node with training/evaluation results
+
+**Lines of Code:**
+- Production: ~1,000 lines (4 new files, 3 modified files)
+- Total implementation: 1,379 lines added
+
+### Capabilities Delivered
+
+✅ **Complete Autonomous ML Pipeline**:
+- Data retrieval → Analysis → Training → Evaluation → Insights
+- End-to-end workflow without human intervention
+- Comprehensive performance metrics at each stage
+
+✅ **Multiple Model Support**:
+- 5 classification algorithms
+- 7 regression algorithms
+- Automatic task type detection
+- Hyperparameter tuning support
+
+✅ **Production-Ready Features**:
+- Feature scaling and preprocessing
+- Train/test splitting with stratification
+- Cross-validation for robust evaluation
+- Feature importance for interpretability
+- Model comparison and selection
+
+### Integration Status
+
+✅ **Zero Conflicts with Developer A**:
+- Works entirely in `agent/` directory
+- Does not modify collectors or Phase 2.5 code
+- Uses existing database schema
+- Compatible with existing infrastructure
+
+✅ **Ready for Week 7-8**:
+- Foundation in place for ReAct loop
+- All agents follow consistent patterns
+- State management fully implemented
+- Workflow extensible for future agents
 
 ## Current State (Week 1-2 Complete)
 
