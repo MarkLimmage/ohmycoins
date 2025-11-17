@@ -12,7 +12,10 @@ on:
 jobs:
 
   test-docker-compose:
-    runs-on: ubuntu-latest
+    # Strategy 1: Hybrid Approach - Use self-hosted runners for docker-compose integration tests
+    # Benefits: Faster docker builds, better network performance for multi-container tests
+    runs-on: [self-hosted, eks, test]
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v5

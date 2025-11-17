@@ -11,7 +11,10 @@ on:
 
 jobs:
   test-backend:
-    runs-on: ubuntu-latest
+    # Strategy 1: Hybrid Approach - Use self-hosted EKS runners for resource-intensive backend tests
+    # Benefits: Faster docker-compose operations, better resource allocation for database tests
+    runs-on: [self-hosted, eks, test]
+    timeout-minutes: 30  # Add timeout for self-hosted runners
     steps:
       - name: Checkout
         uses: actions/checkout@v5

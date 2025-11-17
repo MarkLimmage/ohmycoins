@@ -28,9 +28,10 @@ spec:
       # Node selector to target specific nodes (optional)
       # nodeSelector:
       #   workload: github-actions
-      # Tolerations for tainted nodes (optional)
-      # tolerations:
-      # - key: "dedicated"
-      #   operator: "Equal"
-      #   value: "github-actions"
-      #   effect: "NoSchedule"
+      # Tolerations for tainted nodes - REQUIRED for arc-runner-nodes group
+      # This allows runner pods to be scheduled on the github-runners tainted nodes
+      tolerations:
+      - key: "github-runners"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"

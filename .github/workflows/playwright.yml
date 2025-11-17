@@ -40,7 +40,9 @@ jobs:
       - changes
     if: ${{ needs.changes.outputs.changed == 'true' }}
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    # Strategy 1: Hybrid Approach - Use self-hosted runners for resource-intensive browser tests
+    # Benefits: Better performance for parallel test shards, more memory for browser instances
+    runs-on: [self-hosted, eks, test]
     strategy:
       matrix:
         shardIndex: [1, 2, 3, 4]
