@@ -20,6 +20,10 @@ The infrastructure is designed for a microservices-based cryptocurrency trading 
 ```
 terraform/
 ├── README.md                    # This file
+├── QUICKSTART.md               # Step-by-step deployment guide
+├── OPERATIONS_RUNBOOK.md       # Day-to-day operations guide
+├── TROUBLESHOOTING.md          # Common issues and solutions
+├── DEVELOPER_C_SUMMARY.md      # Developer C work summary
 ├── modules/                     # Reusable Terraform modules
 │   ├── vpc/                    # VPC, subnets, NAT gateway
 │   ├── rds/                    # PostgreSQL database
@@ -32,14 +36,20 @@ terraform/
 │   ├── staging/                # Staging environment configuration
 │   │   ├── main.tf
 │   │   ├── variables.tf
-│   │   ├── terraform.tfvars
-│   │   └── backend.tf
+│   │   ├── terraform.tfvars.example
+│   │   └── outputs.tf
 │   └── production/             # Production environment configuration
 │       ├── main.tf
 │       ├── variables.tf
-│       ├── terraform.tfvars
-│       └── backend.tf
-└── scripts/                    # Helper scripts for deployment
+│       ├── terraform.tfvars.example
+│       └── outputs.tf
+├── scripts/                    # Helper scripts for deployment
+│   ├── validate-terraform.sh   # Validate all Terraform configs
+│   ├── estimate-costs.sh       # Estimate AWS costs
+│   └── pre-deployment-check.sh # Pre-deployment checklist
+└── monitoring/                 # CloudWatch monitoring configs
+    ├── README.md               # Monitoring guide
+    └── dashboards/             # Dashboard templates
 ```
 
 ## Prerequisites
@@ -73,26 +83,53 @@ aws dynamodb create-table \
     --region ap-southeast-2
 ```
 
+## Helper Scripts
+
+To make deployment easier, several helper scripts are available:
+
+### Pre-Deployment Check
+Validates all prerequisites before deployment:
+```bash
+./scripts/pre-deployment-check.sh staging
+```
+
+### Cost Estimation
+Estimates monthly AWS costs:
+```bash
+./scripts/estimate-costs.sh
+# Or for specific environment
+./scripts/estimate-costs.sh production
+```
+
+### Terraform Validation
+Validates all Terraform configurations:
+```bash
+./scripts/validate-terraform.sh
+```
+
 ## Quick Start - Staging Environment
 
-1. **Navigate to staging environment:**
-   ```bash
-   cd infrastructure/terraform/environments/staging
-   ```
+**Recommended approach: Run pre-deployment check first!**
 
-2. **Initialize Terraform:**
-   ```bash
-   terraform init
-   ```
+```bash
+# 1. Run pre-deployment checklist
+./scripts/pre-deployment-check.sh staging
 
-3. **Review the plan:**
-   ```bash
-   terraform plan
-   ```
+# 2. Navigate to staging environment
+cd infrastructure/terraform/environments/staging
 
-4. **Apply the infrastructure:**
-   ```bash
-   terraform apply
+# 3. Copy and configure variables
+cp terraform.tfvars.example terraform.tfvars
+nano terraform.tfvars  # Edit with your values
+
+# 4. Initialize Terraform
+terraform init
+
+# 5. Review the plan
+terraform plan
+
+# 6. Apply the infrastructure
+terraform apply
    ```
 
 5. **Get outputs:**
@@ -354,6 +391,16 @@ For issues or questions:
 - Check AWS CloudWatch logs
 - Review GitHub Actions workflow runs
 - Open an issue in the repository
+
+## Additional Documentation
+
+For more detailed information, see:
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Step-by-step deployment guide with detailed setup instructions
+- **[OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)** - Day-to-day operations, monitoring, and incident response procedures
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and their solutions for deployment and runtime problems
+- **[monitoring/README.md](monitoring/README.md)** - CloudWatch monitoring configuration and dashboard setup
+- **[DEVELOPER_C_SUMMARY.md](DEVELOPER_C_SUMMARY.md)** - Complete summary of Developer C's infrastructure work
 
 ## References
 
