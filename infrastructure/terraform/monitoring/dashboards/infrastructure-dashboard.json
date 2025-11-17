@@ -1,0 +1,100 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", { "stat": "Average", "label": "Backend CPU" }],
+          [".", "MemoryUtilization", { "stat": "Average", "label": "Backend Memory" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "ap-southeast-2",
+        "title": "ECS Backend Service Metrics",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "TargetResponseTime", { "stat": "Average", "label": "Response Time (avg)" }],
+          ["...", { "stat": "p95", "label": "Response Time (p95)" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "ap-southeast-2",
+        "title": "ALB Response Times",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ApplicationELB", "HTTPCode_Target_2XX_Count", { "stat": "Sum", "label": "2xx Success" }],
+          [".", "HTTPCode_Target_4XX_Count", { "stat": "Sum", "label": "4xx Client Error" }],
+          [".", "HTTPCode_Target_5XX_Count", { "stat": "Sum", "label": "5xx Server Error" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "ap-southeast-2",
+        "title": "ALB HTTP Status Codes",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/RDS", "DatabaseConnections", { "stat": "Average", "label": "Active Connections" }],
+          [".", "CPUUtilization", { "stat": "Average", "label": "CPU Utilization" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "ap-southeast-2",
+        "title": "RDS Metrics",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ElastiCache", "CacheHitRate", { "stat": "Average", "label": "Cache Hit Rate" }],
+          [".", "EngineCPUUtilization", { "stat": "Average", "label": "CPU Utilization" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "ap-southeast-2",
+        "title": "Redis Metrics",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "DesiredTaskCount", { "stat": "Average", "label": "Desired Tasks" }],
+          [".", "RunningTaskCount", { "stat": "Average", "label": "Running Tasks" }]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "ap-southeast-2",
+        "title": "ECS Task Counts",
+        "period": 300
+      }
+    }
+  ]
+}
