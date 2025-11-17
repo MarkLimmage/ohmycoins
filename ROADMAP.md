@@ -1,7 +1,10 @@
 # Oh My Coins (OMC!) - Development Roadmap
 
 ## Progress Summary
-**Last Updated**: November 16, 2025
+**Last Updated**: November 17, 2025
+
+> 📋 **NEW:** See [NEXT_STEPS.md](./NEXT_STEPS.md) for prioritized action plan and timeline  
+> 🔀 **NEW:** See [PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md) for parallel work opportunities
 
 ### Phase 1 Status: ✅ Complete (100%)
 - ✅ **Foundation Setup**: Full-stack template integrated, Docker environment configured
@@ -39,6 +42,56 @@
 - Secure credential management with encryption
 - Foundation for comprehensive data collection (4 Ledgers)
 - Foundation for agentic AI system
+
+---
+
+## 🎯 Immediate Next Steps (Prioritized)
+
+**Based on comprehensive roadmap analysis completed 2025-11-17.**
+
+### Priority 1: Complete Phase 2.5 Foundation (4-6 weeks)
+**Why:** Provides data foundation for advanced AI features. **Cost:** $0 (free APIs only)
+
+**Week 1-2: Catalyst Ledger** (HIGHEST PRIORITY)
+- [ ] Implement SEC API integration (monitor crypto companies like Coinbase, MicroStrategy)
+- [ ] Build CoinSpot announcements scraper (detect new listings - the "CoinSpot Effect")
+- **Impact:** Real-time detection of market-moving events
+
+**Week 3: Human Ledger Completion**
+- [ ] Implement Reddit API integration (sentiment from r/CryptoCurrency, r/Bitcoin, etc.)
+- **Impact:** Social sentiment analysis for predictive signals
+
+**Week 4: Data Quality & Monitoring**
+- [ ] Implement data quality checks (completeness, timeliness, accuracy)
+- [ ] Create collection metrics dashboard
+- [ ] Set up alerting for collection failures
+- **Impact:** Reliable data for algorithm development
+
+### Priority 2: Advance Phase 3 Agentic System (12-14 weeks)
+**Why:** Core differentiator for autonomous algorithm development. **Cost:** $50-150/month (LLM APIs)
+
+**Can Start in Parallel with Phase 2.5** (see [PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md))
+
+**Weeks 1-2:** LangGraph foundation setup
+**Weeks 3-6:** Core agent implementation (Data, Analyst, Training, Evaluator)
+**Weeks 7-10:** Orchestration, ReAct loop, Human-in-the-Loop
+**Weeks 11-14:** Reporting, artifact management, testing
+
+### Priority 3: Infrastructure Preparation (4-8 weeks, parallel)
+**Why:** Production readiness. Can be done alongside feature development.
+
+- [ ] AWS infrastructure design and Terraform implementation
+- [ ] CI/CD pipeline enhancements
+- [ ] Security hardening and monitoring setup
+
+### Parallel Development Opportunities
+**Key Finding:** With 2-3 developers, overall timeline can be reduced by 40-50%
+
+- **2-Developer Team:** 12-16 weeks to complete both Phase 2.5 and Phase 3
+- **3-Developer Team:** 10-14 weeks with dedicated DevOps
+- **Sequential (1 developer):** 20-24 weeks
+
+See [PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md) for detailed coordination strategies.
 
 ---
 
