@@ -31,7 +31,7 @@ class AgentOrchestrator:
             session_manager: Session manager for state persistence
         """
         self.session_manager = session_manager
-        self.workflow = LangGraphWorkflow()
+        self.workflow = LangGraphWorkflow(session=None)  # Session will be set per execution
 
     async def start_session(
         self, db: Session, session_id: uuid.UUID
@@ -110,6 +110,9 @@ class AgentOrchestrator:
             if not session:
                 raise ValueError(f"Session {session_id} not found")
             
+            # Set database session for workflow agents
+            self.workflow.set_session(db)
+            
             # Prepare initial state for LangGraph
             langgraph_state: AgentState = {
                 "session_id": str(session_id),
@@ -118,9 +121,15 @@ class AgentOrchestrator:
                 "current_step": "initialization",
                 "iteration": 0,
                 "data_retrieved": False,
+                "analysis_completed": False,
                 "messages": [],
                 "result": None,
                 "error": None,
+                "retrieved_data": None,
+                "analysis_results": None,
+                "insights": None,
+                "retrieval_params": {},
+                "analysis_params": {},
             }
             
             # Execute the workflow
