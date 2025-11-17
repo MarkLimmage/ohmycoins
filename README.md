@@ -49,15 +49,20 @@ Transform The Lab into an autonomous "data scientist" powered by AI:
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| Phase 1 | ✅ Complete | Foundation & Data Collection Service |
-| Phase 2 | ✅ Complete | User Authentication & API Credentials |
-| Phase 3 | 📋 Planning | Agentic Data Science Capability (NEW) |
+| Phase 1 | ✅ Complete (100%) | Foundation & Data Collection Service |
+| Phase 2 | ✅ Complete (100%) | User Authentication & API Credentials |
+| Phase 2.5 | 🔄 In Progress (~40%) | Comprehensive Data Collection (4 Ledgers) |
+| Phase 3 | 🔄 Foundation (~15%) | Agentic Data Science Capability |
 | Phase 4 | 📅 Planned | The Lab - Manual Algorithm Development |
 | Phase 5 | 📅 Planned | Algorithm Promotion & Packaging |
 | Phase 6 | 📅 Planned | The Floor - Live Trading Platform |
 | Phase 7 | 📅 Planned | Management Dashboard |
 | Phase 8 | 📅 Planned | Advanced Features & Optimization |
 | Phase 9 | 📅 Planned | Production Deployment & AWS Migration |
+
+> 🎯 **See [QUICK_START_NEXT_STEPS.md](./QUICK_START_NEXT_STEPS.md) for immediate action items**
+> 
+> 📊 **Timeline:** 12-16 weeks to complete Phase 2.5 + Phase 3 with 2 developers (40% faster with parallel work)
 
 ## 🏗️ Architecture
 
@@ -147,13 +152,28 @@ For detailed setup instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)
 
 ## 📖 Documentation
 
+### 🎯 Planning & Next Steps (NEW - 2025-11-17)
+> 📚 **Start here:** [PLANNING_INDEX.md](./PLANNING_INDEX.md) - Central index for all planning documentation
+
+- **[QUICK_START_NEXT_STEPS.md](./QUICK_START_NEXT_STEPS.md)** - Quick overview of immediate actions ⚡
+- **[ROADMAP_REVIEW_SUMMARY.md](./ROADMAP_REVIEW_SUMMARY.md)** - Visual overview with progress bars 📊
+- **[NEXT_STEPS.md](./NEXT_STEPS.md)** - Detailed 16-week plan with priorities 📋
+- **[PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md)** - Coordination strategies for parallel work 🔀
+- **[ROADMAP_VALIDATION.md](./ROADMAP_VALIDATION.md)** - Current status validation ✅
+
 ### Core Documentation
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and design principles
 - [DEVELOPMENT.md](./DEVELOPMENT.md) - Developer setup and workflow guide
 - [ROADMAP.md](./ROADMAP.md) - Project roadmap and milestones
 - [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md) - Phase 1 completion summary
 
-### Agentic Capability (NEW)
+### Comprehensive Data Collection (Phase 2.5)
+- [Comprehensive_Data_QUICKSTART.md](./Comprehensive_Data_QUICKSTART.md) - Quick reference
+- [Comprehensive_Data_REQUIREMENTS.md](./Comprehensive_Data_REQUIREMENTS.md) - The 4 Ledgers framework
+- [Comprehensive_Data_ARCHITECTURE.md](./Comprehensive_Data_ARCHITECTURE.md) - Technical architecture
+- [Comprehensive_Data_IMPLEMENTATION_PLAN.md](./Comprehensive_Data_IMPLEMENTATION_PLAN.md) - Week-by-week plan
+
+### Agentic Capability (Phase 3)
 - [AGENTIC_QUICKSTART.md](./AGENTIC_QUICKSTART.md) - Quick reference guide
 - [AGENTIC_REQUIREMENTS.md](./AGENTIC_REQUIREMENTS.md) - Detailed requirements
 - [AGENTIC_ARCHITECTURE.md](./AGENTIC_ARCHITECTURE.md) - Technical architecture
