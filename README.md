@@ -205,9 +205,10 @@ uv run mypy .
 
 ### Infrastructure
 - **Containerization**: Docker
-- **Orchestration**: Docker Compose (dev), ECS/EKS (prod)
-- **CI/CD**: GitHub Actions
+- **Orchestration**: Docker Compose (dev), EKS with autoscaling (prod)
+- **CI/CD**: GitHub Actions on self-hosted EKS runners with scale-to-zero capability
 - **Monitoring**: CloudWatch, Prometheus (future)
+- **Cost Optimization**: Cluster Autoscaler enabling 40-60% cost savings
 
 ## 📊 Current Data Collection
 
