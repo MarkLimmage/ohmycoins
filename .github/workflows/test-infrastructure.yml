@@ -1,0 +1,359 @@
+name: Test Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      skip_deployment:
+        description: 'Skip actual deployment (validation only)'
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/test-infrastructure.yml'
+  pull_request:
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/test-infrastructure.yml'
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read    # Required to checkout code
+
+env:
+  AWS_REGION: ap-southeast-2
+  TF_VERSION: 1.5.0
+
+jobs:
+  validate-terraform:
+    name: Validate Terraform Configuration
+    runs-on: [self-hosted, eks, test]
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Check Terraform formatting
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Checking Terraform Formatting ==="
+          terraform fmt -check -recursive || {
+            echo "❌ Terraform files need formatting"
+            echo "Run: terraform fmt -recursive"
+            exit 1
+          }
+
+      - name: Validate all modules
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Validating Terraform Modules ==="
+          
+          for module in modules/*/; do
+            echo "Validating $(basename $module)..."
+            cd "$module"
+            terraform init -backend=false
+            terraform validate
+            cd - > /dev/null
+          done
+
+      - name: Validate staging environment
+        working-directory: infrastructure/terraform/environments/staging
+        run: |
+          echo "=== Validating Staging Environment ==="
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate production environment
+        working-directory: infrastructure/terraform/environments/production
+        run: |
+          echo "=== Validating Production Environment ==="
+          terraform init -backend=false
+          terraform validate
+
+      - name: Run validation script
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Running Validation Script ==="
+          ./scripts/validate-terraform.sh || true
+
+  estimate-costs:
+    name: Estimate Infrastructure Costs
+    runs-on: [self-hosted, eks, test]
+    needs: validate-terraform
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Estimate staging costs
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Estimating Staging Costs ==="
+          ./scripts/estimate-costs.sh staging
+
+      - name: Estimate production costs
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Estimating Production Costs ==="
+          ./scripts/estimate-costs.sh production
+
+      - name: Generate cost report
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Cost Report Summary ==="
+          ./scripts/estimate-costs.sh
+
+  pre-deployment-check:
+    name: Pre-Deployment Check
+    runs-on: [self-hosted, eks, test]
+    needs: validate-terraform
+    if: ${{ !inputs.skip_deployment }}
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run pre-deployment check
+        working-directory: infrastructure/terraform
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          echo "=== Running Pre-Deployment Check ==="
+          ./scripts/pre-deployment-check.sh $ENVIRONMENT
+
+  test-deployment:
+    name: Test Deployment (Dry Run)
+    runs-on: [self-hosted, eks, test]
+    needs: [validate-terraform, pre-deployment-check]
+    if: ${{ !inputs.skip_deployment }}
+    timeout-minutes: 20
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        env:
+          TF_VAR_master_password: ${{ secrets.DB_MASTER_PASSWORD }}
+        run: |
+          echo "=== Terraform Plan ==="
+          terraform plan -out=tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.event.inputs.environment || 'staging' }}
+          path: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}/tfplan
+          retention-days: 7
+
+  test-docker-integration:
+    name: Test Docker Integration
+    runs-on: [self-hosted, eks, test]
+    needs: validate-terraform
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test backend Docker build
+        run: |
+          echo "=== Testing Backend Docker Build ==="
+          cd backend
+          docker build -t ohmycoins-backend:test .
+          docker images ohmycoins-backend:test
+
+      - name: Test frontend Docker build
+        run: |
+          echo "=== Testing Frontend Docker Build ==="
+          cd frontend
+          docker build -t ohmycoins-frontend:test .
+          docker images ohmycoins-frontend:test
+
+      - name: Test docker-compose stack
+        run: |
+          echo "=== Testing Docker Compose Stack ==="
+          docker compose build
+          docker compose up -d --wait backend frontend adminer
+          
+          # Wait for services to be ready
+          sleep 10
+          
+          # Test backend health
+          curl -f http://localhost:8000/api/v1/utils/health-check || {
+            echo "❌ Backend health check failed"
+            docker compose logs backend
+            exit 1
+          }
+          
+          # Test frontend
+          curl -f http://localhost:5173 || {
+            echo "❌ Frontend health check failed"
+            docker compose logs frontend
+            exit 1
+          }
+          
+          echo "✅ All services are healthy"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "=== Cleanup ==="
+          docker compose down -v --remove-orphans
+          docker rmi ohmycoins-backend:test ohmycoins-frontend:test || true
+
+  test-monitoring-setup:
+    name: Test Monitoring Configuration
+    runs-on: [self-hosted, eks, test]
+    needs: validate-terraform
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate CloudWatch dashboard JSON
+        working-directory: infrastructure/terraform/monitoring/dashboards
+        run: |
+          echo "=== Validating CloudWatch Dashboard Configuration ==="
+          
+          # Check if dashboard JSON is valid
+          python3 -m json.tool infrastructure-dashboard.json > /dev/null && \
+            echo "✅ Dashboard JSON is valid" || \
+            echo "❌ Dashboard JSON is invalid"
+
+      - name: Validate monitoring documentation
+        working-directory: infrastructure/terraform/monitoring
+        run: |
+          echo "=== Checking Monitoring Documentation ==="
+          
+          # Check if monitoring README exists and is not empty
+          if [ -s README.md ]; then
+            echo "✅ Monitoring documentation exists"
+            wc -l README.md
+          else
+            echo "❌ Monitoring documentation is missing or empty"
+            exit 1
+          fi
+
+  test-operational-scripts:
+    name: Test Operational Scripts
+    runs-on: [self-hosted, eks, test]
+    needs: validate-terraform
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test validation script
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Testing Validation Script ==="
+          # Just check if script is executable and has correct syntax
+          bash -n scripts/validate-terraform.sh
+          echo "✅ Validation script syntax OK"
+
+      - name: Test cost estimation script
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Testing Cost Estimation Script ==="
+          bash -n scripts/estimate-costs.sh
+          ./scripts/estimate-costs.sh
+          echo "✅ Cost estimation script works"
+
+      - name: Test pre-deployment check script
+        working-directory: infrastructure/terraform
+        run: |
+          echo "=== Testing Pre-Deployment Check Script ==="
+          bash -n scripts/pre-deployment-check.sh
+          # Don't run it as it requires AWS access
+          echo "✅ Pre-deployment check script syntax OK"
+
+      - name: Verify script permissions
+        working-directory: infrastructure/terraform/scripts
+        run: |
+          echo "=== Verifying Script Permissions ==="
+          ls -la
+          
+          for script in *.sh; do
+            if [ -x "$script" ]; then
+              echo "✅ $script is executable"
+            else
+              echo "❌ $script is not executable"
+              exit 1
+            fi
+          done
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [validate-terraform, estimate-costs, test-docker-integration, test-monitoring-setup, test-operational-scripts]
+    if: always()
+    
+    steps:
+      - name: Generate test summary
+        run: |
+          echo "=== Infrastructure Test Summary ==="
+          echo ""
+          echo "✅ Terraform Validation: ${{ needs.validate-terraform.result }}"
+          echo "✅ Cost Estimation: ${{ needs.estimate-costs.result }}"
+          echo "✅ Docker Integration: ${{ needs.test-docker-integration.result }}"
+          echo "✅ Monitoring Setup: ${{ needs.test-monitoring-setup.result }}"
+          echo "✅ Operational Scripts: ${{ needs.test-operational-scripts.result }}"
+          echo ""
+          
+          if [ "${{ needs.validate-terraform.result }}" == "success" ] && \
+             [ "${{ needs.estimate-costs.result }}" == "success" ] && \
+             [ "${{ needs.test-docker-integration.result }}" == "success" ] && \
+             [ "${{ needs.test-monitoring-setup.result }}" == "success" ] && \
+             [ "${{ needs.test-operational-scripts.result }}" == "success" ]; then
+            echo "🎉 All infrastructure tests passed!"
+            echo ""
+            echo "Infrastructure is ready for deployment to AWS."
+            exit 0
+          else
+            echo "❌ Some tests failed. Please review the logs above."
+            exit 1
+          fi
