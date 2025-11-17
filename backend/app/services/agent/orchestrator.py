@@ -125,11 +125,21 @@ class AgentOrchestrator:
                 "messages": [],
                 "result": None,
                 "error": None,
+                # Week 3-4 fields
                 "retrieved_data": None,
                 "analysis_results": None,
                 "insights": None,
                 "retrieval_params": {},
                 "analysis_params": {},
+                # Week 5-6 fields
+                "model_trained": False,
+                "model_evaluated": False,
+                "trained_models": None,
+                "evaluation_results": None,
+                "training_params": {},
+                "evaluation_params": {},
+                "training_summary": None,
+                "evaluation_insights": None,
             }
             
             # Execute the workflow
