@@ -12,14 +12,15 @@ from sqlmodel import Session
 from app.models import AgentSessionStatus
 
 from .session_manager import SessionManager
+from .langgraph_workflow import LangGraphWorkflow, AgentState
 
 
 class AgentOrchestrator:
     """
     Orchestrates multiple specialized agents to accomplish user goals.
 
-    This is a placeholder implementation for Week 1-2. Full implementation
-    will include LangGraph state machine and ReAct loop in Weeks 7-8.
+    Week 1-2: Integrated with LangGraph workflow foundation.
+    Weeks 7-8: Full ReAct loop implementation will be added.
     """
 
     def __init__(self, session_manager: SessionManager) -> None:
@@ -30,6 +31,7 @@ class AgentOrchestrator:
             session_manager: Session manager for state persistence
         """
         self.session_manager = session_manager
+        self.workflow = LangGraphWorkflow()
 
     async def start_session(
         self, db: Session, session_id: uuid.UUID
@@ -82,9 +84,10 @@ class AgentOrchestrator:
         self, db: Session, session_id: uuid.UUID
     ) -> dict[str, Any]:
         """
-        Execute one step of the agent workflow.
+        Execute one step of the agent workflow using LangGraph.
 
-        This is a placeholder for the full LangGraph workflow implementation.
+        Week 1-2: Basic LangGraph workflow execution.
+        Weeks 7-8: Enhanced with full ReAct loop.
 
         Args:
             db: Database session
@@ -98,44 +101,69 @@ class AgentOrchestrator:
         if not state:
             raise ValueError(f"Session state not found for {session_id}")
 
-        # TODO: Implement actual agent workflow with LangGraph
-        # This is a placeholder that will be replaced in Weeks 7-8
-
-        iteration = state.get("iteration", 0) + 1
-        state["iteration"] = iteration
-        state["current_step"] = f"processing_step_{iteration}"
-
-        # Save updated state
-        await self.session_manager.save_session_state(session_id, state)
-
-        # Add progress message
-        await self.session_manager.add_message(
-            db,
-            session_id,
-            role="assistant",
-            content=f"Processing step {iteration}...",
-        )
-
-        # For now, complete after a few iterations (placeholder logic)
-        if iteration >= 3:
-            await self.session_manager.update_session_status(
-                db,
-                session_id,
-                AgentSessionStatus.COMPLETED,
-                result_summary="Placeholder: Session completed successfully",
-            )
-            await self.session_manager.delete_session_state(session_id)
-            return {
+        # Check if this is the first iteration - if so, run the full workflow
+        iteration = state.get("iteration", 0)
+        
+        if iteration == 0:
+            # First iteration - execute the full LangGraph workflow
+            session = await self.session_manager.get_session(db, session_id)
+            if not session:
+                raise ValueError(f"Session {session_id} not found")
+            
+            # Prepare initial state for LangGraph
+            langgraph_state: AgentState = {
                 "session_id": str(session_id),
-                "status": AgentSessionStatus.COMPLETED,
-                "message": "Session completed",
+                "user_goal": session.user_goal,
+                "status": AgentSessionStatus.RUNNING,
+                "current_step": "initialization",
+                "iteration": 0,
+                "data_retrieved": False,
+                "messages": [],
+                "result": None,
+                "error": None,
             }
+            
+            # Execute the workflow
+            final_state = await self.workflow.execute(langgraph_state)
+            
+            # Update session state with results
+            state.update(final_state)
+            await self.session_manager.save_session_state(session_id, state)
+            
+            # Add messages from workflow to session
+            for msg in final_state.get("messages", []):
+                await self.session_manager.add_message(
+                    db,
+                    session_id,
+                    role=msg["role"],
+                    content=msg["content"],
+                )
+            
+            # Update session status
+            if final_state.get("status") == "completed":
+                await self.session_manager.update_session_status(
+                    db,
+                    session_id,
+                    AgentSessionStatus.COMPLETED,
+                    result_summary=final_state.get("result", "Workflow completed successfully"),
+                )
+                await self.session_manager.delete_session_state(session_id)
+                return {
+                    "session_id": str(session_id),
+                    "status": AgentSessionStatus.COMPLETED,
+                    "message": "Session completed",
+                }
+        else:
+            # Subsequent iterations (for future incremental execution)
+            iteration += 1
+            state["iteration"] = iteration
+            await self.session_manager.save_session_state(session_id, state)
 
         return {
             "session_id": str(session_id),
             "status": AgentSessionStatus.RUNNING,
             "message": f"Step {iteration} completed",
-            "current_step": state["current_step"],
+            "current_step": state.get("current_step", "processing"),
         }
 
     async def cancel_session(
