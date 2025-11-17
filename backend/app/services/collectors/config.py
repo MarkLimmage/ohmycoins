@@ -7,7 +7,7 @@ This module demonstrates how to register and start all collectors with the orche
 import logging
 from app.services.collectors.orchestrator import get_orchestrator
 from app.services.collectors.glass import DeFiLlamaCollector
-from app.services.collectors.human import CryptoPanicCollector
+from app.services.collectors.human import CryptoPanicCollector, RedditCollector
 from app.services.collectors.catalyst import SECAPICollector, CoinSpotAnnouncementsCollector
 
 logger = logging.getLogger(__name__)
@@ -80,8 +80,20 @@ def setup_collectors() -> None:
     except Exception as e:
         logger.error(f"✗ Failed to register CoinSpot Announcements collector: {str(e)}")
     
+    # Human Ledger: Reddit API
+    # Collects every 15 minutes for community sentiment
+    try:
+        reddit = RedditCollector()
+        orchestrator.register_collector(
+            reddit,
+            schedule_type="interval",
+            minutes=15,
+        )
+        logger.info("✓ Registered Reddit collector (Human Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register Reddit collector: {str(e)}")
+    
     # TODO: Add more collectors as they are implemented
-    # - Reddit API (Human Ledger)
     # - Enhanced CoinSpot Client (Exchange Ledger)
     
     logger.info("Phase 2.5 collectors setup complete")
