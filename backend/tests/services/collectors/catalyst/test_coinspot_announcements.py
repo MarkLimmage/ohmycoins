@@ -20,7 +20,15 @@ def coinspot_collector():
 @pytest.fixture
 def sample_html_with_announcements():
     """Sample HTML with announcement structure."""
-    return """
+    from datetime import datetime, timezone
+    # Use recent dates for testing
+    now = datetime.now(timezone.utc)
+    date1 = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    date2 = (now).strftime("%Y-%m-%dT%H:%M:%SZ")
+    date1_display = now.strftime("%d/%m/%Y")
+    date2_display = now.strftime("%d/%m/%Y")
+    
+    return f"""
     <html>
         <body>
             <div class="news-section">
@@ -30,7 +38,7 @@ def sample_html_with_announcements():
                         We're excited to announce that Polygon (MATIC) is now 
                         available for trading on CoinSpot.
                     </p>
-                    <time datetime="2024-01-15T10:00:00Z">15/01/2024</time>
+                    <time datetime="{date1}">{date1_display}</time>
                     <a href="/news/polygon-listing">Read more</a>
                 </article>
                 <article class="announcement">
@@ -39,7 +47,7 @@ def sample_html_with_announcements():
                         CoinSpot will undergo scheduled maintenance on Sunday.
                         Trading will be temporarily unavailable.
                     </p>
-                    <time datetime="2024-01-14T08:00:00Z">14/01/2024</time>
+                    <time datetime="{date2}">{date2_display}</time>
                 </article>
             </div>
         </body>
@@ -88,18 +96,23 @@ class TestCoinSpotAnnouncementsCollector:
     ):
         """Test successful scraping of announcements."""
         # Mock aiohttp response
-        mock_response = AsyncMock()
-        mock_response.text = AsyncMock(return_value=sample_html_with_announcements)
-        mock_response.raise_for_status = MagicMock()
-        
-        mock_session = AsyncMock()
-        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session.__aexit__ = AsyncMock()
-        mock_session.get = AsyncMock(return_value=mock_response)
-        mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_session.get.return_value.__aexit__ = AsyncMock()
-        
-        with patch("aiohttp.ClientSession", return_value=mock_session):
+        with patch("aiohttp.ClientSession") as mock_session_class:
+            # Create mock response
+            mock_response = AsyncMock()
+            mock_response.text = AsyncMock(return_value=sample_html_with_announcements)
+            mock_response.raise_for_status = MagicMock()
+            mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+            mock_response.__aexit__ = AsyncMock(return_value=None)
+            
+            # Create mock session
+            mock_session = AsyncMock()
+            mock_session.get = MagicMock(return_value=mock_response)
+            mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_session.__aexit__ = AsyncMock(return_value=None)
+            
+            # Configure the session class to return our mock session
+            mock_session_class.return_value = mock_session
+            
             data = await coinspot_collector.scrape_static()
             
             # Should find announcements
@@ -118,18 +131,23 @@ class TestCoinSpotAnnouncementsCollector:
         self, coinspot_collector, sample_html_no_announcements
     ):
         """Test scraping when no announcements are found."""
-        mock_response = AsyncMock()
-        mock_response.text = AsyncMock(return_value=sample_html_no_announcements)
-        mock_response.raise_for_status = MagicMock()
-        
-        mock_session = AsyncMock()
-        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session.__aexit__ = AsyncMock()
-        mock_session.get = AsyncMock(return_value=mock_response)
-        mock_session.get.return_value.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_session.get.return_value.__aexit__ = AsyncMock()
-        
-        with patch("aiohttp.ClientSession", return_value=mock_session):
+        with patch("aiohttp.ClientSession") as mock_session_class:
+            # Create mock response
+            mock_response = AsyncMock()
+            mock_response.text = AsyncMock(return_value=sample_html_no_announcements)
+            mock_response.raise_for_status = MagicMock()
+            mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+            mock_response.__aexit__ = AsyncMock(return_value=None)
+            
+            # Create mock session
+            mock_session = AsyncMock()
+            mock_session.get = MagicMock(return_value=mock_response)
+            mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_session.__aexit__ = AsyncMock(return_value=None)
+            
+            # Configure the session class to return our mock session
+            mock_session_class.return_value = mock_session
+            
             data = await coinspot_collector.scrape_static()
             
             # Should return empty list
@@ -158,7 +176,7 @@ class TestCoinSpotAnnouncementsCollector:
     def test_classify_announcement_default(self, coinspot_collector):
         """Test classification falls back to default for unknown types."""
         result = coinspot_collector._classify_announcement(
-            "General Update",
+            "General Information",
             "Some general information about the platform"
         )
         
