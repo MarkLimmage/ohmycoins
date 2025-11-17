@@ -2,7 +2,11 @@
 
 ## Overview
 
-This document describes the LangGraph foundation implementation completed in Week 1-2 by Developer B as part of the parallel development effort for Phase 3: Agentic Data Science system.
+This document describes the LangGraph foundation implementation by Developer B as part of the parallel development effort for Phase 3: Agentic Data Science system.
+
+**Timeline:**
+- **Week 1-2**: LangGraph foundation with basic workflow
+- **Week 3-4**: Enhanced with DataRetrievalAgent tools and new DataAnalystAgent
 
 ## Architecture
 
@@ -12,29 +16,88 @@ This document describes the LangGraph foundation implementation completed in Wee
    - State machine implementation using LangGraph
    - Coordinates agent execution through defined workflow nodes
    - Supports both synchronous and streaming execution
+   - **Week 3-4**: Enhanced with DataAnalystAgent node
 
 2. **AgentOrchestrator** (`backend/app/services/agent/orchestrator.py`)
    - Main entry point for agent system
    - Integrates LangGraph workflow with session management
    - Handles workflow execution and state persistence
+   - **Week 3-4**: Added database session management for agents
 
 3. **AgentState** (TypedDict)
    - Defines the state structure passed between workflow nodes
    - Contains session info, user goal, status, messages, and results
+   - **Week 3-4**: Added fields for retrieved_data, analysis_results, insights
 
 ### Workflow Nodes
 
-The current workflow consists of three nodes:
+**Week 3-4 Enhanced Workflow** consists of four nodes:
 
 1. **initialize**: Sets up initial state and prepares for execution
-2. **retrieve_data**: Executes data retrieval agent (currently uses existing price data)
-3. **finalize**: Completes workflow and prepares results
+2. **retrieve_data**: Executes DataRetrievalAgent (enhanced with comprehensive tools)
+3. **analyze_data**: Executes DataAnalystAgent (NEW in Week 3-4)
+4. **finalize**: Completes workflow and prepares results with insights
 
 ### State Flow
 
+**Week 3-4 Enhanced Flow:**
+```
+START → initialize → retrieve_data → analyze_data → finalize → END
+```
+
+**Previous (Week 1-2) Flow:**
 ```
 START → initialize → retrieve_data → finalize → END
 ```
+
+## Agents and Tools (Week 3-4 Implementation)
+
+### DataRetrievalAgent (Enhanced)
+
+**Location**: `backend/app/services/agent/agents/data_retrieval.py`
+
+Enhanced in Week 3-4 with comprehensive data retrieval capabilities:
+
+**Tools** (`backend/app/services/agent/tools/data_retrieval_tools.py`):
+- `fetch_price_data()`: Query price_data_5min table for historical prices
+- `fetch_sentiment_data()`: Fetch news and social media sentiment (Phase 2.5)
+- `fetch_on_chain_metrics()`: Fetch on-chain metrics like active addresses (Phase 2.5)
+- `fetch_catalyst_events()`: Fetch SEC filings, listings, and other catalysts (Phase 2.5)
+- `get_available_coins()`: List all available cryptocurrencies
+- `get_data_statistics()`: Get data coverage statistics
+
+**Capabilities:**
+- Automatically fetches relevant data based on user goal
+- Supports custom time ranges (default: 30 days)
+- Ready for Phase 2.5 data integration (when Developer A completes collectors)
+- Generates comprehensive metadata about retrieved data
+
+### DataAnalystAgent (NEW in Week 3-4)
+
+**Location**: `backend/app/services/agent/agents/data_analyst.py`
+
+Performs comprehensive data analysis and generates actionable insights.
+
+**Tools** (`backend/app/services/agent/tools/data_analysis_tools.py`):
+- `calculate_technical_indicators()`: RSI, MACD, SMA, EMA, Bollinger Bands, etc.
+- `analyze_sentiment_trends()`: Analyze news and social sentiment patterns
+- `analyze_on_chain_signals()`: Detect trends in on-chain metrics
+- `detect_catalyst_impact()`: Measure event impact on price movements
+- `clean_data()`: Data cleaning and preprocessing
+- `perform_eda()`: Exploratory data analysis with summary statistics
+
+**Capabilities:**
+- Automatic technical analysis on price data
+- Sentiment trend detection (bullish/bearish/neutral)
+- On-chain metric correlation analysis
+- Catalyst event impact measurement
+- Generates human-readable insights
+
+**Example Insights Generated:**
+- "RSI is overbought at 75.23, potential sell signal"
+- "Overall sentiment is bullish, positive market outlook"
+- "active_addresses is increasing by 25.3%"
+- "Recent catalyst events had positive impact (avg 3.2% price change)"
 
 ## Configuration
 
