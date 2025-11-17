@@ -6,6 +6,7 @@ specialized agents to accomplish user goals.
 
 Week 1-2 implementation: Basic workflow foundation using existing price data.
 Week 3-4 enhancement: Added DataAnalystAgent node for comprehensive analysis.
+Week 5-6 enhancement: Added ModelTrainingAgent and ModelEvaluatorAgent nodes for ML pipeline.
 """
 
 from typing import Any, TypedDict
@@ -18,6 +19,8 @@ from app.core.config import settings
 from app.services.agent.agents.base import BaseAgent
 from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.data_analyst import DataAnalystAgent
+from app.services.agent.agents.model_training import ModelTrainingAgent
+from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
 
 
 class AgentState(TypedDict):
@@ -27,6 +30,7 @@ class AgentState(TypedDict):
     This state is passed between nodes in the LangGraph workflow.
     
     Week 3-4 additions: retrieved_data, analysis_results, insights
+    Week 5-6 additions: trained_models, evaluation_results, training_summary, evaluation_insights
     """
     session_id: str
     user_goal: str
@@ -44,6 +48,15 @@ class AgentState(TypedDict):
     insights: list[str] | None
     retrieval_params: dict[str, Any] | None
     analysis_params: dict[str, Any] | None
+    # Week 5-6 additions
+    model_trained: bool
+    model_evaluated: bool
+    trained_models: dict[str, Any] | None
+    evaluation_results: dict[str, Any] | None
+    training_params: dict[str, Any] | None
+    evaluation_params: dict[str, Any] | None
+    training_summary: str | None
+    evaluation_insights: list[str] | None
 
 
 class LangGraphWorkflow:
@@ -54,6 +67,7 @@ class LangGraphWorkflow:
     based on the current state and user goal.
     
     Week 3-4: Enhanced with DataAnalystAgent for comprehensive data analysis.
+    Week 5-6: Enhanced with ModelTrainingAgent and ModelEvaluatorAgent for ML pipeline.
     """
 
     def __init__(self, session: Session | None = None) -> None:
@@ -67,6 +81,8 @@ class LangGraphWorkflow:
         self.graph = self._build_graph()
         self.data_retrieval_agent = DataRetrievalAgent(session=session)
         self.data_analyst_agent = DataAnalystAgent()
+        self.model_training_agent = ModelTrainingAgent()
+        self.model_evaluator_agent = ModelEvaluatorAgent()
         
         # Initialize LLM for reasoning (if API key available)
         self.llm = None
@@ -93,6 +109,7 @@ class LangGraphWorkflow:
         Build the LangGraph state machine.
         
         Week 3-4: Added analyze_data node between retrieve_data and finalize.
+        Week 5-6: Added train_model and evaluate_model nodes for ML pipeline.
         
         Returns:
             Configured state graph
@@ -104,13 +121,17 @@ class LangGraphWorkflow:
         workflow.add_node("initialize", self._initialize_node)
         workflow.add_node("retrieve_data", self._retrieve_data_node)
         workflow.add_node("analyze_data", self._analyze_data_node)
+        workflow.add_node("train_model", self._train_model_node)
+        workflow.add_node("evaluate_model", self._evaluate_model_node)
         workflow.add_node("finalize", self._finalize_node)
         
         # Define edges (workflow transitions)
         workflow.set_entry_point("initialize")
         workflow.add_edge("initialize", "retrieve_data")
         workflow.add_edge("retrieve_data", "analyze_data")
-        workflow.add_edge("analyze_data", "finalize")
+        workflow.add_edge("analyze_data", "train_model")
+        workflow.add_edge("train_model", "evaluate_model")
+        workflow.add_edge("evaluate_model", "finalize")
         workflow.add_edge("finalize", END)
         
         return workflow.compile()
@@ -128,9 +149,11 @@ class LangGraphWorkflow:
         state["current_step"] = "initialization"
         state["messages"] = state.get("messages", [])
         state["analysis_completed"] = False
+        state["model_trained"] = False
+        state["model_evaluated"] = False
         state["messages"].append({
             "role": "system",
-            "content": "Agent workflow initialized. Starting data retrieval and analysis pipeline..."
+            "content": "Agent workflow initialized. Starting data retrieval, analysis, and modeling pipeline..."
         })
         return state
 
@@ -187,11 +210,67 @@ class LangGraphWorkflow:
         
         return updated_state
 
+    async def _train_model_node(self, state: AgentState) -> AgentState:
+        """
+        Execute model training agent.
+        
+        Week 5-6: New node for training machine learning models.
+        
+        Args:
+            state: Current workflow state
+            
+        Returns:
+            Updated state with trained models
+        """
+        state["current_step"] = "model_training"
+        
+        # Execute model training agent
+        updated_state = await self.model_training_agent.execute(state)
+        
+        # Add message about training
+        if updated_state.get("model_trained"):
+            training_summary = updated_state.get("training_summary", "Model training completed")
+            updated_state["messages"].append({
+                "role": "assistant",
+                "content": f"Model training completed. {training_summary.split(chr(10))[0]}"
+            })
+        
+        return updated_state
+
+    async def _evaluate_model_node(self, state: AgentState) -> AgentState:
+        """
+        Execute model evaluator agent.
+        
+        Week 5-6: New node for evaluating and comparing models.
+        
+        Args:
+            state: Current workflow state
+            
+        Returns:
+            Updated state with evaluation results
+        """
+        state["current_step"] = "model_evaluation"
+        
+        # Execute model evaluator agent
+        updated_state = await self.model_evaluator_agent.execute(state)
+        
+        # Add message about evaluation
+        if updated_state.get("model_evaluated"):
+            insights = updated_state.get("evaluation_insights", [])
+            insight_summary = insights[0] if insights else "Model evaluation completed"
+            updated_state["messages"].append({
+                "role": "assistant",
+                "content": f"Model evaluation completed. {insight_summary}"
+            })
+        
+        return updated_state
+
     async def _finalize_node(self, state: AgentState) -> AgentState:
         """
         Finalize the workflow and prepare results.
         
         Week 3-4: Enhanced to include analysis results and insights in final result.
+        Week 5-6: Enhanced to include training and evaluation results.
         
         Args:
             state: Current workflow state
@@ -203,17 +282,31 @@ class LangGraphWorkflow:
         state["status"] = "completed"
         
         # Build comprehensive result message
+        result_parts = ["Workflow completed successfully."]
+        
+        # Add analysis insights
         insights = state.get("insights", [])
         if insights:
-            result_parts = ["Analysis complete. Key insights:"]
-            result_parts.extend([f"- {insight}" for insight in insights])
-            state["result"] = "\n".join(result_parts)
-        else:
-            state["result"] = "Workflow completed successfully."
+            result_parts.append("\n\nData Analysis Insights:")
+            result_parts.extend([f"- {insight}" for insight in insights[:5]])
+        
+        # Add training summary
+        training_summary = state.get("training_summary")
+        if training_summary:
+            result_parts.append("\n\nModel Training Summary:")
+            result_parts.append(training_summary)
+        
+        # Add evaluation insights
+        eval_insights = state.get("evaluation_insights", [])
+        if eval_insights:
+            result_parts.append("\n\nModel Evaluation Insights:")
+            result_parts.extend([f"- {insight}" for insight in eval_insights])
+        
+        state["result"] = "\n".join(result_parts)
         
         state["messages"].append({
             "role": "assistant",
-            "content": "Workflow completed. All results prepared."
+            "content": "Complete ML pipeline executed. All results prepared."
         })
         
         return state
