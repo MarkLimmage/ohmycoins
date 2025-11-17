@@ -575,10 +575,14 @@ headers = {
 
 ### Infrastructure
 - **Containerization**: Docker
-- **Orchestration**: Docker Compose (dev), ECS/EKS (prod)
+- **Orchestration**: Docker Compose (dev), EKS with autoscaling (prod)
 - **Database**: RDS PostgreSQL (prod)
 - **Caching**: Redis (ElastiCache in prod)
-- **CI/CD**: GitHub Actions
+- **CI/CD**: GitHub Actions on self-hosted EKS runners
+  - Two-node-group architecture (system-nodes + arc-runner-nodes)
+  - Cluster Autoscaler with scale-to-zero capability
+  - 40-60% cost savings compared to always-on configuration
+  - See [EKS Infrastructure Documentation](infrastructure/aws/eks/README.md)
 - **Monitoring**: CloudWatch, Prometheus, Grafana
 - **Logging**: CloudWatch Logs, ELK Stack
 
