@@ -1,0 +1,26 @@
+# Staging Environment Configuration
+# Copy this file to terraform.tfvars and fill in the values
+
+aws_region = "ap-southeast-2"
+
+# Database password - CHANGE THIS!
+master_password = "CHANGE_ME_SECURE_PASSWORD"
+
+# Domain configuration - Update with your actual domains
+domain              = "staging.ohmycoins.com"
+backend_domain      = "api.staging.ohmycoins.com"
+frontend_host       = "https://dashboard.staging.ohmycoins.com"
+backend_cors_origins = "https://dashboard.staging.ohmycoins.com,http://localhost:5173"
+
+# ACM Certificate ARN for HTTPS (leave empty for HTTP only)
+# certificate_arn = "arn:aws:acm:ap-southeast-2:ACCOUNT_ID:certificate/CERT_ID"
+
+# GitHub configuration
+github_repo                = "MarkLimmage/ohmycoins"
+create_github_oidc_provider = true
+
+# Container images
+backend_image      = "ghcr.io/marklimmage/ohmycoins-backend"
+backend_image_tag  = "latest"
+frontend_image     = "ghcr.io/marklimmage/ohmycoins-frontend"
+frontend_image_tag = "latest"
