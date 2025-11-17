@@ -1,0 +1,227 @@
+name: Deploy to AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      terraform_action:
+        description: 'Terraform action'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/deploy-aws.yml'
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read    # Required to checkout code
+
+env:
+  AWS_REGION: ap-southeast-2
+  TF_VERSION: 1.5.0
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          terraform plan \
+            -var="master_password=${{ secrets.DB_MASTER_PASSWORD }}" \
+            -out=tfplan
+
+      - name: Upload plan
+        if: github.event.inputs.terraform_action == 'apply' || github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.event.inputs.environment || 'staging' }}
+          path: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}/tfplan
+          retention-days: 5
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: |
+      (github.event.inputs.terraform_action == 'apply' && github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: terraform init
+
+      - name: Download plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ github.event.inputs.environment || 'staging' }}
+          path: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+
+      - name: Terraform Apply
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: terraform apply -auto-approve tfplan
+
+      - name: Terraform Output
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: terraform output
+
+  deploy-application:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: |
+      (github.event.inputs.terraform_action == 'apply' && github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get cluster and service names
+        id: get-names
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          terraform init
+          CLUSTER_NAME=$(terraform output -raw ecs_cluster_name)
+          BACKEND_SERVICE=$(terraform output -raw backend_service_name)
+          FRONTEND_SERVICE=$(terraform output -raw frontend_service_name)
+          echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+          echo "backend_service=$BACKEND_SERVICE" >> $GITHUB_OUTPUT
+          echo "frontend_service=$FRONTEND_SERVICE" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/ohmycoins-backend:$IMAGE_TAG ./backend
+          docker push $ECR_REGISTRY/ohmycoins-backend:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/ohmycoins-backend:$IMAGE_TAG $ECR_REGISTRY/ohmycoins-backend:latest
+          docker push $ECR_REGISTRY/ohmycoins-backend:latest
+
+      - name: Build and push frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/ohmycoins-frontend:$IMAGE_TAG ./frontend
+          docker push $ECR_REGISTRY/ohmycoins-frontend:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/ohmycoins-frontend:$IMAGE_TAG $ECR_REGISTRY/ohmycoins-frontend:latest
+          docker push $ECR_REGISTRY/ohmycoins-frontend:latest
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster ${{ steps.get-names.outputs.cluster_name }} \
+            --service ${{ steps.get-names.outputs.backend_service }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          aws ecs update-service \
+            --cluster ${{ steps.get-names.outputs.cluster_name }} \
+            --service ${{ steps.get-names.outputs.frontend_service }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for services to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ steps.get-names.outputs.cluster_name }} \
+            --services ${{ steps.get-names.outputs.backend_service }} ${{ steps.get-names.outputs.frontend_service }} \
+            --region ${{ env.AWS_REGION }}
+
+  terraform-destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    if: github.event.inputs.terraform_action == 'destroy' && github.event_name == 'workflow_dispatch'
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment }}
+        run: terraform init
+
+      - name: Terraform Destroy
+        working-directory: infrastructure/terraform/environments/${{ github.event.inputs.environment }}
+        run: |
+          terraform destroy -auto-approve \
+            -var="master_password=${{ secrets.DB_MASTER_PASSWORD }}"
