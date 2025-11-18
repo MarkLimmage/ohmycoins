@@ -223,7 +223,7 @@ jobs:
           echo ""
 
       - name: Test cache action (if needed in future)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/test-cache
           key: test-cache-${{ runner.os }}-${{ github.sha }}
