@@ -1,4 +1,3 @@
-.vscode
 node_modules/
 /test-results/
 /playwright-report/
@@ -10,4 +9,8 @@ infrastructure/aws/eks/arc-manifests/github-auth-secret.yaml
 infrastructure/aws/eks/**/*.pem
 infrastructure/aws/eks/**/*-key.pem
 *.kubeconfig
-infrastructure/terraform/environments/staging/.terraform
+*.terraform
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
