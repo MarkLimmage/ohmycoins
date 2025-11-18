@@ -18,23 +18,27 @@ resource "aws_db_parameter_group" "main" {
   family = "postgres17"
 
   parameter {
-    name  = "log_connections"
-    value = "1"
+    name         = "log_connections"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "log_disconnections"
-    value = "1"
+    name         = "log_disconnections"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "log_duration"
-    value = "1"
+    name         = "log_duration"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 
   parameter {
-    name  = "shared_preload_libraries"
-    value = "pg_stat_statements"
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
   }
 
   tags = var.tags

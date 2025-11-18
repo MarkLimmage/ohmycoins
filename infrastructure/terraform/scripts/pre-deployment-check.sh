@@ -128,7 +128,7 @@ echo ""
 echo "5. Terraform Configuration"
 echo "--------------------------"
 
-TERRAFORM_DIR="infrastructure/terraform/environments/$ENVIRONMENT"
+TERRAFORM_DIR="environments/$ENVIRONMENT"
 
 if [ -d "$TERRAFORM_DIR" ]; then
     check_item "Terraform directory exists" "test -d $TERRAFORM_DIR"

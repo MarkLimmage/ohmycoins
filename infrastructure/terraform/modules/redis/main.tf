@@ -26,8 +26,8 @@ resource "aws_elasticache_parameter_group" "main" {
 }
 
 resource "aws_elasticache_replication_group" "main" {
-  replication_group_id       = "${var.project_name}-redis"
-  replication_group_description = "Redis cluster for ${var.project_name}"
+  replication_group_id = "${var.project_name}-redis"
+  description          = "Redis cluster for ${var.project_name}"
   
   engine               = "redis"
   engine_version       = var.engine_version
@@ -46,8 +46,7 @@ resource "aws_elasticache_replication_group" "main" {
   # Encryption
   at_rest_encryption_enabled = true
   transit_encryption_enabled = var.transit_encryption_enabled
-  auth_token_enabled        = var.auth_token_enabled
-  auth_token                = var.auth_token_enabled ? var.auth_token : null
+  auth_token                 = var.auth_token_enabled ? var.auth_token : null
   
   # Backup and maintenance
   snapshot_retention_limit   = var.snapshot_retention_limit

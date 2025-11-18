@@ -94,3 +94,58 @@ The core infrastructure is stable, scalable, and fully documented.
 3.  **CI/CD Pipeline for Deployments (Weeks 11-12)**: Create GitHub Actions workflows to automatically build and deploy the application to the EKS cluster.
 
 The parallel development approach has been validated, as the infrastructure is ready and waiting for the application code without any blocking dependencies.
+
+---
+
+## Addendum: Terraform Staging Environment Deployment Fixes
+
+**Date**: 2025-11-18
+**Author**: GitHub Copilot
+
+### 1. Overview
+
+This section summarizes the series of changes made to the Terraform configuration to successfully deploy the `staging` environment. The deployment was failing due to several issues related to networking, IAM, RDS, and the Application Load Balancer.
+
+### 2. Summary of Changes
+
+The following files were modified to resolve the deployment errors:
+
+#### a. `infrastructure/terraform/environments/staging/terraform.tfvars`
+
+*   **Change**: Added explicit CIDR range variables for the VPC and its subnets (`vpc_cidr`, `public_subnet_cidrs`, `private_app_subnet_cidrs`, `private_db_subnet_cidrs`).
+*   **Reason**: The original `cidrsubnet` function was creating overlapping CIDR ranges, causing `terraform apply` to fail. Defining explicit, non-overlapping ranges for each subnet tier resolved the conflict.
+
+#### b. `infrastructure/terraform/modules/vpc/main.tf`
+
+*   **Change**: The `aws_subnet` resources were updated to iterate over the new list variables (`var.public_subnet_cidrs`, etc.) instead of calculating CIDR blocks with `cidrsubnet`.
+*   **Reason**: This change was necessary to consume the explicit CIDR ranges defined in the `.tfvars` file, giving us full control over the network layout.
+
+#### c. `infrastructure/terraform/modules/iam/main.tf`
+
+*   **Change**: The `aws_iam_openid_connect_provider` resource was replaced with a `data` source. The `aws_iam_role` for GitHub Actions was updated to reference the ARN from this data source.
+*   **Reason**: An IAM OIDC provider for GitHub Actions already existed in the AWS account. Terraform was failing because it was trying to create a duplicate. Switching to a `data` source allows Terraform to look up and use the existing provider instead of creating a new one.
+
+#### d. `infrastructure/terraform/modules/iam/outputs.tf`
+
+*   **Change**: The `github_oidc_provider_arn` output was updated to source its value from the new `data.aws_iam_openid_connect_provider`.
+*   **Reason**: To ensure the output reflects the ARN of the actual provider being used.
+
+#### e. `infrastructure/terraform/modules/rds/main.tf`
+
+*   **Change**: The `apply_method = "pending-reboot"` argument was moved from the `aws_db_instance` resource to the `parameter` blocks within the `aws_db_parameter_group` resource.
+*   **Reason**: The `apply_method` for database parameters must be specified on the parameters themselves within the parameter group, not on the database instance. This correction fixed the RDS modification error.
+
+#### f. `infrastructure/terraform/modules/alb/main.tf`
+
+*   **Change**: The default action for the HTTP listener (`aws_lb_listener`) was changed from a `redirect` action to a `forward` action pointing to the frontend service's target group.
+*   **Reason**: The final deployment error indicated that the ECS service's target group was not associated with any listener. The HTTP listener was incorrectly configured to redirect all traffic to HTTPS instead of forwarding it to a target. This change ensures that incoming HTTP traffic is correctly routed to the frontend service.
+
+### 3. New Files Created
+
+*   **`CLEANUP.md`**: This file was created to provide clear instructions on how to tear down the infrastructure using `terraform destroy` for each environment, ensuring a clean and repeatable process.
+
+### 4. Conclusion
+
+These changes resolved all blocking issues and resulted in a successful `terraform apply` for the `staging` environment. The infrastructure is now deployed and operational.
+
+```

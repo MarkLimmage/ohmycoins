@@ -97,6 +97,12 @@ variable "skip_final_snapshot" {
   default     = false
 }
 
+variable "apply_immediately" {
+  description = "Apply changes immediately"
+  type        = bool
+  default     = false
+}
+
 variable "monitoring_interval" {
   description = "Enhanced monitoring interval in seconds (0, 1, 5, 10, 15, 30, 60)"
   type        = number
@@ -107,12 +113,6 @@ variable "performance_insights_enabled" {
   description = "Enable Performance Insights"
   type        = bool
   default     = true
-}
-
-variable "apply_immediately" {
-  description = "Apply changes immediately"
-  type        = bool
-  default     = false
 }
 
 variable "deletion_protection" {
