@@ -21,13 +21,6 @@ from app.services.collectors.metrics import get_metrics_tracker
 from app.services.collectors.config import setup_collectors
 
 
-@pytest.fixture
-def db_session(engine):
-    """Create a database session for testing."""
-    with Session(engine) as session:
-        yield session
-
-
 @pytest.mark.integration
 class TestCollectorIntegration:
     """Integration tests for collectors."""
@@ -40,28 +33,27 @@ class TestCollectorIntegration:
         # Setup collectors
         setup_collectors()
         
-        # Check collectors are registered
-        assert len(orchestrator._collectors) >= 5
+        # Check collectors are registered (at least 4 without API keys)
+        assert len(orchestrator.collectors) >= 4
         
-        # Check specific collectors
+        # Check specific collectors that don't require API keys
         expected_collectors = [
             "defillama_api",
-            "cryptopanic",
             "reddit_api",
             "sec_edgar_api",
             "coinspot_announcements",
         ]
         
         for collector_name in expected_collectors:
-            assert collector_name in orchestrator._collectors
+            assert collector_name in orchestrator.collectors
     
     @pytest.mark.asyncio
-    async def test_quality_monitor_with_empty_database(self, db_session):
+    async def test_quality_monitor_with_empty_database(self, db):
         """Test quality monitor with empty database."""
         monitor = get_quality_monitor()
         
         # Check with empty database
-        metrics = await monitor.check_all(db_session)
+        metrics = await monitor.check_all(db)
         
         # Should have low completeness score
         assert metrics.completeness_score < 1.0
@@ -70,7 +62,7 @@ class TestCollectorIntegration:
         assert len(metrics.issues) > 0 or len(metrics.warnings) > 0
     
     @pytest.mark.asyncio
-    async def test_quality_monitor_with_data(self, db_session):
+    async def test_quality_monitor_with_data(self, db):
         """Test quality monitor with sample data."""
         # Insert sample data
         now = datetime.now(timezone.utc)
@@ -79,13 +71,11 @@ class TestCollectorIntegration:
         price = PriceData5Min(
             coin_type="BTC",
             timestamp=now,
-            open_price=Decimal("50000"),
-            high_price=Decimal("51000"),
-            low_price=Decimal("49000"),
-            close_price=Decimal("50500"),
-            volume=Decimal("1000"),
+            bid=Decimal("50000"),
+            ask=Decimal("51000"),
+            last=Decimal("50500"),
         )
-        db_session.add(price)
+        db.add(price)
         
         # Add sentiment data
         sentiment = NewsSentiment(
@@ -98,26 +88,27 @@ class TestCollectorIntegration:
             currencies=["BTC"],
             collected_at=now,
         )
-        db_session.add(sentiment)
+        db.add(sentiment)
         
         # Add catalyst event
         catalyst = CatalystEvents(
             event_type="listing",
-            event_date=now.date(),
-            source="Test",
+            title="Test Bitcoin Listing",
             description="Test event",
-            impact_score=Decimal("0.7"),
+            source="Test",
+            impact_score=7,
             currencies=["BTC"],
+            detected_at=now,
             url="https://example.com",
             collected_at=now,
         )
-        db_session.add(catalyst)
+        db.add(catalyst)
         
-        db_session.commit()
+        db.commit()
         
         # Check quality
         monitor = get_quality_monitor()
-        metrics = await monitor.check_all(db_session)
+        metrics = await monitor.check_all(db)
         
         # Should have better scores with data
         assert metrics.completeness_score > 0.5
@@ -147,7 +138,7 @@ class TestDataIntegrity:
     """Test data integrity and relationships."""
     
     @pytest.mark.asyncio
-    async def test_price_data_integrity(self, db_session):
+    async def test_price_data_integrity(self, db):
         """Test price data maintains integrity."""
         now = datetime.now(timezone.utc)
         
@@ -156,19 +147,18 @@ class TestDataIntegrity:
             price = PriceData5Min(
                 coin_type="BTC",
                 timestamp=now + timedelta(minutes=i*5),
-                open_price=Decimal(f"{50000 + i*100}"),
-                high_price=Decimal(f"{51000 + i*100}"),
-                low_price=Decimal(f"{49000 + i*100}"),
-                close_price=Decimal(f"{50500 + i*100}"),
-                volume=Decimal("1000"),
+                bid=Decimal(f"{50000 + i*100}"),
+                ask=Decimal(f"{51000 + i*100}"),
+                last=Decimal(f"{50500 + i*100}"),
             )
-            db_session.add(price)
+            db.add(price)
         
-        db_session.commit()
+        db.commit()
         
-        # Query and verify
-        count = db_session.exec(
+        # Query and verify - count only records we just inserted
+        count = db.exec(
             select(func.count(PriceData5Min.id))
+            .where(PriceData5Min.timestamp >= now)
         ).one()
         
         assert count == 3
