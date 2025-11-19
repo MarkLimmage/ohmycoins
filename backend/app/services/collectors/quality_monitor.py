@@ -327,8 +327,8 @@ class DataQualityMonitor:
         invalid_prices = session.exec(
             select(func.count(PriceData5Min.id))
             .where(
-                (PriceData5Min.close_price <= 0) |
-                (PriceData5Min.close_price == None)
+                (PriceData5Min.last <= 0) |
+                (PriceData5Min.last == None)
             )
         ).one()
         
@@ -376,7 +376,7 @@ class DataQualityMonitor:
             select(func.count(CatalystEvents.id))
             .where(
                 (CatalystEvents.event_type == None) |
-                (CatalystEvents.event_date == None)
+                (CatalystEvents.detected_at == None)
             )
         ).one()
         
