@@ -140,6 +140,15 @@ class AgentOrchestrator:
                 "evaluation_params": {},
                 "training_summary": None,
                 "evaluation_insights": None,
+                # Week 7-8 fields - ReAct loop
+                "reasoning_trace": [],
+                "decision_history": [],
+                "retry_count": 0,
+                "max_retries": 3,
+                "skip_analysis": False,
+                "skip_training": False,
+                "needs_more_data": False,
+                "quality_checks": {},
             }
             
             # Execute the workflow
