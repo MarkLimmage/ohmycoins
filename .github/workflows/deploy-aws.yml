@@ -106,7 +106,7 @@ jobs:
         run: terraform init
 
       - name: Download plan
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: tfplan-${{ github.event.inputs.environment || 'staging' }}
           path: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}
