@@ -413,3 +413,13 @@ For more detailed information, see:
 
 This infrastructure configuration is part of the Oh My Coins project.
 Copyright © 2025 Mark Limmage. All rights reserved.
+
+## 🚀 Deployment Status
+
+**The staging environment is now deployed and available!**
+
+-   **URL:** `dashboard.staging.ohmycoins.com`
+-   **Details:** The environment is fully provisioned with a VPC, RDS, ElastiCache, and ECS services.
+-   **Action:** Developers can now use this environment for integration testing and feature validation.
+
+See the [Quick Start Guide](./QUICKSTART.md) for instructions on how to use the deployed environment.

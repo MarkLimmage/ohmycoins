@@ -1560,10 +1560,9 @@ These components can be developed at any time without blocking other work:
 
 ---
 
-## Notes
-- This roadmap is a living document and will be updated as requirements evolve
-- Phases can be developed in parallel where dependencies allow (see Parallel Development Opportunities section)
-- Each phase should be completed and tested before integration with dependent phases
-- Security and testing are integrated throughout, not just in dedicated phases
-- User feedback should be incorporated at each milestone
-- Team size and composition significantly impact timeline (see Recommended Team Compositions)
+## Phase 2: Staging Environment
+
+- **Objective:** Deploy a complete, stable staging environment on AWS using Terraform.
+- **Status:** ✅ Deployed
+- **Date:** 2025-11-19
+- **Details:** The staging environment is now fully deployed on AWS via Terraform. This includes the VPC, RDS, ElastiCache, and ECS services for the backend and frontend. Developers can now use this environment for integration testing and feature validation. The deployment is accessible at `dashboard.staging.ohmycoins.com`.

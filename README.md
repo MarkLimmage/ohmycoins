@@ -45,6 +45,10 @@ Transform The Lab into an autonomous "data scientist" powered by AI:
 - [Architecture Design](./AGENTIC_ARCHITECTURE.md) - Technical architecture (29KB)
 - [Implementation Plan](./AGENTIC_IMPLEMENTATION_PLAN.md) - 14-week plan (19KB)
 
+## 🚀 Deployment
+
+The staging environment is now deployed and available at [dashboard.staging.ohmycoins.com](https://dashboard.staging.ohmycoins.com). See the [Terraform README](infrastructure/terraform/README.md) for more details.
+
 ## 📋 Project Status
 
 | Phase | Status | Description |
