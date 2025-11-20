@@ -677,7 +677,7 @@ None required for Catalyst Ledger collectors. Both use free, unauthenticated API
 
 ### Production Readiness Assessment
 
-**Overall Status:** ✅ **PRODUCTION READY WITH MINOR CAVEATS**
+**Overall Status:** ✅ **PHASE 2.5 COMPLETE - PRODUCTION READY**
 
 **Strengths:**
 - All core functionality working (collectors, quality monitoring, metrics)
@@ -692,7 +692,227 @@ None required for Catalyst Ledger collectors. Both use free, unauthenticated API
 
 ---
 
-**Last Updated:** 2025-11-19  
-**Sprint Status:** Week 7+ Maintenance COMPLETE  
-**Next Milestone:** Phase 3 Integration (Developer B)
-**Next Review:** After Week 4 completion
+## Next Sprint Plan: Phase 6 - Trading System (8 Weeks)
+
+**Sprint Start Date:** 2025-11-20  
+**Sprint Objective:** Implement live trading capabilities using Coinspot API  
+**Developer:** Developer A (Data & Backend Engineer)
+
+### Phase 6 Overview
+
+With Phase 2.5 complete and data collection infrastructure operational, Developer A transitions to implementing the live trading system. This phase builds on the existing infrastructure to enable actual cryptocurrency trading.
+
+### Weeks 1-2: Coinspot Trading Integration
+
+**Objective:** Implement secure Coinspot trading API client
+
+**Tasks:**
+- [ ] Implement trading API client (`backend/app/services/trading/client.py`)
+  - POST /my/buy endpoint wrapper
+  - POST /my/sell endpoint wrapper
+  - GET /my/orders for order management
+  - GET /my/balances for portfolio tracking
+  - HMAC-SHA512 authentication (reuse from Phase 2)
+- [ ] Add order execution service (`backend/app/services/trading/executor.py`)
+  - Queue-based order submission
+  - Order status tracking
+  - Retry logic with exponential backoff
+- [ ] Implement position management (`backend/app/services/trading/positions.py`)
+  - Real-time portfolio tracking
+  - Position calculation and updates
+- [ ] Create database models for trading
+  - Table: `positions` (user_id, coin_type, quantity, avg_price, updated_at)
+  - Table: `orders` (user_id, coin_type, side, quantity, price, status, created_at)
+  - Migration: Create trading tables
+- [ ] Write comprehensive unit tests
+  - Mock Coinspot API responses
+  - Test error handling
+  - Test retry logic
+  - Test position calculations
+
+**Deliverables:**
+- Trading API client operational
+- Order execution service implemented
+- Position management working
+- 30+ unit tests passing
+
+**Files to Create:**
+- `backend/app/services/trading/client.py`
+- `backend/app/services/trading/executor.py`
+- `backend/app/services/trading/positions.py`
+- `backend/app/models.py` (add trading models)
+- `backend/tests/services/trading/test_client.py`
+- `backend/tests/services/trading/test_executor.py`
+- `backend/tests/services/trading/test_positions.py`
+- `backend/app/alembic/versions/XXXXX_add_trading_tables.py`
+
+### Weeks 3-4: Algorithm Execution Engine
+
+**Objective:** Create live trading executor for deployed algorithms
+
+**Tasks:**
+- [ ] Create live trading executor (`backend/app/services/trading/algorithm_executor.py`)
+  - Load deployed algorithms from database
+  - Fetch real-time price data
+  - Generate trading signals
+  - Execute trades via Coinspot API
+  - Handle algorithm state persistence
+- [ ] Implement execution scheduler (`backend/app/services/trading/scheduler.py`)
+  - Per-algorithm execution frequency
+  - Concurrent execution management
+  - Resource allocation
+  - Error recovery
+- [ ] Add safety mechanisms (`backend/app/services/trading/safety.py`)
+  - Maximum position size limits
+  - Daily loss limits
+  - Emergency stop functionality
+  - Risk checks before trade execution
+- [ ] Implement trade recording (`backend/app/services/trading/recorder.py`)
+  - Log all trade attempts
+  - Record successful trades
+  - Track failed trades with reasons
+- [ ] Create trade reconciliation service
+  - Match orders with Coinspot confirmations
+  - Handle partial fills
+  - Update position records
+- [ ] Write comprehensive tests
+  - Algorithm execution tests
+  - Safety mechanism tests
+  - Scheduler tests
+  - Integration tests
+
+**Deliverables:**
+- Algorithm execution engine operational
+- Safety mechanisms implemented
+- Trade recording and reconciliation working
+- 40+ unit and integration tests passing
+
+**Files to Create:**
+- `backend/app/services/trading/algorithm_executor.py`
+- `backend/app/services/trading/scheduler.py`
+- `backend/app/services/trading/safety.py`
+- `backend/app/services/trading/recorder.py`
+- `backend/tests/services/trading/test_algorithm_executor.py`
+- `backend/tests/services/trading/test_scheduler.py`
+- `backend/tests/services/trading/test_safety.py`
+
+### Weeks 5-6: P&L Calculation & APIs
+
+**Objective:** Implement profit/loss tracking and API endpoints
+
+**Tasks:**
+- [ ] Implement P&L engine (`backend/app/services/trading/pnl.py`)
+  - Real-time unrealized P&L calculation
+  - Realized P&L on trade close
+  - Historical P&L tracking
+  - Performance metrics (Sharpe ratio, max drawdown, etc.)
+- [ ] Create P&L APIs (`backend/app/api/v1/floor/pnl.py`)
+  - GET /api/v1/floor/pnl/summary - Overall P&L summary
+  - GET /api/v1/floor/pnl/by-algorithm - P&L by algorithm
+  - GET /api/v1/floor/pnl/by-coin - P&L by cryptocurrency
+  - GET /api/v1/floor/pnl/history - Historical P&L data
+- [ ] Implement trade history tracking
+  - Database schema for trade history
+  - Query APIs for trade history
+  - Filters (by date, algorithm, coin, etc.)
+- [ ] Add comprehensive testing
+  - P&L calculation tests
+  - API endpoint tests
+  - Historical data tests
+  - Performance tests
+
+**Deliverables:**
+- P&L engine operational
+- P&L APIs implemented
+- Trade history tracking working
+- 30+ unit and integration tests passing
+
+**Files to Create:**
+- `backend/app/services/trading/pnl.py`
+- `backend/app/api/v1/floor/pnl.py`
+- `backend/app/models.py` (add P&L tracking models)
+- `backend/tests/services/trading/test_pnl.py`
+- `backend/tests/api/v1/floor/test_pnl.py`
+- `backend/app/alembic/versions/XXXXX_add_pnl_tables.py`
+
+### Weeks 7-8: Integration & Documentation
+
+**Objective:** Integration testing and complete documentation
+
+**Tasks:**
+- [ ] End-to-end integration testing
+  - Test full trading workflow (signal → order → execution → P&L)
+  - Test with multiple algorithms running concurrently
+  - Test safety mechanisms
+  - Test error recovery
+- [ ] Performance testing
+  - Load testing with concurrent algorithm execution
+  - Database query optimization
+  - API response time optimization
+- [ ] Security testing
+  - API authentication tests
+  - Authorization tests (user can only trade their own accounts)
+  - Credential security validation
+- [ ] Complete documentation
+  - API documentation (OpenAPI/Swagger)
+  - Trading system architecture document
+  - Safety mechanism documentation
+  - Troubleshooting guide
+  - Deployment guide
+- [ ] Code review and cleanup
+  - Remove debug code
+  - Optimize imports
+  - Add type hints
+  - Improve error messages
+
+**Deliverables:**
+- Complete integration test suite
+- Performance benchmarks
+- Security audit complete
+- Comprehensive documentation
+
+### Integration with Other Developers
+
+**Developer B (Phase 3 Agentic):**
+- Phase 3 agentic system can generate trading strategies
+- Integration point: Phase 3 outputs algorithms that Phase 6 can execute
+- Coordination: Week 8 - test algorithm generation → execution pipeline
+
+**Developer C (Infrastructure):**
+- Trading system will be deployed to staging environment
+- Coordination: Week 4 - prepare trading service deployment
+- Coordination: Week 6 - deploy trading system to staging
+
+### Success Metrics
+
+**By End of Sprint:**
+- [ ] Trading API client fully functional
+- [ ] Order execution service operational
+- [ ] Position management accurate
+- [ ] Algorithm execution engine working
+- [ ] Safety mechanisms validated
+- [ ] P&L calculation accurate
+- [ ] 100+ tests passing (trading system)
+- [ ] Complete documentation
+- [ ] Ready for deployment to staging
+
+### Risk Assessment
+
+**High Risk:**
+1. Coinspot API rate limits - Mitigation: Implement rate limiting, queue management
+2. Real money at risk - Mitigation: Start with paper trading mode, extensive testing
+
+**Medium Risk:**
+1. Performance under load - Mitigation: Load testing, optimization
+2. Safety mechanism failures - Mitigation: Multiple safety layers, extensive testing
+
+**Low Risk:**
+1. Database performance - Mitigation: Proper indexing, query optimization
+2. Integration complexity - Mitigation: Clear interfaces, good documentation
+
+---
+
+**Last Updated:** 2025-11-20  
+**Sprint Status:** Phase 2.5 COMPLETE | Phase 6 Starting  
+**Next Milestone:** Phase 6 Weeks 1-2 Complete (Trading API Client)  
+**Next Review:** End of Week 2
