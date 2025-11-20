@@ -2,8 +2,8 @@
 
 **Role:** Infrastructure & DevOps Engineer  
 **Track:** Phase 9 - Infrastructure Setup & Deployment  
-**Status:** ✅ Weeks 1-8 COMPLETE  
-**Last Updated:** 2025-11-20 (Weeks 7-8 Application Deployment Sprint Complete)
+**Status:** 🔄 Weeks 9-10 IN PROGRESS (Production Deployment & Security Hardening)  
+**Last Updated:** 2025-11-20 (Sprint: Weeks 9-10 Started)
 
 ---
 
@@ -997,17 +997,243 @@ Successfully completed Weeks 1-8 of the Infrastructure & DevOps track as **Devel
 
 ---
 
-## Next Sprint Plan: Application Deployment & Monitoring (10 Weeks)
+## Current Sprint Plan: Production Deployment & Security (Weeks 9-10)
 
 **Sprint Start Date:** 2025-11-20  
+**Sprint Objective:** Deploy production environment, implement security hardening, and support application deployments  
+**Developer:** Developer C (Infrastructure & DevOps Specialist)  
+**Status:** 🔄 IN PROGRESS
+
+### Overview
+
+With all infrastructure code and manifests complete from Weeks 7-8, this sprint focuses on:
+1. Deploying the production Terraform environment
+2. Implementing comprehensive security hardening
+3. Supporting Developer A and B with their application deployments to staging
+4. Ensuring the monitoring stack is operational
+
+### Week 9: Production Infrastructure Deployment
+
+**Priority 1: Production Terraform Stack Deployment**
+
+Tasks:
+- [ ] Review and update production Terraform configuration
+  - [ ] Verify Multi-AZ configuration for high availability
+  - [ ] Validate larger instance sizes for production workload
+  - [ ] Ensure backup policies are configured
+  - [ ] Review security group rules
+- [ ] Deploy production infrastructure
+  - [ ] Execute `terraform plan` for production environment
+  - [ ] Review changes with team
+  - [ ] Execute `terraform apply` for production deployment
+  - [ ] Verify all resources created successfully
+- [ ] Post-deployment validation
+  - [ ] Verify VPC, subnets, and networking
+  - [ ] Validate RDS instance and connectivity
+  - [ ] Test Redis cluster
+  - [ ] Verify ALB configuration
+  - [ ] Check ECS cluster status
+
+**Priority 2: DNS and SSL Configuration**
+
+Tasks:
+- [ ] Configure Route53 DNS
+  - [ ] Create hosted zone for `ohmycoins.com`
+  - [ ] Configure DNS records for production
+  - [ ] Set up health checks
+- [ ] Provision SSL/TLS certificates
+  - [ ] Request ACM certificate for `*.ohmycoins.com`
+  - [ ] Validate domain ownership
+  - [ ] Configure certificate on ALB
+  - [ ] Test HTTPS endpoints
+
+**Priority 3: Application Go-Live Support**
+
+Tasks:
+- [ ] Coordinate with Developer A
+  - [ ] Support deployment of Phase 2.5 collectors to staging
+  - [ ] Monitor collector execution and data ingestion
+  - [ ] Troubleshoot any deployment issues
+- [ ] Coordinate with Developer B
+  - [ ] Support deployment of Phase 3 agentic system to staging
+  - [ ] Monitor agent execution and performance
+  - [ ] Troubleshoot any deployment issues
+- [ ] Monitor staging environment
+  - [ ] Track resource utilization
+  - [ ] Identify and address any performance issues
+  - [ ] Scale resources if needed
+
+Deliverables:
+- Production Terraform stack deployed
+- DNS and SSL configured
+- Developer A and B applications deployed to staging
+- Monitoring stack operational on staging
+
+### Week 10: Security Hardening & Compliance
+
+**Priority 1: AWS Security Services**
+
+Tasks:
+- [ ] Enable AWS GuardDuty
+  - [ ] Enable GuardDuty in production account
+  - [ ] Configure threat detection
+  - [ ] Set up notification channels
+  - [ ] Review initial findings
+- [ ] Enable CloudTrail
+  - [ ] Create CloudTrail for production
+  - [ ] Configure S3 bucket for logs
+  - [ ] Enable log file validation
+  - [ ] Set up CloudWatch integration
+- [ ] Implement AWS Config
+  - [ ] Enable AWS Config
+  - [ ] Configure compliance rules
+  - [ ] Set up conformance packs
+  - [ ] Review compliance dashboard
+
+**Priority 2: Web Application Firewall (WAF)**
+
+Tasks:
+- [ ] Configure AWS WAF on ALB
+  - [ ] Create WAF Web ACL
+  - [ ] Implement OWASP Top 10 rules
+  - [ ] Configure rate limiting rules
+  - [ ] Add IP reputation rules
+  - [ ] Test WAF rules (false positive detection)
+- [ ] Custom WAF rules for application
+  - [ ] Analyze application traffic patterns
+  - [ ] Create custom rules as needed
+  - [ ] Document rule rationale
+
+**Priority 3: Backup and Disaster Recovery**
+
+Tasks:
+- [ ] Configure RDS backups
+  - [ ] Verify automated backup settings
+  - [ ] Configure backup retention (30 days production)
+  - [ ] Set up cross-region backup replication
+  - [ ] Test point-in-time recovery
+- [ ] Implement snapshot policies
+  - [ ] Create EBS snapshot policies
+  - [ ] Configure snapshot retention
+  - [ ] Document recovery procedures
+- [ ] Disaster recovery testing
+  - [ ] Test RDS restore from backup
+  - [ ] Test infrastructure recreation from Terraform
+  - [ ] Document recovery time objectives (RTO)
+  - [ ] Document recovery point objectives (RPO)
+
+**Priority 4: Network Security**
+
+Tasks:
+- [ ] Implement Kubernetes network policies
+  - [ ] Define network policies for backend
+  - [ ] Define network policies for collectors
+  - [ ] Define network policies for agents
+  - [ ] Test policy enforcement
+- [ ] Security group review
+  - [ ] Audit all security groups
+  - [ ] Remove unnecessary rules
+  - [ ] Implement least privilege access
+  - [ ] Document security group purposes
+
+Deliverables:
+- GuardDuty, CloudTrail, and AWS Config enabled
+- WAF configured on production ALB
+- Backup and disaster recovery tested
+- Network policies implemented
+- Security audit report generated
+
+### Integration Coordination
+
+**Developer A (Phase 2.5 Data Collection):**
+- Status: 100% complete, ready for deployment
+- Coordination points:
+  - Week 9: Support deployment to staging
+  - Ongoing: Monitor collector performance
+  - Issue resolution: Troubleshoot any deployment problems
+
+**Developer B (Phase 3 Agentic System):**
+- Status: 60% complete (Weeks 1-8), continuing with HiTL features
+- Coordination points:
+  - Week 9: Support deployment to staging
+  - Ongoing: Monitor agent performance
+  - Issue resolution: Troubleshoot any deployment problems
+
+**Staging Environment Support:**
+- Monitor resource utilization continuously
+- Scale up resources if needed
+- Address performance issues proactively
+- Ensure monitoring stack is providing useful insights
+
+### Success Metrics
+
+**By End of Week 9:**
+- [ ] Production Terraform stack deployed successfully
+- [ ] DNS and SSL certificates configured
+- [ ] Developer A collectors deployed to staging
+- [ ] Developer B agentic system deployed to staging
+- [ ] Monitoring stack operational on staging
+- [ ] Zero critical deployment issues
+
+**By End of Week 10:**
+- [ ] GuardDuty enabled and configured
+- [ ] CloudTrail logging enabled
+- [ ] AWS Config compliance rules active
+- [ ] WAF protecting production ALB
+- [ ] Backup policies tested and verified
+- [ ] Disaster recovery procedures documented
+- [ ] Network policies enforced in EKS
+- [ ] Security audit complete with findings addressed
+
+### Risk Assessment
+
+**High Priority Risks:**
+1. **Production deployment issues**
+   - Mitigation: Thorough testing on staging first, staged rollout approach
+2. **DNS propagation delays**
+   - Mitigation: Plan DNS changes in advance, use short TTLs during transition
+3. **Application deployment failures**
+   - Mitigation: Comprehensive testing, rollback procedures ready
+
+**Medium Priority Risks:**
+1. **WAF false positives blocking legitimate traffic**
+   - Mitigation: Test rules thoroughly, monitor logs, have bypass procedure
+2. **Resource capacity on staging**
+   - Mitigation: Monitor continuously, scale proactively
+3. **Security audit findings**
+   - Mitigation: Address incrementally, prioritize by severity
+
+**Low Priority Risks:**
+1. **Documentation gaps**
+   - Mitigation: Document as we go, review weekly
+2. **Performance optimization needs**
+   - Mitigation: Defer to Weeks 11-12 if not critical
+
+### Next Sprint Preview (Weeks 11-12)
+
+**Planned Focus:**
+- Performance optimization and load testing
+- Operational maturity improvements
+- Blue-green deployment implementation
+- Advanced monitoring and observability
+- Cost optimization review
+
+---
+
+## Historical Reference: Original Sprint Plan for Weeks 7-12 (Archived)
+
+**Note:** This section is kept for historical reference. The plan below was created before Weeks 7-8 were implemented. Actual work completed in Weeks 7-8 is documented in the "Sprint Summary (Latest Sprint - Weeks 7-8)" section at the top of this document.
+
+**Sprint Start Date:** 2025-11-20 (Original Planning Date)  
 **Sprint Objective:** Deploy all applications to staging and implement comprehensive monitoring  
-**Developer:** Developer C (Infrastructure & DevOps Specialist)
+**Developer:** Developer C (Infrastructure & DevOps Specialist)  
+**Status:** ✅ Weeks 7-8 COMPLETE | 🔄 Weeks 9-10 IN PROGRESS
 
 ### Overview
 
 With the staging environment fully deployed, the focus shifts to deploying the applications developed by Developer A (Phase 2.5 data collectors) and Developer B (Phase 3 agentic system) to the staging environment, and implementing a comprehensive monitoring stack.
 
-### Weeks 7-8: Application Deployment to Staging
+### Weeks 7-8: Application Deployment to Staging ✅ COMPLETE
 
 **Objective:** Deploy Phase 2.5 collectors and Phase 3 agentic system to staging environment
 
