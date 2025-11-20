@@ -230,7 +230,7 @@ resource "aws_secretsmanager_secret_version" "app_secrets_initial_version" {
     FIRST_SUPERUSER_PASSWORD   = "temporary-password-please-update",
     POSTGRES_SERVER            = module.rds.db_instance_address,
     POSTGRES_PORT              = module.rds.db_instance_port,
-    POSTGRES_DB                = module.rds.db_instance_database_name,
+    POSTGRES_DB                = module.rds.db_instance_name,
     POSTGRES_USER              = module.rds.db_instance_username,
     POSTGRES_PASSWORD          = module.rds.db_instance_password,
     SMTP_HOST                  = "",
@@ -247,7 +247,7 @@ resource "aws_secretsmanager_secret_version" "app_secrets_initial_version" {
     OPENAI_MODEL               = "gpt-4-turbo-preview",
     SENTRY_DSN                 = "",
     ENVIRONMENT                = "staging",
-    FRONTEND_HOST              = "http://${module.alb.dns_name}"
+    FRONTEND_HOST              = "http://${module.alb.alb_dns_name}"
   })
 
   lifecycle {
