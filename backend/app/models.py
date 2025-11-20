@@ -67,6 +67,10 @@ class User(UserBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
+    
+    # Relationships - will be populated when related models are defined
+    positions: list["Position"] = Relationship(back_populates="user")
+    orders: list["Order"] = Relationship(back_populates="user")
 
 
 # Properties to return via API, id is always required
@@ -681,4 +685,141 @@ class AgentArtifactPublic(SQLModel):
     size_bytes: int | None
     created_at: datetime
 
+
+# =============================================================================
+# Phase 6: Trading System Models
+# =============================================================================
+
+
+class PositionBase(SQLModel):
+    """Base model for trading positions"""
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    coin_type: str = Field(max_length=20, index=True)  # e.g., 'BTC', 'ETH'
+    quantity: Decimal = Field(
+        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False)
+    )
+    average_price: Decimal = Field(
+        sa_column=Column(DECIMAL(precision=20, scale=8), nullable=False)
+    )
+    total_cost: Decimal = Field(
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False)
+    )
+
+
+class Position(PositionBase, table=True):
+    """
+    Trading position record
+    
+    Tracks the current position (holdings) for each user and coin type.
+    Updated when orders are executed.
+    """
+    __tablename__ = "positions"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
+    
+    # Relationships
+    user: User | None = Relationship(back_populates="positions")
+    
+    __table_args__ = (
+        Index('idx_position_user_coin', 'user_id', 'coin_type', unique=True),
+    )
+
+
+class PositionPublic(PositionBase):
+    """Schema for returning position via API"""
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    current_value: Decimal | None = None  # Calculated field
+    unrealized_pnl: Decimal | None = None  # Calculated field
+
+
+class OrderBase(SQLModel):
+    """Base model for trading orders"""
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    algorithm_id: uuid.UUID | None = Field(default=None, index=True)  # NULL for manual orders
+    coin_type: str = Field(max_length=20, index=True)
+    side: str = Field(max_length=10)  # 'buy' or 'sell'
+    order_type: str = Field(max_length=20, default='market')  # 'market' or 'limit'
+    quantity: Decimal = Field(
+        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False)
+    )
+    price: Decimal | None = Field(
+        default=None,
+        sa_column=Column(DECIMAL(precision=20, scale=8), nullable=True)
+    )
+    filled_quantity: Decimal = Field(
+        default=Decimal('0'),
+        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False)
+    )
+    status: str = Field(max_length=20, default='pending', index=True)  # pending, submitted, filled, partial, cancelled, failed
+    error_message: str | None = Field(default=None, max_length=500)
+    coinspot_order_id: str | None = Field(default=None, max_length=100, index=True)
+
+
+class Order(OrderBase, table=True):
+    """
+    Trading order record
+    
+    Tracks all trading orders (buy/sell) including their execution status.
+    Updated as orders progress through their lifecycle.
+    """
+    __tablename__ = "orders"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
+    submitted_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    filled_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    
+    # Relationships
+    user: User | None = Relationship(back_populates="orders")
+    
+    __table_args__ = (
+        Index('idx_order_user_status', 'user_id', 'status'),
+        Index('idx_order_created', 'created_at'),
+    )
+
+
+class OrderCreate(SQLModel):
+    """Schema for creating an order"""
+    coin_type: str = Field(max_length=20)
+    side: str = Field(max_length=10)
+    order_type: str = Field(max_length=20, default='market')
+    quantity: Decimal
+    price: Decimal | None = None
+    algorithm_id: uuid.UUID | None = None
+
+
+class OrderPublic(OrderBase):
+    """Schema for returning order via API"""
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    submitted_at: datetime | None
+    filled_at: datetime | None
+
+
+# Update User model to include relationships
+User.model_rebuild()
 
