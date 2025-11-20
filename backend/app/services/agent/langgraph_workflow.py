@@ -37,6 +37,7 @@ class AgentState(TypedDict):
     Week 3-4 additions: retrieved_data, analysis_results, insights
     Week 5-6 additions: trained_models, evaluation_results, training_summary, evaluation_insights
     Week 7-8 additions: ReAct loop fields (reasoning_trace, decision_history, retry_count, etc.)
+    Week 9-10 additions: HiTL fields (clarifications, choices, approvals, overrides)
     """
     session_id: str
     user_goal: str
@@ -72,6 +73,21 @@ class AgentState(TypedDict):
     skip_training: bool  # Conditional flag: skip training if not needed
     needs_more_data: bool  # Flag indicating if more data is needed
     quality_checks: dict[str, Any] | None  # Quality validation results
+    # Week 9-10 additions - Human-in-the-Loop
+    clarifications_needed: list[str] | None  # Questions to ask user
+    clarifications_provided: dict[str, str] | None  # User responses
+    awaiting_clarification: bool  # Workflow paused for user input
+    choices_available: list[dict[str, Any]] | None  # Available options
+    selected_choice: str | None  # User selection
+    awaiting_choice: bool  # Workflow paused for user choice
+    recommendation: dict[str, Any] | None  # System recommendation
+    overrides_applied: list[dict[str, Any]] | None  # History of overrides
+    can_override: dict[str, bool] | None  # Override points available
+    approval_gates: list[str] | None  # Gates requiring approval
+    approvals_granted: list[dict[str, Any]] | None  # Granted approvals
+    approval_mode: str  # "auto" or "manual"
+    approval_needed: bool  # Workflow paused for approval
+    pending_approvals: list[dict[str, Any]] | None  # Pending approval requests
 
 
 class LangGraphWorkflow:
