@@ -1,0 +1,222 @@
+# Agentic System Deployment for Phase 3
+# LangGraph-based autonomous algorithm development system
+
+---
+# Agent ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+  namespace: omc-staging
+data:
+  # Agent-specific settings
+  AGENT_MAX_ITERATIONS: "10"
+  AGENT_TIMEOUT_SECONDS: "300"
+  AGENT_MODEL_PROVIDER: "openai"  # or "anthropic"
+  AGENT_MODEL_NAME: "gpt-4"
+  # Redis session management
+  AGENT_REDIS_DB: "1"  # Use separate DB for agent sessions
+---
+# Agent Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agent-secrets
+  namespace: omc-staging
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "sk-changeme"  # Should be managed via AWS Secrets Manager
+  ANTHROPIC_API_KEY: "sk-ant-changeme"  # Optional, for Anthropic models
+---
+# Agent Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents
+  namespace: omc-staging
+  labels:
+    app: agents
+    component: langgraph
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agents
+  template:
+    metadata:
+      labels:
+        app: agents
+        component: langgraph
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: agents
+          image: omc-backend:latest  # Same image, different entrypoint
+          command: ["python", "-m", "app.services.agent.orchestrator"]
+          ports:
+            - containerPort: 8001
+              name: http
+          env:
+            # Environment from ConfigMaps
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: ENVIRONMENT
+            - name: POSTGRES_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: POSTGRES_SERVER
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: POSTGRES_DB
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: REDIS_PORT
+            # Agent-specific config
+            - name: AGENT_MAX_ITERATIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: AGENT_MAX_ITERATIONS
+            - name: AGENT_TIMEOUT_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: AGENT_TIMEOUT_SECONDS
+            - name: AGENT_MODEL_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: AGENT_MODEL_PROVIDER
+            - name: AGENT_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: AGENT_MODEL_NAME
+            - name: AGENT_REDIS_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: AGENT_REDIS_DB
+            # Sensitive data
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: POSTGRES_PASSWORD
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-secrets
+                  key: OPENAI_API_KEY
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agent-secrets
+                  key: ANTHROPIC_API_KEY
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+# Agent Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: agents
+  namespace: omc-staging
+  labels:
+    app: agents
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP
+      name: http
+  selector:
+    app: agents
+---
+# Horizontal Pod Autoscaler for agents
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agents-hpa
+  namespace: omc-staging
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agents
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+# PersistentVolumeClaim for agent artifacts
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-artifacts
+  namespace: omc-staging
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc  # Use EFS for shared storage
+  resources:
+    requests:
+      storage: 10Gi

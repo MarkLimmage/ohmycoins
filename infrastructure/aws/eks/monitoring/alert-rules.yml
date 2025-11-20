@@ -1,0 +1,156 @@
+# Prometheus Alert Rules for OMC Staging Environment
+# Defines conditions that trigger alerts for critical system issues
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: monitoring
+data:
+  alert-rules.yml: |
+    groups:
+      - name: infrastructure_alerts
+        interval: 30s
+        rules:
+          # Node CPU usage
+          - alert: HighNodeCPU
+            expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage on node {{ $labels.instance }}"
+              description: "Node {{ $labels.instance }} has CPU usage above 80% for 5 minutes."
+
+          # Node memory usage
+          - alert: HighNodeMemory
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage on node {{ $labels.instance }}"
+              description: "Node {{ $labels.instance }} has memory usage above 85% for 5 minutes."
+
+          # Disk space
+          - alert: LowDiskSpace
+            expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Low disk space on {{ $labels.instance }}"
+              description: "{{ $labels.instance }} has less than 15% disk space available."
+
+      - name: pod_alerts
+        interval: 30s
+        rules:
+          # Pod restarts
+          - alert: PodRestarting
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is restarting"
+              description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has restarted {{ $value }} times in the last 15 minutes."
+
+          # Pod crash looping
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+              description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is in a crash loop."
+
+          # Pod not ready
+          - alert: PodNotReady
+            expr: kube_pod_status_phase{phase!="Running"} == 1
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready"
+              description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in non-ready state for 10 minutes."
+
+      - name: application_alerts
+        interval: 30s
+        rules:
+          # High application error rate
+          - alert: HighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High error rate in {{ $labels.service }}"
+              description: "Service {{ $labels.service }} has error rate above 5% for 5 minutes."
+
+          # Application down
+          - alert: ApplicationDown
+            expr: up{job=~"backend|frontend|collectors|agents"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Application {{ $labels.job }} is down"
+              description: "Application {{ $labels.job }} has been down for 2 minutes."
+
+          # Database connection failures
+          - alert: DatabaseConnectionFailures
+            expr: rate(database_connection_errors_total[5m]) > 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Database connection failures detected"
+              description: "Database connection errors detected at rate {{ $value }}/s."
+
+      - name: collector_alerts
+        interval: 60s
+        rules:
+          # Collector job failures
+          - alert: CollectorJobFailed
+            expr: kube_job_status_failed > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Collector job {{ $labels.job_name }} failed"
+              description: "Collector job {{ $labels.job_name }} has failed."
+
+          # Collector not running on schedule
+          - alert: CollectorMissedRun
+            expr: time() - kube_job_status_completion_time{job_name=~".*-collector"} > 7200
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Collector {{ $labels.job_name }} missed scheduled run"
+              description: "Collector {{ $labels.job_name }} has not completed in 2 hours."
+
+      - name: storage_alerts
+        interval: 30s
+        rules:
+          # PersistentVolume issues
+          - alert: PersistentVolumeIssues
+            expr: kube_persistentvolume_status_phase{phase!="Bound"} == 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "PersistentVolume {{ $labels.persistentvolume }} not bound"
+              description: "PersistentVolume {{ $labels.persistentvolume }} is in {{ $labels.phase }} state."
+
+          # PersistentVolumeClaim pending
+          - alert: PVCPending
+            expr: kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} pending"
+              description: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been pending for 5 minutes."

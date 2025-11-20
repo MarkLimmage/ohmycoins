@@ -1,0 +1,227 @@
+# Backend API Deployment for OMC
+# FastAPI backend service with database and Redis connections
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: omc-staging
+---
+# Backend ConfigMap for environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: omc-staging
+data:
+  ENVIRONMENT: "staging"
+  PROJECT_NAME: "Oh My Coins - Staging"
+  BACKEND_CORS_ORIGINS: '["http://localhost:5173","https://staging.ohmycoins.com"]'
+  # Database configuration (non-sensitive)
+  POSTGRES_SERVER: "omc-staging-db.xxxxx.us-east-1.rds.amazonaws.com"  # Update with actual RDS endpoint
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "omc"
+  # Redis configuration
+  REDIS_HOST: "omc-staging-redis.xxxxx.cache.amazonaws.com"  # Update with actual ElastiCache endpoint
+  REDIS_PORT: "6379"
+  # Application settings
+  LOG_LEVEL: "INFO"
+  SCHEDULER_ENABLED: "true"
+---
+# Backend Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secrets
+  namespace: omc-staging
+type: Opaque
+stringData:
+  POSTGRES_USER: "omc_user"
+  POSTGRES_PASSWORD: "changeme"  # Should be managed via AWS Secrets Manager in production
+  FIRST_SUPERUSER: "admin@ohmycoins.com"
+  FIRST_SUPERUSER_PASSWORD: "changeme"  # Should be managed via AWS Secrets Manager
+  SECRET_KEY: "changeme-generate-secure-random-key"  # Should be managed via AWS Secrets Manager
+  ENCRYPTION_KEY: "changeme-generate-fernet-key"  # For credential encryption
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: omc-staging
+  labels:
+    app: backend
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: backend
+          image: omc-backend:latest  # Update with ECR repository URL
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            # Environment variables from ConfigMap
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: ENVIRONMENT
+            - name: PROJECT_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: PROJECT_NAME
+            - name: BACKEND_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: BACKEND_CORS_ORIGINS
+            - name: POSTGRES_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: POSTGRES_SERVER
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: POSTGRES_DB
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: REDIS_PORT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: LOG_LEVEL
+            - name: SCHEDULER_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: SCHEDULER_ENABLED
+            # Sensitive data from Secret
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: POSTGRES_PASSWORD
+            - name: FIRST_SUPERUSER
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: FIRST_SUPERUSER
+            - name: FIRST_SUPERUSER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: FIRST_SUPERUSER_PASSWORD
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: SECRET_KEY
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secrets
+                  key: ENCRYPTION_KEY
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: omc-staging
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: backend
+---
+# Horizontal Pod Autoscaler for backend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: omc-staging
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
