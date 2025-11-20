@@ -220,3 +220,102 @@ class AgentOrchestrator:
             "status": AgentSessionStatus.CANCELLED,
             "message": "Session cancelled successfully",
         }
+    
+    def get_session_state(self, session_id: uuid.UUID) -> dict[str, Any] | None:
+        """
+        Get the current state of a session synchronously.
+        
+        This is a synchronous wrapper for the async get_session_state method,
+        used by the HiTL endpoints.
+        
+        Args:
+            session_id: ID of the session
+            
+        Returns:
+            Session state dictionary or None if not found
+        """
+        import asyncio
+        
+        # Get or create event loop
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Run the async method
+        return loop.run_until_complete(
+            self.session_manager.get_session_state(session_id)
+        )
+    
+    def update_session_state(
+        self, session_id: uuid.UUID, state: dict[str, Any]
+    ) -> None:
+        """
+        Update the state of a session synchronously.
+        
+        Args:
+            session_id: ID of the session
+            state: Updated state dictionary
+        """
+        import asyncio
+        
+        # Get or create event loop
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Run the async method
+        loop.run_until_complete(
+            self.session_manager.save_session_state(session_id, state)
+        )
+    
+    async def resume_session(
+        self, db: Session, session_id: uuid.UUID
+    ) -> dict[str, Any]:
+        """
+        Resume a paused session after user interaction.
+        
+        This is called after clarifications, choices, or approvals are provided.
+        
+        Args:
+            db: Database session
+            session_id: ID of the session to resume
+            
+        Returns:
+            Resume result
+        """
+        # Get current state
+        state = await self.session_manager.get_session_state(session_id)
+        
+        if not state:
+            raise ValueError(f"Session {session_id} state not found")
+        
+        # Update status to running if it was paused
+        if state.get("status") != AgentSessionStatus.RUNNING:
+            state["status"] = AgentSessionStatus.RUNNING
+            await self.session_manager.save_session_state(session_id, state)
+            
+            await self.session_manager.update_session_status(
+                db, session_id, AgentSessionStatus.RUNNING
+            )
+        
+        # Add message about resumption
+        await self.session_manager.add_message(
+            db,
+            session_id,
+            role="system",
+            content=f"Workflow resumed from {state.get('current_step', 'unknown')} step",
+        )
+        
+        # The workflow will continue from its current state
+        # In a full implementation, this would trigger the next workflow step
+        
+        return {
+            "session_id": str(session_id),
+            "status": AgentSessionStatus.RUNNING,
+            "message": "Session resumed successfully",
+            "current_step": state.get("current_step"),
+        }

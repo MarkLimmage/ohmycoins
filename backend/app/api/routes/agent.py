@@ -2,12 +2,14 @@
 API routes for Agent Sessions (Phase 3 - Agentic Data Science).
 
 Provides endpoints for creating, managing, and interacting with agent sessions.
+Week 9-10 additions: Human-in-the-Loop endpoints (clarifications, choices, approvals, overrides)
 """
 
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep
@@ -20,6 +22,10 @@ from app.models import (
     AgentSessionsPublic,
 )
 from app.services.agent import AgentOrchestrator, SessionManager
+from app.services.agent.nodes.clarification import handle_clarification_response
+from app.services.agent.nodes.choice_presentation import handle_choice_selection
+from app.services.agent.nodes.approval import handle_approval_granted, handle_approval_rejected
+from app.services.agent.override import apply_user_override, get_override_points
 
 router = APIRouter()
 
@@ -278,3 +284,377 @@ async def cancel_agent_session(
     await orchestrator.cancel_session(db, session_id)
 
     return {"message": "Session cancelled successfully"}
+
+
+# ============================================================================
+# Human-in-the-Loop (HiTL) Endpoints - Week 9-10
+# ============================================================================
+
+# Pydantic models for HiTL requests/responses
+class ClarificationResponse(BaseModel):
+    """User responses to clarification questions."""
+    responses: dict[str, str]
+
+
+class ChoiceSelection(BaseModel):
+    """User selection from available choices."""
+    selected_model: str
+
+
+class ApprovalDecision(BaseModel):
+    """User approval or rejection."""
+    approved: bool
+    reason: str | None = None
+
+
+class OverrideRequest(BaseModel):
+    """User override request."""
+    override_type: str
+    override_data: dict[str, Any]
+
+
+# Clarification endpoints
+@router.get("/sessions/{session_id}/clarifications")
+async def get_clarifications(
+    *,
+    session_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get pending clarification questions for a session.
+    
+    Returns clarification questions that need user response
+    before the workflow can proceed.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get state from session
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state or not state.get("awaiting_clarification"):
+        return {
+            "awaiting_clarification": False,
+            "clarifications_needed": [],
+        }
+    
+    return {
+        "awaiting_clarification": True,
+        "clarifications_needed": state.get("clarifications_needed", []),
+        "current_goal": state.get("user_goal", ""),
+    }
+
+
+@router.post("/sessions/{session_id}/clarifications")
+async def provide_clarifications(
+    *,
+    session_id: uuid.UUID,
+    clarifications: ClarificationResponse,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Provide responses to clarification questions.
+    
+    This resumes the workflow with the provided clarifications.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get current state
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state or not state.get("awaiting_clarification"):
+        raise HTTPException(
+            status_code=400,
+            detail="Session is not awaiting clarification"
+        )
+    
+    # Apply clarifications
+    updated_state = handle_clarification_response(state, clarifications.responses)
+    
+    # Update state and resume workflow
+    orchestrator.update_session_state(session_id, updated_state)
+    await orchestrator.resume_session(db, session_id)
+    
+    return {
+        "message": "Clarifications received, workflow resumed",
+        "updated_goal": updated_state.get("user_goal"),
+    }
+
+
+# Choice presentation endpoints
+@router.get("/sessions/{session_id}/choices")
+async def get_choices(
+    *,
+    session_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get available choices for user selection.
+    
+    Returns model choices with pros/cons and recommendation.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get state from session
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state or not state.get("awaiting_choice"):
+        return {
+            "awaiting_choice": False,
+            "choices_available": [],
+        }
+    
+    return {
+        "awaiting_choice": True,
+        "choices_available": state.get("choices_available", []),
+        "recommendation": state.get("recommendation"),
+    }
+
+
+@router.post("/sessions/{session_id}/choices")
+async def select_choice(
+    *,
+    session_id: uuid.UUID,
+    selection: ChoiceSelection,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Select a choice from available options.
+    
+    This resumes the workflow with the selected model.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get current state
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state or not state.get("awaiting_choice"):
+        raise HTTPException(
+            status_code=400,
+            detail="Session is not awaiting choice"
+        )
+    
+    # Apply selection
+    updated_state = handle_choice_selection(state, selection.selected_model)
+    
+    # Update state and resume workflow
+    orchestrator.update_session_state(session_id, updated_state)
+    await orchestrator.resume_session(db, session_id)
+    
+    return {
+        "message": "Choice selected, workflow resumed",
+        "selected_model": selection.selected_model,
+    }
+
+
+# Approval endpoints
+@router.get("/sessions/{session_id}/pending-approvals")
+async def get_pending_approvals(
+    *,
+    session_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get pending approval requests for a session.
+    
+    Returns approval requests that need user decision.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get state from session
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state or not state.get("approval_needed"):
+        return {
+            "approval_needed": False,
+            "pending_approvals": [],
+        }
+    
+    return {
+        "approval_needed": True,
+        "pending_approvals": state.get("pending_approvals", []),
+        "approval_mode": state.get("approval_mode", "manual"),
+    }
+
+
+@router.post("/sessions/{session_id}/approve")
+async def approve_request(
+    *,
+    session_id: uuid.UUID,
+    decision: ApprovalDecision,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Approve or reject a pending approval request.
+    
+    This resumes the workflow if approved, or stops it if rejected.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get current state
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state or not state.get("approval_needed"):
+        raise HTTPException(
+            status_code=400,
+            detail="Session is not awaiting approval"
+        )
+    
+    # Get approval type from pending approvals
+    pending_approvals = state.get("pending_approvals", [])
+    if not pending_approvals:
+        raise HTTPException(
+            status_code=400,
+            detail="No pending approvals found"
+        )
+    
+    approval_type = pending_approvals[0].get("approval_type")
+    
+    # Apply approval or rejection
+    if decision.approved:
+        updated_state = handle_approval_granted(state, approval_type)
+        message = "Approval granted, workflow resumed"
+    else:
+        updated_state = handle_approval_rejected(state, approval_type, decision.reason)
+        message = "Approval rejected, workflow stopped"
+    
+    # Update state
+    orchestrator.update_session_state(session_id, updated_state)
+    
+    if decision.approved:
+        await orchestrator.resume_session(db, session_id)
+    
+    return {
+        "message": message,
+        "approved": decision.approved,
+    }
+
+
+# Override endpoints
+@router.get("/sessions/{session_id}/override-points")
+async def get_override_points_endpoint(
+    *,
+    session_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get available override points for a session.
+    
+    Returns which overrides are currently available based on workflow state.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get state from session
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state:
+        return {"override_points": {}}
+    
+    override_points = get_override_points(state)
+    
+    return {
+        "override_points": override_points,
+        "overrides_applied": state.get("overrides_applied", []),
+    }
+
+
+@router.post("/sessions/{session_id}/override")
+async def apply_override(
+    *,
+    session_id: uuid.UUID,
+    override_request: OverrideRequest,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Apply a user override to the workflow.
+    
+    Allows users to override agent decisions and modify workflow behavior.
+    """
+    session = await session_manager.get_session(db, session_id)
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get current state
+    state = orchestrator.get_session_state(session_id)
+    
+    if not state:
+        raise HTTPException(
+            status_code=400,
+            detail="Session state not found"
+        )
+    
+    # Apply override
+    try:
+        updated_state = apply_user_override(
+            state,
+            override_request.override_type,
+            override_request.override_data
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid override: {str(e)}"
+        )
+    
+    # Update state and resume workflow
+    orchestrator.update_session_state(session_id, updated_state)
+    await orchestrator.resume_session(db, session_id)
+    
+    return {
+        "message": "Override applied, workflow adjusted",
+        "override_type": override_request.override_type,
+        "current_step": updated_state.get("current_step"),
+    }
