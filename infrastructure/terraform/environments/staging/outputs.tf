@@ -42,3 +42,25 @@ output "secrets_manager_secret_arn" {
   description = "ARN of the Secrets Manager secret"
   value       = aws_secretsmanager_secret.app_secrets.arn
 }
+
+output "rds_endpoint" {
+  description = "Connection endpoint for the RDS instance"
+  value       = module.rds.db_instance_endpoint
+}
+
+output "rds_username" {
+  description = "Username for the RDS database"
+  value       = module.rds.db_instance_username
+  sensitive   = true
+}
+
+output "rds_password" {
+  description = "Password for the RDS database"
+  value       = module.rds.db_instance_password
+  sensitive   = true
+}
+
+output "rds_db_name" {
+  description = "Name of the RDS database"
+  value       = module.rds.db_instance_name
+}

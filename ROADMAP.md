@@ -77,11 +77,13 @@
 **Weeks 7-10:** Orchestration, ReAct loop, Human-in-the-Loop
 **Weeks 11-14:** Reporting, artifact management, testing
 
-### Priority 3: Infrastructure Preparation (4-8 weeks, parallel)
+### Priority 3: Infrastructure & Deployment (4-8 weeks, parallel)
 **Why:** Production readiness. Can be done alongside feature development.
 
-- [ ] AWS infrastructure design and Terraform implementation
-- [ ] CI/CD pipeline enhancements
+- [x] **AWS Staging Environment Deployed via Terraform**
+  - The full staging environment is now live and accessible.
+  - See `infrastructure/terraform/README.md` for endpoint details.
+- [ ] CI/CD pipeline enhancements for automated deployment
 - [ ] Security hardening and monitoring setup
 
 ### Parallel Development Opportunities

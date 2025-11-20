@@ -42,3 +42,15 @@ output "replica_endpoint" {
   description = "Connection endpoint for the read replica"
   value       = var.create_read_replica ? aws_db_instance.replica[0].endpoint : null
 }
+
+output "db_instance_username" {
+  description = "Username for the database"
+  value       = aws_db_instance.main.username
+  sensitive   = true
+}
+
+output "db_instance_password" {
+  description = "Password for the database"
+  value       = aws_db_instance.main.password
+  sensitive   = true
+}

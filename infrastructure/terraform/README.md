@@ -418,8 +418,9 @@ Copyright © 2025 Mark Limmage. All rights reserved.
 
 **The staging environment is now deployed and available!**
 
--   **URL:** `dashboard.staging.ohmycoins.com`
+-   **ALB Endpoint:** `ohmycoins-staging-alb-913537432.ap-southeast-2.elb.amazonaws.com`
+-   **Action Required:** To access the environment via a custom domain (e.g., `staging.ohmycoins.com`), a CNAME record must be created in your DNS provider pointing to the ALB Endpoint above.
 -   **Details:** The environment is fully provisioned with a VPC, RDS, ElastiCache, and ECS services.
--   **Action:** Developers can now use this environment for integration testing and feature validation.
+-   **Next Step:** Developers can now configure their CI/CD pipelines to deploy application updates to this environment for integration testing and feature validation.
 
-See the [Quick Start Guide](./QUICKSTART.md) for instructions on how to use the deployed environment.
+See the [Quick Start Guide](./QUICKSTART.md) for more details.

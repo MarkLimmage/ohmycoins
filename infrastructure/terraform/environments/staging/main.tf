@@ -217,9 +217,42 @@ module "ecs" {
 resource "aws_secretsmanager_secret" "app_secrets" {
   name                    = "${local.project_name}-app-secrets"
   description             = "Application secrets for Oh My Coins staging"
-  recovery_window_in_days = 7 # Shorter recovery window for staging
+  recovery_window_in_days = 0 # No recovery window for staging to allow for quick re-creation.
 
   tags = local.tags
+}
+
+resource "aws_secretsmanager_secret_version" "app_secrets_initial_version" {
+  secret_id     = aws_secretsmanager_secret.app_secrets.id
+  secret_string = jsonencode({
+    SECRET_KEY                 = "temporary-secret-key-please-update",
+    FIRST_SUPERUSER            = "admin@example.com",
+    FIRST_SUPERUSER_PASSWORD   = "temporary-password-please-update",
+    POSTGRES_SERVER            = module.rds.db_instance_address,
+    POSTGRES_PORT              = module.rds.db_instance_port,
+    POSTGRES_DB                = module.rds.db_instance_database_name,
+    POSTGRES_USER              = module.rds.db_instance_username,
+    POSTGRES_PASSWORD          = module.rds.db_instance_password,
+    SMTP_HOST                  = "",
+    SMTP_USER                  = "",
+    SMTP_PASSWORD              = "",
+    EMAILS_FROM_EMAIL          = "noreply@${var.domain}",
+    SMTP_TLS                   = "True",
+    SMTP_SSL                   = "False",
+    SMTP_PORT                  = "587",
+    REDIS_HOST                 = module.redis.primary_endpoint_address,
+    REDIS_PORT                 = module.redis.port,
+    LLM_PROVIDER               = "openai",
+    OPENAI_API_KEY             = "",
+    OPENAI_MODEL               = "gpt-4-turbo-preview",
+    SENTRY_DSN                 = "",
+    ENVIRONMENT                = "staging",
+    FRONTEND_HOST              = "http://${module.alb.dns_name}"
+  })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # Note: Secret values should be set manually or via a separate secure process
