@@ -1,0 +1,297 @@
+# Deploy to EKS Staging/Production
+# Deploys applications to Kubernetes cluster on EKS
+
+name: Deploy to EKS
+
+on:
+  workflow_run:
+    workflows: ["Build and Push to ECR"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      component:
+        description: 'Component to deploy'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - backend
+          - collectors
+          - agents
+          - monitoring
+
+env:
+  AWS_REGION: ap-southeast-2
+  EKS_CLUSTER_NAME: OMC-test
+  NAMESPACE: omc-staging
+
+jobs:
+  deploy-monitoring:
+    name: Deploy Monitoring Stack
+    runs-on: ubuntu-latest
+    if: github.event.inputs.component == 'monitoring' || github.event.inputs.component == 'all'
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Deploy Prometheus
+        run: |
+          kubectl apply -f infrastructure/aws/eks/monitoring/prometheus-operator.yml
+          kubectl wait --for=condition=ready pod -l app=prometheus -n monitoring --timeout=300s
+      
+      - name: Deploy Grafana
+        run: |
+          kubectl apply -f infrastructure/aws/eks/monitoring/grafana.yml
+          kubectl wait --for=condition=ready pod -l app=grafana -n monitoring --timeout=300s
+      
+      - name: Deploy Loki Stack
+        run: |
+          kubectl apply -f infrastructure/aws/eks/monitoring/loki-stack.yml
+          kubectl wait --for=condition=ready pod -l app=loki -n monitoring --timeout=300s
+      
+      - name: Deploy AlertManager
+        run: |
+          kubectl apply -f infrastructure/aws/eks/monitoring/alertmanager-config.yml
+          kubectl wait --for=condition=ready pod -l app=alertmanager -n monitoring --timeout=300s
+      
+      - name: Apply Alert Rules
+        run: kubectl apply -f infrastructure/aws/eks/monitoring/alert-rules.yml
+      
+      - name: Get Grafana URL
+        run: |
+          echo "Waiting for LoadBalancer IP..."
+          kubectl get svc grafana -n monitoring -w --timeout=120s || true
+          GRAFANA_URL=$(kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "Grafana URL: http://$GRAFANA_URL"
+  
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.inputs.component == 'backend' || github.event.inputs.component == 'all') &&
+      (github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch')
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Create namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      
+      - name: Update backend image tag
+        run: |
+          # Get latest image from ECR
+          IMAGE_TAG=$(aws ecr describe-images \
+            --repository-name omc-backend \
+            --region ${{ env.AWS_REGION }} \
+            --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' \
+            --output text)
+          
+          echo "Deploying backend with image tag: $IMAGE_TAG"
+          
+          # Update deployment manifest with latest image
+          sed -i "s|image: omc-backend:.*|image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/omc-backend:$IMAGE_TAG|" \
+            infrastructure/aws/eks/applications/backend/deployment.yml
+      
+      - name: Deploy backend
+        run: |
+          kubectl apply -f infrastructure/aws/eks/applications/backend/deployment.yml
+          kubectl apply -f infrastructure/aws/eks/applications/backend/ingress.yml
+      
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=300s
+      
+      - name: Deploy ServiceMonitor
+        run: kubectl apply -f infrastructure/aws/eks/applications/servicemonitor.yml
+      
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          kubectl run smoke-test \
+            --image=curlimages/curl:latest \
+            --rm -i --restart=Never \
+            --namespace=${{ env.NAMESPACE }} \
+            -- curl -f http://backend:8000/api/v1/health || exit 1
+          echo "✅ Smoke tests passed!"
+      
+      - name: Get backend URL
+        run: |
+          echo "Waiting for Ingress..."
+          sleep 30
+          BACKEND_URL=$(kubectl get ingress backend-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "Backend URL: http://$BACKEND_URL"
+  
+  deploy-collectors:
+    name: Deploy Collectors
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.inputs.component == 'collectors' || github.event.inputs.component == 'all') &&
+      (github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch')
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Create namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      
+      - name: Update collector image tags
+        run: |
+          IMAGE_TAG=$(aws ecr describe-images \
+            --repository-name omc-backend \
+            --region ${{ env.AWS_REGION }} \
+            --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' \
+            --output text)
+          
+          echo "Deploying collectors with image tag: $IMAGE_TAG"
+          
+          sed -i "s|image: omc-backend:.*|image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/omc-backend:$IMAGE_TAG|g" \
+            infrastructure/aws/eks/applications/collectors/cronjobs.yml
+      
+      - name: Deploy collectors
+        run: kubectl apply -f infrastructure/aws/eks/applications/collectors/cronjobs.yml
+      
+      - name: Verify CronJobs
+        run: |
+          kubectl get cronjobs -n ${{ env.NAMESPACE }}
+          kubectl get deployments -n ${{ env.NAMESPACE }} -l app=collectors
+  
+  deploy-agents:
+    name: Deploy Agentic System
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.inputs.component == 'agents' || github.event.inputs.component == 'all') &&
+      (github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch')
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Create namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      
+      - name: Update agent image tags
+        run: |
+          IMAGE_TAG=$(aws ecr describe-images \
+            --repository-name omc-backend \
+            --region ${{ env.AWS_REGION }} \
+            --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' \
+            --output text)
+          
+          echo "Deploying agents with image tag: $IMAGE_TAG"
+          
+          sed -i "s|image: omc-backend:.*|image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/omc-backend:$IMAGE_TAG|" \
+            infrastructure/aws/eks/applications/agents/deployment.yml
+      
+      - name: Deploy agents
+        run: kubectl apply -f infrastructure/aws/eks/applications/agents/deployment.yml
+      
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/agents -n ${{ env.NAMESPACE }} --timeout=300s
+      
+      - name: Verify deployment
+        run: kubectl get pods -n ${{ env.NAMESPACE }} -l app=agents
+  
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-collectors, deploy-agents]
+    if: failure()
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+      
+      - name: Rollback deployments
+        run: |
+          echo "🔄 Rolling back deployments..."
+          kubectl rollout undo deployment/backend -n ${{ env.NAMESPACE }} || true
+          kubectl rollout undo deployment/agents -n ${{ env.NAMESPACE }} || true
+          echo "✅ Rollback completed"
