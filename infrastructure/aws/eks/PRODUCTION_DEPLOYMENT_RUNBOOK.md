@@ -3,6 +3,11 @@
 **Sprint:** Weeks 9-10  
 **Owner:** Developer C (Infrastructure & DevOps)
 
+> **NOTE:** This runbook contains example values (account IDs, zone IDs, endpoints) that 
+> should be replaced with your actual values. The ALB hosted zone ID shown (Z1GM3OXH4ZPM65) 
+> is specific to ap-southeast-2 region. Verify the correct zone ID for your target region 
+> from [AWS Documentation](https://docs.aws.amazon.com/general/latest/gr/elb.html).
+
 ---
 
 ## Table of Contents

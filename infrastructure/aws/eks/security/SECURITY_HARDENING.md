@@ -3,6 +3,10 @@
 **Status:** Week 10 Implementation Guide  
 **Owner:** Developer C (Infrastructure & DevOps)
 
+> **NOTE:** This guide contains example values (email addresses, account IDs, resource names) 
+> that should be replaced with your actual values when implementing. All example values are 
+> clearly marked with comments. Refer to your specific AWS account and infrastructure configuration.
+
 ---
 
 ## Table of Contents
@@ -74,11 +78,11 @@ aws sns create-topic \
     --name guardduty-findings \
     --region ap-southeast-2
 
-# Subscribe email to topic
+# Subscribe email to topic (CUSTOMIZE: Replace with your actual security email)
 aws sns subscribe \
     --topic-arn arn:aws:sns:ap-southeast-2:220711411889:guardduty-findings \
     --protocol email \
-    --notification-endpoint security@ohmycoins.com
+    --notification-endpoint security@ohmycoins.com  # REPLACE: Use your actual security email
 
 # Create EventBridge rule to forward findings to SNS
 aws events put-rule \
