@@ -655,18 +655,427 @@ Successfully completed Weeks 1-6 of the Infrastructure & DevOps track as **Devel
 - Infrastructure ready for application deployment
 - Perfect coordination at sync points
 
-**Current Status:** ✅ **WEEKS 1-6 COMPLETE - READY FOR WEEK 7+**
+**Current Status:** ✅ **WEEKS 1-6 COMPLETE - READY FOR WEEKS 7-10**
 
-**Next Milestone:** Week 7-8 - Application deployment support and monitoring stack
+**Next Milestone:** Weeks 7-8 - Application deployment to staging  
+**Following Milestone:** Weeks 9-10 - Monitoring stack deployment
 
 **Infrastructure Readiness:** ✅ **100% READY** to host applications from Developer A (data collectors) and Developer B (agentic system)
 
 ---
 
+## Next Sprint Plan: Application Deployment & Monitoring (10 Weeks)
+
+**Sprint Start Date:** 2025-11-20  
+**Sprint Objective:** Deploy all applications to staging and implement comprehensive monitoring  
+**Developer:** Developer C (Infrastructure & DevOps Specialist)
+
+### Overview
+
+With the staging environment fully deployed, the focus shifts to deploying the applications developed by Developer A (Phase 2.5 data collectors) and Developer B (Phase 3 agentic system) to the staging environment, and implementing a comprehensive monitoring stack.
+
+### Weeks 7-8: Application Deployment to Staging
+
+**Objective:** Deploy Phase 2.5 collectors and Phase 3 agentic system to staging environment
+
+#### 1. Kubernetes Infrastructure Setup
+
+**Tasks:**
+- [ ] Create Kubernetes manifests directory structure
+  - `infrastructure/kubernetes/base/` - Base configurations
+  - `infrastructure/kubernetes/overlays/staging/` - Staging-specific configs
+  - `infrastructure/kubernetes/overlays/production/` - Production-specific configs
+- [ ] Set up Kustomize for environment management
+  - Base manifests for all services
+  - Overlays for environment-specific configurations
+  - ConfigMaps and Secrets management
+- [ ] Configure service discovery and networking
+  - Internal service communication
+  - External load balancer configuration
+  - DNS and ingress setup
+
+**Deliverables:**
+- Kubernetes directory structure created
+- Kustomize configuration working
+- Service networking configured
+
+**Files to Create:**
+- `infrastructure/kubernetes/base/kustomization.yaml`
+- `infrastructure/kubernetes/overlays/staging/kustomization.yaml`
+- `infrastructure/kubernetes/README.md`
+
+#### 2. Backend Service Deployment
+
+**Tasks:**
+- [ ] Create Kubernetes deployment for FastAPI backend
+  - Deployment manifest with replicas and resource limits
+  - ConfigMap for environment variables
+  - Secret for sensitive credentials
+  - Service for internal communication
+  - Ingress for external access
+- [ ] Create Helm charts for simplified deployment
+  - Chart structure for backend service
+  - Values files for staging and production
+  - Templates for deployment, service, ingress
+  - Chart documentation
+- [ ] Deploy backend to staging
+  - Build and push Docker image to ECR
+  - Apply Kubernetes manifests
+  - Verify deployment health
+  - Test API endpoints
+
+**Deliverables:**
+- Backend deployment manifests created
+- Helm chart for backend complete
+- Backend running on staging
+
+**Files to Create:**
+- `infrastructure/kubernetes/base/backend-deployment.yaml`
+- `infrastructure/kubernetes/base/backend-service.yaml`
+- `infrastructure/kubernetes/base/backend-ingress.yaml`
+- `infrastructure/helm/backend/Chart.yaml`
+- `infrastructure/helm/backend/values.yaml`
+- `infrastructure/helm/backend/templates/*`
+
+#### 3. Collector Services Deployment
+
+**Tasks:**
+- [ ] Create Kubernetes CronJobs for scheduled collectors
+  - DeFiLlama (daily)
+  - SEC API (daily)
+  - CoinSpot announcements (hourly)
+- [ ] Create Kubernetes Deployments for continuous collectors
+  - Reddit (every 15 minutes)
+  - CryptoPanic (every 5 minutes)
+- [ ] Configure resource limits and requests
+  - CPU and memory limits
+  - Storage for temporary files
+  - Proper resource allocation
+- [ ] Deploy collectors to staging
+  - Build and push collector images
+  - Apply CronJob and Deployment manifests
+  - Verify collector execution
+  - Check data ingestion
+
+**Deliverables:**
+- Collector CronJobs and Deployments created
+- All collectors running on staging
+- Data successfully ingesting to RDS
+
+**Files to Create:**
+- `infrastructure/kubernetes/base/collectors/defillama-cronjob.yaml`
+- `infrastructure/kubernetes/base/collectors/sec-api-cronjob.yaml`
+- `infrastructure/kubernetes/base/collectors/coinspot-cronjob.yaml`
+- `infrastructure/kubernetes/base/collectors/reddit-deployment.yaml`
+- `infrastructure/kubernetes/base/collectors/cryptopanic-deployment.yaml`
+
+#### 4. Agentic System Deployment (Week 8)
+
+**Coordination with Developer B**
+
+**Tasks:**
+- [ ] Create Kubernetes deployment for agentic system
+  - Deployment manifest with auto-scaling
+  - Redis connection configuration
+  - PostgreSQL connection configuration
+  - Resource limits for ML workloads
+- [ ] Configure persistent storage for artifacts
+  - PersistentVolumeClaim for model storage
+  - S3 bucket integration for large artifacts
+  - Backup strategy for artifacts
+- [ ] Deploy agentic system to staging
+  - Build and push agentic system image
+  - Apply deployment manifests
+  - Verify Redis and DB connectivity
+  - Test agent workflow execution
+- [ ] Integration testing
+  - Test complete workflow on staging
+  - Verify data access from collectors
+  - Test artifact storage
+  - Performance testing
+
+**Deliverables:**
+- Agentic system deployed to staging
+- Integration tests passing
+- Performance benchmarks documented
+
+**Files to Create:**
+- `infrastructure/kubernetes/base/agentic-deployment.yaml`
+- `infrastructure/kubernetes/base/agentic-service.yaml`
+- `infrastructure/kubernetes/base/agentic-pvc.yaml`
+
+### Weeks 9-10: Monitoring & Observability Stack
+
+**Objective:** Implement comprehensive monitoring and observability for staging environment
+
+#### 1. Prometheus Deployment
+
+**Tasks:**
+- [ ] Deploy Prometheus to Kubernetes
+  - Use Prometheus Operator or Helm chart
+  - Configure scrape targets for all services
+  - Set up persistent storage for metrics
+  - Configure retention policies
+- [ ] Create ServiceMonitors for applications
+  - Backend API metrics
+  - Collector job metrics
+  - Agentic system metrics
+  - Database metrics (RDS)
+  - Redis metrics
+- [ ] Configure alerting rules
+  - High error rates
+  - Service downtime
+  - Resource exhaustion
+  - Database connection issues
+  - Collector failures
+
+**Deliverables:**
+- Prometheus operational on staging
+- All services being monitored
+- Alert rules configured
+
+**Files to Create:**
+- `infrastructure/kubernetes/monitoring/prometheus-values.yaml`
+- `infrastructure/kubernetes/monitoring/servicemonitor-backend.yaml`
+- `infrastructure/kubernetes/monitoring/servicemonitor-collectors.yaml`
+- `infrastructure/kubernetes/monitoring/prometheus-rules.yaml`
+
+#### 2. Grafana Deployment
+
+**Tasks:**
+- [ ] Deploy Grafana to Kubernetes
+  - Use Grafana Helm chart
+  - Configure persistent storage
+  - Set up authentication
+  - Configure datasources (Prometheus, Loki)
+- [ ] Create application-specific dashboards
+  - **Backend API Dashboard:**
+    - Request rate, latency, error rate
+    - Active users
+    - Database query performance
+  - **Data Collection Dashboard:**
+    - Collector job success rates
+    - Records collected per collector
+    - Collection latency
+    - Data quality metrics
+  - **Agentic System Dashboard:**
+    - Active agent sessions
+    - Workflow completion rate
+    - Agent tool execution metrics
+    - Model training metrics
+  - **Infrastructure Dashboard:**
+    - CPU and memory usage
+    - Network traffic
+    - Disk I/O
+    - Pod health
+- [ ] Configure alerting through Grafana
+  - Alert channels (email, Slack)
+  - Alert rules
+  - Alert routing
+
+**Deliverables:**
+- Grafana operational on staging
+- 4+ dashboards created
+- Alerting configured
+
+**Files to Create:**
+- `infrastructure/kubernetes/monitoring/grafana-values.yaml`
+- `infrastructure/kubernetes/monitoring/dashboards/backend-api.json`
+- `infrastructure/kubernetes/monitoring/dashboards/data-collection.json`
+- `infrastructure/kubernetes/monitoring/dashboards/agentic-system.json`
+- `infrastructure/kubernetes/monitoring/dashboards/infrastructure.json`
+
+#### 3. Loki/Promtail Deployment
+
+**Tasks:**
+- [ ] Deploy Loki for log aggregation
+  - Use Loki Helm chart
+  - Configure S3 backend for log storage
+  - Set up retention policies
+  - Configure resource limits
+- [ ] Deploy Promtail for log collection
+  - DaemonSet on all nodes
+  - Configure log parsing rules
+  - Add labels for log filtering
+- [ ] Configure log queries in Grafana
+  - Pre-built queries for common issues
+  - Log correlation with metrics
+  - Full-text search capability
+- [ ] Set up log-based alerts
+  - Error log spikes
+  - Critical error patterns
+  - Security-related logs
+
+**Deliverables:**
+- Loki/Promtail operational
+- Logs aggregated and searchable
+- Log-based alerts configured
+
+**Files to Create:**
+- `infrastructure/kubernetes/monitoring/loki-values.yaml`
+- `infrastructure/kubernetes/monitoring/promtail-values.yaml`
+- `infrastructure/kubernetes/monitoring/loki-datasource.yaml`
+
+#### 4. Monitoring Documentation
+
+**Tasks:**
+- [ ] Create monitoring runbook
+  - Dashboard guide
+  - Common queries
+  - Alert response procedures
+  - Troubleshooting guide
+- [ ] Document alert thresholds
+  - Rationale for each threshold
+  - Escalation procedures
+  - On-call rotation (if applicable)
+- [ ] Create monitoring README
+  - Architecture overview
+  - Deployment instructions
+  - Dashboard descriptions
+  - Query examples
+
+**Deliverables:**
+- Comprehensive monitoring documentation
+- Runbook for on-call engineers
+- README for monitoring stack
+
+**Files to Create:**
+- `infrastructure/kubernetes/monitoring/README.md`
+- `infrastructure/kubernetes/monitoring/RUNBOOK.md`
+- `infrastructure/kubernetes/monitoring/ALERTING.md`
+
+### Weeks 11-12: Production Environment Preparation
+
+**Objective:** Prepare production environment for future deployment
+
+#### 1. Production Infrastructure Setup
+
+**Tasks:**
+- [ ] Deploy production Terraform stack
+  - Multi-AZ configuration
+  - Larger instance sizes
+  - Enhanced security
+  - Backup policies
+- [ ] Configure DNS and SSL certificates
+  - Route53 DNS setup
+  - ACM certificate provisioning
+  - Domain verification
+  - SSL/TLS configuration
+- [ ] Enable WAF on ALB
+  - OWASP top 10 rules
+  - Rate limiting rules
+  - IP reputation rules
+  - Custom rules for application
+- [ ] Set up backup and disaster recovery
+  - RDS automated backups
+  - Snapshot policies
+  - Cross-region replication
+  - Recovery testing
+
+**Deliverables:**
+- Production environment deployed
+- DNS and SSL configured
+- WAF enabled and tested
+- Backup policies in place
+
+#### 2. Security Hardening
+
+**Tasks:**
+- [ ] Implement AWS Config rules
+  - Resource compliance checks
+  - Security best practices
+  - Cost optimization rules
+- [ ] Enable GuardDuty
+  - Threat detection
+  - Anomaly detection
+  - Automated responses
+- [ ] Enable CloudTrail logging
+  - API activity logging
+  - Audit trail
+  - Compliance reporting
+- [ ] Conduct security audit
+  - Penetration testing
+  - Vulnerability scanning
+  - Compliance validation
+
+**Deliverables:**
+- Security hardening complete
+- Audit report generated
+- Compliance validated
+
+#### 3. CI/CD Pipeline Enhancement
+
+**Tasks:**
+- [ ] Enhance GitHub Actions workflows
+  - Automated deployment to staging
+  - Automated deployment to production (manual approval)
+  - Rollback capability
+  - Database migration automation
+- [ ] Implement blue-green deployment
+  - Zero-downtime deployments
+  - Quick rollback capability
+  - Traffic switching
+- [ ] Add deployment gates
+  - Automated testing before deploy
+  - Security scanning
+  - Manual approval for production
+
+**Deliverables:**
+- Enhanced CI/CD pipeline
+- Blue-green deployment working
+- Automated deployment to staging
+
+**Files to Create/Modify:**
+- `.github/workflows/deploy-staging.yml` (NEW)
+- `.github/workflows/deploy-production.yml` (NEW)
+- `.github/workflows/deploy-aws.yml` (MODIFY)
+
+### Integration with Other Developers
+
+**Developer A (Phase 6 Trading):**
+- Coordination: Week 8 - Prepare for trading system deployment
+- Trading system can be deployed to staging in subsequent sprint
+- Monitoring dashboards will include trading metrics
+
+**Developer B (Phase 3 Agentic):**
+- Coordination: Week 8 - Deploy Phase 3 to staging
+- Integration testing together
+- Performance optimization based on staging metrics
+
+### Success Metrics
+
+**By End of Sprint:**
+- [ ] All applications deployed to staging
+- [ ] Backend API accessible and tested
+- [ ] All collectors running and ingesting data
+- [ ] Agentic system operational on staging
+- [ ] Prometheus, Grafana, Loki deployed
+- [ ] 4+ monitoring dashboards created
+- [ ] Alerting configured and tested
+- [ ] Production environment prepared
+- [ ] Security hardening complete
+- [ ] Enhanced CI/CD pipeline operational
+
+### Risk Assessment
+
+**High Risk:**
+1. Application deployment issues - Mitigation: Thorough testing, rollback plan
+2. Resource constraints on staging - Mitigation: Monitor and scale as needed
+
+**Medium Risk:**
+1. Monitoring stack complexity - Mitigation: Use proven Helm charts, follow best practices
+2. Integration issues - Mitigation: Close coordination with Developer A & B
+
+**Low Risk:**
+1. Documentation gaps - Mitigation: Document as we go
+2. Performance optimization - Mitigation: Iterative approach
+
+---
+
 **Developer:** Developer C (Infrastructure & DevOps Specialist)  
-**Date Completed:** 2025-11-19  
-**Sprint Status:** WEEKS 1-6 COMPLETE | WEEK 7-8 PLANNED  
-**Next Review:** After Week 7-8 application deployments
+**Date Updated:** 2025-11-20  
+**Sprint Status:** WEEKS 1-6 COMPLETE | WEEKS 7-12 PLANNED  
+**Next Review:** After Week 8 application deployments
 
 ---
 

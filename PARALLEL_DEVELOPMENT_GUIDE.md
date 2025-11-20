@@ -1,53 +1,119 @@
 # Parallel Development Guide - Oh My Coins (OMC!)
 
-**Generated:** 2025-11-17  
-**Purpose:** Identify and coordinate parallel development opportunities to minimize time-to-market
+**Last Updated:** 2025-11-20  
+**Purpose:** Coordinate parallel development for next sprint cycle
+**Context:** Phase 2.5 and Infrastructure (Weeks 1-6) complete. Phase 3 at 60% completion.
 
 ---
 
-## Quick Reference: What Can Be Done in Parallel?
+## Sprint Status Summary
 
-### ✅ Can Work Simultaneously (High Independence)
+### ✅ Completed Work (Current Sprint)
+| Developer | Phase | Status | Key Deliverables |
+|-----------|-------|--------|------------------|
+| **Developer A** | Phase 2.5 Data Collection | ✅ 100% | 5 collectors, quality monitoring, 105+ tests |
+| **Developer B** | Phase 3 Agentic (Weeks 1-8) | ✅ 60% | LangGraph, 4 agents, ReAct loop, 109+ tests |
+| **Developer C** | Phase 9 Infrastructure (Weeks 1-6) | ✅ 100% | AWS staging deployed, EKS cluster, 8 test suites |
+
+### 🎯 Next Sprint Priorities
 
 | Track A | Track B | Track C |
 |---------|---------|---------|
-| **Phase 2.5 Data Collection** | **Phase 3 Agentic System** | **Infrastructure & DevOps** |
-| SEC API, CoinSpot scraper, Reddit | LangGraph, Agents, Tools | AWS setup, CI/CD, Monitoring |
-| **Timeline:** 4-6 weeks | **Timeline:** 12-14 weeks | **Timeline:** 4-8 weeks |
-| **Cost:** $0/month | **Cost:** $50-150/month | **Cost:** Infrastructure time |
+| **Phase 6: Trading System** | **Phase 3: Complete Agentic** | **Application Deployment** |
+| Coinspot trading API, execution engine | HiTL features, reporting, finalization | Deploy to staging, monitoring stack |
+| **Timeline:** 6-8 weeks | **Timeline:** 4 weeks | **Timeline:** 4-6 weeks |
+| **Developer:** Developer A | **Developer:** Developer B | **Developer:** Developer C |
 
-**Key Insight:** All three tracks can start immediately and work independently until Week 6, when integration testing begins.
-
----
-
-## Detailed Parallel Opportunities
-
-### Level 1: Independent Work Streams (Zero Coordination)
-
-These can be done by different developers with minimal communication:
-
-#### Stream 1: Catalyst Ledger Implementation
-**Owner:** Developer A  
-**Duration:** 2 weeks  
-**Dependencies:** None (database schema exists)
-
-- Week 1: SEC API integration
-- Week 2: CoinSpot announcements scraper
-
-**Files Created:**
-- `backend/app/services/collectors/catalyst/sec_api.py`
-- `backend/app/services/collectors/catalyst/coinspot_announcements.py`
-- `backend/tests/services/collectors/catalyst/test_sec_api.py`
-- `backend/tests/services/collectors/catalyst/test_coinspot_announcements.py`
-
-**No Conflicts With:** Any other work stream
+**Key Insight:** All three tracks are independent and can proceed in parallel. Integration testing in Week 4 and Week 8.
 
 ---
 
-#### Stream 2: Human Ledger Completion
-**Owner:** Developer A (after Stream 1) or Developer B  
-**Duration:** 1 week  
-**Dependencies:** None (database schema exists)
+## Current Sprint Plan (Next 8 Weeks)
+
+### Week 1-2: Parallel Independent Development
+
+**Developer A: Phase 6 - Trading Integration (Weeks 1-2)**
+- [ ] Implement Coinspot trading API client (buy/sell)
+- [ ] Add order execution service with queue
+- [ ] Implement position management
+- [ ] Write comprehensive unit tests
+- **Directory:** `backend/app/services/trading/`
+- **No conflicts with:** Developer B or C
+
+**Developer B: Phase 3 - Human-in-the-Loop (Weeks 9-10)**
+- [ ] Implement clarification system
+- [ ] Implement choice presentation
+- [ ] Implement user override mechanism
+- [ ] Add approval gates
+- **Directory:** `backend/app/services/agent/`
+- **No conflicts with:** Developer A or C
+
+**Developer C: Application Deployment (Weeks 7-8)**
+- [ ] Create Kubernetes manifests for backend
+- [ ] Set up Helm charts
+- [ ] Deploy Phase 2.5 collectors to staging
+- [ ] Deploy Phase 3 agentic system to staging
+- **Directory:** `infrastructure/kubernetes/`
+- **No conflicts with:** Developer A or B
+
+### Week 3-4: Continued Parallel + Integration Point
+
+**Developer A: Phase 6 - Execution Engine (Weeks 3-4)**
+- [ ] Create live trading executor
+- [ ] Implement execution scheduler
+- [ ] Add safety mechanisms
+- [ ] Implement trade recording
+- **Integration:** None required yet
+
+**Developer B: Phase 3 - Reporting (Weeks 11-12)**
+- [ ] Implement ReportingAgent
+- [ ] Implement artifact management
+- [ ] Complete integration testing
+- [ ] Finalize documentation
+- **Integration:** Week 4 - Phase 3 complete, deploy to staging
+
+**Developer C: Monitoring Stack (Weeks 9-10)**
+- [ ] Deploy Prometheus and Grafana
+- [ ] Configure Loki/Promtail
+- [ ] Create application dashboards
+- [ ] Set up alerting rules
+- **Integration:** Week 4 - Test Phase 3 deployment
+
+### Week 5-6: Developer A Continues, B & C Support Integration
+
+**Developer A: Phase 6 - P&L System (Weeks 5-6)**
+- [ ] Implement P&L engine
+- [ ] Create P&L APIs
+- [ ] Implement trade history tracking
+- [ ] Add comprehensive testing
+
+**Developer B: Phase 3 Integration Support**
+- [ ] Support integration testing on staging
+- [ ] Fix any issues found in staging deployment
+- [ ] Optimize performance based on staging metrics
+- [ ] Begin planning Phase 5 (Algorithm Promotion)
+
+**Developer C: Production Preparation**
+- [ ] Configure DNS and SSL certificates
+- [ ] Enable WAF on ALB
+- [ ] Set up backup policies
+- [ ] Implement AWS Config rules
+
+### Week 7-8: Integration Testing & Planning
+
+**All Developers: Integration Testing**
+- [ ] End-to-end testing on staging
+- [ ] Performance testing
+- [ ] Security testing
+- [ ] Documentation review
+
+**Planning:**
+- [ ] Review Phase 6 progress (Trading System)
+- [ ] Plan Phase 5 (Algorithm Promotion) - Developer A
+- [ ] Plan Phase 7 (Floor Dashboard) - Developer B  
+- [ ] Plan Production Deployment - Developer C
+
+---
 
 - Week 3: Reddit API integration
 
@@ -107,78 +173,165 @@ These require occasional sync-ups but can mostly work independently:
 - Phase 2.5 collectors add new tables, don't modify existing ones
 - Agent tools can be stubbed out and filled in later
 
-**Developer A Work (Phase 2.5):**
-```
-Week 1-2: Catalyst Ledger (SEC, CoinSpot)
-Week 3:   Human Ledger (Reddit)
-Week 4:   Data Quality Monitoring
-Week 5-6: Testing & Documentation
-```
+## Coordination Strategies for Next Sprint
 
-**Developer B Work (Phase 3):**
-```
-Week 1-2: LangGraph Foundation (using existing price data)
-Week 3-4: Data Agents (stub Phase 2.5 tools)
-Week 5-6: Modeling Agents
-Week 7-8: Orchestration & ReAct Loop
-```
+### Strategy 1: Weekly Sync Meetings (1 hour every Monday)
+**Participants:** All 3 developers + project manager  
+**Format:**
+- Review previous week's progress (15 min)
+- Demo completed features (20 min)
+- Identify integration points and blockers (15 min)
+- Plan upcoming week coordination (10 min)
 
-**Integration Week (Week 6-7):**
-- Dev B updates DataRetrievalAgent to use Phase 2.5 data
-- Dev B updates DataAnalystAgent to analyze sentiment, catalysts
-- Both devs run integration tests
+**Key Topics:**
+- Week 1: Kickoff, confirm independent tracks
+- Week 2: Progress check, identify any early issues
+- Week 4: Integration planning (Phase 3 → Staging)
+- Week 6: Mid-sprint review, adjust plans if needed
+- Week 8: Sprint retrospective, plan next sprint
 
----
+### Strategy 2: Daily Async Standups (Slack/Discord)
+**When:** Every morning by 10 AM  
+**Format:** Each developer posts:
+- ✅ Completed yesterday
+- 🔨 Working on today
+- 🚧 Any blockers or questions
 
-### Level 3: Within-Phase Parallelization
+**Benefits:** 
+- Minimal overhead (5 min per person)
+- Asynchronous (respects different schedules)
+- Creates written record
+- Quick identification of conflicts
 
-#### Within Phase 2.5: Four Ledgers Can Be Built Independently
+### Strategy 3: Integration Testing Windows
+**Week 4 Integration (3 days)**
+- **Tuesday:** Developer C deploys Phase 3 to staging
+- **Wednesday:** Developer B tests Phase 3 on staging, Developer C monitors
+- **Thursday:** Fix any issues found, re-test
 
-**Glass Ledger Team:**
-- DeFiLlama API ✅ (already done)
-- Glassnode scraper (optional Tier 3)
-- Nansen API (optional Tier 2)
-
-**Human Ledger Team:**
-- CryptoPanic API ✅ (already done)
-- Reddit API (Week 3 priority)
-- X (Twitter) scraper (optional Tier 3)
-
-**Catalyst Ledger Team:**
-- SEC API (Week 1 priority)
-- CoinSpot announcements (Week 2 priority)
-
-**Exchange Ledger Team:**
-- Already complete ✅
-- Optional: Order book depth (advanced)
-
-**Shared Dependencies:**
-- Database schema ✅ (already created)
-- Collector orchestrator ✅ (already created)
-
-**If 4 Developers Available:**
-- Each takes one ledger
-- Complete Phase 2.5 in 2-3 weeks (vs. 4-6 weeks sequential)
+**Week 8 Integration (5 days)**
+- **Monday-Tuesday:** Developer C deploys all applications to staging
+- **Wednesday:** All developers run end-to-end integration tests
+- **Thursday-Friday:** Fix issues, optimize performance, final testing
 
 ---
 
-#### Within Phase 3: Five Agents Can Be Built Independently
+## Developer Work Boundaries (Avoid Conflicts)
 
-**Agent Development Teams:**
-1. **DataRetrievalAgent** (Dev 1, Week 3-4)
-2. **DataAnalystAgent** (Dev 2, Week 3-4)
-3. **ModelTrainingAgent** (Dev 1, Week 5-6)
-4. **ModelEvaluatorAgent** (Dev 2, Week 5-6)
-5. **ReportingAgent** (Dev 1 or 2, Week 11-12)
+### Developer A (Trading System)
+**Primary Directories:**
+- `backend/app/services/trading/` (NEW - exclusive ownership)
+- `backend/app/api/v1/floor/` (NEW - trading endpoints)
+- `backend/tests/services/trading/` (NEW - trading tests)
 
-**Shared Dependencies:**
-- LangGraph foundation (Week 1-2)
-- Orchestrator skeleton (Week 1-2)
-- ReAct loop implementation (Week 7-8)
+**Shared Files:**
+- `backend/app/models.py` - Coordinate if adding trading-related models
+- `backend/requirements.txt` - Coordinate if adding dependencies
 
-**If 2 Developers Available:**
-- Pair on agents (2 agents per sprint)
-- Complete agent development in 6 weeks (vs. 10 weeks sequential)
+**No Conflicts Expected With:** Developer B (agent/) or C (infrastructure/)
+
+### Developer B (Agentic Completion)
+**Primary Directories:**
+- `backend/app/services/agent/` (exclusive ownership)
+- `backend/app/api/v1/lab/` (agent endpoints)
+- `backend/tests/services/agent/` (agent tests)
+
+**Shared Files:**
+- None expected (all agent code is isolated)
+
+**No Conflicts Expected With:** Developer A (trading/) or C (infrastructure/)
+
+### Developer C (Infrastructure & Deployment)
+**Primary Directories:**
+- `infrastructure/kubernetes/` (NEW - exclusive ownership)
+- `infrastructure/terraform/` (exclusive ownership)
+- `.github/workflows/` (deployment workflows)
+
+**Shared Files:**
+- `docker-compose.yml` - Coordinate if modifying services
+- `Dockerfile` - Inform if changing base images
+
+**No Conflicts Expected With:** Developer A (trading/) or B (agent/)
+
+---
+
+## Risk Mitigation Strategies
+
+### Risk 1: Integration Delays
+**Symptom:** Phase 3 deployment to staging takes longer than expected  
+**Mitigation:**
+- Start deployment preparation in Week 3 (early)
+- Have Developer C create deployment runbook
+- Test deployment process in Week 3 (dry run)
+- Buffer time in Week 4 for fixes
+
+**Owner:** Developer C with support from Developer B
+
+### Risk 2: Trading API Changes
+**Symptom:** Coinspot API changes, breaks trading implementation  
+**Mitigation:**
+- Implement comprehensive error handling
+- Add API version detection
+- Create fallback mechanisms
+- Monitor Coinspot API announcements
+
+**Owner:** Developer A
+
+### Risk 3: Resource Constraints on Staging
+**Symptom:** Staging environment runs out of resources with all apps deployed  
+**Mitigation:**
+- Monitor staging resource usage from Week 1
+- Scale up staging resources if needed (increase RDS, Redis sizes)
+- Optimize application resource requests
+- Consider deploying only essential services initially
+
+**Owner:** Developer C
+
+### Risk 4: Phase 3 Completion Delays
+**Symptom:** HiTL or Reporting features take longer than 4 weeks  
+**Mitigation:**
+- Prioritize HiTL features by importance
+- Consider phased rollout (basic HiTL first)
+- Developer C or A can assist with testing
+- Extend timeline if needed (acceptable)
+
+**Owner:** Developer B
+
+### Risk 5: Testing Gaps
+**Symptom:** Integration tests reveal major issues in Week 8  
+**Mitigation:**
+- Continuous integration testing throughout sprint
+- Developer C runs health checks on staging weekly
+- Each developer runs their tests before integration windows
+- Have rollback plan for staging deployments
+
+**Owner:** All developers
+
+---
+
+## Success Metrics for This Sprint
+
+### Process Metrics
+- [ ] All developers complete assigned tasks by Week 8
+- [ ] Zero merge conflicts requiring >1 hour to resolve
+- [ ] Integration testing windows complete on schedule
+- [ ] All 3 developers attend weekly sync meetings
+- [ ] Daily standups posted >90% of days
+
+### Outcome Metrics
+- [ ] Phase 3 (Agentic) reaches 100% completion
+- [ ] Phase 6 (Trading) reaches 75% completion (6 of 8 weeks)
+- [ ] All applications deployed to staging environment
+- [ ] Monitoring stack operational on staging
+- [ ] 250+ total tests passing (current 214+ plus new tests)
+- [ ] Zero critical bugs in staging
+
+### Quality Metrics
+- [ ] Test coverage maintained >80% for new code
+- [ ] All code reviewed before merge
+- [ ] Documentation updated for new features
+- [ ] Security scans passing (no critical vulnerabilities)
+- [ ] Performance benchmarks met on staging
 
 ---
 
@@ -410,68 +563,151 @@ def get_sentiment_data(start_date, end_date, platform=None):
 
 ---
 
-## Immediate Action Plan (Week 1)
+## Immediate Action Plan for Next Sprint
 
-### Monday: Kickoff & Planning
-- [ ] All-hands meeting (2 hours)
-- [ ] Review NEXT_STEPS.md and this PARALLEL_DEVELOPMENT_GUIDE.md
-- [ ] Select development strategy (2-dev or 3-dev team)
-- [ ] Assign developers to tracks
-- [ ] Set up communication channels
-- [ ] Define API contracts for data access
+### Monday (Week 1, Day 1): Sprint Kickoff
+**All Developers - 2 hour meeting**
 
-### Tuesday-Wednesday: Development Environment
-- [ ] Dev A: Clone repo, set up collectors environment
-- [ ] Dev B: Clone repo, set up LangGraph environment
-- [ ] Dev C (if 3-dev): AWS account access, Terraform setup
-- [ ] All: Run existing tests to validate environment
-- [ ] All: Read relevant codebase (collectors/ or agent/)
+**Agenda:**
+1. Review completed work from previous sprint (30 min)
+   - Developer A: Phase 2.5 demo
+   - Developer B: Phase 3 (weeks 1-8) demo
+   - Developer C: Staging environment walkthrough
+2. Review this updated parallel development guide (30 min)
+3. Confirm work assignments and timelines (30 min)
+4. Identify potential risks and mitigation strategies (15 min)
+5. Set up communication channels (Slack, standup schedule) (15 min)
 
-### Thursday-Friday: Start Development
-- [ ] Dev A: Begin SEC API implementation
-- [ ] Dev B: Begin LangGraph foundation setup
-- [ ] Dev C (if 3-dev): Begin AWS infrastructure design
-- [ ] First daily standup (Thursday morning)
-- [ ] First end-of-week sync (Friday afternoon)
+**Deliverables:**
+- [ ] All developers confirm their assignments
+- [ ] Integration testing dates confirmed (Week 4, Week 8)
+- [ ] Communication channels set up
+- [ ] First daily standup scheduled
 
-### Weekend (Optional)
-- [ ] Continue reading codebase
-- [ ] Set up personal development environments
-- [ ] Review documentation
+### Week 1, Days 2-5: Begin Independent Development
+
+**Developer A:**
+- [ ] Set up trading service directory structure
+- [ ] Research Coinspot trading API endpoints
+- [ ] Implement basic trading client skeleton
+- [ ] Write initial unit tests
+
+**Developer B:**
+- [ ] Review HiTL requirements from Phase 3 plan
+- [ ] Design clarification system architecture
+- [ ] Implement basic clarification dialogue
+- [ ] Write initial unit tests
+
+**Developer C:**
+- [ ] Create Kubernetes manifests directory
+- [ ] Research Helm chart structure for FastAPI apps
+- [ ] Create basic deployment manifests
+- [ ] Test deployment to staging (dry run)
+
+**Friday Sync:**
+- [ ] Progress review
+- [ ] Identify any early blockers
+- [ ] Adjust plans if needed
+
+### Week 2: Continue Development + Early Integration Prep
+
+**All Developers:**
+- [ ] Continue primary work tracks
+- [ ] Submit PRs for code review
+- [ ] Update documentation
+
+**Developer C (Additional):**
+- [ ] Prepare Phase 3 deployment runbook
+- [ ] Test deployment process (Week 3 preparation)
+- [ ] Monitor staging resource usage
+
+### Week 3: Prepare for Integration
+
+**Developer B:**
+- [ ] Complete HiTL basic features
+- [ ] Prepare Phase 3 for staging deployment
+- [ ] Document deployment requirements
+
+**Developer C:**
+- [ ] Deploy Phase 3 to staging (end of week)
+- [ ] Verify deployment health
+- [ ] Monitor performance
+
+**Developer A:**
+- [ ] Continue trading system development
+- [ ] Independent track (no integration needed)
+
+### Week 4: Integration Testing Window
+
+**All Developers:**
+- [ ] Integration testing on staging
+- [ ] Fix identified issues
+- [ ] Performance optimization
+- [ ] Documentation updates
 
 ---
 
 ## Conclusion
 
-Parallel development can **reduce timeline by 40-50%** with proper coordination:
+### Sprint Summary
 
-- **Sequential Development:** 24-32 weeks
-- **2-Developer Parallel:** 12-16 weeks (50% reduction)
-- **3-Developer Parallel:** 10-14 weeks (56% reduction)
+**Current Status (November 20, 2025):**
+- ✅ Phase 2.5 (Data Collection): 100% complete
+- ✅ Phase 3 (Agentic): 60% complete (Weeks 1-8 done)
+- ✅ Phase 9 (Infrastructure): Weeks 1-6 complete, staging deployed
+- 🎯 **Ready for next sprint with 3 independent parallel tracks**
 
-**Critical Success Factors:**
-1. Clear ownership boundaries
-2. Defined API contracts upfront
-3. Frequent communication and integration
-4. Strong CI/CD and testing practices
-5. Willingness to adjust plan as needed
+### Next Sprint Goals (8 Weeks)
 
-**Next Action:** Select development strategy, assign developers, and begin Week 1 implementation.
+**By End of Sprint:**
+- ✅ Phase 3 Agentic System: 100% complete
+- 🎯 Phase 6 Trading System: 75% complete (6 of 8 weeks)
+- ✅ All applications deployed to staging
+- ✅ Monitoring stack operational
+- ✅ Ready for production deployment preparation
+
+### Timeline Efficiency
+
+**With Parallel Development:**
+- Next Sprint: 8 weeks
+- Work completed: 18 weeks equivalent (4 weeks Phase 3 + 6 weeks Phase 6 + 8 weeks Infrastructure)
+- **Time savings: 55% reduction** (8 weeks instead of 18 weeks sequential)
+
+**Cumulative Project Progress:**
+- Previous sprints: Significant foundation laid
+- Next sprint: All major features complete
+- Following sprint: Production deployment and polish
+- **Total timeline: Significantly reduced through effective parallelization**
+
+### Critical Success Factors
+
+1. ✅ **Clear Ownership:** Each developer has exclusive directories
+2. ✅ **Staging Environment:** Available for testing
+3. ✅ **Communication Plan:** Weekly syncs + daily standups
+4. ✅ **Integration Windows:** Scheduled and planned
+5. ✅ **Flexible Timeline:** Can adjust if needed
+
+### Next Actions
+
+**Immediate (This Week):**
+1. [ ] Project manager schedules sprint kickoff meeting
+2. [ ] All developers review this updated guide
+3. [ ] Set up communication channels
+4. [ ] Confirm work assignments
+
+**Week 1:**
+1. [ ] Sprint kickoff meeting (Monday)
+2. [ ] Begin independent development (Tuesday-Friday)
+3. [ ] First weekly sync (Friday)
+
+**Ongoing:**
+1. [ ] Daily async standups
+2. [ ] Weekly sync meetings
+3. [ ] Code reviews
+4. [ ] Documentation updates
 
 ---
 
-## Appendix: Conflict Resolution Matrix
-
-| Conflict Type | Probability | Impact | Mitigation |
-|---------------|-------------|--------|------------|
-| Merge conflicts in models.py | Medium | Medium | Coordinate schema changes, feature flags |
-| API contract breaking changes | Low | High | Version APIs, communicate before changes |
-| Environment dependency conflicts | Low | Medium | Docker, pinned versions, clean tests |
-| Integration test failures | Medium | High | Regular integration sprints, mock interfaces |
-| Knowledge silos | Medium | Medium | Code reviews, pair programming, documentation |
-| Timeline dependencies | Low | High | Buffer time, mock interfaces, flexible planning |
-
----
-
-**Last Updated:** 2025-11-17  
-**Next Review:** After Week 6 integration sprint
+**Last Updated:** 2025-11-20  
+**Next Review:** End of Week 4 (Integration Testing Window)  
+**Contact:** Project Manager for questions or concerns
