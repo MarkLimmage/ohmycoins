@@ -1,0 +1,201 @@
+# Collector CronJobs for Phase 2.5 Data Collection
+# Scheduled jobs for collecting data from various sources
+
+---
+# DeFiLlama Protocol Data Collector (Daily)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: defillama-collector
+  namespace: omc-staging
+  labels:
+    app: collectors
+    collector: defillama
+spec:
+  schedule: "0 2 * * *"  # Run at 2 AM UTC daily
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: collectors
+            collector: defillama
+          annotations:
+            prometheus.io/scrape: "false"
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: defillama-collector
+              image: omc-backend:latest  # Same image as backend
+              command: ["python", "-m", "app.services.collectors.glass.defillama"]
+              envFrom:
+                - configMapRef:
+                    name: backend-config
+                - secretRef:
+                    name: backend-secrets
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+---
+# SEC API Collector (Daily)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sec-collector
+  namespace: omc-staging
+  labels:
+    app: collectors
+    collector: sec
+spec:
+  schedule: "0 3 * * *"  # Run at 3 AM UTC daily
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: collectors
+            collector: sec
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: sec-collector
+              image: omc-backend:latest
+              command: ["python", "-m", "app.services.collectors.catalyst.sec_api"]
+              envFrom:
+                - configMapRef:
+                    name: backend-config
+                - secretRef:
+                    name: backend-secrets
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+---
+# CoinSpot Announcements Collector (Hourly)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: coinspot-announcements-collector
+  namespace: omc-staging
+  labels:
+    app: collectors
+    collector: coinspot-announcements
+spec:
+  schedule: "0 * * * *"  # Run hourly
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: collectors
+            collector: coinspot-announcements
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: coinspot-announcements-collector
+              image: omc-backend:latest
+              command: ["python", "-m", "app.services.collectors.catalyst.coinspot_announcements"]
+              envFrom:
+                - configMapRef:
+                    name: backend-config
+                - secretRef:
+                    name: backend-secrets
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+---
+# Reddit Collector (Every 15 minutes)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reddit-collector
+  namespace: omc-staging
+  labels:
+    app: collectors
+    collector: reddit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collectors
+      collector: reddit
+  template:
+    metadata:
+      labels:
+        app: collectors
+        collector: reddit
+    spec:
+      containers:
+        - name: reddit-collector
+          image: omc-backend:latest
+          command: ["python", "-m", "app.services.collectors.human.reddit"]
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# CryptoPanic Collector (Every 5 minutes)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cryptopanic-collector
+  namespace: omc-staging
+  labels:
+    app: collectors
+    collector: cryptopanic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collectors
+      collector: cryptopanic
+  template:
+    metadata:
+      labels:
+        app: collectors
+        collector: cryptopanic
+    spec:
+      containers:
+        - name: cryptopanic-collector
+          image: omc-backend:latest
+          command: ["python", "-m", "app.services.collectors.human.cryptopanic"]
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
