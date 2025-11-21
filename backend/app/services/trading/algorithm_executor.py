@@ -287,9 +287,10 @@ class AlgorithmExecutor:
         # Get trade history for this algorithm
         # Note: This requires user_id, which we'll need to add to the signature
         # For now, we'll return a placeholder
-        # TODO: Update when full algorithm system is implemented
+        # TODO: Update when Phase 3 (Agentic) or Phase 4 (Manual Lab) algorithm system is implemented
+        # Will integrate with trade_recorder to get actual algorithm performance metrics
         
-        logger.warning("Algorithm performance tracking not fully implemented yet")
+        logger.warning("Algorithm performance tracking not fully implemented yet - awaiting Phase 3/4 integration")
         
         return {
             'algorithm_id': str(algorithm_id),

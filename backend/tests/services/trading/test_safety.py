@@ -271,6 +271,7 @@ class TestSafetyManager:
         
         # Net: +400 (sell) - 400 (buy) = 0, so this should pass
         # Note: The actual P&L calculation is simplified in the code
+        # TODO: Full P&L calculation with cost basis tracking will be implemented in Phase 6 Weeks 5-6
         result = await safety_manager.validate_trade(
             user_id=test_user_with_portfolio.id,
             coin_type='ADA',

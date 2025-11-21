@@ -256,7 +256,7 @@ class ExecutionScheduler:
             if job_id in self._scheduled_algorithms:
                 self._scheduled_algorithms[job_id]['error_count'] += 1
             
-            # TODO: Implement error threshold and auto-disable failing algorithms
+            # TODO: Implement error threshold and auto-disable failing algorithms (Phase 6 Weeks 7-8 - Advanced Features)
     
     async def _get_market_data(self) -> dict[str, Any]:
         """
@@ -270,7 +270,8 @@ class ExecutionScheduler:
             return await self.market_data_provider.get_data()
         
         # Fallback: Fetch from Coinspot API
-        # TODO: Implement market data fetching from database or API
+        # TODO: Implement market data fetching from database or API when Phase 2.5 data integration is complete
+        # Market data will be sourced from price_data_5min table and comprehensive data collectors
         logger.warning("Using placeholder market data - implement proper market data provider")
         
         return {
