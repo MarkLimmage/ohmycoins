@@ -1,454 +1,400 @@
 """
-Reporting tools for the ReportingAgent.
+Reporting Tools - Week 11 Implementation
 
-Week 11 implementation: Tools for generating summaries, comparisons, recommendations, and visualizations.
+Tools for ReportingAgent to generate reports, summaries, and visualizations.
 """
 
+from datetime import datetime
 from typing import Any
-import os
+import pandas as pd
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend for server-side plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pandas as pd
-import numpy as np
-from datetime import datetime
-
-# Set seaborn style for better-looking plots
-sns.set_style("whitegrid")
+from pathlib import Path
 
 
 def generate_summary(
-    user_goal: str,
-    evaluation_results: dict[str, Any],
-    trained_models: dict[str, Any],
     analysis_results: dict[str, Any],
+    model_results: dict[str, Any],
+    evaluation_results: dict[str, Any],
+    user_goal: str,
 ) -> str:
     """
-    Generate a natural language summary of the workflow results.
-    
+    Generate a natural language summary of the entire workflow.
+
     Args:
+        analysis_results: Results from data analysis
+        model_results: Results from model training
+        evaluation_results: Results from model evaluation
         user_goal: Original user goal
-        evaluation_results: Model evaluation metrics
-        trained_models: Trained models information
-        analysis_results: Data analysis results
-    
+
     Returns:
-        Natural language summary as string
+        Natural language summary as markdown string
     """
-    summary_parts = []
+    summary_lines = []
     
-    # Add user goal
-    summary_parts.append(f"**Goal:** {user_goal}\n")
+    # Header
+    summary_lines.append("# Agent Workflow Summary\n")
+    summary_lines.append(f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+    summary_lines.append(f"**User Goal:** {user_goal}\n")
     
-    # Summarize data analysis
+    # Data Analysis Summary
+    summary_lines.append("\n## Data Analysis\n")
     if analysis_results:
-        summary_parts.append("\n**Data Analysis:**")
-        if "feature_count" in analysis_results:
-            summary_parts.append(f"- Analyzed {analysis_results['feature_count']} features")
-        if "record_count" in analysis_results:
-            summary_parts.append(f"- Processed {analysis_results['record_count']} records")
-        if "insights" in analysis_results:
-            insights = analysis_results["insights"]
-            if isinstance(insights, list):
-                for insight in insights[:3]:  # Top 3 insights
-                    summary_parts.append(f"- {insight}")
+        if "exploratory_analysis" in analysis_results:
+            eda = analysis_results["exploratory_analysis"]
+            if "price_eda" in eda:
+                price_eda = eda["price_eda"]
+                summary_lines.append(f"- **Records Analyzed:** {price_eda.get('record_count', 'N/A')}")
+                summary_lines.append(f"- **Date Range:** {price_eda.get('date_range', 'N/A')}")
+                summary_lines.append(f"- **Coins Analyzed:** {', '.join(price_eda.get('coins', []))}")
+        
+        if "technical_indicators" in analysis_results:
+            summary_lines.append("- **Technical Analysis:** Completed")
+            indicators = analysis_results["technical_indicators"]
+            if isinstance(indicators, dict) and "columns" in indicators:
+                summary_lines.append(f"  - Indicators calculated: {len(indicators['columns'])}")
+            elif hasattr(indicators, 'columns'):
+                summary_lines.append(f"  - Indicators calculated: {len(indicators.columns)}")
+            else:
+                summary_lines.append(f"  - Indicators calculated: Multiple")
+        
+        if "sentiment_analysis" in analysis_results:
+            sentiment = analysis_results["sentiment_analysis"]
+            summary_lines.append(f"- **Sentiment Analysis:** {sentiment.get('overall_sentiment', 'N/A')}")
+            summary_lines.append(f"  - Average sentiment score: {sentiment.get('avg_sentiment', 0):.2f}")
+    else:
+        summary_lines.append("- No analysis results available")
     
-    # Summarize trained models
-    if trained_models:
-        summary_parts.append("\n**Models Trained:**")
-        for model_name, model_data in trained_models.items():
-            if isinstance(model_data, dict):
-                algorithm = model_data.get("algorithm", "Unknown")
-                summary_parts.append(f"- {model_name}: {algorithm}")
+    # Model Training Summary
+    summary_lines.append("\n## Model Training\n")
+    if model_results:
+        trained_models = model_results.get("trained_models", [])
+        summary_lines.append(f"- **Models Trained:** {len(trained_models)}")
+        for model in trained_models:
+            summary_lines.append(f"  - {model.get('name', 'Unnamed Model')} ({model.get('algorithm', 'Unknown')})")
+    else:
+        summary_lines.append("- No models trained")
     
-    # Summarize evaluation results
+    # Model Evaluation Summary
+    summary_lines.append("\n## Model Evaluation\n")
     if evaluation_results:
-        summary_parts.append("\n**Performance:**")
-        
-        # Find best model
-        best_model = None
-        best_score = -float('inf')
-        
-        for model_name, metrics in evaluation_results.items():
-            if isinstance(metrics, dict):
-                # Try to find a primary metric (accuracy, r2_score, etc.)
-                score = (
-                    metrics.get("accuracy") or 
-                    metrics.get("r2_score") or 
-                    metrics.get("f1_score") or 
-                    0
-                )
-                if score > best_score:
-                    best_score = score
-                    best_model = model_name
-        
-        if best_model:
-            summary_parts.append(f"- Best model: {best_model}")
-            if best_score > 0:
-                summary_parts.append(f"- Best score: {best_score:.4f}")
-        
-        # Add metrics for best model
-        if best_model and best_model in evaluation_results:
-            metrics = evaluation_results[best_model]
-            if isinstance(metrics, dict):
-                for metric_name, metric_value in metrics.items():
-                    if isinstance(metric_value, (int, float)):
-                        summary_parts.append(f"  - {metric_name}: {metric_value:.4f}")
+        evaluations = evaluation_results.get("evaluations", [])
+        if evaluations:
+            best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+            summary_lines.append(f"- **Best Model:** {best_model.get('model_name', 'N/A')}")
+            metrics = best_model.get("metrics", {})
+            summary_lines.append(f"  - Accuracy: {metrics.get('accuracy', 0):.4f}")
+            summary_lines.append(f"  - Precision: {metrics.get('precision', 0):.4f}")
+            summary_lines.append(f"  - Recall: {metrics.get('recall', 0):.4f}")
+            summary_lines.append(f"  - F1 Score: {metrics.get('f1', 0):.4f}")
+    else:
+        summary_lines.append("- No evaluation results available")
     
-    return "\n".join(summary_parts)
+    return "\n".join(summary_lines)
 
 
 def create_comparison_report(
+    model_results: dict[str, Any],
     evaluation_results: dict[str, Any],
-    trained_models: dict[str, Any],
 ) -> str:
     """
-    Create a comparison report for multiple models.
-    
+    Create a detailed comparison report of all trained models.
+
     Args:
-        evaluation_results: Model evaluation metrics
-        trained_models: Trained models information
-    
+        model_results: Results from model training
+        evaluation_results: Results from model evaluation
+
     Returns:
-        Comparison report as string
+        Comparison report as markdown string
     """
-    if not evaluation_results or len(evaluation_results) < 2:
-        return "Only one model trained, comparison not applicable."
+    report_lines = []
     
-    report_parts = []
+    # Header
+    report_lines.append("# Model Comparison Report\n")
+    report_lines.append(f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
     
-    # Create a comparison table
-    report_parts.append("| Model | Algorithm | Primary Metric | Score |")
-    report_parts.append("|-------|-----------|----------------|-------|")
+    # Get evaluations
+    evaluations = evaluation_results.get("evaluations", [])
     
-    for model_name, metrics in evaluation_results.items():
-        if isinstance(metrics, dict):
-            algorithm = "Unknown"
-            if model_name in trained_models:
-                model_data = trained_models[model_name]
-                if isinstance(model_data, dict):
-                    algorithm = model_data.get("algorithm", "Unknown")
-            
-            # Get primary metric
-            primary_metric = "accuracy" if "accuracy" in metrics else list(metrics.keys())[0] if metrics else "N/A"
-            score = metrics.get(primary_metric, 0) if isinstance(metrics, dict) else 0
-            
-            report_parts.append(f"| {model_name} | {algorithm} | {primary_metric} | {score:.4f} |")
+    if not evaluations:
+        report_lines.append("No models to compare.")
+        return "\n".join(report_lines)
     
-    return "\n".join(report_parts)
+    # Create comparison table
+    report_lines.append("## Performance Comparison\n")
+    report_lines.append("| Model | Algorithm | Accuracy | Precision | Recall | F1 Score |")
+    report_lines.append("|-------|-----------|----------|-----------|--------|----------|")
+    
+    for eval_result in evaluations:
+        model_name = eval_result.get("model_name", "Unknown")
+        algorithm = eval_result.get("algorithm", "Unknown")
+        metrics = eval_result.get("metrics", {})
+        
+        report_lines.append(
+            f"| {model_name} | {algorithm} | "
+            f"{metrics.get('accuracy', 0):.4f} | "
+            f"{metrics.get('precision', 0):.4f} | "
+            f"{metrics.get('recall', 0):.4f} | "
+            f"{metrics.get('f1', 0):.4f} |"
+        )
+    
+    # Best model section
+    report_lines.append("\n## Best Model\n")
+    best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+    report_lines.append(f"**Model:** {best_model.get('model_name', 'N/A')}")
+    report_lines.append(f"**Algorithm:** {best_model.get('algorithm', 'N/A')}")
+    
+    metrics = best_model.get("metrics", {})
+    report_lines.append("\n**Metrics:**")
+    for metric_name, metric_value in metrics.items():
+        report_lines.append(f"- {metric_name}: {metric_value:.4f}")
+    
+    # Feature importance if available
+    if "feature_importance" in best_model:
+        report_lines.append("\n## Feature Importance (Top 10)\n")
+        importance = best_model["feature_importance"]
+        sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        for i, (feature, importance_val) in enumerate(sorted_features, 1):
+            report_lines.append(f"{i}. {feature}: {importance_val:.4f}")
+    
+    return "\n".join(report_lines)
 
 
 def generate_recommendations(
-    user_goal: str,
+    analysis_results: dict[str, Any],
+    model_results: dict[str, Any],
     evaluation_results: dict[str, Any],
-    trained_models: dict[str, Any],
-    state: dict[str, Any],
 ) -> list[str]:
     """
     Generate actionable recommendations based on results.
-    
+
     Args:
-        user_goal: Original user goal
-        evaluation_results: Model evaluation metrics
-        trained_models: Trained models information
-        state: Current workflow state
-    
+        analysis_results: Results from data analysis
+        model_results: Results from model training
+        evaluation_results: Results from model evaluation
+
     Returns:
         List of recommendation strings
     """
     recommendations = []
     
-    # Check if model performance is good
-    if evaluation_results:
-        best_score = 0.0
-        for metrics in evaluation_results.values():
-            if isinstance(metrics, dict):
-                score = (
-                    metrics.get("accuracy") or 
-                    metrics.get("r2_score") or 
-                    metrics.get("f1_score") or 
-                    0
-                )
-                best_score = max(best_score, score)
-        
-        if best_score < 0.6:
-            recommendations.append(
-                "Model performance is below 60%. Consider collecting more data or trying different features."
-            )
-        elif best_score < 0.8:
-            recommendations.append(
-                "Model performance is moderate. Consider hyperparameter tuning or feature engineering."
-            )
-        else:
-            recommendations.append(
-                "Model performance is good! Consider deploying this model to production."
-            )
-    
     # Check data quality
-    quality_checks = state.get("quality_checks", {})
-    if quality_checks:
-        quality_grade = quality_checks.get("quality_grade", "unknown")
-        if quality_grade in ["poor", "no_data"]:
+    if analysis_results:
+        eda = analysis_results.get("exploratory_analysis", {}).get("price_eda", {})
+        record_count = eda.get("record_count", 0)
+        
+        if record_count < 100:
             recommendations.append(
-                "Data quality is poor. Collect more data or improve data collection process."
+                "⚠️  Data Quality: Low sample size detected. Consider collecting more historical data "
+                "for better model performance."
             )
-        elif quality_grade == "fair":
+        elif record_count < 1000:
             recommendations.append(
-                "Data quality is fair. Additional data might improve model performance."
+                "💡 Data Quality: Moderate sample size. Model performance could improve with additional data."
             )
     
-    # Check if multiple models were trained
-    if trained_models and len(trained_models) > 1:
+    # Check model performance
+    if evaluation_results:
+        evaluations = evaluation_results.get("evaluations", [])
+        if evaluations:
+            best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+            accuracy = best_model.get("metrics", {}).get("accuracy", 0)
+            
+            if accuracy < 0.6:
+                recommendations.append(
+                    "⚠️  Model Performance: Low accuracy detected. Consider:\n"
+                    "  - Feature engineering to create more predictive features\n"
+                    "  - Trying different algorithms or ensemble methods\n"
+                    "  - Collecting additional data sources (sentiment, on-chain metrics)"
+                )
+            elif accuracy < 0.75:
+                recommendations.append(
+                    "💡 Model Performance: Moderate accuracy. To improve:\n"
+                    "  - Hyperparameter tuning\n"
+                    "  - Feature selection to reduce noise\n"
+                    "  - Cross-validation to ensure generalization"
+                )
+            else:
+                recommendations.append(
+                    "✅ Model Performance: Good accuracy achieved. Ready for further testing."
+                )
+            
+            # Check precision/recall balance
+            precision = best_model.get("metrics", {}).get("precision", 0)
+            recall = best_model.get("metrics", {}).get("recall", 0)
+            
+            if abs(precision - recall) > 0.15:
+                recommendations.append(
+                    "⚠️  Precision-Recall Imbalance: Consider adjusting classification threshold "
+                    "or using different class weights."
+                )
+    
+    # Check for missing analysis
+    if not analysis_results.get("sentiment_analysis"):
         recommendations.append(
-            "Multiple models were trained. Consider ensemble methods to combine their predictions."
+            "💡 Data Enhancement: Sentiment analysis not performed. Consider integrating "
+            "news and social media sentiment for improved predictions."
         )
     
-    # Check for errors
-    if state.get("error"):
+    if not analysis_results.get("on_chain_analysis"):
         recommendations.append(
-            "Errors occurred during the workflow. Review error messages and fix data quality issues."
+            "💡 Data Enhancement: On-chain analysis not performed. Consider adding blockchain "
+            "metrics (active addresses, TVL) for better insights."
         )
     
-    # General recommendation
-    if not recommendations:
-        recommendations.append(
-            "Continue monitoring model performance and retrain periodically with new data."
-        )
+    # Next steps
+    recommendations.append(
+        "\n📋 Next Steps:\n"
+        "  1. Review model performance on validation data\n"
+        "  2. Test algorithm with paper trading\n"
+        "  3. Set up monitoring for production deployment\n"
+        "  4. Define risk management parameters (position limits, stop-loss)"
+    )
     
     return recommendations
 
 
 def create_visualizations(
-    evaluation_results: dict[str, Any],
-    trained_models: dict[str, Any],
     analysis_results: dict[str, Any],
-    output_dir: str = "/tmp/agent_artifacts",
-) -> list[dict[str, Any]]:
+    evaluation_results: dict[str, Any],
+    output_dir: Path,
+) -> dict[str, str]:
     """
-    Create visualizations for the report.
-    
+    Create visualizations for analysis and model results.
+
     Args:
-        evaluation_results: Model evaluation metrics
-        trained_models: Trained models information
-        analysis_results: Data analysis results
-        output_dir: Directory to save visualizations
-    
+        analysis_results: Results from data analysis
+        evaluation_results: Results from model evaluation
+        output_dir: Directory to save plot files
+
     Returns:
-        List of visualization metadata dictionaries
+        Dictionary mapping plot names to file paths
     """
-    visualizations = []
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    plots = {}
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Set style
+    sns.set_style("whitegrid")
+    plt.rcParams['figure.figsize'] = (10, 6)
     
     # 1. Model Performance Comparison
-    if evaluation_results and len(evaluation_results) > 0:
-        try:
-            viz = _create_performance_comparison(
-                evaluation_results, output_dir, timestamp
-            )
-            if viz:
-                visualizations.append(viz)
-        except Exception as e:
-            print(f"Error creating performance comparison: {e}")
-    
-    # 2. Feature Importance (if available)
-    if analysis_results and "feature_importance" in analysis_results:
-        try:
-            viz = _create_feature_importance_plot(
-                analysis_results["feature_importance"], output_dir, timestamp
-            )
-            if viz:
-                visualizations.append(viz)
-        except Exception as e:
-            print(f"Error creating feature importance plot: {e}")
-    
-    # 3. Confusion Matrix (if available)
-    for model_name, metrics in evaluation_results.items():
-        if isinstance(metrics, dict) and "confusion_matrix" in metrics:
-            try:
-                viz = _create_confusion_matrix(
-                    metrics["confusion_matrix"], model_name, output_dir, timestamp
-                )
-                if viz:
-                    visualizations.append(viz)
-            except Exception as e:
-                print(f"Error creating confusion matrix for {model_name}: {e}")
-    
-    return visualizations
-
-
-def _create_performance_comparison(
-    evaluation_results: dict[str, Any],
-    output_dir: str,
-    timestamp: str,
-) -> dict[str, Any] | None:
-    """Create a bar chart comparing model performance."""
-    try:
-        # Extract metrics for comparison
-        models = []
-        scores = []
+    evaluations = evaluation_results.get("evaluations", [])
+    if evaluations:
+        fig, ax = plt.subplots()
         
-        for model_name, metrics in evaluation_results.items():
-            if isinstance(metrics, dict):
-                # Get primary metric
-                score = (
-                    metrics.get("accuracy") or 
-                    metrics.get("r2_score") or 
-                    metrics.get("f1_score") or 
-                    0
-                )
-                models.append(model_name)
-                scores.append(score)
+        models = [e.get("model_name", "Unknown") for e in evaluations]
+        metrics_to_plot = ["accuracy", "precision", "recall", "f1"]
         
-        if not models:
-            return None
+        # Prepare data for grouped bar chart
+        x = np.arange(len(models))
+        width = 0.2
         
-        # Create plot
-        fig, ax = plt.subplots(figsize=(10, 6))
-        bars = ax.bar(models, scores, color=sns.color_palette("husl", len(models)))
+        for i, metric in enumerate(metrics_to_plot):
+            values = [e.get("metrics", {}).get(metric, 0) for e in evaluations]
+            ax.bar(x + i * width, values, width, label=metric.capitalize())
         
-        # Customize plot
-        ax.set_xlabel("Model", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Score", fontsize=12, fontweight='bold')
-        ax.set_title("Model Performance Comparison", fontsize=14, fontweight='bold')
-        ax.set_ylim(0, 1.0)
-        
-        # Add value labels on bars
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(
-                bar.get_x() + bar.get_width() / 2.,
-                height,
-                f'{height:.3f}',
-                ha='center',
-                va='bottom',
-                fontsize=10
-            )
-        
-        plt.xticks(rotation=45, ha='right')
-        plt.tight_layout()
-        
-        # Save plot
-        filename = f"performance_comparison_{timestamp}.png"
-        filepath = os.path.join(output_dir, filename)
-        plt.savefig(filepath, dpi=150, bbox_inches='tight')
-        plt.close()
-        
-        return {
-            "title": "Model Performance Comparison",
-            "file_path": filepath,
-            "filename": filename,
-            "type": "bar_chart",
-        }
-    
-    except Exception as e:
-        print(f"Error in _create_performance_comparison: {e}")
-        return None
-
-
-def _create_feature_importance_plot(
-    feature_importance: dict[str, float],
-    output_dir: str,
-    timestamp: str,
-) -> dict[str, Any] | None:
-    """Create a horizontal bar chart of feature importance."""
-    try:
-        if not feature_importance:
-            return None
-        
-        # Sort by importance
-        sorted_features = sorted(
-            feature_importance.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-        
-        # Take top 15 features
-        top_features = sorted_features[:15]
-        features = [f[0] for f in top_features]
-        importance = [f[1] for f in top_features]
-        
-        # Create plot
-        fig, ax = plt.subplots(figsize=(10, 8))
-        bars = ax.barh(features, importance, color=sns.color_palette("viridis", len(features)))
-        
-        # Customize plot
-        ax.set_xlabel("Importance", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Feature", fontsize=12, fontweight='bold')
-        ax.set_title("Top 15 Feature Importance", fontsize=14, fontweight='bold')
-        
-        # Reverse y-axis so highest importance is at top
-        ax.invert_yaxis()
+        ax.set_xlabel('Model')
+        ax.set_ylabel('Score')
+        ax.set_title('Model Performance Comparison')
+        ax.set_xticks(x + width * 1.5)
+        ax.set_xticklabels(models, rotation=45, ha='right')
+        ax.legend()
+        ax.set_ylim([0, 1])
         
         plt.tight_layout()
-        
-        # Save plot
-        filename = f"feature_importance_{timestamp}.png"
-        filepath = os.path.join(output_dir, filename)
-        plt.savefig(filepath, dpi=150, bbox_inches='tight')
+        plot_path = output_dir / "model_comparison.png"
+        plt.savefig(plot_path, dpi=100, bbox_inches='tight')
         plt.close()
-        
-        return {
-            "title": "Feature Importance",
-            "file_path": filepath,
-            "filename": filename,
-            "type": "bar_chart",
-        }
+        plots["model_comparison"] = str(plot_path)
     
-    except Exception as e:
-        print(f"Error in _create_feature_importance_plot: {e}")
-        return None
-
-
-def _create_confusion_matrix(
-    confusion_matrix: list[list[int]] | Any,
-    model_name: str,
-    output_dir: str,
-    timestamp: str,
-) -> dict[str, Any] | None:
-    """Create a heatmap visualization of confusion matrix."""
-    try:
-        # Convert to numpy array if needed
-        if isinstance(confusion_matrix, list):
-            cm = np.array(confusion_matrix)
-        else:
-            cm = confusion_matrix
-        
-        # Create plot
-        fig, ax = plt.subplots(figsize=(8, 6))
-        sns.heatmap(
-            cm,
-            annot=True,
-            fmt='d',
-            cmap='Blues',
-            ax=ax,
-            cbar_kws={'label': 'Count'}
-        )
-        
-        # Customize plot
-        ax.set_xlabel("Predicted Label", fontsize=12, fontweight='bold')
-        ax.set_ylabel("True Label", fontsize=12, fontweight='bold')
-        ax.set_title(f"Confusion Matrix - {model_name}", fontsize=14, fontweight='bold')
-        
-        plt.tight_layout()
-        
-        # Save plot
-        filename = f"confusion_matrix_{model_name}_{timestamp}.png"
-        filepath = os.path.join(output_dir, filename)
-        plt.savefig(filepath, dpi=150, bbox_inches='tight')
-        plt.close()
-        
-        return {
-            "title": f"Confusion Matrix - {model_name}",
-            "file_path": filepath,
-            "filename": filename,
-            "type": "heatmap",
-        }
+    # 2. Feature Importance
+    if evaluations:
+        best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+        if "feature_importance" in best_model:
+            importance = best_model["feature_importance"]
+            sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[:10]
+            
+            features, importance_values = zip(*sorted_features)
+            
+            fig, ax = plt.subplots()
+            ax.barh(range(len(features)), importance_values)
+            ax.set_yticks(range(len(features)))
+            ax.set_yticklabels(features)
+            ax.set_xlabel('Importance')
+            ax.set_title('Top 10 Feature Importance')
+            ax.invert_yaxis()
+            
+            plt.tight_layout()
+            plot_path = output_dir / "feature_importance.png"
+            plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+            plt.close()
+            plots["feature_importance"] = str(plot_path)
     
-    except Exception as e:
-        print(f"Error in _create_confusion_matrix: {e}")
-        return None
+    # 3. Technical Indicators (if available)
+    indicators_df = analysis_results.get("technical_indicators")
+    if indicators_df is not None and isinstance(indicators_df, pd.DataFrame) and len(indicators_df) > 0:
+        fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+            
+            # Price and moving averages
+            if "timestamp" in indicators_df.columns and "close" in indicators_df.columns:
+                ax = axes[0]
+                ax.plot(indicators_df["timestamp"], indicators_df["close"], label="Price", linewidth=2)
+                
+                if "sma_20" in indicators_df.columns:
+                    ax.plot(indicators_df["timestamp"], indicators_df["sma_20"], 
+                           label="SMA 20", alpha=0.7)
+                if "ema_20" in indicators_df.columns:
+                    ax.plot(indicators_df["timestamp"], indicators_df["ema_20"], 
+                           label="EMA 20", alpha=0.7)
+                
+                ax.set_xlabel('Date')
+                ax.set_ylabel('Price')
+                ax.set_title('Price and Moving Averages')
+                ax.legend()
+                ax.grid(True, alpha=0.3)
+                
+                # RSI
+                ax = axes[1]
+                if "rsi" in indicators_df.columns:
+                    ax.plot(indicators_df["timestamp"], indicators_df["rsi"], 
+                           label="RSI", color='purple', linewidth=2)
+                    ax.axhline(y=70, color='r', linestyle='--', alpha=0.5, label='Overbought')
+                    ax.axhline(y=30, color='g', linestyle='--', alpha=0.5, label='Oversold')
+                    ax.set_xlabel('Date')
+                    ax.set_ylabel('RSI')
+                    ax.set_title('Relative Strength Index (RSI)')
+                    ax.legend()
+                    ax.grid(True, alpha=0.3)
+                    ax.set_ylim([0, 100])
+                
+                plt.tight_layout()
+                plot_path = output_dir / "technical_indicators.png"
+                plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+                plt.close()
+                plots["technical_indicators"] = str(plot_path)
+    
+    # 4. Confusion Matrix (if available)
+    if evaluations:
+        best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+        if "confusion_matrix" in best_model:
+            cm = np.array(best_model["confusion_matrix"])
+            
+            fig, ax = plt.subplots()
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+            ax.set_xlabel('Predicted')
+            ax.set_ylabel('Actual')
+            ax.set_title('Confusion Matrix')
+            
+            plt.tight_layout()
+            plot_path = output_dir / "confusion_matrix.png"
+            plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+            plt.close()
+            plots["confusion_matrix"] = str(plot_path)
+    
+    return plots

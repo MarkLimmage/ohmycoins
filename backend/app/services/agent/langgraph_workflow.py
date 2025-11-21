@@ -91,8 +91,8 @@ class AgentState(TypedDict):
     approval_needed: bool  # Workflow paused for approval
     pending_approvals: list[dict[str, Any]] | None  # Pending approval requests
     # Week 11 additions - Reporting
-    report_generated: bool  # Flag indicating if report was generated
-    report_data: dict[str, Any] | None  # Report data (summary, recommendations, visualizations)
+    reporting_completed: bool  # Flag indicating reporting is complete
+    reporting_results: dict[str, Any] | None  # Report generation results
 
 
 class LangGraphWorkflow:
@@ -104,6 +104,7 @@ class LangGraphWorkflow:
     
     Week 3-4: Enhanced with DataAnalystAgent for comprehensive data analysis.
     Week 5-6: Enhanced with ModelTrainingAgent and ModelEvaluatorAgent for ML pipeline.
+    Week 11: Enhanced with ReportingAgent for report generation.
     """
 
     def __init__(self, session: Session | None = None) -> None:
@@ -231,7 +232,7 @@ class LangGraphWorkflow:
             }
         )
         
-        # After evaluation, generate report
+        # After evaluation, generate report or retry
         workflow.add_conditional_edges(
             "evaluate_model",
             self._route_after_evaluation,
@@ -278,6 +279,7 @@ class LangGraphWorkflow:
         state["analysis_completed"] = False
         state["model_trained"] = False
         state["model_evaluated"] = False
+        state["reporting_completed"] = False
         
         # Week 7-8: Initialize ReAct loop fields
         state["reasoning_trace"] = []
@@ -603,7 +605,7 @@ class LangGraphWorkflow:
 
     async def _generate_report_node(self, state: AgentState) -> AgentState:
         """
-        Execute reporting agent to generate comprehensive report.
+        Execute reporting agent to generate comprehensive reports.
         
         Week 11: New node for generating reports and visualizations.
         
@@ -611,7 +613,7 @@ class LangGraphWorkflow:
             state: Current workflow state
             
         Returns:
-            Updated state with report data
+            Updated state with reporting results
         """
         state["current_step"] = "report_generation"
         
@@ -619,21 +621,26 @@ class LangGraphWorkflow:
             # Execute reporting agent
             updated_state = await self.reporting_agent.execute(state)
             
-            # Add message about report generation
-            if updated_state.get("report_generated"):
-                report_data = updated_state.get("report_data", {})
-                viz_count = len(report_data.get("visualizations", []))
+            # Add message about reporting
+            if updated_state.get("reporting_completed"):
+                reporting_results = updated_state.get("reporting_results", {})
+                viz_count = len(reporting_results.get("visualizations", {}))
+                rec_count = len(reporting_results.get("recommendations", []))
+                
                 updated_state["messages"].append({
                     "role": "assistant",
-                    "content": f"Report generated with {viz_count} visualizations."
+                    "content": (
+                        f"Report generation completed. Generated {viz_count} visualizations "
+                        f"and {rec_count} recommendations. Complete report available."
+                    )
                 })
             
             return updated_state
         except Exception as e:
             logger.error(f"Error in report generation: {str(e)}")
             state["error"] = f"Report generation failed: {str(e)}"
-            # Report generation is optional, so we don't fail the workflow
-            state["report_generated"] = False
+            # Continue to finalize even if reporting fails
+            state["reporting_completed"] = False
             return state
 
     async def _finalize_node(self, state: AgentState) -> AgentState:
@@ -847,7 +854,7 @@ class LangGraphWorkflow:
         """
         Route after model evaluation.
         
-        Week 11: Updated to route to reporting after successful evaluation.
+        Week 11: Updated to route to report generation instead of finalize.
         
         Args:
             state: Current workflow state

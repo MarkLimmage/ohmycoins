@@ -9,6 +9,8 @@ This document describes the LangGraph foundation implementation by Developer B a
 - **Week 3-4**: Enhanced with DataRetrievalAgent tools and new DataAnalystAgent
 - **Week 5-6**: Added ModelTrainingAgent and ModelEvaluatorAgent for complete ML pipeline
 - **Week 7-8**: Implemented ReAct loop with reasoning, conditional routing, and error recovery
+- **Week 9-10**: Added Human-in-the-Loop features (clarification, choice, approval, override)
+- **Week 11**: Added ReportingAgent for comprehensive report generation and artifact management
 
 ## Architecture
 
@@ -20,6 +22,8 @@ This document describes the LangGraph foundation implementation by Developer B a
    - Supports both synchronous and streaming execution
    - **Week 3-4**: Enhanced with DataAnalystAgent node
    - **Week 7-8**: Enhanced with ReAct loop and conditional routing
+   - **Week 9-10**: Enhanced with HiTL nodes (clarification, choice, approval)
+   - **Week 11**: Enhanced with ReportingAgent node
 
 2. **AgentOrchestrator** (`backend/app/services/agent/orchestrator.py`)
    - Main entry point for agent system
@@ -34,24 +38,27 @@ This document describes the LangGraph foundation implementation by Developer B a
    - **Week 3-4**: Added fields for retrieved_data, analysis_results, insights
    - **Week 5-6**: Added fields for model training and evaluation
    - **Week 7-8**: Added ReAct loop fields (reasoning_trace, decision_history, quality_checks, etc.)
+   - **Week 9-10**: Added HiTL fields (clarifications, choices, approvals, overrides)
+   - **Week 11**: Added reporting fields (reporting_completed, reporting_results)
 
 ### Workflow Nodes
 
-**Week 7-8 ReAct Loop Architecture** consists of nine nodes:
+**Week 11 Complete Architecture** consists of ten nodes:
 
-1. **initialize**: Sets up initial state and prepares for execution (including ReAct fields)
+1. **initialize**: Sets up initial state and prepares for execution (including ReAct and HiTL fields)
 2. **reason**: ReAct reasoning phase - determines next action based on state
 3. **retrieve_data**: Executes DataRetrievalAgent with error handling
-4. **validate_data**: Validates data quality before proceeding (NEW in Week 7-8)
+4. **validate_data**: Validates data quality before proceeding
 5. **analyze_data**: Executes DataAnalystAgent with error handling
 6. **train_model**: Executes ModelTrainingAgent with error handling
 7. **evaluate_model**: Executes ModelEvaluatorAgent with error handling
-8. **handle_error**: Error recovery with retry logic (NEW in Week 7-8)
-9. **finalize**: Completes workflow and prepares results
+8. **generate_report**: Executes ReportingAgent for comprehensive reports (NEW in Week 11)
+9. **handle_error**: Error recovery with retry logic
+10. **finalize**: Completes workflow and prepares final results
 
 ### State Flow
 
-**Week 7-8 ReAct Loop Flow (Conditional Routing):**
+**Week 11 Complete Workflow (with Reporting):**
 ```
 START → initialize → reason → [CONDITIONAL ROUTING]
                         ↓
@@ -63,9 +70,9 @@ analyze_data → [ROUTES TO: train, finalize, reason, error]
                                             ↓
 train_model → [ROUTES TO: evaluate, reason, error]
                                             ↓
-evaluate_model → [ROUTES TO: finalize, retrain, reason, error]
+evaluate_model → [ROUTES TO: report, retrain, reason, error]
                                             ↓
-handle_error → [ROUTES TO: retry (→reason), end (→finalize)]
+generate_report → [GENERATES SUMMARY, COMPARISONS, RECOMMENDATIONS, VISUALIZATIONS]
                                             ↓
 finalize → END
 ```
@@ -196,6 +203,91 @@ Evaluates and compares trained models to select the best performing model.
 - "✓ Strong discriminative ability with ROC-AUC of 0.843"
 - "Top predictive features: rsi, macd, ema_20"
 - "Hyperparameter tuning achieved best CV score of 0.8234"
+
+### ReportingAgent (NEW in Week 11)
+
+**Location**: `backend/app/services/agent/agents/reporting.py`
+
+Generates comprehensive reports and visualizations from complete workflow results.
+
+**Tools** (`backend/app/services/agent/tools/reporting_tools.py`):
+- `generate_summary()`: Create natural language summaries of complete workflow
+  - Summarizes data analysis, model training, and evaluation results
+  - Includes key metrics and findings
+  - Formatted as Markdown for easy reading
+- `create_comparison_report()`: Generate model comparison reports
+  - Performance comparison table for all trained models
+  - Best model identification with complete metrics
+  - Feature importance for top model
+- `generate_recommendations()`: Create actionable recommendations
+  - Data quality recommendations (6 types)
+  - Model performance recommendations
+  - Precision-recall balance recommendations
+  - Data enhancement suggestions
+  - Next steps for deployment
+- `create_visualizations()`: Generate plots and charts
+  - Model performance comparison (bar chart)
+  - Feature importance (horizontal bar chart)
+  - Technical indicators (price, SMA, EMA, RSI line charts)
+  - Confusion matrix (heatmap)
+
+**Capabilities:**
+- Complete workflow summarization
+- Multi-model comparison analysis
+- Intelligent recommendation generation based on results
+- Professional visualizations with matplotlib/seaborn
+- Session-specific artifact organization
+- Multiple report formats (Markdown)
+- Error-resilient (continues workflow even if reporting fails)
+
+**Generated Artifacts:**
+- `summary.md` - Natural language workflow summary
+- `model_comparison.md` - Model comparison report
+- `recommendations.md` - Actionable recommendations
+- `complete_report.md` - Combined comprehensive report
+- `model_comparison.png` - Performance comparison chart
+- `feature_importance.png` - Feature importance chart
+- `technical_indicators.png` - Technical analysis charts (if available)
+- `confusion_matrix.png` - Confusion matrix heatmap (if available)
+
+**Example Report Content:**
+```markdown
+# Agent Workflow Summary
+
+**Generated:** 2025-11-21 08:00:00 UTC
+**User Goal:** Predict BTC price movement using technical indicators
+
+## Data Analysis
+- **Records Analyzed:** 1,000
+- **Date Range:** 2024-01-01 to 2024-02-01
+- **Coins Analyzed:** BTC, ETH
+- **Technical Analysis:** Completed
+- **Sentiment Analysis:** Bullish (avg: 0.72)
+
+## Model Training
+- **Models Trained:** 2
+  - RandomForestModel_1 (RandomForest)
+  - LogisticRegressionModel_1 (LogisticRegression)
+
+## Model Evaluation
+- **Best Model:** RandomForestModel_1
+  - Accuracy: 0.8700
+  - Precision: 0.8500
+  - Recall: 0.8900
+  - F1 Score: 0.8700
+```
+
+**Recommendations Example:**
+- ✅ Model Performance: Good accuracy achieved. Ready for further testing.
+- 💡 Data Enhancement: Sentiment analysis performed. Consider on-chain metrics.
+- 📋 Next Steps: Review validation data, test with paper trading, set up monitoring
+
+**Integration:**
+- Executes after model evaluation completes
+- Creates session-specific artifact directory
+- Generates all reports and visualizations
+- Updates workflow state with reporting results
+- Adds progress messages to workflow
 
 ## Configuration
 
