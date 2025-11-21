@@ -39,6 +39,7 @@ class AgentState(TypedDict):
     Week 5-6 additions: trained_models, evaluation_results, training_summary, evaluation_insights
     Week 7-8 additions: ReAct loop fields (reasoning_trace, decision_history, retry_count, etc.)
     Week 9-10 additions: HiTL fields (clarifications, choices, approvals, overrides)
+    Week 11 additions: Reporting fields (report_generated, report_data)
     """
     session_id: str
     user_goal: str
@@ -148,6 +149,7 @@ class LangGraphWorkflow:
         Week 3-4: Added analyze_data node between retrieve_data and finalize.
         Week 5-6: Added train_model and evaluate_model nodes for ML pipeline.
         Week 7-8: Enhanced with conditional routing, reasoning nodes, and error recovery.
+        Week 11: Added generate_report node for comprehensive reporting.
         
         Returns:
             Configured state graph with conditional edges
@@ -186,6 +188,7 @@ class LangGraphWorkflow:
                 "analyze": "analyze_data", 
                 "train": "train_model",
                 "evaluate": "evaluate_model",
+                "report": "generate_report",
                 "finalize": "finalize",
                 "error": "handle_error",
             }
@@ -287,6 +290,10 @@ class LangGraphWorkflow:
         state["skip_training"] = False
         state["needs_more_data"] = False
         state["quality_checks"] = {}
+        
+        # Week 11: Initialize reporting fields
+        state["report_generated"] = False
+        state["report_data"] = None
         
         state["messages"].append({
             "role": "system",
@@ -734,9 +741,11 @@ class LangGraphWorkflow:
     
     # Routing Functions for Conditional Edges
     
-    def _route_after_reasoning(self, state: AgentState) -> Literal["retrieve", "analyze", "train", "evaluate", "finalize", "error"]:
+    def _route_after_reasoning(self, state: AgentState) -> Literal["retrieve", "analyze", "train", "evaluate", "report", "finalize", "error"]:
         """
         Route after reasoning based on current state.
+        
+        Week 11: Added report routing option.
         
         Args:
             state: Current workflow state
@@ -766,6 +775,8 @@ class LangGraphWorkflow:
                 return "finalize"
         elif state.get("model_trained") and not state.get("model_evaluated"):
             return "evaluate"
+        elif state.get("model_evaluated") and not state.get("report_generated"):
+            return "report"
         else:
             return "finalize"
     
