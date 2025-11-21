@@ -24,6 +24,7 @@ from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.data_analyst import DataAnalystAgent
 from app.services.agent.agents.model_training import ModelTrainingAgent
 from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
+from app.services.agent.agents.reporting import ReportingAgent
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,9 @@ class AgentState(TypedDict):
     approval_mode: str  # "auto" or "manual"
     approval_needed: bool  # Workflow paused for approval
     pending_approvals: list[dict[str, Any]] | None  # Pending approval requests
+    # Week 11 additions - Reporting
+    reporting_completed: bool  # Flag indicating reporting is complete
+    reporting_results: dict[str, Any] | None  # Report generation results
 
 
 class LangGraphWorkflow:
@@ -99,6 +103,7 @@ class LangGraphWorkflow:
     
     Week 3-4: Enhanced with DataAnalystAgent for comprehensive data analysis.
     Week 5-6: Enhanced with ModelTrainingAgent and ModelEvaluatorAgent for ML pipeline.
+    Week 11: Enhanced with ReportingAgent for report generation.
     """
 
     def __init__(self, session: Session | None = None) -> None:
@@ -114,6 +119,7 @@ class LangGraphWorkflow:
         self.data_analyst_agent = DataAnalystAgent()
         self.model_training_agent = ModelTrainingAgent()
         self.model_evaluator_agent = ModelEvaluatorAgent()
+        self.reporting_agent = ReportingAgent()
         
         # Initialize LLM for reasoning (if API key available)
         self.llm = None
@@ -159,6 +165,7 @@ class LangGraphWorkflow:
         workflow.add_node("analyze_data", self._analyze_data_node)
         workflow.add_node("train_model", self._train_model_node)
         workflow.add_node("evaluate_model", self._evaluate_model_node)
+        workflow.add_node("generate_report", self._generate_report_node)
         workflow.add_node("finalize", self._finalize_node)
         
         # Add error recovery node
@@ -222,17 +229,20 @@ class LangGraphWorkflow:
             }
         )
         
-        # After evaluation, finalize or retry
+        # After evaluation, generate report or retry
         workflow.add_conditional_edges(
             "evaluate_model",
             self._route_after_evaluation,
             {
-                "finalize": "finalize",
+                "report": "generate_report",
                 "retrain": "train_model",
                 "reason": "reason",
                 "error": "handle_error",
             }
         )
+        
+        # After report generation, finalize
+        workflow.add_edge("generate_report", "finalize")
         
         # Error handling routes back to reason or ends
         workflow.add_conditional_edges(
@@ -266,6 +276,7 @@ class LangGraphWorkflow:
         state["analysis_completed"] = False
         state["model_trained"] = False
         state["model_evaluated"] = False
+        state["reporting_completed"] = False
         
         # Week 7-8: Initialize ReAct loop fields
         state["reasoning_trace"] = []
@@ -585,6 +596,46 @@ class LangGraphWorkflow:
             state["error"] = f"Model evaluation failed: {str(e)}"
             return state
 
+    async def _generate_report_node(self, state: AgentState) -> AgentState:
+        """
+        Execute reporting agent to generate comprehensive reports.
+        
+        Week 11: New node for generating reports and visualizations.
+        
+        Args:
+            state: Current workflow state
+            
+        Returns:
+            Updated state with reporting results
+        """
+        state["current_step"] = "report_generation"
+        
+        try:
+            # Execute reporting agent
+            updated_state = await self.reporting_agent.execute(state)
+            
+            # Add message about reporting
+            if updated_state.get("reporting_completed"):
+                reporting_results = updated_state.get("reporting_results", {})
+                viz_count = len(reporting_results.get("visualizations", {}))
+                rec_count = len(reporting_results.get("recommendations", []))
+                
+                updated_state["messages"].append({
+                    "role": "assistant",
+                    "content": (
+                        f"Report generation completed. Generated {viz_count} visualizations "
+                        f"and {rec_count} recommendations. Complete report available."
+                    )
+                })
+            
+            return updated_state
+        except Exception as e:
+            logger.error(f"Error in report generation: {str(e)}")
+            state["error"] = f"Report generation failed: {str(e)}"
+            # Continue to finalize even if reporting fails
+            state["reporting_completed"] = False
+            return state
+
     async def _finalize_node(self, state: AgentState) -> AgentState:
         """
         Finalize the workflow and prepare results.
@@ -788,9 +839,11 @@ class LangGraphWorkflow:
         
         return "evaluate"
     
-    def _route_after_evaluation(self, state: AgentState) -> Literal["finalize", "retrain", "reason", "error"]:
+    def _route_after_evaluation(self, state: AgentState) -> Literal["report", "retrain", "reason", "error"]:
         """
         Route after model evaluation.
+        
+        Week 11: Updated to route to report generation instead of finalize.
         
         Args:
             state: Current workflow state
@@ -805,12 +858,12 @@ class LangGraphWorkflow:
         # Check if model performance is acceptable
         evaluation_results = state.get("evaluation_results", {})
         
-        # Simple check: if we have results, finalize
+        # Simple check: if we have results, generate report
         # In future, could check metrics and decide to retrain
         if evaluation_results:
-            return "finalize"
+            return "report"
         else:
-            return "finalize"
+            return "report"
     
     def _route_after_error(self, state: AgentState) -> Literal["retry", "end"]:
         """
