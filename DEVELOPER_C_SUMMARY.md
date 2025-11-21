@@ -981,23 +981,276 @@ Successfully completed Weeks 1-8 of the Infrastructure & DevOps track as **Devel
 - Infrastructure and deployment ready
 - Perfect coordination at sync points
 
-**Current Status:** ✅ **WEEKS 1-8 COMPLETE - READY FOR WEEKS 9-12**
+**Current Status:** ✅ **WEEKS 1-8 COMPLETE - EXECUTING WEEKS 9-12**
 
-**Sprint Achievements:**
+**Sprint Achievements (Weeks 1-8):**
 - ✅ Complete staging environment deployed
-- ✅ Monitoring stack ready for deployment
+- ✅ Monitoring stack manifests created and ready for deployment
 - ✅ All application manifests created
 - ✅ Automated CI/CD pipeline operational
 - ✅ Ready for Developer A and B to deploy applications
 
-**Next Milestone:** Weeks 9-10 - Production environment deployment and security hardening  
-**Following Milestone:** Weeks 11-12 - Performance optimization and operational maturity
+**Next Milestone:** Weeks 9-10 - Deploy monitoring and applications to staging  
+**Following Milestone:** Weeks 11-12 - Production environment and security hardening
 
 **Infrastructure Readiness:** ✅ **100% READY** for immediate application deployment by Developer A (data collectors) and Developer B (agentic system)
 
 ---
 
-## Next Sprint Plan: Application Deployment & Monitoring (10 Weeks)
+## Current Sprint: Weeks 9-12 Application Deployment & Production Preparation
+
+**Sprint Start Date:** 2025-11-21  
+**Sprint Duration:** 4 weeks  
+**Sprint Objective:** Deploy applications to staging, implement monitoring, prepare production environment  
+**Status:** 🔄 **IN PROGRESS**
+
+### Sprint Overview
+
+With all infrastructure and manifests ready from Weeks 1-8, this sprint focuses on:
+1. Deploying the monitoring stack to staging EKS cluster
+2. Deploying all applications (backend, collectors, agentic system) to staging
+3. Preparing production environment
+4. Implementing security hardening
+5. Finalizing documentation
+
+### Week 9: Monitoring Stack Deployment ⏳
+
+**Objective:** Deploy Prometheus, Grafana, Loki, and AlertManager to staging
+
+**Tasks:**
+- [ ] Verify EKS cluster accessibility
+- [ ] Create monitoring namespace
+- [ ] Deploy Prometheus Operator
+- [ ] Deploy Grafana with pre-configured datasources
+- [ ] Deploy Loki and Promtail for log aggregation
+- [ ] Deploy AlertManager with alerting rules
+- [ ] Verify monitoring stack health
+- [ ] Create application dashboards (infrastructure, backend, collectors, agents)
+- [ ] Document monitoring endpoints and credentials
+
+**Expected Deliverables:**
+- Operational monitoring stack (Prometheus, Grafana, Loki, AlertManager)
+- Infrastructure dashboard showing cluster metrics
+- Grafana accessible via LoadBalancer URL
+- Alert rules configured and functional
+
+**Integration Points:**
+- Monitor EKS cluster nodes and pods
+- Ready for application metric collection in Week 10
+
+### Week 10: Application Deployment ⏳
+
+**Objective:** Deploy backend API, Phase 2.5 collectors, and Phase 3 agentic system to staging
+
+**Tasks:**
+- [ ] Create omc-staging namespace
+- [ ] Update ConfigMaps with actual RDS and Redis endpoints
+- [ ] Generate and configure secure secrets
+- [ ] Deploy backend API with HPA
+- [ ] Deploy backend Ingress (ALB)
+- [ ] Deploy 5 Phase 2.5 collectors:
+  - [ ] DeFiLlama CronJob (daily 2 AM UTC)
+  - [ ] SEC API CronJob (daily 3 AM UTC)
+  - [ ] CoinSpot Announcements CronJob (hourly)
+  - [ ] Reddit Deployment (continuous, every 15 min)
+  - [ ] CryptoPanic Deployment (continuous, every 5 min)
+- [ ] Deploy Phase 3 agentic system with PVC
+- [ ] Configure ServiceMonitors for Prometheus integration
+- [ ] Create application-specific Grafana dashboards
+- [ ] Verify end-to-end data flow (collectors → DB → API)
+- [ ] Test agentic system workflows
+
+**Expected Deliverables:**
+- Backend API accessible via ALB Ingress
+- All 5 collectors operational and collecting data
+- Agentic system deployed and functional
+- ServiceMonitors collecting metrics
+- Application dashboards showing real-time data
+- Integration testing passed
+
+**Integration Points:**
+- **Developer A**: Phase 2.5 collectors running and ingesting data
+- **Developer B**: Phase 3 agentic system accessible and processing workflows
+
+### Week 11: Production Environment Preparation ⏳
+
+**Objective:** Deploy production infrastructure and configure DNS, SSL, WAF
+
+**Tasks:**
+- [ ] Review and update production Terraform variables
+- [ ] Deploy production Terraform infrastructure
+- [ ] Configure Route53 DNS for production domains
+- [ ] Request and validate ACM SSL certificates
+- [ ] Enable WAF on production ALB
+- [ ] Configure RDS automated backups (30-day retention)
+- [ ] Create disaster recovery procedures and runbook
+- [ ] Create production deployment runbook
+- [ ] Document production access procedures
+- [ ] Test backup and restore procedures
+
+**Expected Deliverables:**
+- Production infrastructure deployed (RDS, Redis, ECS, ALB, VPC)
+- DNS configured (api.ohmycoins.com, app.ohmycoins.com)
+- SSL certificates issued and applied
+- WAF enabled with core rule sets
+- Automated backups configured
+- DR runbook complete
+- Production deployment runbook ready
+
+**Integration Points:**
+- Production infrastructure ready for application deployment (future sprint)
+- Backup/restore procedures validated
+
+### Week 12: Security Hardening & Finalization ⏳
+
+**Objective:** Implement security hardening, complete documentation, update summary
+
+**Tasks:**
+- [ ] Enable AWS Config with compliance rules
+- [ ] Enable GuardDuty for threat detection
+- [ ] Enable CloudTrail for audit logging
+- [ ] Implement Kubernetes network policies
+- [ ] Conduct comprehensive security audit
+- [ ] Test backup and restore procedures
+- [ ] Review and update all documentation
+- [ ] Create handoff documentation
+- [ ] Update DEVELOPER_C_SUMMARY.md with Weeks 9-12 results
+- [ ] Complete sprint retrospective
+
+**Expected Deliverables:**
+- AWS Config enabled (10+ compliance rules)
+- GuardDuty enabled and monitoring
+- CloudTrail enabled with CloudWatch integration
+- Network policies implemented
+- Security audit completed (no critical issues)
+- Backup/restore tested and validated
+- All documentation updated and comprehensive
+- DEVELOPER_C_SUMMARY.md updated with sprint results
+- Handoff documentation complete
+
+**Integration Points:**
+- Security hardening applies to staging and production
+- Documentation supports operations team
+
+### Sprint Success Criteria
+
+**Infrastructure:**
+- [ ] Monitoring stack operational on staging
+- [ ] All applications deployed to staging
+- [ ] Production environment deployed and ready
+- [ ] DNS and SSL configured for production
+- [ ] WAF enabled on production ALB
+
+**Applications:**
+- [ ] Backend API accessible and tested
+- [ ] All 5 collectors running and collecting data
+- [ ] Agentic system functional and tested
+- [ ] End-to-end integration verified
+
+**Security:**
+- [ ] AWS Config, GuardDuty, CloudTrail enabled
+- [ ] Network policies implemented
+- [ ] Security audit completed (no critical issues)
+- [ ] Backup/restore tested successfully
+
+**Monitoring:**
+- [ ] Prometheus collecting metrics from all applications
+- [ ] Grafana dashboards created (infrastructure, backend, collectors, agents)
+- [ ] Loki aggregating logs
+- [ ] Alerts configured and tested
+
+**Documentation:**
+- [ ] All README files updated with actual endpoints
+- [ ] Production deployment runbook complete
+- [ ] DR procedures documented
+- [ ] Handoff documentation created
+- [ ] DEVELOPER_C_SUMMARY.md updated
+
+### Detailed Deployment Checklist
+
+A comprehensive week-by-week checklist has been created:
+
+**File:** `infrastructure/aws/eks/DEPLOYMENT_CHECKLIST_WEEKS_9-12.md`
+
+This checklist provides:
+- Day-by-day task breakdown
+- Command-line examples for all operations
+- Verification steps and expected outputs
+- Troubleshooting guides
+- Configuration templates
+- Security hardening procedures
+
+**Usage:**
+```bash
+# Review the checklist
+cat infrastructure/aws/eks/DEPLOYMENT_CHECKLIST_WEEKS_9-12.md
+
+# Follow week-by-week to execute the sprint
+```
+
+### Integration with Other Developers
+
+**Developer A (Data Collection):**
+- **Week 10**: Collectors deployed to staging
+- **Coordination**: Verify collector configuration and schedules
+- **Support**: Troubleshoot any data collection issues
+- **Testing**: Validate data ingestion to RDS
+
+**Developer B (Agentic System):**
+- **Week 10**: Agentic system deployed to staging
+- **Coordination**: Verify LLM API keys and configuration
+- **Support**: Troubleshoot any workflow execution issues
+- **Testing**: Validate agent sessions and workflows
+
+**Integration Testing Window (Week 10, Days 4-5):**
+- End-to-end testing with all three developers
+- Verify full system integration
+- Performance testing and optimization
+- Bug fixing and refinement
+
+### Risk Assessment and Mitigation
+
+**High Risk:**
+1. **Cluster access issues** - Mitigation: Verify kubectl access before Week 9
+2. **Missing AWS credentials** - Mitigation: Validate IAM roles and permissions
+3. **Configuration errors** - Mitigation: Double-check all endpoints and secrets
+
+**Medium Risk:**
+1. **Monitoring stack complexity** - Mitigation: Use detailed checklist, follow step-by-step
+2. **Application deployment issues** - Mitigation: Test with port-forward before exposing via Ingress
+3. **Integration challenges** - Mitigation: Close coordination with Developer A and B
+
+**Low Risk:**
+1. **Documentation gaps** - Mitigation: Update docs as we go
+2. **Performance tuning needed** - Mitigation: Iterative optimization in future sprints
+
+### Sprint Retrospective (To Be Completed)
+
+**What Went Well:**
+- TBD after sprint completion
+
+**Challenges:**
+- TBD after sprint completion
+
+**Lessons Learned:**
+- TBD after sprint completion
+
+**Future Improvements:**
+- Implement AWS Secrets Manager
+- Add GitOps workflow (ArgoCD/Flux)
+- Implement service mesh (Istio/Linkerd)
+- Multi-region deployment
+- Advanced observability (tracing with Jaeger/Tempo)
+
+---
+
+## Previous Sprint Plan: Weeks 7-8 (Completed ✅)
+
+### Overview
+
+This section documents the plan that was executed in Weeks 7-8. All deliverables were completed successfully.
+
+## Next Sprint Plan: Application Deployment & Monitoring (10 Weeks) [ARCHIVED]
 
 **Sprint Start Date:** 2025-11-20  
 **Sprint Objective:** Deploy all applications to staging and implement comprehensive monitoring  
