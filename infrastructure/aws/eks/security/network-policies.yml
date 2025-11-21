@@ -1,0 +1,224 @@
+# Kubernetes Network Policies for Oh My Coins
+# These policies implement micro-segmentation and least-privilege network access
+# Apply after deploying applications to the cluster
+#
+# Usage:
+#   kubectl apply -f network-policies.yml
+#
+# Verify:
+#   kubectl get networkpolicies -A
+
+---
+# =============================================================================
+# Default Deny All Ingress Policy
+# =============================================================================
+# This is a security baseline - deny all ingress traffic by default
+# Specific policies below will allow only necessary traffic
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# =============================================================================
+# Backend API Network Policy
+# =============================================================================
+# Allow traffic to backend from:
+# - ALB Ingress Controller
+# - Collectors (for data submission)
+# - Agents (for API calls)
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-api-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from ALB Ingress Controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 8000
+    
+    # Allow from collectors for data submission
+    - from:
+        - podSelector:
+            matchLabels:
+              app: collector
+      ports:
+        - protocol: TCP
+          port: 8000
+    
+    # Allow from agents for API calls
+    - from:
+        - podSelector:
+            matchLabels:
+              app: agent
+      ports:
+        - protocol: TCP
+          port: 8000
+  
+  egress:
+    # Allow to PostgreSQL RDS (external)
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    # Allow to Redis (external)
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 6379
+    
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+    
+    # Allow HTTPS to external services
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+
+---
+# =============================================================================
+# Data Collectors Network Policy
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: collectors-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: collector
+  policyTypes:
+    - Egress
+  egress:
+    # Allow to backend API
+    - to:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 8000
+    
+    # Allow to PostgreSQL
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    # Allow HTTP/HTTPS to external APIs
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+    
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# =============================================================================
+# Agentic System Network Policy
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agents-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: agent
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from backend API
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 8000
+  
+  egress:
+    # Allow to backend API
+    - to:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 8000
+    
+    # Allow to PostgreSQL
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    # Allow to Redis
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 6379
+    
+    # Allow HTTPS to LLM APIs
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+    
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
