@@ -11,28 +11,14 @@ Phase 6 Components:
 from app.services.trading.client import CoinspotTradingClient
 from app.services.trading.executor import OrderExecutor, OrderQueue, get_order_queue
 from app.services.trading.positions import PositionManager, get_position_manager
+from app.services.trading.safety import TradingSafetyManager, get_safety_manager, SafetyViolation
+from app.services.trading.recorder import TradeRecorder, get_trade_recorder
 from app.services.trading.algorithm_executor import (
     AlgorithmExecutor,
-    get_algorithm_executor,
-    AlgorithmExecutionError,
+    TradingAlgorithm,
+    get_algorithm_executor
 )
-from app.services.trading.scheduler import (
-    AlgorithmScheduler,
-    get_algorithm_scheduler,
-    start_algorithm_scheduler,
-    stop_algorithm_scheduler,
-    AlgorithmSchedulerError,
-)
-from app.services.trading.safety import (
-    SafetyManager,
-    get_safety_manager,
-    SafetyViolationError,
-)
-from app.services.trading.recorder import (
-    TradeRecorder,
-    get_trade_recorder,
-    TradeRecordingError,
-)
+from app.services.trading.scheduler import ExecutionScheduler, get_execution_scheduler
 
 __all__ = [
     # Weeks 1-2: Core trading infrastructure
@@ -42,19 +28,14 @@ __all__ = [
     "get_order_queue",
     "PositionManager",
     "get_position_manager",
-    # Weeks 3-4: Algorithm execution and management
-    "AlgorithmExecutor",
-    "get_algorithm_executor",
-    "AlgorithmExecutionError",
-    "AlgorithmScheduler",
-    "get_algorithm_scheduler",
-    "start_algorithm_scheduler",
-    "stop_algorithm_scheduler",
-    "AlgorithmSchedulerError",
-    "SafetyManager",
+    "TradingSafetyManager",
     "get_safety_manager",
-    "SafetyViolationError",
+    "SafetyViolation",
     "TradeRecorder",
     "get_trade_recorder",
-    "TradeRecordingError",
+    "AlgorithmExecutor",
+    "TradingAlgorithm",
+    "get_algorithm_executor",
+    "ExecutionScheduler",
+    "get_execution_scheduler",
 ]

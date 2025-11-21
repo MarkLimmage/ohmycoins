@@ -1,354 +1,427 @@
 """
-Algorithm Scheduler Service
+Execution Scheduler for Trading Algorithms
 
-Manages scheduled execution of deployed algorithms:
-1. Per-algorithm execution frequency configuration
-2. Concurrent execution management
-3. Start/stop/pause algorithm control
-4. Resource allocation and error recovery
-5. Integration with APScheduler (reusing from Phase 2.5)
-
-Phase 6, Weeks 3-4
+This module schedules and manages the execution of trading algorithms
+at configured frequencies.
 """
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Callable
+from typing import Any
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.job import Job
-from sqlmodel import Session, select
+from apscheduler.triggers.cron import CronTrigger
+from sqlmodel import Session
 
-from app.models import DeployedAlgorithm, Algorithm
-from app.services.trading.algorithm_executor import AlgorithmExecutor, get_algorithm_executor
-from app.core.db import engine
+from app.services.trading.algorithm_executor import (
+    AlgorithmExecutor,
+    TradingAlgorithm,
+    get_algorithm_executor
+)
 
 logger = logging.getLogger(__name__)
 
 
-class AlgorithmSchedulerError(Exception):
-    """Exception raised when scheduler operation fails"""
+class SchedulerError(Exception):
+    """Base exception for scheduler errors"""
     pass
 
 
-class AlgorithmScheduler:
+class ExecutionScheduler:
     """
-    Manages scheduled execution of trading algorithms
+    Schedules and manages algorithm execution
     
-    Responsible for:
-    - Starting/stopping algorithm execution on a schedule
-    - Managing concurrent algorithm execution
-    - Handling execution errors and retries
-    - Resource allocation across algorithms
+    Features:
+    - Per-algorithm execution frequency configuration
+    - Concurrent execution management
+    - Resource allocation
+    - Error recovery
+    - Health monitoring
     """
     
-    def __init__(self, scheduler: AsyncIOScheduler | None = None):
+    def __init__(
+        self,
+        session: Session,
+        api_key: str,
+        api_secret: str,
+        market_data_provider: Any | None = None
+    ):
         """
-        Initialize algorithm scheduler
+        Initialize execution scheduler
         
         Args:
-            scheduler: APScheduler instance (creates new if None)
+            session: Database session
+            api_key: Coinspot API key
+            api_secret: Coinspot API secret
+            market_data_provider: Market data provider (optional)
         """
-        self.scheduler = scheduler or AsyncIOScheduler()
-        self._job_map: dict[UUID, str] = {}  # deployment_id -> job_id mapping
+        self.session = session
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.market_data_provider = market_data_provider
+        self.executor = get_algorithm_executor(session, api_key, api_secret)
+        self.scheduler = AsyncIOScheduler()
         self._running = False
+        self._scheduled_algorithms: dict[str, dict[str, Any]] = {}
     
     def start(self) -> None:
         """Start the scheduler"""
-        if not self._running:
-            self.scheduler.start()
-            self._running = True
-            logger.info("Algorithm scheduler started")
-    
-    def shutdown(self) -> None:
-        """Shutdown the scheduler"""
         if self._running:
-            self.scheduler.shutdown(wait=True)
-            self._running = False
-            logger.info("Algorithm scheduler shutdown")
+            logger.warning("Scheduler is already running")
+            return
+        
+        self.scheduler.start()
+        self._running = True
+        logger.info("Execution scheduler started")
     
-    async def schedule_deployment(
+    def stop(self) -> None:
+        """Stop the scheduler"""
+        if not self._running:
+            logger.warning("Scheduler is not running")
+            return
+        
+        self.scheduler.shutdown(wait=True)
+        self._running = False
+        logger.info("Execution scheduler stopped")
+    
+    def schedule_algorithm(
         self,
-        deployment_id: UUID,
-        execution_frequency: int | None = None,
+        user_id: UUID,
+        algorithm_id: UUID,
+        algorithm: TradingAlgorithm,
+        frequency: str,
+        **kwargs
     ) -> str:
         """
-        Schedule a deployed algorithm for execution
+        Schedule an algorithm for execution
         
         Args:
-            deployment_id: UUID of the DeployedAlgorithm
-            execution_frequency: Execution frequency in seconds (uses deployment default if None)
+            user_id: User ID
+            algorithm_id: Algorithm ID
+            algorithm: Algorithm implementation
+            frequency: Execution frequency
+                - 'interval:N:unit' for interval (e.g., 'interval:5:minutes')
+                - 'cron:expression' for cron (e.g., 'cron:0 */4 * * *')
+            **kwargs: Additional scheduler arguments
             
         Returns:
-            Job ID from scheduler
+            Job ID
             
         Raises:
-            AlgorithmSchedulerError: If scheduling fails
+            SchedulerError: If scheduling fails
         """
+        if not self._running:
+            raise SchedulerError("Scheduler is not running")
+        
+        job_id = f"{user_id}_{algorithm_id}"
+        
+        # Parse frequency
+        trigger = self._parse_frequency(frequency)
+        
+        # Add job to scheduler
         try:
-            # Load deployment to get frequency
-            with Session(engine) as session:
-                statement = select(DeployedAlgorithm).where(DeployedAlgorithm.id == deployment_id)
-                deployment = session.exec(statement).first()
-                
-                if not deployment:
-                    raise AlgorithmSchedulerError(f"Deployment {deployment_id} not found")
-                
-                if not deployment.is_active:
-                    raise AlgorithmSchedulerError(f"Deployment {deployment_id} is not active")
-                
-                frequency = execution_frequency or deployment.execution_frequency
-            
-            # Check if already scheduled
-            if deployment_id in self._job_map:
-                logger.warning(f"Deployment {deployment_id} already scheduled, removing old job")
-                await self.unschedule_deployment(deployment_id)
-            
-            # Create job
             job = self.scheduler.add_job(
-                func=self._execute_deployment_job,
-                trigger=IntervalTrigger(seconds=frequency),
-                args=[deployment_id],
-                id=f"deployment_{deployment_id}",
-                name=f"Execute deployment {deployment_id}",
+                func=self._execute_algorithm_job,
+                trigger=trigger,
+                id=job_id,
+                args=[user_id, algorithm_id, algorithm],
                 replace_existing=True,
-                max_instances=1,  # Prevent concurrent execution of same deployment
-                coalesce=True,  # Coalesce missed runs
+                **kwargs
             )
             
-            self._job_map[deployment_id] = job.id
+            # Track scheduled algorithm
+            self._scheduled_algorithms[job_id] = {
+                'user_id': user_id,
+                'algorithm_id': algorithm_id,
+                'frequency': frequency,
+                'scheduled_at': datetime.now(timezone.utc),
+                'last_execution': None,
+                'execution_count': 0,
+                'error_count': 0
+            }
             
             logger.info(
-                f"Scheduled deployment {deployment_id}: "
-                f"frequency={frequency}s, job_id={job.id}"
+                f"Algorithm {algorithm_id} scheduled for user {user_id} "
+                f"with frequency: {frequency}"
             )
             
-            return job.id
+            return job_id
             
         except Exception as e:
-            logger.exception(f"Failed to schedule deployment {deployment_id}: {str(e)}")
-            raise AlgorithmSchedulerError(f"Scheduling failed: {str(e)}") from e
+            logger.error(f"Error scheduling algorithm {algorithm_id}: {e}")
+            raise SchedulerError(f"Failed to schedule algorithm: {e}")
     
-    async def unschedule_deployment(self, deployment_id: UUID) -> bool:
+    def _parse_frequency(self, frequency: str) -> Any:
         """
-        Remove a deployed algorithm from the schedule
+        Parse frequency string into APScheduler trigger
         
         Args:
-            deployment_id: UUID of the DeployedAlgorithm
+            frequency: Frequency string
             
         Returns:
-            True if unscheduled, False if not found
+            APScheduler trigger
+            
+        Raises:
+            SchedulerError: If frequency format is invalid
         """
-        if deployment_id not in self._job_map:
-            logger.warning(f"Deployment {deployment_id} not scheduled")
-            return False
+        parts = frequency.split(':', 1)
         
-        job_id = self._job_map[deployment_id]
+        if len(parts) != 2:
+            raise SchedulerError(f"Invalid frequency format: {frequency}")
+        
+        freq_type, freq_value = parts
+        
+        if freq_type == 'interval':
+            # Parse interval: N:unit (e.g., "5:minutes")
+            interval_parts = freq_value.split(':', 1)
+            if len(interval_parts) != 2:
+                raise SchedulerError(f"Invalid interval format: {freq_value}")
+            
+            try:
+                value = int(interval_parts[0])
+                unit = interval_parts[1]
+                
+                # Create interval trigger
+                kwargs = {unit: value}
+                return IntervalTrigger(**kwargs)
+                
+            except (ValueError, TypeError) as e:
+                raise SchedulerError(f"Invalid interval value: {e}")
+        
+        elif freq_type == 'cron':
+            # Parse cron expression
+            try:
+                # Split cron expression (minute hour day month day_of_week)
+                cron_parts = freq_value.split()
+                if len(cron_parts) != 5:
+                    raise SchedulerError(f"Invalid cron expression: {freq_value}")
+                
+                return CronTrigger(
+                    minute=cron_parts[0],
+                    hour=cron_parts[1],
+                    day=cron_parts[2],
+                    month=cron_parts[3],
+                    day_of_week=cron_parts[4]
+                )
+                
+            except Exception as e:
+                raise SchedulerError(f"Invalid cron expression: {e}")
+        
+        else:
+            raise SchedulerError(f"Unknown frequency type: {freq_type}")
+    
+    async def _execute_algorithm_job(
+        self,
+        user_id: UUID,
+        algorithm_id: UUID,
+        algorithm: TradingAlgorithm
+    ) -> None:
+        """
+        Execute algorithm job (called by scheduler)
+        
+        Args:
+            user_id: User ID
+            algorithm_id: Algorithm ID
+            algorithm: Algorithm implementation
+        """
+        job_id = f"{user_id}_{algorithm_id}"
+        
+        logger.info(f"Executing scheduled algorithm job: {job_id}")
+        
+        try:
+            # Get market data
+            market_data = await self._get_market_data()
+            
+            # Execute algorithm
+            result = await self.executor.execute_algorithm(
+                user_id=user_id,
+                algorithm_id=algorithm_id,
+                algorithm=algorithm,
+                market_data=market_data
+            )
+            
+            # Update tracking
+            if job_id in self._scheduled_algorithms:
+                self._scheduled_algorithms[job_id]['last_execution'] = datetime.now(timezone.utc)
+                self._scheduled_algorithms[job_id]['execution_count'] += 1
+            
+            logger.info(f"Algorithm job {job_id} completed: {result}")
+            
+        except Exception as e:
+            logger.error(f"Error executing algorithm job {job_id}: {e}", exc_info=True)
+            
+            # Update error tracking
+            if job_id in self._scheduled_algorithms:
+                self._scheduled_algorithms[job_id]['error_count'] += 1
+            
+            # TODO: Implement error threshold and auto-disable failing algorithms (Phase 6 Weeks 7-8 - Advanced Features)
+    
+    async def _get_market_data(self) -> dict[str, Any]:
+        """
+        Get current market data
+        
+        Returns:
+            Dictionary with market data
+        """
+        if self.market_data_provider:
+            # Use custom market data provider if available
+            return await self.market_data_provider.get_data()
+        
+        # Fallback: Fetch from Coinspot API
+        # TODO: Implement market data fetching from database or API when Phase 2.5 data integration is complete
+        # Market data will be sourced from price_data_5min table and comprehensive data collectors
+        logger.warning("Using placeholder market data - implement proper market data provider")
+        
+        return {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'prices': {},
+            'volumes': {}
+        }
+    
+    def unschedule_algorithm(
+        self,
+        user_id: UUID,
+        algorithm_id: UUID
+    ) -> bool:
+        """
+        Unschedule an algorithm
+        
+        Args:
+            user_id: User ID
+            algorithm_id: Algorithm ID
+            
+        Returns:
+            True if algorithm was unscheduled, False if not found
+        """
+        job_id = f"{user_id}_{algorithm_id}"
         
         try:
             self.scheduler.remove_job(job_id)
-            del self._job_map[deployment_id]
             
-            logger.info(f"Unscheduled deployment {deployment_id}, job_id={job_id}")
+            # Remove from tracking
+            if job_id in self._scheduled_algorithms:
+                del self._scheduled_algorithms[job_id]
+            
+            logger.info(f"Algorithm {algorithm_id} unscheduled for user {user_id}")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to unschedule deployment {deployment_id}: {str(e)}")
+            logger.error(f"Error unscheduling algorithm {job_id}: {e}")
             return False
     
-    async def pause_deployment(self, deployment_id: UUID) -> bool:
+    def pause_algorithm(
+        self,
+        user_id: UUID,
+        algorithm_id: UUID
+    ) -> bool:
         """
-        Pause execution of a deployed algorithm (keeps in schedule but doesn't execute)
+        Pause an algorithm (keep schedule but don't execute)
         
         Args:
-            deployment_id: UUID of the DeployedAlgorithm
+            user_id: User ID
+            algorithm_id: Algorithm ID
             
         Returns:
-            True if paused, False if not found
+            True if algorithm was paused, False if not found
         """
-        if deployment_id not in self._job_map:
-            logger.warning(f"Deployment {deployment_id} not scheduled")
-            return False
-        
-        job_id = self._job_map[deployment_id]
+        job_id = f"{user_id}_{algorithm_id}"
         
         try:
             self.scheduler.pause_job(job_id)
-            
-            logger.info(f"Paused deployment {deployment_id}, job_id={job_id}")
+            logger.info(f"Algorithm {algorithm_id} paused for user {user_id}")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to pause deployment {deployment_id}: {str(e)}")
+            logger.error(f"Error pausing algorithm {job_id}: {e}")
             return False
     
-    async def resume_deployment(self, deployment_id: UUID) -> bool:
+    def resume_algorithm(
+        self,
+        user_id: UUID,
+        algorithm_id: UUID
+    ) -> bool:
         """
-        Resume execution of a paused deployed algorithm
+        Resume a paused algorithm
         
         Args:
-            deployment_id: UUID of the DeployedAlgorithm
+            user_id: User ID
+            algorithm_id: Algorithm ID
             
         Returns:
-            True if resumed, False if not found
+            True if algorithm was resumed, False if not found
         """
-        if deployment_id not in self._job_map:
-            logger.warning(f"Deployment {deployment_id} not scheduled")
-            return False
-        
-        job_id = self._job_map[deployment_id]
+        job_id = f"{user_id}_{algorithm_id}"
         
         try:
             self.scheduler.resume_job(job_id)
-            
-            logger.info(f"Resumed deployment {deployment_id}, job_id={job_id}")
+            logger.info(f"Algorithm {algorithm_id} resumed for user {user_id}")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to resume deployment {deployment_id}: {str(e)}")
+            logger.error(f"Error resuming algorithm {job_id}: {e}")
             return False
     
-    async def _execute_deployment_job(self, deployment_id: UUID) -> None:
+    def get_scheduled_algorithms(self) -> list[dict[str, Any]]:
         """
-        Execute a deployed algorithm (called by scheduler)
-        
-        This is the function that gets called on schedule.
-        It creates a database session and executor, then runs the algorithm.
-        
-        Args:
-            deployment_id: UUID of the DeployedAlgorithm to execute
-        """
-        try:
-            logger.debug(f"Executing scheduled deployment {deployment_id}")
-            
-            # Create database session and executor
-            with Session(engine) as session:
-                executor = get_algorithm_executor(session)
-                
-                # Execute algorithm (not dry run - this is production)
-                result = await executor.execute_algorithm(
-                    deployment_id=deployment_id,
-                    dry_run=False,
-                )
-                
-                logger.info(
-                    f"Scheduled execution complete: deployment={deployment_id}, "
-                    f"signals={len(result['signals'])}, "
-                    f"orders={result['orders_submitted']}, "
-                    f"time={result['execution_time_ms']:.2f}ms"
-                )
-                
-        except Exception as e:
-            logger.exception(f"Scheduled execution failed for deployment {deployment_id}: {str(e)}")
-            # Don't raise - scheduler will retry on next interval
-    
-    async def schedule_all_active_deployments(self) -> int:
-        """
-        Schedule all active deployments from database
-        
-        Useful for startup - loads all active deployments and schedules them.
+        Get list of all scheduled algorithms
         
         Returns:
-            Number of deployments scheduled
+            List of scheduled algorithm info
         """
-        count = 0
-        
-        try:
-            with Session(engine) as session:
-                # Get all active deployments
-                statement = select(DeployedAlgorithm).where(DeployedAlgorithm.is_active == True)
-                deployments = session.exec(statement).all()
-                
-                for deployment in deployments:
-                    try:
-                        await self.schedule_deployment(deployment.id)
-                        count += 1
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to schedule deployment {deployment.id}: {str(e)}"
-                        )
-            
-            logger.info(f"Scheduled {count} active deployments")
-            return count
-            
-        except Exception as e:
-            logger.exception(f"Failed to schedule active deployments: {str(e)}")
-            return count
+        return [
+            {
+                'job_id': job_id,
+                **info,
+                'user_id': str(info['user_id']),
+                'algorithm_id': str(info['algorithm_id']),
+                'scheduled_at': info['scheduled_at'].isoformat() if info['scheduled_at'] else None,
+                'last_execution': info['last_execution'].isoformat() if info['last_execution'] else None
+            }
+            for job_id, info in self._scheduled_algorithms.items()
+        ]
     
-    def get_scheduled_jobs(self) -> list[dict]:
+    def get_scheduler_status(self) -> dict[str, Any]:
         """
-        Get list of currently scheduled jobs
+        Get scheduler status
         
         Returns:
-            List of job info dicts with id, name, next_run_time, etc.
+            Dictionary with scheduler status
         """
-        jobs = []
+        return {
+            'running': self._running,
+            'total_jobs': len(self.scheduler.get_jobs()),
+            'scheduled_algorithms': len(self._scheduled_algorithms),
+            'state': self.scheduler.state
+        }
+
+
+# Global instance
+_execution_scheduler: ExecutionScheduler | None = None
+
+
+def get_execution_scheduler(
+    session: Session,
+    api_key: str,
+    api_secret: str
+) -> ExecutionScheduler:
+    """
+    Get or create the global execution scheduler instance
+    
+    Args:
+        session: Database session
+        api_key: Coinspot API key
+        api_secret: Coinspot API secret
         
-        for job in self.scheduler.get_jobs():
-            jobs.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
-                "trigger": str(job.trigger),
-            })
-        
-        return jobs
-    
-    def is_deployment_scheduled(self, deployment_id: UUID) -> bool:
-        """Check if a deployment is currently scheduled"""
-        return deployment_id in self._job_map
-    
-    def get_deployment_job_id(self, deployment_id: UUID) -> str | None:
-        """Get the job ID for a scheduled deployment"""
-        return self._job_map.get(deployment_id)
-
-
-# Global scheduler instance (singleton)
-_scheduler_instance: AlgorithmScheduler | None = None
-
-
-def get_algorithm_scheduler() -> AlgorithmScheduler:
-    """
-    Get or create global algorithm scheduler instance
-    
     Returns:
-        AlgorithmScheduler instance
+        ExecutionScheduler instance
     """
-    global _scheduler_instance
-    if _scheduler_instance is None:
-        _scheduler_instance = AlgorithmScheduler()
-    return _scheduler_instance
-
-
-async def start_algorithm_scheduler() -> AlgorithmScheduler:
-    """
-    Start the global algorithm scheduler and schedule all active deployments
-    
-    Should be called on application startup.
-    
-    Returns:
-        AlgorithmScheduler instance
-    """
-    scheduler = get_algorithm_scheduler()
-    scheduler.start()
-    
-    # Schedule all active deployments from database
-    count = await scheduler.schedule_all_active_deployments()
-    logger.info(f"Algorithm scheduler started with {count} active deployments")
-    
-    return scheduler
-
-
-async def stop_algorithm_scheduler() -> None:
-    """
-    Stop the global algorithm scheduler
-    
-    Should be called on application shutdown.
-    """
-    global _scheduler_instance
-    if _scheduler_instance is not None:
-        _scheduler_instance.shutdown()
-        _scheduler_instance = None
-        logger.info("Algorithm scheduler stopped")
+    global _execution_scheduler
+    if _execution_scheduler is None:
+        _execution_scheduler = ExecutionScheduler(
+            session=session,
+            api_key=api_key,
+            api_secret=api_secret
+        )
+    return _execution_scheduler

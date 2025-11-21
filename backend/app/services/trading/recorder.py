@@ -1,431 +1,371 @@
 """
-Trade Recorder Service
+Trade Recording and Reconciliation Service
 
-Maintains comprehensive audit trail of all trading activity:
-1. Log all trade attempts with full context
-2. Record successful trades with Coinspot confirmation
-3. Track failed trades with error reasons
-4. Trade reconciliation with Coinspot API
-5. Audit trail query APIs
-
-All trading decisions and executions are logged for:
-- Regulatory compliance
-- Performance analysis
-- Debugging and troubleshooting
-- User transparency
-
-Phase 6, Weeks 3-4
+This module tracks all trading activity, logs trade attempts, and reconciles
+executed trades with exchange confirmations.
 """
-import json
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_
+from sqlmodel import Session, select
 
-from app.models import Order, DeployedAlgorithm, Algorithm
+from app.models import Order
 
 logger = logging.getLogger(__name__)
 
 
-class TradeRecordingError(Exception):
-    """Exception raised when trade recording fails"""
-    pass
-
-
 class TradeRecorder:
     """
-    Records and tracks all trading activity
+    Records and reconciles trading activity
     
-    Responsible for:
-    - Logging trade attempts before execution
-    - Recording trade outcomes (success/failure)
-    - Storing algorithm decisions and signals
-    - Reconciling trades with Coinspot confirmations
-    - Providing audit trail queries
+    Features:
+    - Log all trade attempts
+    - Track successful and failed trades
+    - Reconcile orders with exchange confirmations
+    - Handle partial fills
+    - Generate trade reports
     """
     
-    def __init__(self, db_session: Session):
+    def __init__(self, session: Session):
         """
         Initialize trade recorder
         
         Args:
-            db_session: Database session for recording
+            session: Database session
         """
-        self.db = db_session
+        self.session = session
     
-    async def record_trade_attempt(
+    def log_trade_attempt(
         self,
-        order: Order,
-        algorithm_id: UUID | None = None,
-        signal: dict[str, Any] | None = None,
-        context: dict[str, Any] | None = None,
-    ) -> UUID:
+        user_id: UUID,
+        coin_type: str,
+        side: str,
+        quantity: Decimal,
+        order_type: str = 'market',
+        price: Decimal | None = None,
+        algorithm_id: UUID | None = None
+    ) -> Order:
         """
-        Record a trade attempt before execution
-        
-        Creates an Order record in 'pending' status with full context.
+        Log a trade attempt by creating an order record
         
         Args:
-            order: The order being attempted
-            algorithm_id: UUID of algorithm that generated the signal (if applicable)
-            signal: The trading signal that triggered this order
-            context: Additional context (market data, algorithm state, etc.)
+            user_id: User executing the trade
+            coin_type: Cryptocurrency being traded
+            side: 'buy' or 'sell'
+            quantity: Trade quantity
+            order_type: Order type (default: 'market')
+            price: Limit price (for limit orders)
+            algorithm_id: Algorithm ID if automated trade
             
         Returns:
-            UUID of the created order record
+            Created Order object
         """
-        try:
-            # Order should already have an ID if it was created via OrderCreate
-            # If not, it will get one when added to the database
-            
-            # Add optional metadata as JSON in error_message field temporarily
-            # (In production, would add a metadata_json field to Order model)
-            metadata = {
-                "signal": signal,
-                "context": context,
-                "recorded_at": datetime.now(timezone.utc).isoformat(),
-            }
-            
-            logger.info(
-                f"Recording trade attempt: "
-                f"order_id={order.id}, side={order.side}, "
-                f"coin={order.coin_type}, qty={order.quantity}, "
-                f"algorithm_id={algorithm_id}"
-            )
-            
-            self.db.add(order)
-            self.db.commit()
-            self.db.refresh(order)
-            
-            return order.id
-            
-        except Exception as e:
-            logger.exception(f"Failed to record trade attempt: {str(e)}")
-            raise TradeRecordingError(f"Recording failed: {str(e)}") from e
+        order = Order(
+            user_id=user_id,
+            coin_type=coin_type,
+            side=side,
+            quantity=quantity,
+            order_type=order_type,
+            price=price,
+            algorithm_id=algorithm_id,
+            status='pending',
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
+        
+        self.session.add(order)
+        self.session.commit()
+        self.session.refresh(order)
+        
+        logger.info(
+            f"Trade attempt logged: {order.id} - "
+            f"{side} {quantity} {coin_type} for user {user_id}"
+        )
+        
+        return order
     
-    async def record_trade_success(
+    def record_success(
         self,
         order_id: UUID,
         coinspot_order_id: str,
         filled_quantity: Decimal,
-        filled_price: Decimal,
+        execution_price: Decimal
     ) -> None:
         """
         Record a successful trade execution
         
-        Updates order status to 'filled' and records Coinspot confirmation.
-        
         Args:
-            order_id: UUID of the order
-            coinspot_order_id: Coinspot's order ID from their API
-            filled_quantity: Quantity that was filled
-            filled_price: Price at which order was filled
+            order_id: Internal order ID
+            coinspot_order_id: Exchange order ID
+            filled_quantity: Quantity filled
+            execution_price: Actual execution price
         """
-        try:
-            # Load order
-            statement = select(Order).where(Order.id == order_id)
-            order = self.db.exec(statement).first()
-            
-            if not order:
-                raise TradeRecordingError(f"Order {order_id} not found")
-            
-            # Update order
-            order.status = "filled"
-            order.coinspot_order_id = coinspot_order_id
-            order.filled_quantity = filled_quantity
-            order.price = filled_price
-            order.filled_at = datetime.now(timezone.utc)
-            
-            self.db.add(order)
-            self.db.commit()
-            
-            logger.info(
-                f"Recorded trade success: "
-                f"order_id={order_id}, coinspot_id={coinspot_order_id}, "
-                f"filled_qty={filled_quantity}, price={filled_price}"
-            )
-            
-        except Exception as e:
-            logger.exception(f"Failed to record trade success: {str(e)}")
-            raise TradeRecordingError(f"Recording failed: {str(e)}") from e
+        order = self.session.get(Order, order_id)
+        if not order:
+            logger.error(f"Order {order_id} not found for success recording")
+            return
+        
+        order.status = 'filled'
+        order.filled_quantity = filled_quantity
+        order.price = execution_price
+        order.coinspot_order_id = coinspot_order_id
+        order.filled_at = datetime.now(timezone.utc)
+        order.updated_at = datetime.now(timezone.utc)
+        
+        self.session.add(order)
+        self.session.commit()
+        
+        logger.info(
+            f"Trade success recorded: {order_id} - "
+            f"Filled {filled_quantity} at {execution_price} "
+            f"(Exchange ID: {coinspot_order_id})"
+        )
     
-    async def record_trade_failure(
+    def record_failure(
         self,
         order_id: UUID,
-        error_message: str,
+        error_message: str
     ) -> None:
         """
-        Record a failed trade execution
-        
-        Updates order status to 'failed' and stores error message.
+        Record a failed trade attempt
         
         Args:
-            order_id: UUID of the order
-            error_message: Error message describing the failure
+            order_id: Internal order ID
+            error_message: Error description
         """
-        try:
-            # Load order
-            statement = select(Order).where(Order.id == order_id)
-            order = self.db.exec(statement).first()
-            
-            if not order:
-                raise TradeRecordingError(f"Order {order_id} not found")
-            
-            # Update order
-            order.status = "failed"
-            order.error_message = error_message[:500]  # Truncate to max length
-            
-            self.db.add(order)
-            self.db.commit()
-            
-            logger.warning(
-                f"Recorded trade failure: "
-                f"order_id={order_id}, error={error_message}"
-            )
-            
-        except Exception as e:
-            logger.exception(f"Failed to record trade failure: {str(e)}")
-            raise TradeRecordingError(f"Recording failed: {str(e)}") from e
+        order = self.session.get(Order, order_id)
+        if not order:
+            logger.error(f"Order {order_id} not found for failure recording")
+            return
+        
+        order.status = 'failed'
+        order.error_message = error_message
+        order.updated_at = datetime.now(timezone.utc)
+        
+        self.session.add(order)
+        self.session.commit()
+        
+        logger.warning(
+            f"Trade failure recorded: {order_id} - {error_message}"
+        )
     
-    async def reconcile_trade(
+    def record_partial_fill(
         self,
         order_id: UUID,
-        coinspot_order_data: dict[str, Any],
+        filled_quantity: Decimal,
+        execution_price: Decimal
+    ) -> None:
+        """
+        Record a partial fill
+        
+        Args:
+            order_id: Internal order ID
+            filled_quantity: Quantity filled so far
+            execution_price: Average execution price
+        """
+        order = self.session.get(Order, order_id)
+        if not order:
+            logger.error(f"Order {order_id} not found for partial fill recording")
+            return
+        
+        order.status = 'partial'
+        order.filled_quantity = filled_quantity
+        order.price = execution_price
+        order.updated_at = datetime.now(timezone.utc)
+        
+        self.session.add(order)
+        self.session.commit()
+        
+        logger.info(
+            f"Partial fill recorded: {order_id} - "
+            f"Filled {filled_quantity}/{order.quantity} at {execution_price}"
+        )
+    
+    async def reconcile_order(
+        self,
+        order_id: UUID,
+        exchange_data: dict[str, Any]
     ) -> bool:
         """
-        Reconcile an order with Coinspot's confirmation data
-        
-        Verifies that our internal order matches Coinspot's records.
-        Updates order if discrepancies are found.
+        Reconcile an order with exchange confirmation
         
         Args:
-            order_id: UUID of the order
-            coinspot_order_data: Order data from Coinspot API
+            order_id: Internal order ID
+            exchange_data: Data from exchange API
             
         Returns:
-            True if reconciliation successful, False if discrepancies found
+            True if reconciliation successful, False otherwise
         """
-        try:
-            # Load order
-            statement = select(Order).where(Order.id == order_id)
-            order = self.db.exec(statement).first()
-            
-            if not order:
-                logger.error(f"Order {order_id} not found for reconciliation")
-                return False
-            
-            # Extract Coinspot data
-            coinspot_id = coinspot_order_data.get("id")
-            coinspot_status = coinspot_order_data.get("status")
-            coinspot_filled_qty = Decimal(str(coinspot_order_data.get("filled_amount", "0")))
-            coinspot_price = Decimal(str(coinspot_order_data.get("price", "0")))
-            
-            # Check for discrepancies
-            discrepancies = []
-            
-            if order.coinspot_order_id != coinspot_id:
-                discrepancies.append(
-                    f"Order ID mismatch: ours={order.coinspot_order_id}, "
-                    f"theirs={coinspot_id}"
-                )
-            
-            if coinspot_status == "filled" and order.status != "filled":
-                discrepancies.append(
-                    f"Status mismatch: ours={order.status}, theirs={coinspot_status}"
-                )
-                # Update our status to match
-                order.status = "filled"
-            
-            if abs(order.filled_quantity - coinspot_filled_qty) > Decimal("0.00000001"):
-                discrepancies.append(
-                    f"Filled quantity mismatch: ours={order.filled_quantity}, "
-                    f"theirs={coinspot_filled_qty}"
-                )
-                # Update our quantity to match
-                order.filled_quantity = coinspot_filled_qty
-            
-            if order.price and abs(order.price - coinspot_price) > Decimal("0.01"):
-                discrepancies.append(
-                    f"Price mismatch: ours={order.price}, theirs={coinspot_price}"
-                )
-                # Update our price to match
-                order.price = coinspot_price
-            
-            if discrepancies:
-                logger.warning(
-                    f"Trade reconciliation found discrepancies for order {order_id}: "
-                    f"{', '.join(discrepancies)}"
-                )
-                
-                # Save updates
-                self.db.add(order)
-                self.db.commit()
-                
-                return False
-            
-            logger.info(f"Trade reconciliation successful for order {order_id}")
-            return True
-            
-        except Exception as e:
-            logger.exception(f"Failed to reconcile trade {order_id}: {str(e)}")
+        order = self.session.get(Order, order_id)
+        if not order:
+            logger.error(f"Order {order_id} not found for reconciliation")
             return False
+        
+        # Extract exchange data
+        exchange_order_id = exchange_data.get('id')
+        exchange_status = exchange_data.get('status')
+        filled_amount = Decimal(str(exchange_data.get('amount', 0)))
+        execution_rate = Decimal(str(exchange_data.get('rate', 0)))
+        
+        # Update order with exchange data
+        if order.coinspot_order_id != exchange_order_id:
+            logger.warning(
+                f"Order {order_id} exchange ID mismatch: "
+                f"expected {order.coinspot_order_id}, got {exchange_order_id}"
+            )
+            order.coinspot_order_id = exchange_order_id
+        
+        # Update status based on exchange status
+        if exchange_status == 'complete':
+            order.status = 'filled'
+            order.filled_quantity = filled_amount
+            order.price = execution_rate
+            order.filled_at = datetime.now(timezone.utc)
+        elif exchange_status == 'partial':
+            order.status = 'partial'
+            order.filled_quantity = filled_amount
+            order.price = execution_rate
+        elif exchange_status == 'cancelled':
+            order.status = 'cancelled'
+        
+        order.updated_at = datetime.now(timezone.utc)
+        
+        self.session.add(order)
+        self.session.commit()
+        
+        logger.info(
+            f"Order reconciled: {order_id} - "
+            f"Status: {order.status}, Filled: {filled_amount}"
+        )
+        
+        return True
     
-    async def get_trades_by_user(
+    def get_trade_history(
         self,
         user_id: UUID,
-        status: str | None = None,
-        limit: int = 100,
-    ) -> list[Order]:
-        """
-        Get trades for a user
-        
-        Args:
-            user_id: UUID of the user
-            status: Optional status filter ('pending', 'filled', 'failed', etc.)
-            limit: Maximum number of trades to return
-            
-        Returns:
-            List of Order objects
-        """
-        statement = (
-            select(Order)
-            .where(Order.user_id == user_id)
-            .order_by(Order.created_at.desc())
-            .limit(limit)
-        )
-        
-        if status:
-            statement = statement.where(Order.status == status)
-        
-        trades = self.db.exec(statement).all()
-        return list(trades)
-    
-    async def get_trades_by_algorithm(
-        self,
-        algorithm_id: UUID,
-        status: str | None = None,
-        limit: int = 100,
-    ) -> list[Order]:
-        """
-        Get trades for an algorithm
-        
-        Args:
-            algorithm_id: UUID of the algorithm
-            status: Optional status filter
-            limit: Maximum number of trades to return
-            
-        Returns:
-            List of Order objects
-        """
-        statement = (
-            select(Order)
-            .where(Order.algorithm_id == algorithm_id)
-            .order_by(Order.created_at.desc())
-            .limit(limit)
-        )
-        
-        if status:
-            statement = statement.where(Order.status == status)
-        
-        trades = self.db.exec(statement).all()
-        return list(trades)
-    
-    async def get_failed_trades(
-        self,
-        user_id: UUID | None = None,
-        limit: int = 100,
-    ) -> list[Order]:
-        """
-        Get failed trades for debugging
-        
-        Args:
-            user_id: Optional user ID filter
-            limit: Maximum number of trades to return
-            
-        Returns:
-            List of failed Order objects
-        """
-        statement = (
-            select(Order)
-            .where(Order.status == "failed")
-            .order_by(Order.created_at.desc())
-            .limit(limit)
-        )
-        
-        if user_id:
-            statement = statement.where(Order.user_id == user_id)
-        
-        trades = self.db.exec(statement).all()
-        return list(trades)
-    
-    async def get_trade_statistics(
-        self,
-        user_id: UUID,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        coin_type: str | None = None,
         algorithm_id: UUID | None = None,
-    ) -> dict[str, Any]:
+        status: str | None = None
+    ) -> list[Order]:
         """
-        Get trade statistics for a user (optionally filtered by algorithm)
+        Get trade history with filters
         
         Args:
-            user_id: UUID of the user
-            algorithm_id: Optional algorithm ID filter
+            user_id: User ID
+            start_date: Start date filter (optional)
+            end_date: End date filter (optional)
+            coin_type: Coin type filter (optional)
+            algorithm_id: Algorithm ID filter (optional)
+            status: Order status filter (optional)
             
         Returns:
-            Dict with trade statistics:
-            {
-                "total_trades": int,
-                "successful_trades": int,
-                "failed_trades": int,
-                "pending_trades": int,
-                "success_rate": float,
-                "total_volume": Decimal,
-            }
+            List of Order objects matching filters
         """
-        # Base query
-        base_statement = select(Order).where(Order.user_id == user_id)
+        statement = select(Order).where(Order.user_id == user_id)
+        
+        if start_date:
+            statement = statement.where(Order.created_at >= start_date)
+        
+        if end_date:
+            statement = statement.where(Order.created_at <= end_date)
+        
+        if coin_type:
+            statement = statement.where(Order.coin_type == coin_type)
         
         if algorithm_id:
-            base_statement = base_statement.where(Order.algorithm_id == algorithm_id)
+            statement = statement.where(Order.algorithm_id == algorithm_id)
         
-        all_trades = self.db.exec(base_statement).all()
+        if status:
+            statement = statement.where(Order.status == status)
         
-        # Calculate statistics
-        total = len(all_trades)
-        successful = len([t for t in all_trades if t.status == "filled"])
-        failed = len([t for t in all_trades if t.status == "failed"])
-        pending = len([t for t in all_trades if t.status in ["pending", "submitted"]])
+        statement = statement.order_by(Order.created_at.desc())
         
-        success_rate = (successful / total * 100) if total > 0 else 0.0
+        orders = self.session.exec(statement).all()
         
-        # Calculate total volume (sum of filled_quantity * price for filled trades)
-        total_volume = sum(
-            t.filled_quantity * (t.price or Decimal("0"))
-            for t in all_trades
-            if t.status == "filled" and t.price
+        logger.debug(
+            f"Retrieved {len(orders)} trades for user {user_id} with filters: "
+            f"start={start_date}, end={end_date}, coin={coin_type}, "
+            f"algo={algorithm_id}, status={status}"
         )
         
-        return {
-            "total_trades": total,
-            "successful_trades": successful,
-            "failed_trades": failed,
-            "pending_trades": pending,
-            "success_rate": success_rate,
-            "total_volume": float(total_volume),
+        return orders
+    
+    def get_trade_statistics(
+        self,
+        user_id: UUID,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None
+    ) -> dict[str, Any]:
+        """
+        Get trade statistics for a user
+        
+        Args:
+            user_id: User ID
+            start_date: Start date filter (optional)
+            end_date: End date filter (optional)
+            
+        Returns:
+            Dictionary with trade statistics
+        """
+        orders = self.get_trade_history(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # Calculate statistics
+        total_trades = len(orders)
+        filled_trades = [o for o in orders if o.status == 'filled']
+        failed_trades = [o for o in orders if o.status == 'failed']
+        partial_trades = [o for o in orders if o.status == 'partial']
+        
+        buy_trades = [o for o in filled_trades if o.side == 'buy']
+        sell_trades = [o for o in filled_trades if o.side == 'sell']
+        
+        total_buy_volume = sum(o.filled_quantity * o.price for o in buy_trades)
+        total_sell_volume = sum(o.filled_quantity * o.price for o in sell_trades)
+        
+        stats = {
+            'total_trades': total_trades,
+            'filled_trades': len(filled_trades),
+            'failed_trades': len(failed_trades),
+            'partial_trades': len(partial_trades),
+            'buy_trades': len(buy_trades),
+            'sell_trades': len(sell_trades),
+            'total_buy_volume_aud': float(total_buy_volume),
+            'total_sell_volume_aud': float(total_sell_volume),
+            'success_rate': (
+                len(filled_trades) / total_trades * 100 
+                if total_trades > 0 else 0
+            ),
+            'period': {
+                'start': start_date.isoformat() if start_date else None,
+                'end': end_date.isoformat() if end_date else None
+            }
         }
+        
+        logger.info(
+            f"Trade statistics for user {user_id}: "
+            f"{total_trades} total, {len(filled_trades)} filled, "
+            f"{len(failed_trades)} failed"
+        )
+        
+        return stats
 
 
-# Factory function
-def get_trade_recorder(db_session: Session) -> TradeRecorder:
+def get_trade_recorder(session: Session) -> TradeRecorder:
     """
-    Get trade recorder instance
+    Get a trade recorder instance
     
     Args:
-        db_session: Database session
+        session: Database session
         
     Returns:
         TradeRecorder instance
     """
-    return TradeRecorder(db_session)
+    return TradeRecorder(session)
