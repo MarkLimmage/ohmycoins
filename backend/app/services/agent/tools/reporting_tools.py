@@ -54,7 +54,12 @@ def generate_summary(
         if "technical_indicators" in analysis_results:
             summary_lines.append("- **Technical Analysis:** Completed")
             indicators = analysis_results["technical_indicators"]
-            summary_lines.append(f"  - Indicators calculated: {len(indicators.columns) if hasattr(indicators, 'columns') else 'Multiple'}")
+            if isinstance(indicators, dict) and "columns" in indicators:
+                summary_lines.append(f"  - Indicators calculated: {len(indicators['columns'])}")
+            elif hasattr(indicators, 'columns'):
+                summary_lines.append(f"  - Indicators calculated: {len(indicators.columns)}")
+            else:
+                summary_lines.append(f"  - Indicators calculated: Multiple")
         
         if "sentiment_analysis" in analysis_results:
             sentiment = analysis_results["sentiment_analysis"]
@@ -332,10 +337,9 @@ def create_visualizations(
             plots["feature_importance"] = str(plot_path)
     
     # 3. Technical Indicators (if available)
-    if analysis_results.get("technical_indicators") is not None:
-        indicators_df = analysis_results["technical_indicators"]
-        if isinstance(indicators_df, pd.DataFrame) and len(indicators_df) > 0:
-            fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+    indicators_df = analysis_results.get("technical_indicators")
+    if indicators_df is not None and isinstance(indicators_df, pd.DataFrame) and len(indicators_df) > 0:
+        fig, axes = plt.subplots(2, 1, figsize=(12, 8))
             
             # Price and moving averages
             if "timestamp" in indicators_df.columns and "close" in indicators_df.columns:
