@@ -1,9 +1,30 @@
-# Quick Deploy Guide for OMC Staging Environment
+# Quick Deploy Guide for OMC Staging Environment (EKS/Kubernetes)
 
-**Purpose:** Step-by-step deployment instructions for someone with kubectl access to the OMC-test EKS cluster  
-**Target Audience:** DevOps engineers, system administrators  
-**Prerequisites:** kubectl access to OMC-test cluster, AWS CLI configured  
+> **⚠️ IMPORTANT NOTE:** This guide is for **future EKS/Kubernetes deployment**. The current production infrastructure uses **ECS (Elastic Container Service)** managed via **Terraform**.
+> 
+> **For current deployments, see:** `infrastructure/terraform/README.md`
+> 
+> This guide should be used only if:
+> - You are migrating from ECS to EKS
+> - You are setting up a separate EKS-based deployment
+> - You have explicitly chosen Kubernetes over ECS
+
+**Purpose:** Step-by-step deployment instructions for someone with kubectl access to an EKS cluster  
+**Target Audience:** DevOps engineers planning EKS deployment  
+**Prerequisites:** EKS cluster deployed, kubectl access, AWS CLI configured  
 **Estimated Time:** 3-4 hours for complete deployment
+
+## Current Infrastructure Status
+
+**Primary Deployment (ECS via Terraform):**
+- ✅ Fully operational
+- ✅ VPC, RDS, Redis, ECS, ALB deployed
+- ✅ Managed via Terraform in `infrastructure/terraform/`
+
+**EKS/Kubernetes Deployment (This Guide):**
+- 📝 Manifests created but not deployed
+- ⏸️ Requires EKS cluster setup first
+- 🔮 Future migration path or alternative deployment option
 
 ---
 

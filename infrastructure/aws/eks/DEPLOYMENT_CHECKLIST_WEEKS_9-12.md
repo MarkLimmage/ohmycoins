@@ -1,9 +1,29 @@
-# Deployment Checklist - Weeks 9-12
+# Deployment Checklist - Weeks 9-12 (EKS/Kubernetes Path)
 # Developer C: Application Deployment & Production Preparation
 
+> **⚠️ IMPORTANT NOTE:** This checklist is for **EKS/Kubernetes deployment**. The current production infrastructure uses **ECS via Terraform**.
+> 
+> **For current Terraform/ECS deployments, see:** `infrastructure/terraform/README.md` and `infrastructure/terraform/QUICKSTART.md`
+> 
+> Use this checklist only if deploying to an EKS cluster.
+
 **Sprint Duration:** Weeks 9-12 (4 weeks)  
-**Objective:** Deploy all applications to staging, prepare production environment, implement security hardening  
+**Objective:** Deploy all applications to EKS staging cluster, prepare production, implement security hardening  
 **Last Updated:** 2025-11-21
+
+## Deployment Path Decision
+
+**Option A: ECS via Terraform (Current/Recommended)**
+- ✅ Fully operational
+- ✅ Proven infrastructure
+- ✅ Simpler management
+- 📍 See: `infrastructure/terraform/QUICKSTART.md`
+
+**Option B: EKS via Kubernetes (This Guide)**
+- 📝 Manifests ready
+- ⏸️ Requires EKS cluster setup
+- 🔮 Future migration path
+- 📍 Continue with this guide
 
 ---
 
