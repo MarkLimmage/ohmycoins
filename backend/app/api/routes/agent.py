@@ -3,12 +3,15 @@ API routes for Agent Sessions (Phase 3 - Agentic Data Science).
 
 Provides endpoints for creating, managing, and interacting with agent sessions.
 Week 9-10 additions: Human-in-the-Loop endpoints (clarifications, choices, approvals, overrides)
+Week 11-12 additions: Artifact management endpoints (download, delete)
 """
 
+import os
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import select
 
@@ -22,6 +25,7 @@ from app.models import (
     AgentSessionsPublic,
 )
 from app.services.agent import AgentOrchestrator, SessionManager
+from app.services.agent.artifacts import ArtifactManager
 from app.services.agent.nodes.clarification import handle_clarification_response
 from app.services.agent.nodes.choice_presentation import handle_choice_selection
 from app.services.agent.nodes.approval import handle_approval_granted, handle_approval_rejected
@@ -29,10 +33,11 @@ from app.services.agent.override import apply_user_override, get_override_points
 
 router = APIRouter()
 
-# Global session manager and orchestrator
+# Global session manager, orchestrator, and artifact manager
 # TODO: Move to dependency injection in production
 session_manager = SessionManager()
 orchestrator = AgentOrchestrator(session_manager)
+artifact_manager = ArtifactManager()
 
 
 @router.post("/sessions", response_model=AgentSessionPublic, status_code=201)
@@ -658,3 +663,104 @@ async def apply_override(
         "override_type": override_request.override_type,
         "current_step": updated_state.get("current_step"),
     }
+
+
+@router.get("/artifacts/{artifact_id}/download")
+async def download_artifact(
+    *,
+    artifact_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> FileResponse:
+    """
+    Download an artifact file.
+    
+    Args:
+        artifact_id: Artifact ID
+        db: Database session
+        current_user: Currently authenticated user
+    
+    Returns:
+        File response with artifact content
+    
+    Raises:
+        HTTPException: If artifact not found, user doesn't have access, or file not found
+    """
+    artifact = artifact_manager.get_artifact(db, artifact_id)
+    
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    
+    # Verify user has access to this artifact's session
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this artifact")
+    
+    # Get file path
+    file_path = artifact.file_path
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Artifact file not found")
+    
+    return FileResponse(
+        path=file_path,
+        filename=artifact.name,
+        media_type=artifact.mime_type or "application/octet-stream",
+    )
+
+
+@router.delete("/artifacts/{artifact_id}")
+async def delete_artifact(
+    *,
+    artifact_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> dict[str, str]:
+    """
+    Delete an artifact.
+    
+    Args:
+        artifact_id: Artifact ID
+        db: Database session
+        current_user: Currently authenticated user
+    
+    Returns:
+        Success message
+    
+    Raises:
+        HTTPException: If artifact not found or user doesn't have access
+    """
+    artifact = artifact_manager.get_artifact(db, artifact_id)
+    
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    
+    # Verify user has access to this artifact's session
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this artifact")
+    
+    # Delete artifact
+    if not artifact_manager.delete_artifact(db, artifact_id):
+        raise HTTPException(status_code=500, detail="Failed to delete artifact")
+    
+    return {"message": "Artifact deleted successfully"}
+
+
+@router.get("/artifacts/stats")
+async def get_artifact_stats(
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """
+    Get artifact storage statistics.
+    
+    Args:
+        db: Database session
+        current_user: Currently authenticated user
+    
+    Returns:
+        Storage statistics
+    """
+    # Get stats - this shows all artifacts, but in production you might want to filter by user
+    stats = artifact_manager.get_storage_stats(db)
+    return stats

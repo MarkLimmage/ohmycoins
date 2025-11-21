@@ -820,6 +820,210 @@ class OrderPublic(OrderBase):
     filled_at: datetime | None
 
 
+# =============================================================================
+# Phase 5/6: Algorithm Deployment Models
+# =============================================================================
+
+class AlgorithmBase(SQLModel):
+    """Base model for trading algorithms"""
+    name: str = Field(max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    algorithm_type: str = Field(max_length=50)  # 'ml_model', 'rule_based', 'reinforcement_learning'
+    version: str = Field(max_length=50, default='1.0.0')
+    artifact_id: uuid.UUID | None = Field(
+        default=None, 
+        foreign_key="agent_artifacts.id",
+        description="Link to AgentArtifact for ML models from Phase 3"
+    )
+    status: str = Field(max_length=20, default='draft', index=True)  # draft, active, paused, archived
+    configuration_json: str | None = Field(
+        default=None,
+        description="JSON configuration for algorithm parameters"
+    )
+    default_execution_frequency: int = Field(
+        default=300,
+        description="Default execution frequency in seconds (e.g., 300 = 5 minutes)"
+    )
+    default_position_limit: Decimal | None = Field(
+        default=None,
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=True),
+        description="Default maximum position size in AUD"
+    )
+    performance_metrics_json: str | None = Field(
+        default=None,
+        description="JSON metrics: sharpe_ratio, max_drawdown, win_rate, etc."
+    )
+
+
+class Algorithm(AlgorithmBase, table=True):
+    """
+    Algorithm definition
+    
+    Represents a trading algorithm that can be deployed by users.
+    Can be linked to AgentArtifacts (Phase 3 models) or be standalone.
+    """
+    __tablename__ = "algorithms"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_by: uuid.UUID = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
+    last_executed_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    
+    # Relationships
+    deployments: list["DeployedAlgorithm"] = Relationship(back_populates="algorithm")
+    
+    __table_args__ = (
+        Index('idx_algorithm_status', 'status'),
+        Index('idx_algorithm_created_by', 'created_by'),
+    )
+
+
+class AlgorithmPublic(AlgorithmBase):
+    """Schema for returning algorithm via API"""
+    id: uuid.UUID
+    created_by: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    last_executed_at: datetime | None
+
+
+class AlgorithmCreate(SQLModel):
+    """Schema for creating an algorithm"""
+    name: str = Field(max_length=255)
+    description: str | None = None
+    algorithm_type: str = Field(max_length=50)
+    version: str = Field(max_length=50, default='1.0.0')
+    artifact_id: uuid.UUID | None = None
+    configuration_json: str | None = None
+    default_execution_frequency: int = 300
+    default_position_limit: Decimal | None = None
+
+
+class AlgorithmUpdate(SQLModel):
+    """Schema for updating an algorithm"""
+    name: str | None = None
+    description: str | None = None
+    status: str | None = None
+    configuration_json: str | None = None
+    default_execution_frequency: int | None = None
+    default_position_limit: Decimal | None = None
+    performance_metrics_json: str | None = None
+
+
+class DeployedAlgorithmBase(SQLModel):
+    """Base model for deployed algorithms (user-specific deployments)"""
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    algorithm_id: uuid.UUID = Field(foreign_key="algorithms.id", index=True)
+    deployment_name: str | None = Field(default=None, max_length=255)
+    is_active: bool = Field(default=False, index=True)
+    execution_frequency: int = Field(
+        default=300,
+        description="Execution frequency in seconds (overrides algorithm default)"
+    )
+    position_limit: Decimal | None = Field(
+        default=None,
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=True),
+        description="Maximum position size in AUD (overrides algorithm default)"
+    )
+    daily_loss_limit: Decimal | None = Field(
+        default=None,
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=True),
+        description="Maximum daily loss in AUD"
+    )
+    parameters_json: str | None = Field(
+        default=None,
+        description="User-specific algorithm parameters"
+    )
+
+
+class DeployedAlgorithm(DeployedAlgorithmBase, table=True):
+    """
+    Deployed algorithm instance
+    
+    Represents a user's deployment of an algorithm with custom parameters.
+    Multiple users can deploy the same algorithm with different settings.
+    """
+    __tablename__ = "deployed_algorithms"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
+    activated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    deactivated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    last_executed_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    total_profit_loss: Decimal = Field(
+        default=Decimal('0'),
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
+        description="Cumulative P&L for this deployment"
+    )
+    total_trades: int = Field(default=0, description="Total number of trades executed")
+    
+    # Relationships
+    algorithm: Algorithm | None = Relationship(back_populates="deployments")
+    
+    __table_args__ = (
+        Index('idx_deployed_algorithm_user_active', 'user_id', 'is_active'),
+        Index('idx_deployed_algorithm_algorithm', 'algorithm_id'),
+    )
+
+
+class DeployedAlgorithmPublic(DeployedAlgorithmBase):
+    """Schema for returning deployed algorithm via API"""
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    activated_at: datetime | None
+    deactivated_at: datetime | None
+    last_executed_at: datetime | None
+    total_profit_loss: Decimal
+    total_trades: int
+
+
+class DeployedAlgorithmCreate(SQLModel):
+    """Schema for creating a deployed algorithm"""
+    algorithm_id: uuid.UUID
+    deployment_name: str | None = None
+    execution_frequency: int = 300
+    position_limit: Decimal | None = None
+    daily_loss_limit: Decimal | None = None
+    parameters_json: str | None = None
+
+
+class DeployedAlgorithmUpdate(SQLModel):
+    """Schema for updating a deployed algorithm"""
+    deployment_name: str | None = None
+    is_active: bool | None = None
+    execution_frequency: int | None = None
+    position_limit: Decimal | None = None
+    daily_loss_limit: Decimal | None = None
+    parameters_json: str | None = None
+
+
 # Update User model to include relationships
 User.model_rebuild()
 

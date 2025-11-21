@@ -2,6 +2,10 @@
 Trading services for Oh My Coins
 
 This package provides live trading capabilities using the Coinspot API.
+
+Phase 6 Components:
+- Weeks 1-2: Trading client, order execution, position management
+- Weeks 3-4: Algorithm execution, scheduling, safety, audit trail
 """
 
 from app.services.trading.client import CoinspotTradingClient
@@ -17,6 +21,7 @@ from app.services.trading.algorithm_executor import (
 from app.services.trading.scheduler import ExecutionScheduler, get_execution_scheduler
 
 __all__ = [
+    # Weeks 1-2: Core trading infrastructure
     "CoinspotTradingClient",
     "OrderExecutor",
     "OrderQueue",
