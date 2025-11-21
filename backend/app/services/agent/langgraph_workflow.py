@@ -24,6 +24,7 @@ from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.data_analyst import DataAnalystAgent
 from app.services.agent.agents.model_training import ModelTrainingAgent
 from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
+from app.services.agent.agents.reporting import ReportingAgent
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class AgentState(TypedDict):
     Week 5-6 additions: trained_models, evaluation_results, training_summary, evaluation_insights
     Week 7-8 additions: ReAct loop fields (reasoning_trace, decision_history, retry_count, etc.)
     Week 9-10 additions: HiTL fields (clarifications, choices, approvals, overrides)
+    Week 11 additions: Reporting fields (report_generated, report_data)
     """
     session_id: str
     user_goal: str
@@ -88,6 +90,9 @@ class AgentState(TypedDict):
     approval_mode: str  # "auto" or "manual"
     approval_needed: bool  # Workflow paused for approval
     pending_approvals: list[dict[str, Any]] | None  # Pending approval requests
+    # Week 11 additions - Reporting
+    report_generated: bool  # Flag indicating if report was generated
+    report_data: dict[str, Any] | None  # Report data (summary, recommendations, visualizations)
 
 
 class LangGraphWorkflow:
@@ -114,6 +119,7 @@ class LangGraphWorkflow:
         self.data_analyst_agent = DataAnalystAgent()
         self.model_training_agent = ModelTrainingAgent()
         self.model_evaluator_agent = ModelEvaluatorAgent()
+        self.reporting_agent = ReportingAgent()
         
         # Initialize LLM for reasoning (if API key available)
         self.llm = None
@@ -142,6 +148,7 @@ class LangGraphWorkflow:
         Week 3-4: Added analyze_data node between retrieve_data and finalize.
         Week 5-6: Added train_model and evaluate_model nodes for ML pipeline.
         Week 7-8: Enhanced with conditional routing, reasoning nodes, and error recovery.
+        Week 11: Added generate_report node for comprehensive reporting.
         
         Returns:
             Configured state graph with conditional edges
@@ -159,6 +166,7 @@ class LangGraphWorkflow:
         workflow.add_node("analyze_data", self._analyze_data_node)
         workflow.add_node("train_model", self._train_model_node)
         workflow.add_node("evaluate_model", self._evaluate_model_node)
+        workflow.add_node("generate_report", self._generate_report_node)
         workflow.add_node("finalize", self._finalize_node)
         
         # Add error recovery node
@@ -179,6 +187,7 @@ class LangGraphWorkflow:
                 "analyze": "analyze_data", 
                 "train": "train_model",
                 "evaluate": "evaluate_model",
+                "report": "generate_report",
                 "finalize": "finalize",
                 "error": "handle_error",
             }
@@ -222,17 +231,20 @@ class LangGraphWorkflow:
             }
         )
         
-        # After evaluation, finalize or retry
+        # After evaluation, generate report
         workflow.add_conditional_edges(
             "evaluate_model",
             self._route_after_evaluation,
             {
-                "finalize": "finalize",
+                "report": "generate_report",
                 "retrain": "train_model",
                 "reason": "reason",
                 "error": "handle_error",
             }
         )
+        
+        # After report generation, finalize
+        workflow.add_edge("generate_report", "finalize")
         
         # Error handling routes back to reason or ends
         workflow.add_conditional_edges(
@@ -276,6 +288,10 @@ class LangGraphWorkflow:
         state["skip_training"] = False
         state["needs_more_data"] = False
         state["quality_checks"] = {}
+        
+        # Week 11: Initialize reporting fields
+        state["report_generated"] = False
+        state["report_data"] = None
         
         state["messages"].append({
             "role": "system",
@@ -585,6 +601,41 @@ class LangGraphWorkflow:
             state["error"] = f"Model evaluation failed: {str(e)}"
             return state
 
+    async def _generate_report_node(self, state: AgentState) -> AgentState:
+        """
+        Execute reporting agent to generate comprehensive report.
+        
+        Week 11: New node for generating reports and visualizations.
+        
+        Args:
+            state: Current workflow state
+            
+        Returns:
+            Updated state with report data
+        """
+        state["current_step"] = "report_generation"
+        
+        try:
+            # Execute reporting agent
+            updated_state = await self.reporting_agent.execute(state)
+            
+            # Add message about report generation
+            if updated_state.get("report_generated"):
+                report_data = updated_state.get("report_data", {})
+                viz_count = len(report_data.get("visualizations", []))
+                updated_state["messages"].append({
+                    "role": "assistant",
+                    "content": f"Report generated with {viz_count} visualizations."
+                })
+            
+            return updated_state
+        except Exception as e:
+            logger.error(f"Error in report generation: {str(e)}")
+            state["error"] = f"Report generation failed: {str(e)}"
+            # Report generation is optional, so we don't fail the workflow
+            state["report_generated"] = False
+            return state
+
     async def _finalize_node(self, state: AgentState) -> AgentState:
         """
         Finalize the workflow and prepare results.
@@ -683,9 +734,11 @@ class LangGraphWorkflow:
     
     # Routing Functions for Conditional Edges
     
-    def _route_after_reasoning(self, state: AgentState) -> Literal["retrieve", "analyze", "train", "evaluate", "finalize", "error"]:
+    def _route_after_reasoning(self, state: AgentState) -> Literal["retrieve", "analyze", "train", "evaluate", "report", "finalize", "error"]:
         """
         Route after reasoning based on current state.
+        
+        Week 11: Added report routing option.
         
         Args:
             state: Current workflow state
@@ -715,6 +768,8 @@ class LangGraphWorkflow:
                 return "finalize"
         elif state.get("model_trained") and not state.get("model_evaluated"):
             return "evaluate"
+        elif state.get("model_evaluated") and not state.get("report_generated"):
+            return "report"
         else:
             return "finalize"
     
@@ -788,9 +843,11 @@ class LangGraphWorkflow:
         
         return "evaluate"
     
-    def _route_after_evaluation(self, state: AgentState) -> Literal["finalize", "retrain", "reason", "error"]:
+    def _route_after_evaluation(self, state: AgentState) -> Literal["report", "retrain", "reason", "error"]:
         """
         Route after model evaluation.
+        
+        Week 11: Updated to route to reporting after successful evaluation.
         
         Args:
             state: Current workflow state
@@ -805,12 +862,12 @@ class LangGraphWorkflow:
         # Check if model performance is acceptable
         evaluation_results = state.get("evaluation_results", {})
         
-        # Simple check: if we have results, finalize
+        # Simple check: if we have results, generate report
         # In future, could check metrics and decide to retrain
         if evaluation_results:
-            return "finalize"
+            return "report"
         else:
-            return "finalize"
+            return "report"
     
     def _route_after_error(self, state: AgentState) -> Literal["retry", "end"]:
         """

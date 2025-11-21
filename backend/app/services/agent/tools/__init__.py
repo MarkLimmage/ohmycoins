@@ -4,6 +4,7 @@ Tools module for agent capabilities.
 This module contains all the tools that agents can use to perform their tasks.
 Week 3-4 implementation: Data Retrieval and Data Analysis tools.
 Week 5-6 implementation: Model Training and Model Evaluation tools.
+Week 11 implementation: Reporting tools.
 """
 
 from .data_retrieval_tools import (
@@ -33,6 +34,12 @@ from .model_evaluation_tools import (
     compare_models,
     calculate_feature_importance,
 )
+from .reporting_tools import (
+    generate_summary,
+    create_comparison_report,
+    generate_recommendations,
+    create_visualizations,
+)
 
 __all__ = [
     # Data Retrieval Tools
@@ -58,4 +65,9 @@ __all__ = [
     "tune_hyperparameters",
     "compare_models",
     "calculate_feature_importance",
+    # Reporting Tools
+    "generate_summary",
+    "create_comparison_report",
+    "generate_recommendations",
+    "create_visualizations",
 ]
