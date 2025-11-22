@@ -77,9 +77,18 @@ def session(db: Session) -> Generator[Session, None, None]:
     """Alias for db fixture to support tests expecting 'session' parameter with transaction isolation"""
     # Start a savepoint for this test
     db.begin_nested()
-    yield db
-    # Rollback the savepoint to undo any changes made during the test
-    db.rollback()
+    try:
+        yield db
+    finally:
+        # Always rollback the savepoint to undo any changes made during the test
+        # This prevents test data from persisting and causing conflicts
+        try:
+            db.rollback()
+        except Exception:
+            # If rollback fails, the session is already in a bad state
+            # Close and create a new session
+            db.close()
+            pass
 
 
 @pytest.fixture(scope="module")

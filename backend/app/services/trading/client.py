@@ -11,18 +11,9 @@ from decimal import Decimal
 import aiohttp
 
 from app.services.coinspot_auth import CoinspotAuthenticator
+from app.services.trading.exceptions import CoinspotTradingError, CoinspotAPIError
 
 logger = logging.getLogger(__name__)
-
-
-class CoinspotTradingError(Exception):
-    """Base exception for Coinspot trading errors"""
-    pass
-
-
-class CoinspotAPIError(CoinspotTradingError):
-    """Raised when the Coinspot API returns an error"""
-    pass
 
 
 class CoinspotTradingClient:

@@ -15,13 +15,9 @@ from sqlmodel import Session, select
 
 from app.models import Order, Position
 from app.services.trading.client import CoinspotTradingClient, CoinspotAPIError, CoinspotTradingError
+from app.services.trading.exceptions import OrderExecutionError
 
 logger = logging.getLogger(__name__)
-
-
-class OrderExecutionError(Exception):
-    """Base exception for order execution errors"""
-    pass
 
 
 class OrderExecutor:

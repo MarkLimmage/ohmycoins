@@ -20,13 +20,9 @@ from app.services.trading.algorithm_executor import (
     TradingAlgorithm,
     get_algorithm_executor
 )
+from app.services.trading.exceptions import SchedulerError
 
 logger = logging.getLogger(__name__)
-
-
-class SchedulerError(Exception):
-    """Base exception for scheduler errors"""
-    pass
 
 
 class ExecutionScheduler:

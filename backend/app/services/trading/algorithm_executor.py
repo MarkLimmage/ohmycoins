@@ -17,6 +17,7 @@ from app.services.trading.client import CoinspotTradingClient
 from app.services.trading.recorder import TradeRecorder, get_trade_recorder
 from app.services.trading.safety import TradingSafetyManager, get_safety_manager, SafetyViolation
 from app.services.trading.executor import OrderQueue, get_order_queue
+from app.services.trading.exceptions import AlgorithmExecutionError
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +47,6 @@ class TradingAlgorithm(Protocol):
             }
         """
         ...
-
-
-class AlgorithmExecutionError(Exception):
-    """Base exception for algorithm execution errors"""
-    pass
 
 
 class AlgorithmExecutor:

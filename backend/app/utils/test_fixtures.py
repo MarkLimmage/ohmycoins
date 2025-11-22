@@ -7,6 +7,7 @@ These fixtures use the seeding utilities but are optimized for fast test executi
 
 import os
 import random
+import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Generator
@@ -40,7 +41,8 @@ def create_test_user(
 ) -> User:
     """Create a test user with sensible defaults."""
     if email is None:
-        email = fake.email()
+        # Use UUID to ensure uniqueness even with persistent dev data
+        email = f"test-{uuid.uuid4()}@example.com"
     
     user = User(
         email=email,
