@@ -4,6 +4,10 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 
+# Database snapshots (exclude .sql.gz files but keep README.md)
+backups/*.sql.gz
+backups/*.meta
+
 # AWS Infrastructure - Exclude sensitive files
 infrastructure/aws/eks/arc-manifests/github-auth-secret.yaml
 infrastructure/aws/eks/**/*.pem

@@ -85,8 +85,20 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
     logger.info(f"Generating {count} users...")
     users = []
     
-    for i in range(count):
-        is_superuser = i == 0  # First user is superuser
+    # Check if superuser already exists
+    existing_superuser = session.exec(
+        select(User).where(User.email == settings.FIRST_SUPERUSER)
+    ).first()
+    
+    if existing_superuser:
+        logger.info(f"Superuser already exists: {settings.FIRST_SUPERUSER}")
+        users.append(existing_superuser)
+        start_index = 1  # Skip creating superuser
+    else:
+        start_index = 0  # Create superuser as first user
+    
+    for i in range(start_index, count):
+        is_superuser = i == 0 and not existing_superuser  # First user is superuser only if doesn't exist
         user = User(
             email=f"user{i}@example.com" if not is_superuser else settings.FIRST_SUPERUSER,
             hashed_password=get_password_hash("TestPassword123!" if not is_superuser else settings.FIRST_SUPERUSER_PASSWORD),
@@ -107,7 +119,7 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
     for user in users:
         session.refresh(user)
     
-    logger.info(f"Created {len(users)} users")
+    logger.info(f"Created {len(users) - (1 if existing_superuser else 0)} new users (total: {len(users)})")
     return users
 
 

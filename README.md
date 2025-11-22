@@ -126,35 +126,37 @@ Data Retrieval  Data Analyst  Model Trainer  Model Evaluator  Reporter
    cd ohmycoins
    ```
 
-2. **Start services**
+2. **Start services** (database auto-seeds on first startup)
    ```bash
    docker-compose up -d
    ```
 
-3. **Install backend dependencies**
-   ```bash
-   cd backend
-   uv sync
-   ```
-
-4. **Run database migrations**
-   ```bash
-   uv run alembic upgrade head
-   ```
-
-5. **Start backend server**
-   ```bash
-   uv run uvicorn app.main:app --reload
-   ```
-
-6. **Access the application**
+3. **Access the application**
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
+   - Database Admin (Adminer): http://localhost:8080
    - Frontend (when ready): http://localhost:5173
 
-For detailed setup instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)
+4. **Login credentials**
+   - Email: `admin@example.com`
+   - Password: Check `.env` for `FIRST_SUPERUSER_PASSWORD`
+
+**Database Management**:
+```bash
+./scripts/db-reset.sh              # Reset to fresh state
+./scripts/db-snapshot.sh my-snap   # Create snapshot
+./scripts/db-restore.sh my-snap    # Restore snapshot
+```
+
+For detailed setup, see [DEVELOPMENT.md](./DEVELOPMENT.md) and [PERSISTENT_DEV_DATA.md](./PERSISTENT_DEV_DATA.md)
 
 ## 📖 Documentation
+
+### 🗄️ Data Management (NEW - 2025-11-22)
+- **[PERSISTENT_DEV_DATA.md](./PERSISTENT_DEV_DATA.md)** - Automatic seeding, snapshots, restore workflows 🔄
+- **[SYNTHETIC_DATA_QUICKSTART.md](./SYNTHETIC_DATA_QUICKSTART.md)** - Quick command reference ⚡
+- **[SYNTHETIC_DATA_STRATEGY.md](./SYNTHETIC_DATA_STRATEGY.md)** - Overall data strategy 📋
+- **[SYNTHETIC_DATA_IMPLEMENTATION_SUMMARY.md](./SYNTHETIC_DATA_IMPLEMENTATION_SUMMARY.md)** - Technical details 🔧
 
 ### 🎯 Planning & Next Steps (NEW - 2025-11-17)
 > 📚 **Start here:** [PLANNING_INDEX.md](./PLANNING_INDEX.md) - Central index for all planning documentation

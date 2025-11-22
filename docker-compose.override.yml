@@ -102,6 +102,55 @@ services:
       - "1080:1080"
       - "1025:1025"
 
+  db-init:
+    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    build:
+      context: ./backend
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      prestart:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      # Configure automatic seeding
+      - AUTO_SEED_DB=${AUTO_SEED_DB:-true}
+      - SEED_USER_COUNT=${SEED_USER_COUNT:-10}
+      - SEED_ALGORITHM_COUNT=${SEED_ALGORITHM_COUNT:-15}
+      - SEED_AGENT_SESSION_COUNT=${SEED_AGENT_SESSION_COUNT:-20}
+      - SEED_COLLECT_REAL_DATA=${SEED_COLLECT_REAL_DATA:-true}
+    volumes:
+      - ./backend/app:/app/app
+    command: >
+      bash -c "
+      if [ \"$$AUTO_SEED_DB\" = \"true\" ]; then
+        echo 'Checking if database needs seeding...';
+        python -c '
+      from sqlmodel import Session, select, func
+      from app.core.db import engine
+      from app.models import User
+      
+      with Session(engine) as session:
+          user_count = session.exec(select(func.count(User.id))).one()
+          if user_count == 0:
+              print(\"Database is empty. Seeding with dev data...\")
+              exit(0)
+          else:
+              print(f\"Database already has {user_count} users. Skipping seed.\")
+              exit(1)
+      ' && python -m app.utils.seed_data --all --users $$SEED_USER_COUNT --algorithms $$SEED_ALGORITHM_COUNT --agent-sessions $$SEED_AGENT_SESSION_COUNT $$([ \"$$SEED_COLLECT_REAL_DATA\" = \"false\" ] && echo \"--no-real-data\" || echo \"\") || echo 'Database already seeded.';
+      else
+        echo 'AUTO_SEED_DB is disabled. Skipping automatic seeding.';
+      fi
+      "
+
   frontend:
     restart: "no"
     ports:

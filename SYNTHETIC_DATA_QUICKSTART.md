@@ -4,7 +4,21 @@
 
 This system provides a comprehensive strategy for populating the dev environment with test data, combining **real data from public APIs** with **synthetic user-specific data**.
 
+> 💡 **New!** Check out the [Persistent Dev Data Store](./PERSISTENT_DEV_DATA.md) for automatic database seeding, snapshots, and restore capabilities.
+
 ## Quick Commands
+
+### Automatic Setup (Recommended)
+
+```bash
+# First-time setup: database auto-seeds on startup
+docker-compose up -d
+
+# Verify data
+docker compose exec backend python -c "from sqlmodel import Session, select, func; from app.core.db import engine; from app.models import User; print(f'Users: {Session(engine).exec(select(func.count(User.id))).one()}')"
+```
+
+### Manual Seeding
 
 ```bash
 # Navigate to backend directory
@@ -22,6 +36,21 @@ python -m app.utils.seed_data --users 20 --algorithms 30 --agent-sessions 50
 # Clear all data
 python -m app.utils.seed_data --clear
 ```
+
+### Database Management
+
+```bash
+# Reset to fresh seeded state
+./scripts/db-reset.sh
+
+# Create a snapshot
+./scripts/db-snapshot.sh my-snapshot-name
+
+# Restore from snapshot
+./scripts/db-restore.sh my-snapshot-name
+```
+
+> 📚 **For detailed workflow guides**, see [Persistent Dev Data Store](./PERSISTENT_DEV_DATA.md)
 
 ## What Gets Created
 
@@ -147,7 +176,9 @@ python -m app.utils.seed_data --all --no-real-data
 
 ## Documentation
 
-- **Full Strategy**: See `/SYNTHETIC_DATA_STRATEGY.md`
+- **Persistent Dev Data**: See [PERSISTENT_DEV_DATA.md](./PERSISTENT_DEV_DATA.md) for automatic seeding, snapshots, and restore workflows
+- **Full Strategy**: See [SYNTHETIC_DATA_STRATEGY.md](./SYNTHETIC_DATA_STRATEGY.md) for overall approach and architecture
+- **Implementation Details**: See [SYNTHETIC_DATA_IMPLEMENTATION_SUMMARY.md](./SYNTHETIC_DATA_IMPLEMENTATION_SUMMARY.md) for technical documentation
 - **Code**: `app/utils/seed_data.py`
 - **Test Fixtures**: `app/utils/test_fixtures.py`
 - **Tests**: `tests/utils/test_seed_data.py`
