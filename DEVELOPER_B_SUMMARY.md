@@ -754,8 +754,8 @@ generate_report → finalize → END
 ### Cumulative Statistics (Weeks 1-10)
 
 **Total Lines of Code:** ~15,000+ lines
-**Total Tests:** 167+ comprehensive tests
-**API Endpoints:** 16+ (8 session management + 8 HiTL)
+**Total Tests:** 212+ comprehensive tests (167 + 45 from Week 11)
+**API Endpoints:** 19+ (8 session management + 8 HiTL + 3 artifact management)
 **State Fields:** 75+ in AgentState
 **Agents:** 5 (DataRetrieval, DataAnalyst, ModelTraining, ModelEvaluator, Reporting)
 **Tools:** 19+ specialized tools
