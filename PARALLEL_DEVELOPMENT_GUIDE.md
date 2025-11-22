@@ -1,8 +1,9 @@
 # Parallel Development Guide - Oh My Coins (OMC!)
 
-**Last Updated:** 2025-11-20  
-**Purpose:** Coordinate parallel development for next sprint cycle
-**Context:** Phase 2.5 and Infrastructure (Weeks 1-6) complete. Phase 3 at 60% completion.
+**Last Updated:** 2025-11-22  
+**Purpose:** Coordinate parallel development for next sprint cycle  
+**Context:** Phase 2.5 complete. Phase 3 at 92% (Week 11 complete). Phase 6 Weeks 1-4 complete. Phase 9 Weeks 1-10 complete.  
+**Team:** 3 developers + 1 tester with access to staging environment and synthetic dataset
 
 ---
 
@@ -12,125 +13,263 @@
 | Developer | Phase | Status | Key Deliverables |
 |-----------|-------|--------|------------------|
 | **Developer A** | Phase 2.5 Data Collection | ✅ 100% | 5 collectors, quality monitoring, 105+ tests |
-| **Developer A** | Phase 6 Trading (Weeks 1-2) | ✅ 90% | Trading client, order executor, positions, 47+ tests |
-| **Developer B** | Phase 3 Agentic (Weeks 1-10) | ✅ 83% | LangGraph, 4 agents, ReAct loop, HiTL, 167+ tests |
-| **Developer C** | Phase 9 Infrastructure (Weeks 1-8) | ✅ 100% | AWS staging, EKS, monitoring stack, CI/CD |
+| **Developer A** | Phase 6 Trading (Weeks 1-4) | ✅ 100% | Trading client, algorithm executor, safety, 99+ tests |
+| **Developer B** | Phase 3 Agentic (Weeks 1-11) | ✅ 92% | LangGraph, agents, ReAct, HiTL, Reporting, 212+ tests |
+| **Developer C** | Phase 9 Infrastructure (Weeks 1-10) | ✅ 100% | AWS staging, EKS, monitoring, security hardening |
+| **Tester** | QA & Testing | 🆕 NEW | Staging access, synthetic dataset ready |
 
 ### 🎯 Next Sprint Priorities
 
-| Track A | Track B | Track C |
-|---------|---------|---------|
-| **Phase 6: Trading System (cont.)** | **Phase 3: Complete Agentic** | **Production Preparation** |
-| Algorithm execution engine, P&L system | Reporting, artifact management, finalization | Production deployment, security hardening |
-| **Timeline:** 4-6 weeks (weeks 3-8) | **Timeline:** 2 weeks (weeks 11-12) | **Timeline:** 4-6 weeks (weeks 9-14) |
-| **Developer:** Developer A | **Developer:** Developer B | **Developer:** Developer C |
+| Track A | Track B | Track C | Track D (NEW) |
+|---------|---------|---------|---------------|
+| **Phase 6: P&L System** | **Phase 3: Finalization** | **Production Deployment** | **QA & Testing** |
+| P&L calculation, trade history, testing | Integration tests, documentation | App deployment, security | Sprint-end validation |
+| **Timeline:** 2 weeks (weeks 5-6) | **Timeline:** 1 week (week 12) | **Timeline:** Ongoing | **Timeline:** End of each sprint |
+| **Developer:** Developer A | **Developer:** Developer B | **Developer:** Developer C | **Tester** |
 
-**Key Insight:** All three tracks are independent and can proceed in parallel. Integration testing in Week 4 and Week 8.
+**Key Insight:** All four tracks can proceed in parallel with coordination at sprint boundaries for testing validation.
 
 
 ---
 
-## Current Sprint Plan (Next 8 Weeks)
+## Current Sprint Plan (Next 6-8 Weeks)
 
-### Week 1-2: Parallel Independent Development
+### Week 1-2: Parallel Independent Development + Testing
 
-**Developer A: Phase 6 - Algorithm Execution Engine (Weeks 3-4)** 🔄 IN PROGRESS
-- [ ] Create live trading executor for deployed algorithms
-- [ ] Implement execution scheduler
-- [ ] Add safety mechanisms (position limits, loss limits, emergency stop)
-- [ ] Implement trade recording and reconciliation
+**Developer A: Phase 6 - P&L Calculation & APIs (Weeks 5-6)** 🔄 NEXT
+- [ ] Implement P&L engine (realized/unrealized P&L)
+- [ ] Create P&L APIs (summary, by-algorithm, by-coin)
+- [ ] Implement trade history tracking
+- [ ] Add comprehensive testing (30+ tests)
 - **Directory:** `backend/app/services/trading/`
 - **No conflicts with:** Developer B or C
 
-**Developer B: Phase 3 - Reporting & Finalization (Weeks 11-12)** 🔄 IN PROGRESS
-- [ ] Implement ReportingAgent
-- [ ] Implement artifact management (models, plots, reports)
-- [ ] Complete comprehensive testing
+**Developer B: Phase 3 - Integration Testing & Finalization (Week 12)** 🔄 IN PROGRESS
+- [ ] End-to-end integration tests (15+ tests)
+- [ ] Performance testing
+- [ ] Security testing
+- [ ] Complete API documentation
 - [ ] Finalize documentation
 - **Directory:** `backend/app/services/agent/`
 - **No conflicts with:** Developer A or C
 
-**Developer C: Production Preparation (Weeks 9-10)** 🔄 IN PROGRESS
-- [ ] Deploy production Terraform stack
-- [ ] Configure DNS and SSL certificates
-- [ ] Enable WAF on ALB
-- [ ] Set up backup policies and disaster recovery
-- [ ] Security hardening (AWS Config, GuardDuty, CloudTrail)
+**Developer C: Application Deployment & Production Prep** 🔄 IN PROGRESS
+- [ ] Deploy applications to staging environment
+- [ ] Configure production environment
+- [ ] Security hardening implementation
+- [ ] Monitoring and observability validation
 - **Directory:** `infrastructure/`
 - **No conflicts with:** Developer A or B
 
+**Tester: Sprint 1 Testing Window (Days 13-15 of 2-week sprint)** 🆕 NEW
+- [ ] Test Phase 3 Week 12 deliverables
+  - End-to-end workflow testing
+  - Integration testing (data retrieval → analysis → modeling → reporting)
+  - Performance benchmarks validation
+  - Security testing (API authentication, session isolation)
+- [ ] Test Phase 6 Weeks 5-6 deliverables (when ready)
+  - P&L calculation accuracy
+  - Trade history API validation
+  - Performance under load
+- [ ] Test staging environment stability
+  - All collectors running correctly
+  - Database connectivity
+  - API endpoints accessible
+- **Environment:** Staging with synthetic dataset
+- **Coordination:** Daily standups with developers for issue resolution
 
-### Week 3-4: Continued Parallel + Integration Point
+### Week 3-4: Continued Development + Testing Window 2
 
-**Developer A: Phase 6 - P&L System (Weeks 5-6)** 🔄 UPCOMING
-- [ ] Implement P&L engine
-- [ ] Create P&L APIs
-- [ ] Implement trade history tracking
-- [ ] Add comprehensive testing
-- **Integration:** None required yet
-
-**Developer B: Phase 3 - Complete** ✅ READY FOR DEPLOYMENT
-- [ ] Deploy Phase 3 to staging environment
-- [ ] Integration testing on staging
-- [ ] Performance optimization based on metrics
-- [ ] Documentation finalization
-- **Integration:** Week 4 - Phase 3 complete, deploy to staging
-
-**Developer C: Production Security (Weeks 11-12)** 🔄 UPCOMING
-- [ ] Continue security hardening
-- [ ] Enable GuardDuty monitoring
-- [ ] CloudTrail logging setup
-- [ ] Conduct security audit
-- **Integration:** Week 4 - Support Phase 3 deployment to staging
-
-### Week 5-6: Developer A Continues, B & C Support Integration
-
-**Developer A: Phase 6 - Integration & Testing (Weeks 7-8)**
-- [ ] Integration testing for trading system
-- [ ] End-to-end testing with Phase 3
-- [ ] Documentation completion
+**Developer A: Phase 6 - Testing & Documentation (Post Weeks 5-6)**
+- [ ] Complete comprehensive testing for P&L system
+- [ ] Integration testing with trading engine
+- [ ] Documentation updates
 - [ ] Performance optimization
 
-**Developer B: Begin Phase 5 (Algorithm Promotion)**
-- [ ] Design algorithm promotion workflow
-- [ ] Implement promotion APIs
-- [ ] Create deployment registry
-- [ ] Integration with Phase 6 (Trading)
-- [ ] Fix any issues found in staging deployment
-- [ ] Optimize performance based on staging metrics
-- [ ] Begin planning Phase 5 (Algorithm Promotion)
+**Developer B: Post-Phase 3 Activities**
+- [ ] Support integration testing
+- [ ] Bug fixes from testing feedback
+- [ ] Documentation refinements
+- [ ] Knowledge transfer
 
-**Developer C: Production Preparation**
-- [ ] Configure DNS and SSL certificates
-- [ ] Enable WAF on ALB
-- [ ] Set up backup policies
-- [ ] Implement AWS Config rules
+**Developer C: Production Deployment**
+- [ ] Deploy applications to staging
+- [ ] Monitor staging performance
+- [ ] Production security hardening
+- [ ] Prepare for production go-live
 
-### Week 7-8: Integration Testing & Planning
+**Tester: Sprint 2 Testing Window (Days 13-15 of sprint)**
+- [ ] Comprehensive P&L system testing
+  - Realized vs unrealized P&L accuracy
+  - Historical P&L calculations
+  - API endpoint validation
+  - Performance testing with large trade volumes
+- [ ] Integration testing across all systems
+  - Data collectors → Database → Backend API
+  - Backend API → Agentic System
+  - Agentic System → Trading System
+  - End-to-end workflow validation
+- [ ] Regression testing
+  - Verify Phase 2.5 collectors still functioning
+  - Verify Phase 3 workflows unchanged
+  - Verify Phase 6 trading engine stability
+- **Test Reports:** Detailed findings, bug tracking, acceptance criteria
 
-**All Developers: Integration Testing**
-- [ ] End-to-end testing on staging
-- [ ] Performance testing
-- [ ] Security testing
-- [ ] Documentation review
+### Week 5-6: Integration Testing & Production Readiness
 
-**Planning:**
-- [ ] Review Phase 6 progress (Trading System)
-- [ ] Plan Phase 5 (Algorithm Promotion) - Developer A
-- [ ] Plan Phase 7 (Floor Dashboard) - Developer B  
-- [ ] Plan Production Deployment - Developer C
+**All Developers: Integration Support**
+- [ ] Address bugs and issues from testing
+- [ ] Performance optimization
+- [ ] Security hardening validation
+- [ ] Documentation finalization
+
+**Tester: Sprint 3 Testing Window (Days 13-15 of sprint)**
+- [ ] Production readiness testing
+  - Full system integration testing
+  - Stress testing and load testing
+  - Security vulnerability scanning
+  - Disaster recovery testing
+- [ ] Acceptance testing
+  - Verify all acceptance criteria met
+  - Business logic validation
+  - User workflow validation
+- [ ] Sign-off preparation
+  - Test summary report
+  - Known issues documentation
+  - Risk assessment
+  - Go/no-go recommendation
+
+### Week 7-8: Production Go-Live Support
+
+**Developer C: Production Deployment**
+- [ ] Production deployment execution
+- [ ] Monitoring and alerting validation
+- [ ] Performance monitoring
+
+**All Developers: Support**
+- [ ] Monitor production deployment
+- [ ] Quick response for any issues
+- [ ] Post-deployment validation
+
+**Tester: Production Validation Testing**
+- [ ] Smoke testing on production
+- [ ] Critical path validation
+- [ ] Performance monitoring
+- [ ] Issue tracking and escalation
 
 ---
 
-- Week 3: Reddit API integration
+## Tester Role & Responsibilities (NEW)
 
-**Files Created:**
-- `backend/app/services/collectors/human/reddit.py`
-- `backend/tests/services/collectors/human/test_reddit.py`
+### Overview
+The tester joins the team to ensure quality and reliability of all new code and integrations before production deployment. The tester has access to:
+- **Staging Environment:** Full AWS staging environment with all applications deployed
+- **Synthetic Dataset:** Production-equivalent test data matching current data model
+- **Test Tools:** Access to API testing tools, performance testing tools, database access
 
-**No Conflicts With:** Any other work stream
+### Testing Strategy
+
+**End-of-Sprint Testing Windows:**
+- **Timing:** Last 2-3 days of each 2-week sprint
+- **Frequency:** Every sprint (bi-weekly)
+- **Scope:** All new code committed during the sprint + regression testing
+
+**Test Types:**
+1. **Functional Testing:** Validate new features work as designed
+2. **Integration Testing:** Validate interactions between components
+3. **Regression Testing:** Ensure existing functionality not broken
+4. **Performance Testing:** Validate system performance under load
+5. **Security Testing:** Validate authentication, authorization, data protection
+
+### Sprint-by-Sprint Testing Plan
+
+**Sprint 1 (Weeks 1-2):**
+- Focus: Phase 3 Week 12 completion + Phase 6 Weeks 5-6
+- Test Areas:
+  - Phase 3: Integration tests, performance tests, artifact management
+  - Phase 6: P&L calculations, trade history APIs
+  - Staging: Overall system stability
+
+**Sprint 2 (Weeks 3-4):**
+- Focus: Integration across all phases
+- Test Areas:
+  - Data flow: Collectors → Database → API → Agentic System
+  - Trading flow: Signals → Execution → P&L tracking
+  - End-to-end workflows
+  - Regression testing all previous features
+
+**Sprint 3 (Weeks 5-6):**
+- Focus: Production readiness
+- Test Areas:
+  - Full system integration testing
+  - Load and stress testing
+  - Security vulnerability testing
+  - Disaster recovery testing
+  - Acceptance criteria validation
+
+**Sprint 4 (Weeks 7-8):**
+- Focus: Production validation
+- Test Areas:
+  - Production smoke testing
+  - Critical path validation
+  - Performance monitoring
+  - Issue escalation and tracking
+
+### Coordination with Developers
+
+**Daily Standups (15 minutes):**
+- Tester shares: Tests completed, issues found, blockers
+- Developers share: Fixes deployed, features ready for testing
+- Quick triage of critical issues
+
+**Testing Window Protocol:**
+1. **Day 13 (Monday):** Developers freeze code, deploy to staging
+2. **Day 13-14:** Tester executes test plan
+3. **Day 14-15:** Developers fix critical/high priority bugs
+4. **Day 15:** Tester validates fixes, provides sprint sign-off
+
+**Issue Management:**
+- **Critical:** Blocks production deployment - immediate fix required
+- **High:** Major functionality broken - fix within 1 day
+- **Medium:** Minor functionality issue - fix in next sprint
+- **Low:** Enhancement or cosmetic - backlog for future
+
+### Test Deliverables
+
+**Per Sprint:**
+1. **Test Plan:** Detailed test scenarios for sprint features
+2. **Test Execution Report:** Results of all tests run
+3. **Bug Report:** All issues found with severity, steps to reproduce
+4. **Acceptance Report:** Pass/fail for acceptance criteria
+5. **Performance Benchmarks:** Response times, throughput, resource usage
+
+**Production Readiness:**
+1. **Test Summary Report:** Complete testing summary across all sprints
+2. **Known Issues:** Documentation of any unresolved issues
+3. **Risk Assessment:** Identified risks and mitigation strategies
+4. **Go/No-Go Recommendation:** Final recommendation for production deployment
+
+### Testing Environment Access
+
+**Staging Environment:**
+- URL: `https://api.staging.ohmycoins.com`
+- Database: Direct PostgreSQL access for data validation
+- Monitoring: Grafana dashboards for performance monitoring
+
+**Synthetic Dataset:**
+- **Data Coverage:** Matches production schema
+- **Data Volume:** Representative volumes for performance testing
+- **Data Scenarios:** Edge cases, error conditions, normal operations
+
+**Test Tools:**
+- Postman/Insomnia for API testing
+- JMeter/k6 for load testing
+- SQL client for database validation
+- Browser dev tools for frontend testing (when available)
 
 ---
+
+## Coordination Strategies (Updated with Tester)
 
 #### Stream 3: LangGraph Foundation
 **Owner:** Developer B  

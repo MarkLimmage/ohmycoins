@@ -2011,7 +2011,82 @@ With the staging environment fully deployed, the focus shifts to deploying the a
 - **[Complete Index](infrastructure/terraform/DEVELOPER_C_INDEX.md)** - Full documentation index
 
 ### Team Documentation
-- **[Parallel Development Guide](PARALLEL_DEVELOPMENT_GUIDE.md)** - Team coordination strategy
+- **[Parallel Development Guide](PARALLEL_DEVELOPMENT_GUIDE.md)** - Team coordination strategy (Updated with Tester)
 - **[Developer A Summary](DEVELOPER_A_SUMMARY.md)** - Data collection status
 - **[Developer B Summary](DEVELOPER_B_SUMMARY.md)** - Agentic system status
 - **[Next Steps](NEXT_STEPS.md)** - Overall project roadmap
+
+---
+
+## Integration with Tester (NEW)
+
+### Testing Coordination for Infrastructure
+
+**Role:** Developer C supports the tester with infrastructure and deployment needs
+
+**Sprint 1-2: Staging Environment Support**
+- **Developer C Responsibilities:**
+  - Ensure staging environment stability
+  - Deploy applications as requested by developers
+  - Provide tester with environment access credentials
+  - Monitor infrastructure performance during testing
+  - Address any infrastructure issues found during testing
+  
+- **Tester Support Needs:**
+  - Access to staging environment
+  - Access to Grafana dashboards for monitoring
+  - Database connection strings for data validation
+  - API endpoints and documentation
+  
+- **Infrastructure Monitoring During Testing:**
+  - CPU and memory utilization
+  - Database connection pools
+  - API response times
+  - Error rates and logs
+
+**Sprint 3: Production Readiness Testing**
+- **Developer C Responsibilities:**
+  - Deploy production configuration for validation
+  - Support disaster recovery testing
+  - Validate security hardening
+  - Provide production deployment checklist to tester
+  
+- **Tester Validation Areas:**
+  - Production infrastructure configuration
+  - Security policies (WAF, network policies, IAM)
+  - Backup and disaster recovery procedures
+  - Monitoring and alerting configuration
+
+**Sprint 4: Production Deployment Support**
+- **Developer C Responsibilities:**
+  - Execute production deployment
+  - Monitor deployment health
+  - Support tester with production validation
+  - Quick response for any infrastructure issues
+  
+- **Tester Activities:**
+  - Production smoke testing
+  - Critical path validation
+  - Performance monitoring
+  - Issue escalation
+
+**Communication Protocol:**
+- Daily standups for status updates
+- Slack/Teams for quick infrastructure questions
+- Shared monitoring dashboards in Grafana
+- Documentation of all environment configurations
+
+**Testing Environment Requirements:**
+- Staging URL: `https://api.staging.ohmycoins.com`
+- Grafana: Dashboard access for performance monitoring
+- PostgreSQL: Read access for data validation
+- Redis: Access for session/cache validation
+- Logs: Access to CloudWatch/Loki logs
+
+---
+
+**Developer:** Developer C (Infrastructure & DevOps Specialist)  
+**Date Updated:** 2025-11-22  
+**Sprint Status:** WEEKS 1-10 COMPLETE | Supporting Tester Integration  
+**Testing Integration:** Infrastructure support for all testing activities  
+**Next Review:** After Sprint 1 testing validation

@@ -1366,8 +1366,58 @@ With Phase 2.5 complete and data collection infrastructure operational, Develope
 
 ---
 
-**Last Updated:** 2025-11-21  
+## Integration with Tester (NEW)
+
+### Testing Coordination for Next Sprints
+
+**Sprint 1 (Weeks 5-6): P&L System Testing**
+- **Developer A Responsibilities:**
+  - Complete P&L implementation by Day 12 of sprint
+  - Deploy to staging for testing
+  - Be available Days 13-15 for bug fixes
+  - Provide test data scenarios for edge cases
+  
+- **Tester Focus Areas:**
+  - P&L calculation accuracy (realized vs unrealized)
+  - Historical P&L API validation
+  - Trade history tracking correctness
+  - Performance with large trade volumes
+  
+- **Success Criteria:**
+  - All P&L calculations mathematically correct
+  - APIs return data within 500ms
+  - No data inconsistencies between trades and P&L
+  - Handles edge cases (partial fills, cancelled orders)
+
+**Sprint 2 (Weeks 7-8): Integration Testing**
+- **Developer A Support:**
+  - Fix bugs identified in Phase 6 testing
+  - Support integration testing with Phase 3
+  - Performance optimization based on test results
+  
+- **Integration Points to Test:**
+  - Trading signals from agentic system → Order execution
+  - Order execution → Position updates → P&L calculation
+  - All APIs functioning correctly under load
+
+**Testing Windows:**
+- End of each 2-week sprint (Days 13-15)
+- Developer A freezes code Day 12
+- Tester executes tests Days 13-14
+- Developer A fixes critical issues Days 14-15
+- Tester validates fixes Day 15
+
+**Test Environment:**
+- Staging environment with synthetic dataset
+- All collectors operational
+- Database with test data
+- Monitoring dashboards available
+
+---
+
+**Last Updated:** 2025-11-22  
 **Sprint Status:** Phase 2.5 COMPLETE | Phase 6 Weeks 1-4 COMPLETE ✅  
 **Next Milestone:** Phase 6 Weeks 5-6 (P&L Calculation & APIs)  
-**Next Review:** End of Week 6
+**Testing Integration:** Tester validates at end of each sprint  
+**Next Review:** End of Week 6 + Testing Sign-off
 
