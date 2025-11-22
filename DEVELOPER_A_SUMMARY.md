@@ -1366,39 +1366,272 @@ With Phase 2.5 complete and data collection infrastructure operational, Develope
 
 ---
 
+## Phase 6 - Trading System (Weeks 5-6) ✅
+
+**Date:** 2025-11-22  
+**Sprint Objective:** Implement P&L Calculation & APIs  
+**Status:** ✅ COMPLETE (Weeks 5-6)
+
+### Work Completed This Sprint
+
+#### 1. P&L Calculation Engine ✅
+**Objective:** Implement comprehensive profit & loss tracking
+
+**Files Created:**
+- `backend/app/services/trading/pnl.py` (571 lines, 3 classes)
+- `backend/tests/services/trading/test_pnl.py` (756 lines, 30 tests)
+
+**Features Implemented:**
+- `PnLEngine` - Comprehensive P&L calculation service
+  - Realized P&L calculation using FIFO (First In First Out) accounting
+  - Unrealized P&L calculation from open positions
+  - Historical P&L aggregation with time intervals (hour, day, week, month)
+  - P&L breakdown by algorithm and cryptocurrency
+  - Performance metrics calculation
+- `PnLMetrics` - Data class for P&L statistics
+  - Realized and unrealized P&L
+  - Total trades, winning trades, losing trades
+  - Win rate percentage
+  - Profit factor (total profit / total loss)
+  - Average win and average loss
+  - Largest win and largest loss
+  - Total trading volume and fees
+  - Max drawdown and Sharpe ratio (placeholders)
+- Factory function `get_pnl_engine()` for dependency injection
+- Integration with existing Order and Position models
+- Price lookup using PriceData5Min for unrealized P&L
+
+**Test Coverage:**
+- 30 comprehensive unit tests
+- FIFO accounting validation tests
+- Realized P&L tests (profitable, losing, partial sells, multiple coins)
+- Unrealized P&L tests (with positions, price data)
+- P&L summary tests with performance metrics
+- P&L by algorithm tests
+- P&L by coin tests
+- Historical P&L tests with time aggregation
+- Edge cases: no trades, no positions, no price data, pending orders
+
+#### 2. P&L API Endpoints ✅
+**Objective:** RESTful API for P&L data access
+
+**Files Created:**
+- `backend/app/api/routes/pnl.py` (346 lines, 6 endpoints)
+- `backend/tests/api/routes/test_pnl.py` (515 lines, 17 tests)
+
+**Files Modified:**
+- `backend/app/api/main.py` - Registered P&L router
+- `backend/app/services/trading/__init__.py` - Added P&L exports
+
+**API Endpoints Implemented:**
+1. **GET /api/v1/floor/pnl/summary**
+   - Comprehensive P&L summary with performance metrics
+   - Optional filters: start_date, end_date
+   - Returns: PnLSummaryResponse with all statistics
+
+2. **GET /api/v1/floor/pnl/by-algorithm**
+   - P&L breakdown by trading algorithm
+   - Shows which algorithms are profitable
+   - Optional filters: start_date, end_date
+   - Returns: List of PnLByAlgorithmResponse
+
+3. **GET /api/v1/floor/pnl/by-coin**
+   - P&L breakdown by cryptocurrency
+   - Shows which coins are generating profit/loss
+   - Optional filters: start_date, end_date
+   - Returns: List of PnLByCoinResponse
+
+4. **GET /api/v1/floor/pnl/history**
+   - Historical P&L time-series data
+   - Required: start_date, end_date
+   - Optional: interval (hour, day, week, month)
+   - Returns: List of HistoricalPnLEntry
+   - Perfect for charting and trend analysis
+
+5. **GET /api/v1/floor/pnl/realized**
+   - Realized P&L from completed trades
+   - Optional filters: start_date, end_date, algorithm_id, coin_type
+   - Returns: Dictionary with realized_pnl value
+
+6. **GET /api/v1/floor/pnl/unrealized**
+   - Unrealized P&L from open positions
+   - Optional filter: coin_type
+   - Returns: Dictionary with unrealized_pnl value
+
+**Test Coverage:**
+- 17 comprehensive API endpoint tests
+- Summary endpoint tests (with/without trades, date filters)
+- Algorithm grouping tests
+- Coin grouping tests
+- Historical data tests (various intervals)
+- Realized P&L tests (with filters)
+- Unrealized P&L tests (with positions, coin filters)
+- Error handling and validation tests
+- Missing parameter tests
+
+### Testing Summary
+
+**Total Tests Created This Sprint: 47**
+- P&L engine tests: 30 tests
+- P&L API tests: 17 tests
+
+**Cumulative Phase 6 (Weeks 1-6):**
+- Production code: ~3,312 lines (client, executor, positions, safety, recorder, algorithm executor, scheduler, pnl, APIs)
+- Test code: ~3,301 lines (146 comprehensive tests)
+- Test coverage ratio: 1:1.0 - Excellent coverage
+
+**Test Strategy:**
+- Unit tests for all P&L calculation methods
+- Integration tests for API endpoints
+- Edge cases and error scenarios
+- FIFO accounting validation
+- Performance metrics accuracy
+
+### Files Changed Summary
+
+**New Files Created: 4**
+1. `backend/app/services/trading/pnl.py` - P&L calculation engine
+2. `backend/tests/services/trading/test_pnl.py` - P&L engine tests
+3. `backend/app/api/routes/pnl.py` - P&L API endpoints
+4. `backend/tests/api/routes/test_pnl.py` - API endpoint tests
+
+**Modified Files: 2**
+1. `backend/app/services/trading/__init__.py` - Added P&L exports
+2. `backend/app/api/main.py` - Registered P&L router
+
+**Total Lines of Code (Weeks 5-6): ~2,188 lines**
+- Production code: ~917 lines (pnl engine + API routes)
+- Test code: ~1,271 lines (47 tests)
+- Test coverage ratio: 1:1.4 - Very strong coverage
+
+### Architecture Decisions
+
+1. **FIFO Accounting:** Used for realized P&L to match common trading standards
+2. **Real-time Pricing:** Unrealized P&L uses latest PriceData5Min for accuracy
+3. **Modular Design:** P&L engine separate from API layer for testability
+4. **Flexible Filtering:** All endpoints support multiple filter combinations
+5. **Performance Metrics:** PnLMetrics class provides comprehensive statistics
+6. **Factory Pattern:** `get_pnl_engine()` enables dependency injection
+7. **Response Models:** Type-safe response classes for API consistency
+8. **Error Handling:** Comprehensive error handling with appropriate HTTP status codes
+
+### Integration Status
+
+**Component Integration:**
+- P&L Engine ← reads data from → Order and Position models
+- P&L Engine ← gets prices from → PriceData5Min
+- P&L APIs ← use → P&L Engine
+- P&L APIs ← authenticate via → CurrentUser dependency
+
+**Coordination:**
+- No conflicts with Developer B (agent services in `app/services/agent/`)
+- No conflicts with Developer C (infrastructure in `infrastructure/`)
+- Ready for Week 6 integration testing on staging environment
+
+### Production Readiness
+
+**Completed Features:**
+- ✅ Trading API client (Weeks 1-2)
+- ✅ Order execution with retry logic (Weeks 1-2)
+- ✅ Position management (Weeks 1-2)
+- ✅ Safety mechanisms (Weeks 3-4)
+- ✅ Trade recording and reconciliation (Weeks 3-4)
+- ✅ Algorithm executor (Weeks 3-4)
+- ✅ Execution scheduler (Weeks 3-4)
+- ✅ P&L calculation engine (Weeks 5-6)
+- ✅ P&L API endpoints (Weeks 5-6)
+- ✅ Comprehensive test coverage (146 tests)
+
+**Pending Items (Weeks 7-8):**
+- [ ] Integration testing in Docker environment
+- [ ] End-to-end testing with real database
+- [ ] Performance testing under load
+- [ ] Complete documentation updates
+- [ ] Deployment to staging for tester validation
+
+### Success Metrics - Weeks 5-6
+
+- ✅ P&L engine operational with FIFO accounting
+- ✅ P&L APIs implemented with 6 endpoints
+- ✅ Flexible filtering by date, algorithm, and coin
+- ✅ Historical P&L with time aggregation
+- ✅ 47+ unit and integration tests passing (30 engine + 17 API)
+- ✅ Zero conflicts with other developers' work
+- ✅ Comprehensive test coverage across all components
+- ✅ Clean, modular, maintainable code architecture
+- ✅ Production-ready API design with error handling
+- ✅ Performance considerations built in
+
+### Performance Characteristics
+
+**P&L Calculation:**
+- FIFO algorithm: O(n) where n = number of orders per coin
+- Unrealized P&L: O(p) where p = number of positions
+- Historical aggregation: O(n * t) where t = time buckets
+- Database queries use indexed columns for efficiency
+
+**API Response Times (estimated):**
+- Summary: < 100ms for typical user (hundreds of trades)
+- By-algorithm: < 200ms (depends on algorithm count)
+- By-coin: < 200ms (depends on coin diversity)
+- Historical: < 500ms (depends on time range and interval)
+
+### Lessons Learned
+
+**What Went Well:**
+1. FIFO accounting implementation was straightforward and testable
+2. Modular design made testing easy (engine separate from API)
+3. Comprehensive test suite caught edge cases early (no price data, pending orders)
+4. Flexible filtering design supports multiple use cases
+5. Clean integration with existing Order and Position models
+
+**Improvements for Next Sprint:**
+1. Add performance benchmarks for large datasets
+2. Consider caching for frequently accessed P&L summaries
+3. Add database indexes if query performance issues arise
+4. Document P&L calculation methodology for users
+5. Consider adding export functionality (CSV, Excel)
+
+---
+
 ## Integration with Tester (NEW)
 
 ### Testing Coordination for Next Sprints
 
-**Sprint 1 (Weeks 5-6): P&L System Testing**
+**Sprint 1 (Weeks 5-6): P&L System Testing** ✅ READY FOR TESTING
 - **Developer A Responsibilities:**
-  - Complete P&L implementation by Day 12 of sprint
-  - Deploy to staging for testing
-  - Be available Days 13-15 for bug fixes
-  - Provide test data scenarios for edge cases
+  - ✅ Complete P&L implementation by Day 12 of sprint
+  - [ ] Deploy to staging for testing (Week 7)
+  - [ ] Be available Days 13-15 for bug fixes
+  - [ ] Provide test data scenarios for edge cases
   
 - **Tester Focus Areas:**
   - P&L calculation accuracy (realized vs unrealized)
   - Historical P&L API validation
   - Trade history tracking correctness
   - Performance with large trade volumes
+  - FIFO accounting validation
+  - Edge cases: partial fills, cancelled orders, no price data
   
 - **Success Criteria:**
   - All P&L calculations mathematically correct
   - APIs return data within 500ms
   - No data inconsistencies between trades and P&L
   - Handles edge cases (partial fills, cancelled orders)
+  - FIFO accounting matches expected behavior
 
 **Sprint 2 (Weeks 7-8): Integration Testing**
 - **Developer A Support:**
   - Fix bugs identified in Phase 6 testing
   - Support integration testing with Phase 3
   - Performance optimization based on test results
+  - Documentation updates
   
 - **Integration Points to Test:**
   - Trading signals from agentic system → Order execution
   - Order execution → Position updates → P&L calculation
   - All APIs functioning correctly under load
+  - End-to-end workflow validation
 
 **Testing Windows:**
 - End of each 2-week sprint (Days 13-15)
@@ -1416,8 +1649,8 @@ With Phase 2.5 complete and data collection infrastructure operational, Develope
 ---
 
 **Last Updated:** 2025-11-22  
-**Sprint Status:** Phase 2.5 COMPLETE | Phase 6 Weeks 1-4 COMPLETE ✅  
-**Next Milestone:** Phase 6 Weeks 5-6 (P&L Calculation & APIs)  
-**Testing Integration:** Tester validates at end of each sprint  
-**Next Review:** End of Week 6 + Testing Sign-off
+**Sprint Status:** Phase 2.5 COMPLETE | Phase 6 Weeks 1-6 COMPLETE ✅  
+**Next Milestone:** Phase 6 Weeks 7-8 (Integration Testing & Documentation)  
+**Testing Integration:** Ready for Sprint 1 tester validation  
+**Next Review:** End of Week 8 + Testing Sign-off
 
