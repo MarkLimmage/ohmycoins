@@ -27,20 +27,6 @@ def session_fixture():
 
 
 @pytest.fixture
-def test_user(session: Session) -> User:
-    """Create a test user"""
-    user = User(
-        email="test@example.com",
-        hashed_password="hashed",
-        full_name="Test User"
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
-
-@pytest.fixture
 def pnl_engine(session: Session) -> PnLEngine:
     """Create a P&L engine instance"""
     return PnLEngine(session)

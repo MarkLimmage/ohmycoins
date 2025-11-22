@@ -27,22 +27,6 @@ def trade_recorder(session: Session) -> TradeRecorder:
     return TradeRecorder(session=session)
 
 
-@pytest.fixture
-def test_user(session: Session) -> User:
-    """Create a test user"""
-    user = User(
-        id=uuid4(),
-        email="trader@test.com",
-        hashed_password="test_hash",
-        is_active=True,
-        is_superuser=False
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
-
 class TestTradeRecorder:
     """Tests for TradeRecorder"""
     

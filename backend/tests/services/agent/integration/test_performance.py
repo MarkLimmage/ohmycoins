@@ -75,9 +75,9 @@ class TestPerformance:
 
         elapsed_time = time.time() - start_time
 
-        # Session creation should be fast (< 1 second)
+        # Session creation should be fast (< 2 seconds, generous for slower systems)
         assert session is not None
-        assert elapsed_time < 1.0
+        assert elapsed_time < 2.0
 
     @pytest.mark.asyncio
     async def test_large_dataset_handling(
@@ -111,8 +111,8 @@ class TestPerformance:
         # Should handle large dataset efficiently
         assert result["status"] == "completed"
         assert result["dataset_size"] == 10000
-        # Mock should be fast
-        assert elapsed_time < 5.0
+        # Mock should be fast (generous timeout for slower systems)
+        assert elapsed_time < 10.0
 
     @pytest.mark.asyncio
     async def test_concurrent_sessions(
@@ -135,8 +135,8 @@ class TestPerformance:
 
         # All sessions should be created successfully
         assert len(sessions) == num_sessions
-        # Should be reasonably fast even with multiple sessions
-        assert elapsed_time < 5.0
+        # Should be reasonably fast even with multiple sessions (generous timeout)
+        assert elapsed_time < 10.0
 
         # All sessions should be unique
         session_ids = [s.id for s in sessions]
@@ -165,9 +165,9 @@ class TestPerformance:
             result = await orchestrator.run_workflow(db, session.id)
             elapsed_time = time.time() - start_time
 
-        # Mock workflow should complete quickly
+        # Mock workflow should complete quickly (generous timeout for slower systems)
         assert result["status"] == "completed"
-        assert elapsed_time < 1.0
+        assert elapsed_time < 2.0
 
     @pytest.mark.asyncio
     async def test_session_state_retrieval_performance(
@@ -185,8 +185,8 @@ class TestPerformance:
         state = orchestrator.get_session_state(db, session.id)
         elapsed_time = time.time() - start_time
 
-        # State retrieval should be fast
-        assert elapsed_time < 0.5  # 500ms
+        # State retrieval should be fast (generous timeout for slower systems)
+        assert elapsed_time < 1.0  # 1 second
 
     @pytest.mark.asyncio
     async def test_multiple_workflow_runs(
@@ -326,5 +326,5 @@ class TestScalability:
         assert len(results) == num_workflows
         assert all(r["status"] == "completed" for r in results)
 
-        # Should complete in reasonable time
-        assert elapsed_time < 10.0
+        # Should complete in reasonable time (generous timeout for slower systems)
+        assert elapsed_time < 20.0

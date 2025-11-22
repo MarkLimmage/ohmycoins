@@ -172,7 +172,8 @@ def test_get_pnl_summary_with_date_filter(
     session.commit()
     
     # Query with date filter (last 7 days)
-    start_date = (now - timedelta(days=7)).isoformat()
+    # Use URL-safe format (without microseconds and with Z for UTC)
+    start_date = (now - timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%SZ')
     response = client.get(f"/api/v1/floor/pnl/summary?start_date={start_date}")
     
     assert response.status_code == 200
@@ -354,8 +355,9 @@ def test_get_historical_pnl(
     session.commit()
     
     # Query historical data
-    start_date = (now - timedelta(days=3)).isoformat()
-    end_date = now.isoformat()
+    # Use URL-safe format (without microseconds and with Z for UTC)
+    start_date = (now - timedelta(days=3)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    end_date = now.strftime('%Y-%m-%dT%H:%M:%SZ')
     
     response = client.get(
         f"/api/v1/floor/pnl/history?start_date={start_date}&end_date={end_date}&interval=day"
@@ -375,8 +377,8 @@ def test_get_historical_pnl(
 def test_get_historical_pnl_invalid_interval(client: TestClient):
     """Test historical P&L with invalid interval"""
     now = datetime.now(timezone.utc)
-    start_date = (now - timedelta(days=7)).isoformat()
-    end_date = now.isoformat()
+    start_date = (now - timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    end_date = now.strftime('%Y-%m-%dT%H:%M:%SZ')
     
     response = client.get(
         f"/api/v1/floor/pnl/history?start_date={start_date}&end_date={end_date}&interval=invalid"

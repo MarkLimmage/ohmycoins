@@ -27,22 +27,6 @@ from app.services.trading.safety import TradingSafetyManager
 
 
 @pytest.fixture
-def test_user(session: Session) -> User:
-    """Create a test user"""
-    user = User(
-        id=uuid4(),
-        email="algo@test.com",
-        hashed_password="test_hash",
-        is_active=True,
-        is_superuser=False
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
-
-@pytest.fixture
 def algorithm_executor(session: Session) -> AlgorithmExecutor:
     """Create algorithm executor for testing"""
     return AlgorithmExecutor(

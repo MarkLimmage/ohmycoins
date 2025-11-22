@@ -1,5 +1,6 @@
 import random
 import string
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -11,7 +12,8 @@ def random_lower_string() -> str:
 
 
 def random_email() -> str:
-    return f"{random_lower_string()}@{random_lower_string()}.com"
+    # Use UUID to ensure uniqueness across test runs
+    return f"test-{uuid4()}@example.com"
 
 
 def get_superuser_token_headers(client: TestClient) -> dict[str, str]:

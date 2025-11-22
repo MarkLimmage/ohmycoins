@@ -35,22 +35,6 @@ def safety_manager(session: Session) -> TradingSafetyManager:
 
 
 @pytest.fixture
-def test_user(session: Session) -> User:
-    """Create a test user"""
-    user = User(
-        id=uuid4(),
-        email="trader@test.com",
-        hashed_password="test_hash",
-        is_active=True,
-        is_superuser=False
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
-
-
-@pytest.fixture
 def test_user_with_portfolio(session: Session, test_user: User) -> User:
     """Create a test user with existing positions"""
     # Create positions with total value of 10,000 AUD

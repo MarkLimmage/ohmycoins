@@ -144,10 +144,16 @@ class TestSyntheticDataIntegration:
         assert position.user_id == trader.id
         assert position.coin_type == buy_order.coin_type
         
-        # Verify relationships
-        db.refresh(trader)
-        assert len(trader.orders) > 0
-        assert len(trader.positions) > 0
+        # Verify relationships by querying (User doesn't have back-populated relationships)
+        from app.models import Order
+        trader_orders = db.exec(
+            select(Order).where(Order.user_id == trader.id)
+        ).all()
+        trader_positions = db.exec(
+            select(Position).where(Position.user_id == trader.id)
+        ).all()
+        assert len(trader_orders) > 0
+        assert len(trader_positions) > 0
     
     def test_multiple_users_isolation(self, db: Session) -> None:
         """Test that data from different users is properly isolated."""

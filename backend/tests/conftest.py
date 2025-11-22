@@ -19,6 +19,7 @@ from app.models import (
     AgentArtifact,
     CatalystEvents,
     NewsSentiment,
+    DeployedAlgorithm,
 )
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
@@ -49,6 +50,7 @@ def db() -> Generator[Session, None, None]:
             # Delete trading-related data
             session.execute(delete(Order))
             session.execute(delete(Position))
+            session.execute(delete(DeployedAlgorithm))
             
             # Delete algorithms
             session.execute(delete(Algorithm))
@@ -72,8 +74,12 @@ def db() -> Generator[Session, None, None]:
 
 @pytest.fixture(scope="function")
 def session(db: Session) -> Generator[Session, None, None]:
-    """Alias for db fixture to support tests expecting 'session' parameter"""
+    """Alias for db fixture to support tests expecting 'session' parameter with transaction isolation"""
+    # Start a savepoint for this test
+    db.begin_nested()
     yield db
+    # Rollback the savepoint to undo any changes made during the test
+    db.rollback()
 
 
 @pytest.fixture(scope="module")
