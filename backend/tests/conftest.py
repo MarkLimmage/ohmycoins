@@ -7,7 +7,19 @@ from sqlmodel import Session, delete
 from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
-from app.models import User, Algorithm, PriceData5Min
+from app.models import (
+    User,
+    Algorithm,
+    PriceData5Min,
+    Order,
+    Position,
+    CoinspotCredentials,
+    AgentSession,
+    AgentSessionMessage,
+    AgentArtifact,
+    CatalystEvents,
+    NewsSentiment,
+)
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
@@ -26,12 +38,36 @@ def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
         yield session
-        # Clean up users after tests
-        statement = delete(User)
-        session.execute(statement)
-        statement = delete(User)
-        session.execute(statement)
-        session.commit()
+        # Clean up test data with cascading deletes in correct order
+        # Delete child records first to avoid foreign key violations
+        try:
+            # Delete agent-related data
+            session.execute(delete(AgentArtifact))
+            session.execute(delete(AgentSessionMessage))
+            session.execute(delete(AgentSession))
+            
+            # Delete trading-related data
+            session.execute(delete(Order))
+            session.execute(delete(Position))
+            
+            # Delete algorithms
+            session.execute(delete(Algorithm))
+            
+            # Delete credentials
+            session.execute(delete(CoinspotCredentials))
+            
+            # Delete ledger data
+            session.execute(delete(CatalystEvents))
+            session.execute(delete(NewsSentiment))
+            
+            # Finally delete users
+            session.execute(delete(User))
+            
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            # Log but don't fail - test cleanup is best effort
+            print(f"Warning: Test cleanup encountered error: {e}")
 
 
 @pytest.fixture(scope="function")
