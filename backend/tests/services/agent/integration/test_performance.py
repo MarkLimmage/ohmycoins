@@ -8,6 +8,7 @@ These tests verify performance characteristics including:
 - Resource usage
 """
 
+import asyncio
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -159,7 +160,6 @@ class TestPerformance:
                 await asyncio.sleep(0.1)  # Simulate work
                 return {"status": "completed", "execution_time": 0.1}
 
-            import asyncio
             mock_run.side_effect = slow_workflow
 
             result = await orchestrator.run_workflow(db, session.id)
