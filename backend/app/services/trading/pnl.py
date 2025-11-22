@@ -130,7 +130,7 @@ class PnLEngine:
         Calculate realized P&L from completed trades
         
         Realized P&L is calculated from the difference between sell price and
-        average buy price for filled orders.
+        matching buy prices using FIFO (First In First Out) accounting method.
         
         Args:
             user_id: User UUID

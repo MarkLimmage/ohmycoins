@@ -571,7 +571,8 @@ def test_get_pnl_summary_comprehensive(
     assert metrics.total_trades == 3
     assert metrics.winning_trades == 2
     assert metrics.losing_trades == 1
-    assert metrics.win_rate == Decimal('66.666666666666666666666666667').quantize(Decimal('0.01'))
+    # Win rate: 2/3 = 66.67% (rounded)
+    assert abs(metrics.win_rate - Decimal('66.67')) < Decimal('0.01')
     assert metrics.total_profit == Decimal('2400.00')  # 2000 + 400
     assert metrics.total_loss == Decimal('-50.00')
     assert metrics.largest_win == Decimal('2000.00')

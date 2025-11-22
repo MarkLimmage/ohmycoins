@@ -9,6 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.api.deps import CurrentUser, get_db
@@ -23,53 +24,103 @@ router = APIRouter()
 # ============================================================================
 
 
-class PnLSummaryResponse:
+class PnLSummaryResponse(BaseModel):
     """Response model for P&L summary"""
-    def __init__(self, metrics: PnLMetrics):
-        self.realized_pnl = float(metrics.realized_pnl)
-        self.unrealized_pnl = float(metrics.unrealized_pnl)
-        self.total_pnl = float(metrics.total_pnl)
-        self.total_trades = metrics.total_trades
-        self.winning_trades = metrics.winning_trades
-        self.losing_trades = metrics.losing_trades
-        self.win_rate = float(metrics.win_rate)
-        self.profit_factor = float(metrics.profit_factor)
-        self.total_profit = float(metrics.total_profit)
-        self.total_loss = float(metrics.total_loss)
-        self.average_win = float(metrics.average_win)
-        self.average_loss = float(metrics.average_loss)
-        self.largest_win = float(metrics.largest_win)
-        self.largest_loss = float(metrics.largest_loss)
-        self.max_drawdown = float(metrics.max_drawdown)
-        self.sharpe_ratio = float(metrics.sharpe_ratio)
-        self.total_volume = float(metrics.total_volume)
-        self.total_fees = float(metrics.total_fees)
+    realized_pnl: float
+    unrealized_pnl: float
+    total_pnl: float
+    total_trades: int
+    winning_trades: int
+    losing_trades: int
+    win_rate: float
+    profit_factor: float
+    total_profit: float
+    total_loss: float
+    average_win: float
+    average_loss: float
+    largest_win: float
+    largest_loss: float
+    max_drawdown: float
+    sharpe_ratio: float
+    total_volume: float
+    total_fees: float
+    
+    @classmethod
+    def from_metrics(cls, metrics: PnLMetrics) -> "PnLSummaryResponse":
+        """Create response from PnLMetrics"""
+        return cls(
+            realized_pnl=float(metrics.realized_pnl),
+            unrealized_pnl=float(metrics.unrealized_pnl),
+            total_pnl=float(metrics.total_pnl),
+            total_trades=metrics.total_trades,
+            winning_trades=metrics.winning_trades,
+            losing_trades=metrics.losing_trades,
+            win_rate=float(metrics.win_rate),
+            profit_factor=float(metrics.profit_factor),
+            total_profit=float(metrics.total_profit),
+            total_loss=float(metrics.total_loss),
+            average_win=float(metrics.average_win),
+            average_loss=float(metrics.average_loss),
+            largest_win=float(metrics.largest_win),
+            largest_loss=float(metrics.largest_loss),
+            max_drawdown=float(metrics.max_drawdown),
+            sharpe_ratio=float(metrics.sharpe_ratio),
+            total_volume=float(metrics.total_volume),
+            total_fees=float(metrics.total_fees)
+        )
 
 
-class PnLByAlgorithmResponse:
+class PnLByAlgorithmResponse(BaseModel):
     """Response model for P&L grouped by algorithm"""
-    def __init__(self, algorithm_id: UUID, metrics: PnLMetrics):
-        self.algorithm_id = str(algorithm_id)
-        self.realized_pnl = float(metrics.realized_pnl)
-        self.unrealized_pnl = float(metrics.unrealized_pnl)
-        self.total_pnl = float(metrics.total_pnl)
+    algorithm_id: str
+    realized_pnl: float
+    unrealized_pnl: float
+    total_pnl: float
+    
+    @classmethod
+    def from_algorithm_metrics(cls, algorithm_id: UUID, metrics: PnLMetrics) -> "PnLByAlgorithmResponse":
+        """Create response from algorithm ID and metrics"""
+        return cls(
+            algorithm_id=str(algorithm_id),
+            realized_pnl=float(metrics.realized_pnl),
+            unrealized_pnl=float(metrics.unrealized_pnl),
+            total_pnl=float(metrics.total_pnl)
+        )
 
 
-class PnLByCoinResponse:
+class PnLByCoinResponse(BaseModel):
     """Response model for P&L grouped by coin"""
-    def __init__(self, coin_type: str, metrics: PnLMetrics):
-        self.coin_type = coin_type
-        self.realized_pnl = float(metrics.realized_pnl)
-        self.unrealized_pnl = float(metrics.unrealized_pnl)
-        self.total_pnl = float(metrics.total_pnl)
+    coin_type: str
+    realized_pnl: float
+    unrealized_pnl: float
+    total_pnl: float
+    
+    @classmethod
+    def from_coin_metrics(cls, coin_type: str, metrics: PnLMetrics) -> "PnLByCoinResponse":
+        """Create response from coin type and metrics"""
+        return cls(
+            coin_type=coin_type,
+            realized_pnl=float(metrics.realized_pnl),
+            unrealized_pnl=float(metrics.unrealized_pnl),
+            total_pnl=float(metrics.total_pnl)
+        )
 
 
-class HistoricalPnLEntry:
+class HistoricalPnLEntry(BaseModel):
     """Single entry in historical P&L data"""
-    def __init__(self, timestamp: str, realized_pnl: float, interval: str):
-        self.timestamp = timestamp
-        self.realized_pnl = realized_pnl
-        self.interval = interval
+    timestamp: str
+    realized_pnl: float
+    interval: str
+
+
+class RealizedPnLResponse(BaseModel):
+    """Response model for realized P&L"""
+    realized_pnl: float
+
+
+class UnrealizedPnLResponse(BaseModel):
+    """Response model for unrealized P&L"""
+    unrealized_pnl: float
 
 
 # ============================================================================
@@ -77,7 +128,7 @@ class HistoricalPnLEntry:
 # ============================================================================
 
 
-@router.get("/summary", response_model=None)
+@router.get("/summary", response_model=PnLSummaryResponse)
 def get_pnl_summary(
     current_user: CurrentUser,
     session: Session = Depends(get_db),
@@ -106,7 +157,7 @@ def get_pnl_summary(
             end_date=end_date
         )
         
-        return PnLSummaryResponse(metrics)
+        return PnLSummaryResponse.from_metrics(metrics)
     
     except Exception as e:
         raise HTTPException(
@@ -115,7 +166,7 @@ def get_pnl_summary(
         )
 
 
-@router.get("/by-algorithm", response_model=None)
+@router.get("/by-algorithm", response_model=list[PnLByAlgorithmResponse])
 def get_pnl_by_algorithm(
     current_user: CurrentUser,
     session: Session = Depends(get_db),
@@ -144,7 +195,7 @@ def get_pnl_by_algorithm(
         )
         
         return [
-            PnLByAlgorithmResponse(algorithm_id, metrics)
+            PnLByAlgorithmResponse.from_algorithm_metrics(algorithm_id, metrics)
             for algorithm_id, metrics in pnl_by_algo.items()
         ]
     
@@ -155,7 +206,7 @@ def get_pnl_by_algorithm(
         )
 
 
-@router.get("/by-coin", response_model=None)
+@router.get("/by-coin", response_model=list[PnLByCoinResponse])
 def get_pnl_by_coin(
     current_user: CurrentUser,
     session: Session = Depends(get_db),
@@ -184,7 +235,7 @@ def get_pnl_by_coin(
         )
         
         return [
-            PnLByCoinResponse(coin_type, metrics)
+            PnLByCoinResponse.from_coin_metrics(coin_type, metrics)
             for coin_type, metrics in pnl_by_coin.items()
         ]
     
@@ -195,7 +246,7 @@ def get_pnl_by_coin(
         )
 
 
-@router.get("/history", response_model=None)
+@router.get("/history", response_model=list[HistoricalPnLEntry])
 def get_historical_pnl(
     current_user: CurrentUser,
     session: Session = Depends(get_db),
@@ -250,7 +301,7 @@ def get_historical_pnl(
         )
 
 
-@router.get("/realized", response_model=None)
+@router.get("/realized", response_model=RealizedPnLResponse)
 def get_realized_pnl(
     current_user: CurrentUser,
     session: Session = Depends(get_db),
@@ -258,12 +309,12 @@ def get_realized_pnl(
     end_date: datetime | None = Query(None, description="End date for P&L calculation"),
     algorithm_id: UUID | None = Query(None, description="Filter by algorithm ID"),
     coin_type: str | None = Query(None, description="Filter by cryptocurrency (e.g., 'BTC')")
-) -> dict[str, float]:
+) -> RealizedPnLResponse:
     """
     Get realized P&L from completed trades
     
     Realized P&L is calculated from the difference between sell price and
-    average buy price for filled orders using FIFO accounting.
+    matching buy prices using FIFO accounting method.
     
     Query Parameters:
     - start_date: Optional start date for filtering trades
@@ -272,7 +323,7 @@ def get_realized_pnl(
     - coin_type: Optional filter by cryptocurrency symbol
     
     Returns:
-    - Dictionary with realized_pnl value
+    - RealizedPnLResponse with realized_pnl value
     """
     pnl_engine = get_pnl_engine(session)
     
@@ -285,7 +336,7 @@ def get_realized_pnl(
             coin_type=coin_type
         )
         
-        return {"realized_pnl": float(realized_pnl)}
+        return RealizedPnLResponse(realized_pnl=float(realized_pnl))
     
     except Exception as e:
         raise HTTPException(
@@ -294,12 +345,12 @@ def get_realized_pnl(
         )
 
 
-@router.get("/unrealized", response_model=None)
+@router.get("/unrealized", response_model=UnrealizedPnLResponse)
 def get_unrealized_pnl(
     current_user: CurrentUser,
     session: Session = Depends(get_db),
     coin_type: str | None = Query(None, description="Filter by cryptocurrency (e.g., 'BTC')")
-) -> dict[str, float]:
+) -> UnrealizedPnLResponse:
     """
     Get unrealized P&L from current open positions
     
@@ -310,7 +361,7 @@ def get_unrealized_pnl(
     - coin_type: Optional filter by cryptocurrency symbol
     
     Returns:
-    - Dictionary with unrealized_pnl value
+    - UnrealizedPnLResponse with unrealized_pnl value
     """
     pnl_engine = get_pnl_engine(session)
     
@@ -320,7 +371,7 @@ def get_unrealized_pnl(
             coin_type=coin_type
         )
         
-        return {"unrealized_pnl": float(unrealized_pnl)}
+        return UnrealizedPnLResponse(unrealized_pnl=float(unrealized_pnl))
     
     except Exception as e:
         raise HTTPException(
