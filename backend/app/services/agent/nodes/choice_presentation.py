@@ -226,7 +226,7 @@ def _generate_recommendation(choices: list[dict[str, Any]]) -> dict[str, Any]:
     
     # Initialize LLM for recommendation
     llm = ChatOpenAI(
-        model=settings.OPENAI_MODEL_NAME,
+        model=settings.OPENAI_MODEL,
         temperature=0.3,
         api_key=settings.OPENAI_API_KEY,
     )

@@ -12,7 +12,7 @@ import shutil
 import json
 
 from sqlmodel import Session, select
-from ..models import AgentArtifact, AgentSession
+from app.models import AgentArtifact, AgentSession
 
 
 class ArtifactManager:

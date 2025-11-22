@@ -5,8 +5,9 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from pydantic import EmailStr, field_validator
+from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel, Column
-from sqlalchemy import DECIMAL, DateTime, Index
+from sqlalchemy import DECIMAL, DateTime, Index, JSON
 import sqlalchemy as sa
 
 
@@ -68,9 +69,8 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     
-    # Relationships - will be populated when related models are defined
-    positions: list["Position"] = Relationship(back_populates="user")
-    orders: list["Order"] = Relationship(back_populates="user")
+    
+    # Relationships (one-way from other models to User via queries)
 
 
 # Properties to return via API, id is always required
@@ -380,7 +380,7 @@ class NewsSentiment(SQLModel, table=True):
     )
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(sa.ARRAY(sa.String))
+        sa_column=Column(JSON)
     )
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -408,7 +408,7 @@ class SocialSentiment(SQLModel, table=True):
     sentiment: str | None = Field(default=None, max_length=20)
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(sa.ARRAY(sa.String))
+        sa_column=Column(JSON)
     )
     posted_at: datetime | None = Field(
         default=None,
@@ -439,7 +439,7 @@ class CatalystEvents(SQLModel, table=True):
     source: str | None = Field(default=None, max_length=100)
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(sa.ARRAY(sa.String))
+        sa_column=Column(JSON)
     )
     impact_score: int | None = Field(
         default=None,
@@ -726,7 +726,7 @@ class Position(PositionBase, table=True):
     )
     
     # Relationships
-    user: User | None = Relationship(back_populates="positions")
+    user: User = Relationship()
     
     __table_args__ = (
         Index('idx_position_user_coin', 'user_id', 'coin_type', unique=True),
@@ -793,7 +793,7 @@ class Order(OrderBase, table=True):
     )
     
     # Relationships
-    user: User | None = Relationship(back_populates="orders")
+    user: User = Relationship()
     
     __table_args__ = (
         Index('idx_order_user_status', 'user_id', 'status'),
@@ -879,8 +879,7 @@ class Algorithm(AlgorithmBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     
-    # Relationships
-    deployments: list["DeployedAlgorithm"] = Relationship(back_populates="algorithm")
+    # Relationships (one-way, query DeployedAlgorithm to access)
     
     __table_args__ = (
         Index('idx_algorithm_status', 'status'),
@@ -984,7 +983,7 @@ class DeployedAlgorithm(DeployedAlgorithmBase, table=True):
     total_trades: int = Field(default=0, description="Total number of trades executed")
     
     # Relationships
-    algorithm: Algorithm | None = Relationship(back_populates="deployments")
+    algorithm: Algorithm = Relationship()
     
     __table_args__ = (
         Index('idx_deployed_algorithm_user_active', 'user_id', 'is_active'),

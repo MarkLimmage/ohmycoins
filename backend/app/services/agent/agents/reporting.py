@@ -55,11 +55,22 @@ class ReportingAgent(BaseAgent):
         """
         try:
             # Get results from previous agents
-            analysis_results = state.get("analysis_results", {})
-            model_results = state.get("model_results", {})
-            evaluation_results = state.get("evaluation_results", {})
+            analysis_results = state.get("analysis_results")
+            # Support both model_results (new) and trained_models (old) for backward compatibility
+            model_results = state.get("model_results") or state.get("trained_models")
+            evaluation_results = state.get("evaluation_results")
             user_goal = state.get("user_goal", "")
             session_id = state.get("session_id", str(uuid.uuid4()))
+            
+            # Check if any result keys are present (even if empty)
+            # If none of the keys exist at all, we can't generate a report
+            if analysis_results is None and model_results is None and evaluation_results is None:
+                raise ValueError("No results available for report generation")
+            
+            # Default empty dicts for missing results (but at least one key was present)
+            analysis_results = analysis_results if analysis_results is not None else {}
+            model_results = model_results if model_results is not None else {}
+            evaluation_results = evaluation_results if evaluation_results is not None else {}
             
             # Create session-specific artifact directory
             session_artifacts_dir = self.artifacts_dir / session_id
@@ -77,10 +88,10 @@ class ReportingAgent(BaseAgent):
             
             # 1. Generate natural language summary
             reporting_results["summary"] = generate_summary(
-                analysis_results=analysis_results,
-                model_results=model_results,
-                evaluation_results=evaluation_results,
                 user_goal=user_goal,
+                evaluation_results=evaluation_results,
+                model_results=model_results,
+                analysis_results=analysis_results,
             )
             
             # Save summary to file
@@ -90,8 +101,8 @@ class ReportingAgent(BaseAgent):
             # 2. Create model comparison report
             if model_results and evaluation_results:
                 reporting_results["comparison_report"] = create_comparison_report(
-                    model_results=model_results,
                     evaluation_results=evaluation_results,
+                    model_results=model_results,
                 )
                 
                 # Save comparison report to file
@@ -100,9 +111,10 @@ class ReportingAgent(BaseAgent):
             
             # 3. Generate recommendations
             reporting_results["recommendations"] = generate_recommendations(
-                analysis_results=analysis_results,
-                model_results=model_results,
+                user_goal=user_goal,
                 evaluation_results=evaluation_results,
+                model_results=model_results,
+                analysis_results=analysis_results,
             )
             
             # Save recommendations to file
@@ -111,18 +123,30 @@ class ReportingAgent(BaseAgent):
             recommendations_path.write_text(recommendations_text)
             
             # 4. Create visualizations
-            reporting_results["visualizations"] = create_visualizations(
-                analysis_results=analysis_results,
+            visualizations = create_visualizations(
                 evaluation_results=evaluation_results,
+                model_results=model_results,
+                analysis_results=analysis_results,
                 output_dir=session_artifacts_dir,
             )
+            
+            # Convert visualizations to dict format for backward compatibility
+            # New format is list[dict], old format is dict[str, str]
+            if isinstance(visualizations, list):
+                reporting_results["visualizations"] = {
+                    viz.get("title", viz.get("filename", f"viz_{i}")): viz.get("file_path", "")
+                    for i, viz in enumerate(visualizations)
+                }
+                reporting_results["visualizations_list"] = visualizations  # Keep new format too
+            else:
+                reporting_results["visualizations"] = visualizations
             
             # 5. Create complete report combining all components
             complete_report = self._create_complete_report(
                 summary=reporting_results["summary"],
                 comparison_report=reporting_results["comparison_report"],
                 recommendations=reporting_results["recommendations"],
-                visualizations=reporting_results["visualizations"],
+                visualizations=visualizations,  # Pass original format to _create_complete_report
             )
             
             # Save complete report
@@ -133,6 +157,14 @@ class ReportingAgent(BaseAgent):
             # Update state
             state["reporting_results"] = reporting_results
             state["reporting_completed"] = True
+            state["report_generated"] = True  # Backward compatibility
+            # Add backward compatible field names
+            report_data_compat = reporting_results.copy()
+            report_data_compat["comparison"] = reporting_results.get("comparison_report")  # Alias
+            # Use the list format for visualizations in report_data
+            if "visualizations_list" in reporting_results:
+                report_data_compat["visualizations"] = reporting_results["visualizations_list"]
+            state["report_data"] = report_data_compat  # Backward compatibility
             state["error"] = None
             
             # Add message for user
@@ -152,6 +184,8 @@ class ReportingAgent(BaseAgent):
         except Exception as e:
             state["error"] = f"ReportingAgent error: {str(e)}"
             state["reporting_completed"] = False
+            state["report_generated"] = False  # Backward compatibility
+            state["report_data"] = {}  # Backward compatibility
             
             if "messages" not in state:
                 state["messages"] = []
@@ -202,11 +236,19 @@ class ReportingAgent(BaseAgent):
         # Visualizations
         if visualizations:
             report_lines.append("## Visualizations\n")
-            for plot_name, plot_path in visualizations.items():
-                # Create relative path for markdown
-                plot_filename = Path(plot_path).name
-                report_lines.append(f"### {plot_name.replace('_', ' ').title()}\n")
-                report_lines.append(f"![{plot_name}]({plot_filename})\n")
+            # Handle both list format (new) and dict format (old)
+            if isinstance(visualizations, list):
+                for viz in visualizations:
+                    plot_filename = Path(viz["file_path"]).name
+                    plot_title = viz.get("title", plot_filename)
+                    report_lines.append(f"### {plot_title}\n")
+                    report_lines.append(f"![{plot_title}]({plot_filename})\n")
+            else:
+                # Old dict format for backward compatibility
+                for plot_name, plot_path in visualizations.items():
+                    plot_filename = Path(plot_path).name
+                    report_lines.append(f"### {plot_name.replace('_', ' ').title()}\n")
+                    report_lines.append(f"![{plot_name}]({plot_filename})\n")
             report_lines.append("\n---\n")
         
         # Recommendations

@@ -9,7 +9,6 @@ from typing import Any
 import pandas as pd
 import numpy as np
 from ta import add_all_ta_features
-from ta.utils import dropna
 
 
 def calculate_technical_indicators(
@@ -38,8 +37,9 @@ def calculate_technical_indicators(
     df["low"] = df["bid"]
     df["volume"] = 0  # Volume not available, use 0 as placeholder
     
-    # Drop NaN values
-    df = dropna(df)
+    # Fill any NaN values with 0 instead of dropping rows
+    # This preserves all data points while ensuring no NaN in calculations
+    df = df.fillna(0)
     
     if len(df) < 20:
         # Not enough data for meaningful indicators

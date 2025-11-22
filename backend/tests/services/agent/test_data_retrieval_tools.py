@@ -158,7 +158,7 @@ class TestFetchOnChainMetrics:
         mock_metric.source = "glassnode"
         mock_metric.collected_at = datetime.now()
         
-        mock_session.exec.return_value.order_by.return_value.all.return_value = [mock_metric]
+        mock_session.exec.return_value.all.return_value = [mock_metric]
         
         # Execute
         result = await fetch_on_chain_metrics(mock_session, "BTC", start_date, end_date)
@@ -174,7 +174,7 @@ class TestFetchOnChainMetrics:
         """Test fetching specific metrics."""
         start_date, end_date = sample_date_range
         
-        mock_session.exec.return_value.order_by.return_value.all.return_value = []
+        mock_session.exec.return_value.all.return_value = []
         
         result = await fetch_on_chain_metrics(
             mock_session, "ETH", start_date, end_date,
@@ -202,7 +202,7 @@ class TestFetchCatalystEvents:
         mock_event.impact_score = 7
         mock_event.detected_at = datetime.now()
         
-        mock_session.exec.return_value.order_by.return_value.all.return_value = [mock_event]
+        mock_session.exec.return_value.all.return_value = [mock_event]
         
         # Execute
         result = await fetch_catalyst_events(mock_session, start_date, end_date)
@@ -218,7 +218,7 @@ class TestFetchCatalystEvents:
         """Test fetching with event type and currency filters."""
         start_date, end_date = sample_date_range
         
-        mock_session.exec.return_value.order_by.return_value.all.return_value = []
+        mock_session.exec.return_value.all.return_value = []
         
         result = await fetch_catalyst_events(
             mock_session, start_date, end_date,

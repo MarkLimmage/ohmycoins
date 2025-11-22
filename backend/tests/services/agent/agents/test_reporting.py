@@ -248,9 +248,10 @@ class TestReportingAgentErrorHandling:
         
         state = await reporting_agent.execute(invalid_state)
         
-        # Should complete but with default values
-        assert "reporting_results" in state
-        assert "reporting_completed" in state
+        # Should fail gracefully with error
+        assert state["report_generated"] is False
+        assert state["error"] is not None
+        assert "No results available" in state["error"]
 
 
 class TestCreateCompleteReport:

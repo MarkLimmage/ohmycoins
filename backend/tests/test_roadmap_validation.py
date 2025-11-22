@@ -16,7 +16,7 @@ from app.models import (
     ProtocolFundamentals,
     NewsSentiment,
     SocialSentiment,
-    CatalystEvent,
+    CatalystEvents,
     AgentSession,
 )
 
@@ -147,10 +147,10 @@ class TestPhase25Validation:
 
     def test_catalyst_ledger_models_exist(self):
         """Verify Catalyst Ledger models are defined"""
-        assert CatalystEvent is not None
-        assert hasattr(CatalystEvent, 'event_type')
-        assert hasattr(CatalystEvent, 'entity')
-        assert hasattr(CatalystEvent, 'description')
+        assert CatalystEvents is not None
+        assert hasattr(CatalystEvents, 'event_type')
+        assert hasattr(CatalystEvents, 'entity')
+        assert hasattr(CatalystEvents, 'description')
 
     def test_defillama_collector_exists(self):
         """Verify DeFiLlama collector is implemented"""

@@ -684,7 +684,7 @@ class LangGraphWorkflow:
         
         state["messages"].append({
             "role": "assistant",
-            "content": "Complete ML pipeline executed. All results prepared."
+            "content": "Workflow completed successfully. All results prepared."
         })
         
         return state
@@ -794,11 +794,19 @@ class LangGraphWorkflow:
         overall_quality = quality_checks.get("overall", "unknown")
         
         if overall_quality == "no_data":
-            # No data retrieved, need to retry
-            if state.get("retry_count", 0) < state.get("max_retries", 3):
+            # No data retrieved, check retry count
+            retry_count = state.get("retry_count", 0)
+            max_retries = state.get("max_retries", 3)
+            
+            if retry_count < max_retries:
+                # Increment retry count and retry
+                state["retry_count"] = retry_count + 1
+                logger.warning(f"No data retrieved, retry {retry_count + 1}/{max_retries}")
                 return "retry"
             else:
+                # Max retries exceeded
                 state["error"] = "Failed to retrieve data after maximum retries"
+                logger.error("Max retries exceeded for data retrieval")
                 return "error"
         elif overall_quality == "poor":
             # Poor quality, might need more data
@@ -808,7 +816,12 @@ class LangGraphWorkflow:
             # Data is acceptable, proceed to analysis
             return "analyze"
         else:
-            # Unknown quality, be safe and retry
+            # Unknown quality, increment retry and try reason
+            retry_count = state.get("retry_count", 0)
+            if retry_count >= state.get("max_retries", 3):
+                state["error"] = "Data validation failed repeatedly"
+                return "error"
+            state["retry_count"] = retry_count + 1
             return "reason"
     
     def _route_after_analysis(self, state: AgentState) -> Literal["train", "finalize", "reason", "error"]:

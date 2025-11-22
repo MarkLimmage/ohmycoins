@@ -282,10 +282,14 @@ class TestDataQualityMonitor:
     ):
         """Test that check_all aggregates all scores correctly."""
         # Mock all queries to return some data
+        # Completeness: 4 one() calls, then Accuracy: 6 one() calls
         mock_session.exec.return_value.one.side_effect = [
-            # Completeness
+            # Completeness checks
             100, 50, 20, 10,
-            # Timeliness - will use first() not one()
+            # Accuracy checks
+            0, 100,  # Price validity
+            0, 50,   # Sentiment validity
+            0, 20,   # Catalyst validity
         ]
         
         # Mock timeliness queries
@@ -301,13 +305,6 @@ class TestDataQualityMonitor:
             mock_price,
             mock_sentiment,
             mock_catalyst,
-        ]
-        
-        # Reset side_effect for accuracy checks
-        mock_session.exec.return_value.one.side_effect = [
-            0, 100,  # Price validity
-            0, 50,   # Sentiment validity
-            0, 20,   # Catalyst validity
         ]
         
         metrics = await quality_monitor.check_all(mock_session)

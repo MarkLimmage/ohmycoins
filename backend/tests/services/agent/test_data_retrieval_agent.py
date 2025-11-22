@@ -286,8 +286,8 @@ class TestDataRetrievalAgentExecution:
         
         # Verify fetch_price_data was called with correct dates
         call_args = mock_price.call_args
-        start_date = call_args[0][2]  # Third argument
-        end_date = call_args[0][3]    # Fourth argument
+        start_date = call_args.kwargs["start_date"]
+        end_date = call_args.kwargs["end_date"]
         
         # Time difference should be approximately 14 days
         time_diff = end_date - start_date

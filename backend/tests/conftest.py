@@ -25,6 +25,12 @@ def db() -> Generator[Session, None, None]:
         session.commit()
 
 
+@pytest.fixture(scope="function")
+def session(db: Session) -> Generator[Session, None, None]:
+    """Alias for db fixture to support tests expecting 'session' parameter"""
+    yield db
+
+
 @pytest.fixture(scope="module")
 def client() -> Generator[TestClient, None, None]:
     with TestClient(app) as c:

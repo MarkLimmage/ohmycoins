@@ -40,7 +40,7 @@ def clarification_node(state: dict[str, Any]) -> dict[str, Any]:
     
     # Initialize LLM for clarification generation
     llm = ChatOpenAI(
-        model=settings.OPENAI_MODEL_NAME,
+        model=settings.OPENAI_MODEL,
         temperature=0.3,  # Lower temperature for more focused questions
         api_key=settings.OPENAI_API_KEY,
     )
@@ -113,14 +113,18 @@ def _is_goal_ambiguous(goal: str) -> bool:
     """
     # Check for vague language
     vague_terms = ["predict", "analyze", "trading", "algorithm", "model"]
-    specific_terms = ["bitcoin", "btc", "ethereum", "eth", "daily", "weekly", "month"]
+    specific_terms = [
+        "bitcoin", "btc", "ethereum", "eth", "daily", "weekly", "month",
+        "technical indicators", "sentiment analysis", "price movements"
+    ]
     
     goal_lower = goal.lower()
     has_vague = any(term in goal_lower for term in vague_terms)
     has_specific = any(term in goal_lower for term in specific_terms)
     
     # If goal contains vague terms but lacks specifics, it's ambiguous
-    return has_vague and not has_specific and len(goal.split()) < 15
+    # Also consider goals with < 10 words as potentially too short
+    return has_vague and not has_specific and len(goal.split()) < 10
 
 
 def _generate_template_questions(goal: str) -> list[str]:

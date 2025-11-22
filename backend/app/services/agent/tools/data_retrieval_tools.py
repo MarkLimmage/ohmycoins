@@ -230,9 +230,18 @@ async def fetch_catalyst_events(
         statement = statement.where(CatalystEvents.event_type.in_(event_types))
     
     if currencies:
-        statement = statement.where(CatalystEvents.currencies.overlap(currencies))
+        # Since currencies is now JSON type (not ARRAY), we need to filter results after query
+        # For now, we'll fetch all and filter in Python
+        pass
     
     results = session.exec(statement.order_by(CatalystEvents.detected_at)).all()
+    
+    # Filter by currencies if specified (post-query filtering for JSON field)
+    if currencies:
+        results = [
+            r for r in results 
+            if r.currencies and any(c in r.currencies for c in currencies)
+        ]
     
     return [
         {

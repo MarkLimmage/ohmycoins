@@ -228,21 +228,22 @@ class TestMetricsTracker:
     
     def test_get_health_status_with_degraded(self, metrics_tracker):
         """Test health status with degraded collectors."""
-        # collector1: 2 success, 1 failure = 66.7% (degraded: 80-95%)
+        # collector1: Need >= 80% for degraded
+        # 4 success, 1 failure = 80% (exactly at degraded threshold)
         metrics_tracker.record_success("collector1", 100, 2.0)
         metrics_tracker.record_failure("collector1", "Error", 3.0)
         metrics_tracker.record_success("collector1", 150, 2.5)
+        metrics_tracker.record_success("collector1", 100, 2.0)
+        metrics_tracker.record_success("collector1", 120, 2.2)
         
         # collector2: all success = 100% (healthy)
         metrics_tracker.record_success("collector2", 75, 1.5)
         
-        # Add one more failure to get exactly in degraded range
-        metrics_tracker.record_success("collector1", 100, 2.0)  # 3 success, 1 failure = 75%
-        
         health = metrics_tracker.get_health_status()
         
         assert health["overall_health"] == "degraded"
-        assert len(health["degraded_collectors"]) > 0 or len(health["failing_collectors"]) > 0
+        assert len(health["degraded_collectors"]) > 0
+        assert "collector1" in health["degraded_collectors"]
     
     def test_get_health_status_with_failing(self, metrics_tracker):
         """Test health status with failing collectors."""

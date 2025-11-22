@@ -294,7 +294,8 @@ class TestConditionalRouting:
         
         route = workflow._route_after_evaluation(base_state)
         
-        assert route == "finalize"
+        # After evaluation, should generate report
+        assert route == "report"
     
     def test_route_after_error_with_retries_left(self, mock_db_session, base_state):
         """Test routing after error with retries remaining."""
