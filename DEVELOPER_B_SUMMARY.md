@@ -576,6 +576,34 @@ The agentic system has completed all 12 weeks (100% of Phase 3) and is ready for
 4. **Production Deployment**: Deploy to production AWS environment
 5. **Integration with Phase 6**: Connect agentic algorithm generation to trading execution system
 
+### 🔐 Secrets Management Responsibilities (Weeks 11-12)
+
+**LLM API Keys Integration - Production Readiness:**
+- [ ] **LangGraph Workflow LLM Initialization**:
+  - Verify `backend/app/services/agent/workflow.py` reads `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` from environment
+  - Test agent workflow execution with AWS Secrets Manager-injected keys in staging
+  - Confirm no hardcoded API keys in codebase (search for `sk-` patterns)
+  - Add logging for LLM provider selection and key source validation
+- [ ] **Multi-Provider Support**:
+  - Ensure system gracefully handles missing keys (e.g., only OpenAI key provided)
+  - Test fallback logic: OpenAI → Anthropic → Error with clear message
+  - Validate both providers work with injected credentials in staging
+  - Document provider configuration in `AGENTIC_QUICKSTART.md`
+- [ ] **Agent Service Configuration**:
+  - Verify all agent classes use environment-based LLM initialization
+  - Test `DataRetrievalAgent`, `ModelTrainingAgent`, `ReportingAgent` with production keys
+  - Validate LangGraph state machine handles LLM authentication errors
+  - Add retry logic for transient API key failures
+- [ ] **Integration Testing with Test User**:
+  - Execute complete workflow using Test User credentials (coordinate with Developer A)
+  - Validate ReAct loop, data retrieval, model training with production LLM keys
+  - Confirm agent artifacts are generated and stored correctly
+  - Test Human-in-the-Loop features with real LLM responses
+- [ ] **Security Validation**:
+  - Confirm LLM API keys never appear in logs or error messages
+  - Verify keys are not included in agent state snapshots or artifacts
+  - Test secret rotation: update key in Secrets Manager → restart ECS task → verify workflow continues
+
 The parallel development approach has been highly effective, allowing for significant progress on the AI/ML track without conflicts or dependencies on other streams.
 
 ---

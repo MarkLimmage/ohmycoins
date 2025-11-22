@@ -26,12 +26,40 @@
 - ✅ CI/CD automation (workflows operational)
 
 **Next Steps (Weeks 11-12 - Requires Production Approval):**
+- [ ] **Secrets Management Infrastructure** (HIGH PRIORITY):
+  - [ ] Create Terraform module: `modules/secrets/main.tf`
+  - [ ] Provision AWS Secrets Manager with secrets:
+    - `omc/staging/db-password` (PostgreSQL RDS password)
+    - `omc/staging/secret-key` (Backend JWT signing key)
+    - `omc/staging/encryption-key` (User credentials encryption key)
+    - `omc/staging/openai-api-key` (LLM provider - OpenAI)
+    - `omc/staging/anthropic-api-key` (LLM provider - Anthropic)
+  - [ ] Configure IAM policy for ECS task execution role:
+    - Grant `secretsmanager:GetSecretValue` permission
+    - Restrict to specific secret ARNs (least privilege)
+  - [ ] Update ECS Task Definitions (`modules/ecs/task_definitions/`):
+    - Backend service: Inject `DB_PASSWORD`, `SECRET_KEY`, `ENCRYPTION_KEY`
+    - Agent service: Inject `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `ENCRYPTION_KEY`
+    - Use `secrets` parameter (not `environment`) for sensitive values
+  - [ ] Test secret injection in staging:
+    - Deploy updated task definitions
+    - Verify ECS tasks start successfully
+    - Validate environment variables are populated (`docker exec` or CloudWatch logs)
+  - [ ] Document secret rotation procedure in `OPERATIONS_RUNBOOK.md`
 - [ ] Production infrastructure deployment (requires AWS credentials and approval)
 - [ ] DNS and SSL certificate configuration
 - [ ] WAF enablement on production ALB
 - [ ] Security services activation (GuardDuty, CloudTrail, Config)
 - [ ] Backup and disaster recovery testing
 - [ ] Production go-live support for Developer A & B
+- [ ] **Test User Validation** (coordinate with Developer A):
+  - [ ] Receive Test User credentials from Developer A
+  - [ ] Execute end-to-end validation in staging:
+    - Login via API
+    - Trigger trade execution
+    - Execute agentic workflow
+  - [ ] Monitor CloudWatch logs for secret access patterns
+  - [ ] Validate no plaintext secrets in logs or metrics
 
 **Note:** Weeks 11-12 tasks involve actual production deployment and cannot be completed in a development environment without proper AWS credentials, production approval, and coordination with stakeholders. All prerequisite work (configuration, documentation, security planning) has been completed in Weeks 9-10.
 

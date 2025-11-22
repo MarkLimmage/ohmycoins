@@ -1034,8 +1034,24 @@ This new capability transforms The Lab into an autonomous "data scientist" that 
   - Penetration testing
   - Dependency vulnerability scanning
 - [ ] Implement secrets management
-  - AWS Secrets Manager integration
-  - Rotate credentials regularly
+  - [ ] **Infrastructure Secrets (System-Wide)** - Developer C
+    - [ ] Provision AWS Secrets Manager via Terraform module
+    - [ ] Create secrets: `DB_PASSWORD`, `SECRET_KEY`, `ENCRYPTION_KEY`
+    - [ ] Create LLM secrets: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+    - [ ] Update ECS Task Definitions to inject secrets as environment variables
+    - [ ] Configure IAM roles for ECS task secret access
+  - [ ] **User Secrets (Per-User Scaling)** - Developer A
+    - [ ] Verify `EncryptionService` uses injected `ENCRYPTION_KEY`
+    - [ ] Verify `CoinspotCredentials` model encrypts/decrypts with production key
+    - [ ] Validate per-user credential isolation in database
+  - [ ] **LLM Integration Verification** - Developer B
+    - [ ] Verify agentic workflow accesses injected `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`
+    - [ ] Confirm LLM initialization uses environment variables (not .env file)
+  - [ ] **Test User Creation** - Cross-team
+    - [ ] Create dedicated "Test User" in staging database
+    - [ ] Fund test account with small balance (e.g., $10 AUD)
+    - [ ] Validate end-to-end flow: Login → Add Keys → Execute Trade → LLM Workflow
+  - [ ] Rotate credentials regularly (90-day policy)
 - [ ] Set up WAF rules
 - [ ] Enable encryption at rest and in transit
 - [ ] Configure backup strategy

@@ -12,6 +12,31 @@ As **Developer A**, my responsibility is to build the data backbone of the OhMyC
 
 The backend is now ready for integration with the agentic system (Developer B) and for deployment onto the EKS infrastructure (Developer C). This progress validates the effectiveness of our parallel development strategy.
 
+### 🔐 Secrets Management Responsibilities (Weeks 11-12)
+
+**User Secrets (Per-User Scaling) - Production Readiness:**
+- [ ] **EncryptionService Verification**:
+  - Verify `backend/app/services/encryption.py` reads `ENCRYPTION_KEY` from environment variables (not `.env` file)
+  - Test encryption/decryption with production-injected key in staging
+  - Add logging to confirm key source (environment vs. auto-generated)
+  - Validate AES-256 Fernet encryption meets security requirements
+- [ ] **CoinspotCredentials Model Validation**:
+  - Verify `backend/app/models.py` `CoinspotCredentials` stores encrypted bytes
+  - Test full CRUD cycle: Create → Encrypt → Store → Retrieve → Decrypt
+  - Validate per-user isolation (User A cannot access User B's credentials)
+  - Confirm credentials are never logged in plaintext
+- [ ] **Test User Creation**:
+  - Create dedicated test/canary user in staging database
+  - Email: `testuser@ohmycoins.internal`
+  - Store encrypted CoinSpot API credentials (test account with ~$10 AUD balance)
+  - Document test user setup in `backend/scripts/create_test_user.py`
+  - Provide credentials to Developer C for deployment validation
+- [ ] **Integration Testing**:
+  - Test login → retrieve credentials → decrypt → execute trade flow
+  - Verify credentials work with CoinSpot API in staging
+  - Validate error handling for missing/invalid encryption keys
+  - Document test scenarios in `tests/integration/test_credentials_flow.py`
+
 ### Key Achievements (Weeks 1-6)
 
 - ✅ **FastAPI Backend Established**: A fully containerized FastAPI application has been created, serving as the core of the project's backend services.
@@ -20,6 +45,7 @@ The backend is now ready for integration with the agentic system (Developer B) a
 - ✅ **API Endpoints**: Developed initial RESTful API endpoints for creating, reading, and listing core data entities.
 - ✅ **Dockerization**: The entire backend stack (FastAPI, PostgreSQL, Redis) is containerized with Docker Compose for consistent local development.
 - ✅ **Comprehensive Testing**: Implemented a suite of unit and integration tests using `pytest` to ensure API and database integrity.
+- ✅ **Secure Credential Management**: Implemented `EncryptionService` with AES-256 encryption and `CoinspotCredentials` model for per-user API key storage.
 
 ---
 

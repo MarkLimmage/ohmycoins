@@ -1,9 +1,93 @@
 # Parallel Development Guide - Oh My Coins (OMC!)
 
-**Last Updated:** 2025-11-22  
+**Last Updated:** 2025-11-23  
 **Purpose:** Coordinate parallel development for next sprint cycle  
 **Context:** Phase 2.5 complete. Phase 3 at 100% (Week 12 complete). Phase 6 Weeks 1-4 complete. Phase 9 Weeks 1-10 complete.  
 **Team:** 3 developers + 1 tester with access to staging environment and synthetic dataset
+
+---
+
+## 🔐 Secrets Management Strategy (Cross-Track Priority)
+
+**Objective:** Implement secure, scalable secrets architecture for production deployment and multi-user scaling.
+
+**Architecture Overview:**
+- **Infrastructure Secrets (System-Wide):** AWS Secrets Manager for platform credentials
+- **User Secrets (Per-User):** AES-256 encrypted credentials in PostgreSQL database
+- **Test User:** Dedicated canary account for validation and monitoring
+
+### Developer C (Infrastructure) - Weeks 11-12
+**AWS Secrets Manager Provisioning:**
+- [ ] Create Terraform module: `infrastructure/terraform/modules/secrets`
+  - Provision AWS Secrets Manager resource
+  - Define secret entries: `DB_PASSWORD`, `SECRET_KEY`, `ENCRYPTION_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+  - Output secret ARNs for ECS integration
+- [ ] Update ECS Task Definitions:
+  - Inject secrets as environment variables using `secrets` parameter
+  - Configure IAM task execution role with `secretsmanager:GetSecretValue` permission
+  - Apply to both `backend` and `agent` service task definitions
+- [ ] Environment-specific configuration:
+  - Staging: Use test/development LLM keys with rate limits
+  - Production: Use production LLM keys with monitoring
+- [ ] Documentation:
+  - Update `infrastructure/terraform/README.md` with secrets module usage
+  - Document secret rotation procedures in `OPERATIONS_RUNBOOK.md`
+
+### Developer A (Backend) - Weeks 11-12
+**User Secrets Verification:**
+- [ ] Verify `EncryptionService` (`backend/app/services/encryption.py`):
+  - Confirm it reads `ENCRYPTION_KEY` from environment (not `.env` file)
+  - Test encryption/decryption roundtrip with production-injected key
+  - Add logging for key source (env var vs. generated) in staging
+- [ ] Verify `CoinspotCredentials` model:
+  - Confirm `api_key` and `api_secret` fields use encrypted bytes storage
+  - Test CRUD operations with encrypted credentials
+  - Validate per-user isolation (User A cannot access User B's keys)
+- [ ] Create Test User:
+  - Add migration/seed script: `backend/app/services/test_user_setup.py`
+  - Create user with email: `testuser@ohmycoins.internal`
+  - Store encrypted CoinSpot credentials (with $10 AUD test balance)
+  - Document test user credentials in Developer C handoff
+
+### Developer B (AI/ML) - Weeks 11-12
+**LLM Integration Verification:**
+- [ ] Verify LangGraph workflow LLM initialization:
+  - Confirm `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` read from environment
+  - Test agent workflow execution with injected keys in staging
+  - Add fallback handling if keys are missing (graceful degradation)
+- [ ] Update agent configuration:
+  - Ensure `backend/app/services/agent/workflow.py` uses env vars
+  - Add logging for LLM provider selection and key source
+  - Test both OpenAI and Anthropic providers in staging
+- [ ] Integration testing:
+  - Run agent workflow with Test User credentials
+  - Validate ReAct loop, data retrieval, and model training with production secrets
+  - Confirm no hardcoded API keys in codebase
+
+### Cross-Team Validation - Week 12
+**End-to-End Secrets Flow:**
+- [ ] Staging deployment with AWS Secrets Manager:
+  1. Deploy infrastructure with secrets module
+  2. Verify ECS tasks inject secrets correctly (`docker inspect` or CloudWatch logs)
+  3. Backend starts successfully and logs `ENCRYPTION_KEY` source
+  4. Agent services start and log LLM provider initialization
+- [ ] Test User workflow:
+  1. Login as Test User via API
+  2. Retrieve encrypted CoinSpot credentials (verify decryption)
+  3. Execute sample trade via trading service
+  4. Trigger agentic workflow (verify LLM access)
+  5. Validate all operations use injected secrets (not `.env` file)
+- [ ] Security validation:
+  - Confirm secrets never logged in plaintext
+  - Verify IAM roles follow principle of least privilege
+  - Test secret rotation simulation (update in Secrets Manager, restart tasks)
+
+### Success Criteria
+✅ AWS Secrets Manager operational in staging
+✅ All ECS tasks successfully inject and use secrets
+✅ Test User can execute trades and workflows end-to-end
+✅ Zero hardcoded credentials in codebase or logs
+✅ Documentation complete for secret rotation and management
 
 ---
 
