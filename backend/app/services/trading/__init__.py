@@ -6,6 +6,7 @@ This package provides live trading capabilities using the Coinspot API.
 Phase 6 Components:
 - Weeks 1-2: Trading client, order execution, position management
 - Weeks 3-4: Algorithm execution, scheduling, safety, audit trail
+- Weeks 5-6: P&L calculation and APIs
 """
 
 from app.services.trading.client import CoinspotTradingClient
@@ -19,6 +20,7 @@ from app.services.trading.algorithm_executor import (
     get_algorithm_executor
 )
 from app.services.trading.scheduler import ExecutionScheduler, get_execution_scheduler
+from app.services.trading.pnl import PnLEngine, PnLMetrics, get_pnl_engine
 
 __all__ = [
     # Weeks 1-2: Core trading infrastructure
@@ -28,6 +30,7 @@ __all__ = [
     "get_order_queue",
     "PositionManager",
     "get_position_manager",
+    # Weeks 3-4: Algorithm execution and safety
     "TradingSafetyManager",
     "get_safety_manager",
     "SafetyViolation",
@@ -38,4 +41,8 @@ __all__ = [
     "get_algorithm_executor",
     "ExecutionScheduler",
     "get_execution_scheduler",
+    # Weeks 5-6: P&L tracking
+    "PnLEngine",
+    "PnLMetrics",
+    "get_pnl_engine",
 ]
