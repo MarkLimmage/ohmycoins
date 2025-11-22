@@ -151,6 +151,8 @@ class TestOrderExecutor:
     @pytest.mark.asyncio
     async def test_execute_order_with_retry(self, executor, mock_session, sample_order):
         """Test order execution with retries on API error"""
+        from app.services.trading.exceptions import CoinspotAPIError
+        
         mock_session.get.return_value = sample_order
         mock_result = MagicMock()
         mock_result.first.return_value = None
@@ -159,7 +161,7 @@ class TestOrderExecutor:
         # First call fails, second succeeds
         mock_trade = AsyncMock()
         mock_trade.side_effect = [
-            Exception("API timeout"),
+            CoinspotAPIError("API timeout"),
             {
                 'status': 'ok',
                 'id': '99999',
@@ -177,11 +179,13 @@ class TestOrderExecutor:
     @pytest.mark.asyncio
     async def test_execute_order_max_retries_exceeded(self, executor, mock_session, sample_order):
         """Test order execution fails after max retries"""
+        from app.services.trading.exceptions import CoinspotAPIError
+        
         mock_session.get.return_value = sample_order
         
         # All attempts fail
         mock_trade = AsyncMock()
-        mock_trade.side_effect = Exception("API error")
+        mock_trade.side_effect = CoinspotAPIError("API error")
         
         with patch.object(executor, '_execute_trade', mock_trade):
             await executor._execute_order(sample_order.id)

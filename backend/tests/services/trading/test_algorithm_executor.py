@@ -197,7 +197,8 @@ class TestAlgorithmExecutor:
 class TestExecutionScheduler:
     """Tests for ExecutionScheduler"""
     
-    def test_scheduler_start_stop(self, execution_scheduler: ExecutionScheduler):
+    @pytest.mark.asyncio
+    async def test_scheduler_start_stop(self, execution_scheduler: ExecutionScheduler):
         """Test starting and stopping scheduler"""
         assert not execution_scheduler._running
         

@@ -239,9 +239,10 @@ class TestCoinspotTradingClient:
             'status': 'error',
             'message': 'Insufficient funds'
         })
+        # Make post() return a context manager
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock()
         mock_session.post = AsyncMock(return_value=mock_response)
-        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session.__aexit__ = AsyncMock()
         
         async with client:
             client._session = mock_session
@@ -252,8 +253,11 @@ class TestCoinspotTradingClient:
     @pytest.mark.asyncio
     async def test_http_error_handling(self, client):
         """Test HTTP errors are handled"""
+        import aiohttp
+        
         mock_session = AsyncMock()
-        mock_session.post = AsyncMock(side_effect=Exception("Connection error"))
+        # Raise aiohttp.ClientError which is what the code catches
+        mock_session.post = AsyncMock(side_effect=aiohttp.ClientError("Connection error"))
         
         async with client:
             client._session = mock_session
