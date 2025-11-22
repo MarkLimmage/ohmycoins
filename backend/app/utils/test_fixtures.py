@@ -5,6 +5,7 @@ Provides reusable test data fixtures that can be used across tests.
 These fixtures use the seeding utilities but are optimized for fast test execution.
 """
 
+import os
 import random
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -23,8 +24,12 @@ from app.models import (
     User,
 )
 
+# Test data seed - can be overridden with TEST_DATA_SEED env var for reproducibility
+TEST_DATA_SEED = int(os.getenv("TEST_DATA_SEED", "100"))
+
 fake = Faker()
-Faker.seed(100)  # Different seed for test data
+Faker.seed(TEST_DATA_SEED)
+random.seed(TEST_DATA_SEED)
 
 
 def create_test_user(

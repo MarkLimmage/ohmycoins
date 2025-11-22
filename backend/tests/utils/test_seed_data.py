@@ -93,8 +93,9 @@ class TestSeedData:
         # Clear all data
         clear_all_data(db)
         
-        # Verify data is cleared
-        users = db.exec(select(User).where(User.email != "admin@example.com")).all()
+        # Verify data is cleared (excluding the configured superuser)
+        from app.core.config import settings
+        users = db.exec(select(User).where(User.email != settings.FIRST_SUPERUSER)).all()
         assert len(users) == 0
         
         prices = db.exec(select(PriceData5Min)).all()

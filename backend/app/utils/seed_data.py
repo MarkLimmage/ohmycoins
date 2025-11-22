@@ -21,6 +21,7 @@ Usage:
 import argparse
 import asyncio
 import logging
+import os
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -63,6 +64,20 @@ random.seed(42)
 
 # Cryptocurrency data
 COINS = ["BTC", "ETH", "ADA", "DOT", "LINK", "UNI", "AAVE", "SOL", "MATIC", "DOGE"]
+
+# Approximate fallback prices for coins (used when no real data is available)
+FALLBACK_COIN_PRICES = {
+    "BTC": Decimal("65000.00"),
+    "ETH": Decimal("3500.00"),
+    "ADA": Decimal("0.50"),
+    "DOT": Decimal("7.50"),
+    "LINK": Decimal("15.00"),
+    "UNI": Decimal("8.00"),
+    "AAVE": Decimal("95.00"),
+    "SOL": Decimal("140.00"),
+    "MATIC": Decimal("0.75"),
+    "DOGE": Decimal("0.12"),
+}
 
 
 def generate_users(session: Session, count: int = 10) -> list[User]:
@@ -214,14 +229,15 @@ async def collect_real_news_data(session: Session, days: int = 7) -> int:
     Collect REAL cryptocurrency news from CryptoPanic API (free tier).
     
     Note: CryptoPanic offers a free tier with limited requests.
-    For production, you would need an API key.
+    For production, you would need an API key set in CRYPTOPANIC_API_KEY env var.
     """
     logger.info(f"Collecting real news data from CryptoPanic (last {days} days)...")
     
-    # CryptoPanic free tier endpoint (no auth required, but limited)
+    # CryptoPanic API - use env var if available, otherwise use free tier
+    api_key = os.getenv("CRYPTOPANIC_API_KEY", "free")
     url = "https://cryptopanic.com/api/v1/posts/"
     params = {
-        "auth_token": "free",  # Free tier
+        "auth_token": api_key,
         "public": "true",
         "kind": "news",
     }
@@ -427,8 +443,8 @@ def generate_positions_and_orders(
         if result:
             latest_prices[coin] = result.last
         else:
-            # Fallback prices if no data
-            latest_prices[coin] = Decimal("1000.00")
+            # Use realistic fallback prices based on coin type
+            latest_prices[coin] = FALLBACK_COIN_PRICES.get(coin, Decimal("100.00"))
     
     position_count = 0
     order_count = 0
