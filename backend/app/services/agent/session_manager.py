@@ -120,6 +120,26 @@ class SessionManager:
             db.add(session)
             db.commit()
 
+    async def update_status(
+        self,
+        db: Session,
+        session_id: uuid.UUID,
+        status: str,
+        error_message: str | None = None,
+        result_summary: str | None = None,
+    ) -> None:
+        """
+        Alias for update_session_status for backwards compatibility.
+        
+        Args:
+            db: Database session
+            session_id: ID of the session to update
+            status: New status
+            error_message: Optional error message if failed
+            result_summary: Optional result summary if completed
+        """
+        await self.update_session_status(db, session_id, status, error_message, result_summary)
+
     async def add_message(
         self,
         db: Session,

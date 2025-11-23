@@ -53,9 +53,9 @@ def session_manager():
 
 
 @pytest.fixture
-def orchestrator():
+def orchestrator(session_manager: SessionManager):
     """Create an AgentOrchestrator instance."""
-    return AgentOrchestrator()
+    return AgentOrchestrator(session_manager=session_manager)
 
 
 class TestPerformance:

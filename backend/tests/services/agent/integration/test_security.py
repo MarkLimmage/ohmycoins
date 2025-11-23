@@ -56,9 +56,9 @@ def session_manager():
 
 
 @pytest.fixture
-def orchestrator():
+def orchestrator(session_manager: SessionManager):
     """Create an AgentOrchestrator instance."""
-    return AgentOrchestrator()
+    return AgentOrchestrator(session_manager=session_manager)
 
 
 class TestAuthentication:
@@ -164,16 +164,24 @@ class TestInputValidation:
     async def test_long_input_handling(
         self, db: Session, session_manager: SessionManager, user_id: uuid.UUID
     ):
-        """Test system handles very long inputs."""
-        # Very long goal (10,000 characters)
+        """Test system handles very long inputs and enforces validation."""
+        # Very long goal (10,000 characters) - should fail validation (max is 5000)
         long_goal = "A" * 10000
 
-        session_create = AgentSessionCreate(user_goal=long_goal)
+        # Should raise validation error for exceeding max_length
+        with pytest.raises(Exception) as exc_info:
+            session_create = AgentSessionCreate(user_goal=long_goal)
+        
+        # Verify it's a validation error
+        assert "validation" in str(exc_info.value).lower() or "string_too_long" in str(exc_info.value).lower()
+        
+        # Test with valid length (5000 characters max)
+        valid_goal = "A" * 5000
+        session_create = AgentSessionCreate(user_goal=valid_goal)
         session = await session_manager.create_session(db, user_id, session_create)
-
-        # Should handle long input
+        
         assert session is not None
-        assert len(session.user_goal) == 10000
+        assert len(session.user_goal) == 5000
 
     @pytest.mark.asyncio
     async def test_special_characters_handling(

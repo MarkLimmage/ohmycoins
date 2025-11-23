@@ -95,10 +95,9 @@ class TestSyntheticDataIntegration:
     
     def test_complete_trading_scenario(self, db: Session) -> None:
         """Test a complete trading scenario using multiple fixtures."""
-        # Create a user
+        # Create a user with unique email
         trader = create_test_user(
             db,
-            email="trader@example.com",
             trading_experience="advanced",
             risk_tolerance="high"
         )
