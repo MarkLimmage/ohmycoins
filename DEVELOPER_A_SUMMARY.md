@@ -2517,6 +2517,12 @@ Pass Rate: 86.2% (+0.7pp from 85.5%)
 - Tests pass individually but fail in full suite
 - Likely test interdependency/fixture scoping issues
 
+**Critical Bug Fixed:**
+- `safety.py`: `_get_portfolio_value()` was async but called without await
+- Changed method to synchronous (doesn't need async)
+- Fixed 9 safety tests that were failing with "TypeError: float() argument must be a string or a real number, not 'coroutine'"
+- 1 remaining test failure is test logic issue (creates buy order that triggers daily loss limit)
+
 ### Next Steps
 
 **This Sprint (Priority Order):**
@@ -2524,9 +2530,10 @@ Pass Rate: 86.2% (+0.7pp from 85.5%)
 2. ✅ Fix trading client async mocks (COMPLETE)
 3. ✅ Fix SessionManager method alias (COMPLETE)
 4. ✅ Fix roadmap validation path issues (COMPLETE)
-5. [ ] Investigate remaining trading service errors (48 tests)
-6. [ ] Fix agent workflow test failures (8 tests)
-7. [ ] Fix integration test failures (4 tests)
+5. ✅ Fix safety manager async/await bug (COMPLETE - 9 tests fixed)
+6. [ ] Fix scheduler tests (5 tests - need async markers)
+7. [ ] Investigate remaining trading service errors (48 interdependency tests)
+8. [ ] Fix agent workflow test failures (8 tests)
 
 **Success Criteria:**
 - [ ] Achieve 90%+ pass rate (need +3.8pp)
@@ -2535,7 +2542,7 @@ Pass Rate: 86.2% (+0.7pp from 85.5%)
 
 ### Files Changed This Sprint
 
-**Modified: 8 files**
+**Modified: 9 files**
 1. `backend/tests/test_roadmap_validation.py` - Path resolution + CatalystEvents
 2. `backend/tests/integration/test_synthetic_data_examples.py` - Email collision
 3. `backend/tests/api/routes/test_private.py` - Email collision
@@ -2544,7 +2551,7 @@ Pass Rate: 86.2% (+0.7pp from 85.5%)
 6. `backend/tests/services/trading/test_client.py` - Async mock fix
 7. `backend/tests/services/agent/integration/test_end_to_end.py` - Fixture fix
 8. `backend/tests/services/agent/integration/test_performance.py` - Fixture fix
-9. `backend/tests/services/agent/integration/test_security.py` - Fixture fix
+9. `backend/app/services/trading/safety.py` - Async/await bug fix (9 tests fixed)
 
 **Impact:**
 - 9 additional tests passing

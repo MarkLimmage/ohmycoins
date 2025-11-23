@@ -192,7 +192,8 @@ class TestExecutionScheduler:
         execution_scheduler.stop()
         assert not execution_scheduler._running
     
-    def test_schedule_algorithm_interval(
+    @pytest.mark.asyncio
+    async def test_schedule_algorithm_interval(
         self,
         execution_scheduler: ExecutionScheduler,
         test_user: User
@@ -215,7 +216,8 @@ class TestExecutionScheduler:
         
         execution_scheduler.stop()
     
-    def test_schedule_algorithm_cron(
+    @pytest.mark.asyncio
+    async def test_schedule_algorithm_cron(
         self,
         execution_scheduler: ExecutionScheduler,
         test_user: User
@@ -237,7 +239,8 @@ class TestExecutionScheduler:
         
         execution_scheduler.stop()
     
-    def test_unschedule_algorithm(
+    @pytest.mark.asyncio
+    async def test_unschedule_algorithm(
         self,
         execution_scheduler: ExecutionScheduler,
         test_user: User
@@ -267,7 +270,8 @@ class TestExecutionScheduler:
         
         execution_scheduler.stop()
     
-    def test_pause_resume_algorithm(
+    @pytest.mark.asyncio
+    async def test_pause_resume_algorithm(
         self,
         execution_scheduler: ExecutionScheduler,
         test_user: User
@@ -302,7 +306,8 @@ class TestExecutionScheduler:
         
         execution_scheduler.stop()
     
-    def test_get_scheduled_algorithms(
+    @pytest.mark.asyncio
+    async def test_get_scheduled_algorithms(
         self,
         execution_scheduler: ExecutionScheduler,
         test_user: User

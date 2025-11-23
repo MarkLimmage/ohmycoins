@@ -156,7 +156,7 @@ class TradingSafetyManager:
             SafetyViolation: If position size limit would be exceeded
         """
         # Calculate total portfolio value
-        portfolio_value = await self._get_portfolio_value(user_id)
+        portfolio_value = self._get_portfolio_value(user_id)
         
         if portfolio_value == 0:
             # No existing portfolio, allow first trade up to a reasonable amount
@@ -227,7 +227,7 @@ class TradingSafetyManager:
                 daily_pnl -= (order.filled_quantity * order.price)
         
         # Get current portfolio value
-        portfolio_value = await self._get_portfolio_value(user_id)
+        portfolio_value = self._get_portfolio_value(user_id)
         
         if portfolio_value == 0:
             logger.info(f"User {user_id} has no portfolio, skipping daily loss check")
@@ -268,7 +268,7 @@ class TradingSafetyManager:
             SafetyViolation: If algorithm exposure limit would be exceeded
         """
         # Get portfolio value
-        portfolio_value = await self._get_portfolio_value(user_id)
+        portfolio_value = self._get_portfolio_value(user_id)
         
         if portfolio_value == 0:
             logger.info(f"User {user_id} has no portfolio, allowing initial algorithmic trade")
@@ -309,7 +309,7 @@ class TradingSafetyManager:
             f"{new_exposure:.2f}/{max_exposure:.2f} AUD"
         )
     
-    async def _get_portfolio_value(self, user_id: UUID) -> Decimal:
+    def _get_portfolio_value(self, user_id: UUID) -> Decimal:
         """
         Calculate total portfolio value for a user
         
