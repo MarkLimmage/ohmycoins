@@ -173,10 +173,11 @@ aws secretsmanager put-secret-value \
   --region ap-southeast-2
 ```
 
-**Important:** Delete `secrets.json` after updating!
+**Important:** Delete `secrets.json` securely after updating!
 
 ```bash
-rm secrets.json
+# Securely delete the file
+shred -u secrets.json 2>/dev/null || rm -P secrets.json 2>/dev/null || rm secrets.json
 ```
 
 ### Rotating Secrets

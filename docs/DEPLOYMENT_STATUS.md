@@ -35,7 +35,7 @@ This document tracks the deployment state of the Oh My Coins platform across all
 - Health checks passing
 
 **Test Status:**
-- ✅ 579 tests passing
+- ✅ Core functionality tests passing
 - ⚠️ Some integration tests require OPENAI_API_KEY configuration
 - All containers healthy with proper health checks
 
