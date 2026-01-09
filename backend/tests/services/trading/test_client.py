@@ -242,7 +242,8 @@ class TestCoinspotTradingClient:
         # Make post() return a context manager
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock()
-        mock_session.post = AsyncMock(return_value=mock_response)
+        mock_session.post = AsyncMock()
+        mock_session.post.return_value = mock_response
         
         async with client:
             client._session = mock_session
@@ -261,7 +262,8 @@ class TestCoinspotTradingClient:
         mock_cm.__aexit__ = AsyncMock()
         
         mock_session = AsyncMock()
-        mock_session.post = AsyncMock(return_value=mock_cm)
+        mock_session.post = AsyncMock()
+        mock_session.post.return_value = mock_cm
         
         async with client:
             client._session = mock_session

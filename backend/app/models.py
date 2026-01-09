@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from pydantic import EmailStr, field_validator
 from sqlalchemy.orm import Mapped
@@ -10,6 +11,9 @@ from sqlmodel import Field, Relationship, SQLModel, Column
 from sqlalchemy import DECIMAL, DateTime, Index, JSON
 from sqlalchemy.dialects import postgresql
 import sqlalchemy as sa
+
+if TYPE_CHECKING:
+    from typing import List
 
 
 # Shared properties
@@ -70,8 +74,9 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     
-    
-    # Relationships (one-way from other models to User via queries)
+    # Relationships (back-populates for bidirectional access)
+    positions: list["Position"] = Relationship(back_populates="user")
+    orders: list["Order"] = Relationship(back_populates="user")
 
 
 # Properties to return via API, id is always required
@@ -727,7 +732,7 @@ class Position(PositionBase, table=True):
     )
     
     # Relationships
-    user: User = Relationship()
+    user: User = Relationship(back_populates="positions")
     
     __table_args__ = (
         Index('idx_position_user_coin', 'user_id', 'coin_type', unique=True),
@@ -794,7 +799,7 @@ class Order(OrderBase, table=True):
     )
     
     # Relationships
-    user: User = Relationship()
+    user: User = Relationship(back_populates="orders")
     
     __table_args__ = (
         Index('idx_order_user_status', 'user_id', 'status'),
