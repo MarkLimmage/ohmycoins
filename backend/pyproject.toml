@@ -39,6 +39,7 @@ dependencies = [
     "ta<1.0.0,>=0.11.0",
     # Data seeding utilities
     "faker<30.0.0,>=22.0.0",
+    "playwright>=1.57.0",
 ]
 
 [tool.uv]

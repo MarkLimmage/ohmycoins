@@ -122,7 +122,8 @@ class SECAPICollector(APICollector):
                     headers=headers
                 )
                 
-                if not response or "filings" not in response:
+                # Check if response is a dict and has 'filings'
+                if not isinstance(response, dict) or "filings" not in response:
                     logger.warning(f"{self.name}: No filings data for {company_name}")
                     continue
                 

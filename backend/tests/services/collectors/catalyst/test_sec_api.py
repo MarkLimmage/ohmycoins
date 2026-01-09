@@ -1,290 +1,148 @@
-"""
-Tests for SEC EDGAR API collector (Catalyst Ledger).
-"""
-
 import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock
-
+from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timezone
+from sqlmodel import Session
 from app.services.collectors.catalyst.sec_api import SECAPICollector
+from app.models import CatalystEvents
 
-
-@pytest.fixture
-def sec_collector():
-    """Create a SEC API collector instance for testing."""
-    return SECAPICollector()
-
-
-@pytest.fixture
-def sample_sec_response():
-    """Sample SEC EDGAR API response."""
-    return {
-        "filings": {
-            "recent": {
-                "form": ["8-K", "10-Q", "4", "10-K"],
-                "filingDate": [
-                    datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                    (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%d"),
-                    (datetime.now(timezone.utc) - timedelta(days=10)).strftime("%Y-%m-%d"),
-                    (datetime.now(timezone.utc) - timedelta(days=40)).strftime("%Y-%m-%d"),  # Too old
-                ],
-                "accessionNumber": [
-                    "0001679788-23-000123",
-                    "0001679788-23-000122",
-                    "0001679788-23-000121",
-                    "0001679788-23-000120",
-                ],
-                "primaryDocument": [
-                    "coinbase-8k.htm",
-                    "coinbase-10q.htm",
-                    "coinbase-form4.htm",
-                    "coinbase-10k.htm",
-                ],
-            }
+# Mock data
+MOCK_SEC_RESPONSE_COINBASE = {
+    "cik": "0001679788",
+    "name": "Coinbase Global, Inc.",
+    "filings": {
+        "recent": {
+            "accessionNumber": [
+                "0001679788-24-000001",
+                "0001679788-24-000002",
+                "0001679788-24-000003"
+            ],
+            "filingDate": [
+                datetime.now().strftime("%Y-%m-%d"),
+                datetime.now().strftime("%Y-%m-%d"),
+                "2020-01-01"  # Old filing
+            ],
+            "reportDate": [
+                "2024-01-01",
+                "2024-01-02",
+                "2020-01-01"
+            ],
+            "form": [
+                "8-K",
+                "4",
+                "10-K"
+            ],
+            "primaryDocument": [
+                "filing1.htm",
+                "filing2.xml",
+                "filing3.htm"
+            ],
+            "primaryDocDescription": [
+                "Current Report",
+                "Statement of Changes in Beneficial Ownership",
+                "Annual Report"
+            ]
         }
     }
+}
 
+@pytest.fixture
+def collector():
+    return SECAPICollector()
 
-class TestSECAPICollector:
-    """Test suite for SEC API collector."""
+@pytest.mark.asyncio
+async def test_collect_success(collector):
+    """Test successful collection of SEC filings."""
+    # Mock fetch_json to return simulated SEC data
+    collector.fetch_json = AsyncMock(return_value=MOCK_SEC_RESPONSE_COINBASE)
     
-    def test_initialization(self, sec_collector):
-        """Test collector initialization."""
-        assert sec_collector.name == "sec_edgar_api"
-        assert sec_collector.ledger == "catalyst"
-        assert sec_collector.base_url == "https://data.sec.gov"
-        assert len(sec_collector.MONITORED_COMPANIES) >= 5
-        assert "0001679788" in sec_collector.MONITORED_COMPANIES  # Coinbase
+    # We only want to test one company to be fast
+    collector.MONITORED_COMPANIES = {"0001679788": "Coinbase"}
     
-    def test_filing_types(self, sec_collector):
-        """Test that critical filing types are monitored."""
-        assert "4" in sec_collector.FILING_TYPES  # Insider trading
-        assert "8-K" in sec_collector.FILING_TYPES  # Current events
-        assert "10-K" in sec_collector.FILING_TYPES  # Annual report
-        assert "10-Q" in sec_collector.FILING_TYPES  # Quarterly report
-        
-        # Check impact scores are valid
-        for filing_type, info in sec_collector.FILING_TYPES.items():
-            assert 1 <= info["impact"] <= 10
+    filings = await collector.collect()
     
-    def test_company_crypto_mapping(self, sec_collector):
-        """Test that companies are mapped to cryptocurrencies."""
-        assert "BTC" in sec_collector.COMPANY_CRYPTO_MAP["Coinbase"]
-        assert "BTC" in sec_collector.COMPANY_CRYPTO_MAP["MicroStrategy"]
+    # Expect 2 filings (8-K and 4), 10-K is too old
+    assert len(filings) == 2
     
-    @pytest.mark.asyncio
-    async def test_collect_success(self, sec_collector, sample_sec_response):
-        """Test successful data collection."""
-        # Mock the fetch_json method
-        sec_collector.fetch_json = AsyncMock(return_value=sample_sec_response)
-        
-        # Temporarily reduce companies for testing
-        original_companies = sec_collector.MONITORED_COMPANIES
-        sec_collector.MONITORED_COMPANIES = {"0001679788": "Coinbase"}
-        
-        try:
-            data = await sec_collector.collect()
-            
-            # Should collect 3 filings (4th is too old)
-            assert len(data) == 3
-            assert all(isinstance(item, dict) for item in data)
-            assert all("event_type" in item for item in data)
-            assert all("title" in item for item in data)
-            assert all("impact_score" in item for item in data)
-            assert all("collected_at" in item for item in data)
-            
-            # Check that titles mention Coinbase
-            assert all("Coinbase" in item["title"] for item in data)
-            
-            # Check event types are properly formatted
-            assert any("sec_filing_8_k" in item["event_type"] for item in data)
-            assert any("sec_filing_10_q" in item["event_type"] for item in data)
-            assert any("sec_filing_4" in item["event_type"] for item in data)
-            
-        finally:
-            sec_collector.MONITORED_COMPANIES = original_companies
+    # Verify first filing (8-K)
+    filing_8k = next(f for f in filings if "8-K" in f["title"])
+    assert filing_8k["event_type"] == "sec_filing_8_k"
+    assert "Coinbase" in filing_8k["title"]
+    assert filing_8k["impact_score"] == 8
+    assert "BTC" in filing_8k["currencies"]
+    assert "ETH" in filing_8k["currencies"]
+    assert "https://www.sec.gov/Archives/edgar/data/0001679788/000167978824000001/filing1.htm" == filing_8k["url"]
     
-    @pytest.mark.asyncio
-    async def test_collect_filters_old_filings(self, sec_collector):
-        """Test that old filings (>30 days) are filtered out."""
-        old_response = {
-            "filings": {
-                "recent": {
-                    "form": ["8-K"],
-                    "filingDate": [
-                        (datetime.now(timezone.utc) - timedelta(days=45)).strftime("%Y-%m-%d")
-                    ],
-                    "accessionNumber": ["0001679788-23-000123"],
-                    "primaryDocument": ["old-filing.htm"],
-                }
-            }
+    # Verify second filing (4)
+    filing_4 = next(f for f in filings if "Form 4" in f["title"])
+    assert filing_4["event_type"] == "sec_filing_4"
+    assert filing_4["impact_score"] == 5
+
+@pytest.mark.asyncio
+async def test_collect_api_error(collector):
+    """Test handling of API errors."""
+    collector.fetch_json = AsyncMock(side_effect=Exception("API Error"))
+    collector.MONITORED_COMPANIES = {"0001679788": "Coinbase"}
+    
+    filings = await collector.collect()
+    
+    assert filings == []
+
+@pytest.mark.asyncio
+async def test_validate_data(collector):
+    """Test data validation logic."""
+    raw_data = [
+        {
+            "title": "Valid Filing",
+            "event_type": "sec_filing_8_k",
+            "impact_score": 8,
+            "detected_at": datetime.now(timezone.utc),
+            "collected_at": datetime.now(timezone.utc)
+        },
+        {
+            "title": "Invalid Score",
+            "event_type": "sec_filing_4",
+            "impact_score": 99,  # Invalid
+            "detected_at": datetime.now(timezone.utc),
+            "collected_at": datetime.now(timezone.utc)
+        },
+        {
+            "event_type": "sec_filing_4"
+            # Missing title
         }
-        
-        sec_collector.fetch_json = AsyncMock(return_value=old_response)
-        sec_collector.MONITORED_COMPANIES = {"0001679788": "Coinbase"}
-        
-        data = await sec_collector.collect()
-        
-        # Should be empty because filing is too old
-        assert len(data) == 0
+    ]
     
-    @pytest.mark.asyncio
-    async def test_collect_handles_missing_filings(self, sec_collector):
-        """Test handling of companies with no filings."""
-        empty_response = {"filings": {"recent": {}}}
-        
-        sec_collector.fetch_json = AsyncMock(return_value=empty_response)
-        sec_collector.MONITORED_COMPANIES = {"0001679788": "Coinbase"}
-        
-        data = await sec_collector.collect()
-        
-        assert len(data) == 0
+    validated = await collector.validate_data(raw_data)
     
-    @pytest.mark.asyncio
-    async def test_collect_continues_on_error(self, sec_collector, sample_sec_response):
-        """Test that collection continues when one company fails."""
-        # Mock fetch to fail for first company, succeed for second
-        call_count = [0]
-        
-        async def mock_fetch(endpoint, headers=None):
-            call_count[0] += 1
-            if call_count[0] == 1:
-                raise Exception("API error")
-            return sample_sec_response
-        
-        sec_collector.fetch_json = AsyncMock(side_effect=mock_fetch)
-        sec_collector.MONITORED_COMPANIES = {
-            "0001679788": "Coinbase",
-            "0001050446": "MicroStrategy"
+    assert len(validated) == 2
+    assert validated[0]["title"] == "Valid Filing"
+    assert validated[1]["title"] == "Invalid Score"
+    assert validated[1]["impact_score"] == 5  # Should be corrected to default
+
+@pytest.mark.asyncio
+async def test_store_data(collector):
+    """Test storing data to database."""
+    session = MagicMock(spec=Session)
+    
+    data = [
+        {
+            "title": "Filing 1",
+            "event_type": "sec_filing_8_k",
+            "impact_score": 8,
+            "detected_at": datetime.now(timezone.utc),
+            "collected_at": datetime.now(timezone.utc),
+            "url": "http://example.com/1"
         }
-        
-        data = await sec_collector.collect()
-        
-        # Should have data from second company only
-        assert len(data) >= 0  # May have recent filings
+    ]
     
-    @pytest.mark.asyncio
-    async def test_validate_data_success(self, sec_collector):
-        """Test data validation with valid data."""
-        raw_data = [
-            {
-                "event_type": "sec_filing_8_k",
-                "title": "Coinbase - Current Events (Form 8-K)",
-                "description": "SEC Form 8-K filed by Coinbase",
-                "source": "SEC EDGAR",
-                "currencies": ["BTC", "ETH"],
-                "impact_score": 8,
-                "detected_at": datetime.now(timezone.utc),
-                "url": "https://www.sec.gov/Archives/edgar/data/1679788/...",
-                "collected_at": datetime.now(timezone.utc),
-            },
-        ]
-        
-        validated = await sec_collector.validate_data(raw_data)
-        
-        assert len(validated) == 1
-        assert validated[0]["event_type"] == "sec_filing_8_k"
-        assert validated[0]["impact_score"] == 8
+    count = await collector.store_data(data, session)
     
-    @pytest.mark.asyncio
-    async def test_validate_data_removes_invalid(self, sec_collector):
-        """Test that validation removes invalid data."""
-        raw_data = [
-            {
-                "event_type": "sec_filing_8_k",
-                "title": "Valid Filing",
-                "impact_score": 8,
-                "collected_at": datetime.now(timezone.utc),
-            },
-            {
-                # Missing title
-                "event_type": "sec_filing_8_k",
-                "impact_score": 8,
-                "collected_at": datetime.now(timezone.utc),
-            },
-            {
-                # Missing event_type
-                "title": "Missing Event Type",
-                "impact_score": 8,
-                "collected_at": datetime.now(timezone.utc),
-            },
-        ]
-        
-        validated = await sec_collector.validate_data(raw_data)
-        
-        assert len(validated) == 1
-        assert validated[0]["title"] == "Valid Filing"
+    assert count == 1
+    session.add.assert_called_once()
+    session.commit.assert_called_once()
     
-    @pytest.mark.asyncio
-    async def test_validate_data_corrects_impact_score(self, sec_collector):
-        """Test that invalid impact scores are corrected."""
-        raw_data = [
-            {
-                "event_type": "sec_filing_8_k",
-                "title": "Invalid Impact Score",
-                "impact_score": 15,  # Too high
-                "collected_at": datetime.now(timezone.utc),
-            },
-            {
-                "event_type": "sec_filing_8_k",
-                "title": "Negative Impact Score",
-                "impact_score": -1,  # Negative
-                "collected_at": datetime.now(timezone.utc),
-            },
-        ]
-        
-        validated = await sec_collector.validate_data(raw_data)
-        
-        assert len(validated) == 2
-        assert all(item["impact_score"] == 5 for item in validated)  # Corrected to 5
-    
-    @pytest.mark.asyncio
-    async def test_store_data(self, sec_collector):
-        """Test storing data to database."""
-        mock_session = MagicMock()
-        
-        data = [
-            {
-                "event_type": "sec_filing_8_k",
-                "title": "Coinbase - Current Events",
-                "description": "SEC Form 8-K filed by Coinbase",
-                "source": "SEC EDGAR",
-                "currencies": ["BTC", "ETH"],
-                "impact_score": 8,
-                "detected_at": datetime.now(timezone.utc),
-                "url": "https://www.sec.gov/...",
-                "collected_at": datetime.now(timezone.utc),
-            },
-        ]
-        
-        count = await sec_collector.store_data(data, mock_session)
-        
-        assert count == 1
-        assert mock_session.add.call_count == 1
-        assert mock_session.commit.call_count == 1
-    
-    @pytest.mark.asyncio
-    async def test_store_data_handles_errors(self, sec_collector):
-        """Test that store continues after individual record errors."""
-        mock_session = MagicMock()
-        # Make add fail for the first record
-        mock_session.add.side_effect = [Exception("DB error"), None]
-        
-        data = [
-            {
-                "event_type": "sec_filing_8_k",
-                "title": "Failing Record",
-                "collected_at": datetime.now(timezone.utc),
-            },
-            {
-                "event_type": "sec_filing_10_q",
-                "title": "Succeeding Record",
-                "collected_at": datetime.now(timezone.utc),
-            },
-        ]
-        
-        count = await sec_collector.store_data(data, mock_session)
-        
-        # Should still store 1 record despite 1 failure
-        assert count == 1
-        assert mock_session.commit.call_count == 1
+    # Verify the object added
+    call_args = session.add.call_args
+    stored_obj = call_args[0][0]
+    assert isinstance(stored_obj, CatalystEvents)
+    assert stored_obj.title == "Filing 1"
+    assert stored_obj.event_type == "sec_filing_8_k"

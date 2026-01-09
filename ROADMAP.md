@@ -7,18 +7,18 @@
 This roadmap tracks the development of the OMC platform across its three parallel tracks:
 *   **Track A**: Data Collection & Backend (The 4 Ledgers, Trading Engine)
 *   **Track B**: Agentic AI (The Lab)
-*   **Track C**: Infrastructure (AWS/EKS)
+*   **Track C**: Infrastructure (AWS/ECS)
 
 ## 2. Active Phases
 
 ### Phase 9: Infrastructure & Production Readiness (Weeks 1-12)
 *   **Owner**: Developer C
-*   **Goal**: Zero-downtime, scalable EKS environment.
+*   **Goal**: Zero-downtime, scalable ECS environment.
 *   **Status**:
     *   [x] Week 1-2: VPC & Network Architecture
-    *   [x] Week 3-4: EKS Cluster & Node Groups
+    *   [x] Week 3-4: ECS Cluster & Task Definitions
     *   [x] Week 5-6: RDS & ElastiCache (Redis)
-    *   [x] Week 7-8: Monitoring (Prometheus/Grafana) & Logging
+    *   [x] Week 7-8: Monitoring (CloudWatch/Prometheus) & Logging
     *   [x] Week 9-10: Staging Environment Deployment
     *   [ ] Week 11-12: Production Rollout & Secrets Management
 
