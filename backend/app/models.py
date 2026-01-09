@@ -3,7 +3,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
 from pydantic import EmailStr, field_validator
 from sqlalchemy.orm import Mapped
@@ -11,9 +10,6 @@ from sqlmodel import Field, Relationship, SQLModel, Column
 from sqlalchemy import DECIMAL, DateTime, Index, JSON
 from sqlalchemy.dialects import postgresql
 import sqlalchemy as sa
-
-if TYPE_CHECKING:
-    from typing import List
 
 
 # Shared properties
