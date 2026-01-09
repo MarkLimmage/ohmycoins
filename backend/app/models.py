@@ -381,7 +381,7 @@ class NewsSentiment(SQLModel, table=True):
     )
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -409,7 +409,7 @@ class SocialSentiment(SQLModel, table=True):
     sentiment: str | None = Field(default=None, max_length=20)
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     posted_at: datetime | None = Field(
         default=None,
