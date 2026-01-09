@@ -38,7 +38,7 @@ dependencies = [
     "seaborn<1.0.0,>=0.12.0",
     "ta<1.0.0,>=0.11.0",
     # Data seeding utilities
-    "faker<30.0.0,>=22.0.0",
+    "faker>=22.0.0,<39.0.0",
 ]
 
 [tool.uv]
