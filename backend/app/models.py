@@ -8,6 +8,7 @@ from pydantic import EmailStr, field_validator
 from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel, Column
 from sqlalchemy import DECIMAL, DateTime, Index, JSON
+from sqlalchemy.dialects import postgresql
 import sqlalchemy as sa
 
 
@@ -439,7 +440,7 @@ class CatalystEvents(SQLModel, table=True):
     source: str | None = Field(default=None, max_length=100)
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     impact_score: int | None = Field(
         default=None,
