@@ -70,9 +70,8 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     
-    # Relationships (back-populates for bidirectional access)
-    positions: list["Position"] = Relationship(back_populates="user")
-    orders: list["Order"] = Relationship(back_populates="user")
+    # Note: For SQLModel compatibility, we don't declare explicit back-populates here
+    # Relationships are accessible via queries: session.exec(select(Position).where(Position.user_id == user.id))
 
 
 # Properties to return via API, id is always required
@@ -728,7 +727,7 @@ class Position(PositionBase, table=True):
     )
     
     # Relationships
-    user: User = Relationship(back_populates="positions")
+    user: User = Relationship()
     
     __table_args__ = (
         Index('idx_position_user_coin', 'user_id', 'coin_type', unique=True),
@@ -795,7 +794,7 @@ class Order(OrderBase, table=True):
     )
     
     # Relationships
-    user: User = Relationship(back_populates="orders")
+    user: User = Relationship()
     
     __table_args__ = (
         Index('idx_order_user_status', 'user_id', 'status'),
