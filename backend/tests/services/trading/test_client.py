@@ -241,7 +241,7 @@ class TestCoinspotTradingClient:
         })
         # Make post() return a context manager
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
+        mock_response.__aexit__ = AsyncMock()
         mock_session.post = AsyncMock(return_value=mock_response)
         
         async with client:
@@ -258,7 +258,7 @@ class TestCoinspotTradingClient:
         # Create async context manager mock that raises error on enter
         mock_cm = AsyncMock()
         mock_cm.__aenter__ = AsyncMock(side_effect=aiohttp.ClientError("Connection error"))
-        mock_cm.__aexit__ = AsyncMock(return_value=None)
+        mock_cm.__aexit__ = AsyncMock()
         
         mock_session = AsyncMock()
         mock_session.post = AsyncMock(return_value=mock_cm)
