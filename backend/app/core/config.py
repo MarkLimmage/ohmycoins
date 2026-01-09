@@ -1,3 +1,19 @@
+"""
+Application configuration and settings management.
+
+This module handles configuration for different environments (local, staging, production).
+
+SECRETS MANAGEMENT:
+- Local development: Secrets loaded from .env file
+- Staging/Production (AWS ECS): Secrets injected by ECS from AWS Secrets Manager
+  - ECS task definitions include a 'secrets' section that references Secrets Manager
+  - Secrets are injected as environment variables at container startup
+  - No boto3 client needed - ECS handles retrieval automatically
+  
+See infrastructure/terraform/modules/ecs/main.tf for ECS secrets configuration.
+See .env.template for required environment variables.
+"""
+
 import secrets
 import warnings
 from typing import Annotated, Any, Literal
