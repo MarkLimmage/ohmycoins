@@ -1,0 +1,32 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "parsableStyle": true,
+    "compress": false,
+    "headerText": "ARCHITECTURAL CONTEXT: This file represents the complete state of the repository. Treat it as the ground truth.",
+    "removeComments": false,
+    "showLineNumbers": true,
+    "topFilesLength": 20
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDotIgnore": true,
+    "customPatterns": [
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/dist/**",
+      "**/*.lock",
+      "**/coverage/**",
+      "**/*.pyc",
+      "**/*.min.js",
+      "**/build/**",
+      "**/.idea/**",
+      "**/.vscode/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

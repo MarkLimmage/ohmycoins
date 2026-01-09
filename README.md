@@ -1,290 +1,51 @@
-# Oh My Coins (OMC!) 🪙
+# Oh My Coins (OMC)
 
-A microservices-based algorithmic cryptocurrency trading platform with a seamless "Lab-to-Floor" pipeline for AI-powered algorithm development, backtesting, and live trading.
+**An Autonomous Agentic Trading Platform**
 
-## 🎯 Overview
+## Overview
+Oh My Coins is a microservices-based algorithmic trading platform that integrates high-fidelity data collection (The 4 Ledgers) with an autonomous multi-agent data science capability (The Lab). It is designed to discover, validate, and execute trading strategies without human intervention, while maintaining strict "Lab-to-Floor" integrity.
 
-Oh My Coins provides a complete ecosystem for cryptocurrency algorithmic trading:
+## Documentation
+The documentation has been consolidated to provide a Single Source of Truth:
 
-- **The Collector**: Automated data pipeline gathering cryptocurrency prices every 5 minutes
-- **The Lab**: AI-powered autonomous algorithm development platform (NEW - Agentic Capability)
-- **The Floor**: Live trading execution with Coinspot API integration (Coming Soon)
+*   **[System Requirements](/docs/SYSTEM_REQUIREMENTS.md)**: Comprehensive EARS-compliant requirements for Data Collection and Agentic AI.
+*   **[Architecture](/docs/ARCHITECTURE.md)**: High-level system design, microservices breakdown, and infrastructure stack.
+*   **[Project Handoff](/docs/PROJECT_HANDOFF.md)**: Current status of parallel development tracks and next steps.
+*   **[Roadmap](/ROADMAP.md)**: Active project timeline and progress tracking.
 
-## ✨ Key Features
+> **Note**: Historical planning documents and decision records have been archived in `/docs/archive/`.
 
-### ✅ Phase 1: Complete
-- Real-time cryptocurrency price data collection from Coinspot
-- PostgreSQL time-series database with 50,000+ price records
-- Robust error handling with retry logic
-- Comprehensive test suite (15 tests passing)
-- CI/CD pipeline with GitHub Actions
+## Quick Start
 
-### 🚀 Phase 2: Complete
-- User authentication and profile management
-- Secure Coinspot API credential storage (AES-256 encryption)
-- HMAC-SHA512 signature generation for Coinspot API
+### 1. Prerequisites
+*   Docker & Docker Compose
+*   Python 3.11+
+*   Node.js 18+
+*   Terraform 1.5+
 
-### 🤖 Phase 3: NEW - Agentic Data Science Capability (In Planning)
-Transform The Lab into an autonomous "data scientist" powered by AI:
-
-- **Natural Language Goals**: "Predict Bitcoin price movements over the next hour"
-- **Autonomous Execution**: AI agents automatically fetch data, analyze, train models, and deliver results
-- **Multi-Agent System**: 5 specialized agents working collaboratively
-  - Data Retrieval Agent
-  - Data Analyst Agent  
-  - Model Training Agent
-  - Model Evaluator Agent
-  - Reporting Agent
-- **Human-in-the-Loop**: Clarifications, choice presentation, user overrides
-- **ReAct Loop**: Iterative refinement and hyperparameter tuning
-- **Secure Sandbox**: Safe code execution with resource limits
-
-**📚 Documentation**:
-- [Quick Start Guide](./AGENTIC_QUICKSTART.md) - Overview and examples
-- [Requirements Specification](./AGENTIC_REQUIREMENTS.md) - Detailed requirements (26KB)
-- [Architecture Design](./AGENTIC_ARCHITECTURE.md) - Technical architecture (29KB)
-- [Implementation Plan](./AGENTIC_IMPLEMENTATION_PLAN.md) - 14-week plan (19KB)
-
-## 🚀 Deployment
-
-The staging environment is now deployed and available at [dashboard.staging.ohmycoins.com](https://dashboard.staging.ohmycoins.com). See the [Terraform README](infrastructure/terraform/README.md) for more details.
-
-## 📋 Project Status
-
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 1 | ✅ Complete (100%) | Foundation & Data Collection Service |
-| Phase 2 | ✅ Complete (100%) | User Authentication & API Credentials |
-| Phase 2.5 | 🔄 In Progress (~40%) | Comprehensive Data Collection (4 Ledgers) |
-| Phase 3 | 🔄 Foundation (~15%) | Agentic Data Science Capability |
-| Phase 4 | 📅 Planned | The Lab - Manual Algorithm Development |
-| Phase 5 | 📅 Planned | Algorithm Promotion & Packaging |
-| Phase 6 | 📅 Planned | The Floor - Live Trading Platform |
-| Phase 7 | 📅 Planned | Management Dashboard |
-| Phase 8 | 📅 Planned | Advanced Features & Optimization |
-| Phase 9 | 📅 Planned | Production Deployment & AWS Migration |
-
-> 🎯 **See [QUICK_START_NEXT_STEPS.md](./QUICK_START_NEXT_STEPS.md) for immediate action items**
-> 
-> 📊 **Timeline:** 12-16 weeks to complete Phase 2.5 + Phase 3 with 2 developers (40% faster with parallel work)
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                          API Gateway                             │
-│                     (FastAPI + Authentication)                   │
-└──────────────┬─────────────────────────────────┬────────────────┘
-               │                                 │
-       ┌───────▼────────┐                ┌──────▼──────┐
-       │   User Service │                │  Lab Service│
-       │   (Auth/Users) │                │ (Algo Dev)  │
-       └───────┬────────┘                └──────┬──────┘
-               │                                 │
-       ┌───────▼────────────────────────────────▼──────────┐
-       │              PostgreSQL Database                   │
-       │  (Users, Credentials, Algorithms, Trades, Prices) │
-       └───────┬────────────────────────────────┬──────────┘
-               │                                 │
-    ┌──────────▼────────┐              ┌────────▼─────────────┐
-    │ Collector Service │              │   Trading Service    │
-    │  (Data Pipeline)  │              │    (The Floor)       │
-    └──────────┬────────┘              └────────┬─────────────┘
-               │                                 │
-    ┌──────────▼────────┐              ┌────────▼─────────────┐
-    │  Coinspot Public  │              │  Coinspot Private    │
-    │      API          │              │      API             │
-    │   (Price Data)    │              │  (Trading/Orders)    │
-    └───────────────────┘              └──────────────────────┘
-```
-
-### Agentic System Architecture (NEW)
-
-```
-User Goal → Agent Orchestrator → Multi-Agent Team → Evaluated Models
-                   ↓
-              [LangGraph State Machine]
-                   ↓
-    ┌──────────────┼──────────────┬──────────────┬──────────────┐
-    ↓              ↓              ↓              ↓              ↓
-Data Retrieval  Data Analyst  Model Trainer  Model Evaluator  Reporter
-    Agent          Agent          Agent           Agent        Agent
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- Python 3.10+
-- uv (Python package installer)
-
-### Development Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/MarkLimmage/ohmycoins.git
-   cd ohmycoins
-   ```
-
-2. **Start services** (database auto-seeds on first startup)
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Access the application**
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
-   - Database Admin (Adminer): http://localhost:8080
-   - Frontend (when ready): http://localhost:5173
-
-4. **Login credentials**
-   - Email: `admin@example.com`
-   - Password: Check `.env` for `FIRST_SUPERUSER_PASSWORD`
-
-**Database Management**:
+### 2. Development Environment
 ```bash
-./scripts/db-reset.sh              # Reset to fresh state
-./scripts/db-snapshot.sh my-snap   # Create snapshot
-./scripts/db-restore.sh my-snap    # Restore snapshot
-```
+# Clone the repository
+git clone https://github.com/your-org/ohmycoins.git
+cd ohmycoins
 
-For detailed setup, see [DEVELOPMENT.md](./DEVELOPMENT.md) and [PERSISTENT_DEV_DATA.md](./PERSISTENT_DEV_DATA.md)
+# Start core services (PostgreSQL, Redis)
+docker-compose up -d
 
-## 📖 Documentation
-
-### 🗄️ Data Management (NEW - 2025-11-22)
-- **[PERSISTENT_DEV_DATA.md](./PERSISTENT_DEV_DATA.md)** - Automatic seeding, snapshots, restore workflows 🔄
-- **[SYNTHETIC_DATA_QUICKSTART.md](./SYNTHETIC_DATA_QUICKSTART.md)** - Quick command reference ⚡
-- **[SYNTHETIC_DATA_STRATEGY.md](./SYNTHETIC_DATA_STRATEGY.md)** - Overall data strategy 📋
-- **[SYNTHETIC_DATA_IMPLEMENTATION_SUMMARY.md](./SYNTHETIC_DATA_IMPLEMENTATION_SUMMARY.md)** - Technical details 🔧
-
-### 🎯 Planning & Next Steps (NEW - 2025-11-17)
-> 📚 **Start here:** [PLANNING_INDEX.md](./PLANNING_INDEX.md) - Central index for all planning documentation
-
-- **[QUICK_START_NEXT_STEPS.md](./QUICK_START_NEXT_STEPS.md)** - Quick overview of immediate actions ⚡
-- **[ROADMAP_REVIEW_SUMMARY.md](./ROADMAP_REVIEW_SUMMARY.md)** - Visual overview with progress bars 📊
-- **[NEXT_STEPS.md](./NEXT_STEPS.md)** - Detailed 16-week plan with priorities 📋
-- **[PARALLEL_DEVELOPMENT_GUIDE.md](./PARALLEL_DEVELOPMENT_GUIDE.md)** - Coordination strategies for parallel work 🔀
-- **[ROADMAP_VALIDATION.md](./ROADMAP_VALIDATION.md)** - Current status validation ✅
-
-### Core Documentation
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and design principles
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Developer setup and workflow guide
-- [ROADMAP.md](./ROADMAP.md) - Project roadmap and milestones
-- [PHASE1_SUMMARY.md](./PHASE1_SUMMARY.md) - Phase 1 completion summary
-
-### Comprehensive Data Collection (Phase 2.5)
-- [Comprehensive_Data_QUICKSTART.md](./Comprehensive_Data_QUICKSTART.md) - Quick reference
-- [Comprehensive_Data_REQUIREMENTS.md](./Comprehensive_Data_REQUIREMENTS.md) - The 4 Ledgers framework
-- [Comprehensive_Data_ARCHITECTURE.md](./Comprehensive_Data_ARCHITECTURE.md) - Technical architecture
-- [Comprehensive_Data_IMPLEMENTATION_PLAN.md](./Comprehensive_Data_IMPLEMENTATION_PLAN.md) - Week-by-week plan
-
-### Agentic Capability (Phase 3)
-- [AGENTIC_QUICKSTART.md](./AGENTIC_QUICKSTART.md) - Quick reference guide
-- [AGENTIC_REQUIREMENTS.md](./AGENTIC_REQUIREMENTS.md) - Detailed requirements
-- [AGENTIC_ARCHITECTURE.md](./AGENTIC_ARCHITECTURE.md) - Technical architecture
-- [AGENTIC_IMPLEMENTATION_PLAN.md](./AGENTIC_IMPLEMENTATION_PLAN.md) - Implementation plan
-
-## 🧪 Testing
-
-```bash
+# Install backend dependencies
 cd backend
+uv sync
 
-# Run all tests
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=app --cov-report=html
-
-# Run specific test file
-uv run pytest tests/services/test_collector.py
-
-# Run linting
-uv run ruff check .
-
-# Run type checking
-uv run mypy .
+# Install frontend dependencies
+cd ../frontend
+npm install
 ```
 
-## 🛠️ Technology Stack
+## System Structure
+*   **`backend/`**: FastAPI services (Collectors, Agents, Trading Engine).
+*   **`frontend/`**: React/Vite admin dashboard.
+*   **`infrastructure/`**: Terraform modules for AWS deployment (EKS, RDS).
+*   **`docs/`**: Centralized documentation.
 
-### Backend
-- **Framework**: FastAPI
-- **ORM**: SQLAlchemy + SQLModel
-- **Database**: PostgreSQL 15+
-- **Authentication**: JWT tokens
-- **Task Scheduling**: APScheduler
-- **Encryption**: Cryptography (Fernet/AES-256)
-
-### Agentic System (NEW)
-- **Agent Framework**: LangChain + LangGraph
-- **LLM Provider**: OpenAI / Anthropic
-- **State Management**: Redis
-- **Data Science**: pandas, scikit-learn, xgboost
-- **Visualization**: matplotlib, seaborn
-
-### Frontend (Coming Soon)
-- **Framework**: Vue.js 3
-- **State Management**: Pinia
-- **UI Components**: Vuetify
-- **Charts**: Chart.js
-
-### Infrastructure
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose (dev), EKS with autoscaling (prod)
-- **CI/CD**: GitHub Actions on self-hosted EKS runners with scale-to-zero capability
-- **Monitoring**: CloudWatch, Prometheus (future)
-- **Cost Optimization**: Cluster Autoscaler enabling 40-60% cost savings
-
-## 📊 Current Data Collection
-
-The Collector service is actively gathering cryptocurrency price data:
-
-- **Frequency**: Every 5 minutes
-- **Source**: Coinspot Public API
-- **Coins Tracked**: 19+ cryptocurrencies (BTC, ETH, etc.)
-- **Records Collected**: 60+ price entries and growing
-- **Uptime**: 100% since deployment
-
-## 🔐 Security
-
-- **Credential Encryption**: AES-256 encryption for API credentials
-- **Authentication**: JWT-based user authentication
-- **Code Sandbox**: Secure execution environment for agent-generated code
-- **Input Validation**: All user inputs validated and sanitized
-- **Audit Logging**: Complete audit trail of agent actions
-
-## 🤝 Contributing
-
-This is currently a private project. For questions or collaboration, please contact the repository owner.
-
-## 📝 License
-
-Copyright © 2025 Mark Limmage. All rights reserved.
-
-## 🎯 Roadmap Highlights
-
-### Immediate Next Steps (Phase 3)
-1. Implement agent framework (LangChain/LangGraph)
-2. Create 5 specialized agents
-3. Build ReAct loop for iterative refinement
-4. Add human-in-the-loop features
-5. Comprehensive testing and documentation
-
-### Future Plans
-- The Lab: Manual algorithm development (Phase 4)
-- The Floor: Live trading execution (Phase 6)
-- Management Dashboard (Phase 7)
-- AWS Production Deployment (Phase 9)
-
-See [ROADMAP.md](./ROADMAP.md) for the complete development plan.
-
-## 📞 Contact
-
-For questions, feedback, or collaboration:
-- **Author**: Mark Limmage
-- **GitHub**: [@MarkLimmage](https://github.com/MarkLimmage)
-
----
-
-**Built with ❤️ for the crypto trading community**# Test autoscaling - Mon Nov 17 21:55:49 AEDT 2025
+## License
+Proprietary & Confidential.
