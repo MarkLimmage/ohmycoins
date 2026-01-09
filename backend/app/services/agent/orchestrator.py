@@ -230,6 +230,10 @@ class AgentOrchestrator:
         This is a synchronous wrapper for the async get_session_state method,
         used by the HiTL endpoints and tests.
         
+        Supports two calling conventions:
+        - Legacy: get_session_state(session_id) - for existing production code
+        - Test: get_session_state(db, session_id) - for test compatibility
+        
         Args:
             db: Database session (for test compatibility) OR session_id for direct calls
             session_id: ID of the session (optional if db is actually session_id)
@@ -239,14 +243,19 @@ class AgentOrchestrator:
         """
         import asyncio
         
-        # Handle both calling conventions:
-        # - New: get_session_state(db, session_id) for tests
-        # - Old: get_session_state(session_id) for existing code
+        # Handle both calling conventions with type checking for robustness
         if session_id is None:
-            # Called with just session_id (old style)
-            actual_session_id = db
+            # Called with just session_id (legacy style)
+            # Verify it's actually a UUID, not a Session object
+            if isinstance(db, uuid.UUID):
+                actual_session_id = db
+            else:
+                raise TypeError(
+                    "When called with single argument, it must be a UUID. "
+                    "Use get_session_state(db, session_id) or get_session_state(session_id)."
+                )
         else:
-            # Called with db, session_id (new test style)
+            # Called with db, session_id (test style)
             actual_session_id = session_id
         
         # Get or create event loop
@@ -360,15 +369,18 @@ class AgentOrchestrator:
         # Execute the workflow step
         result = await self.execute_step(db, session_id)
         
-        # Build response combining execution result and workflow state
+        # Build response with execution result
         response = {
             "session_id": str(session_id),
             "status": result.get("status", "completed"),
         }
         
-        # Add workflow state fields to the response for test compatibility
+        # Merge workflow state fields, preserving response's session_id and status
         workflow_state = result.get("workflow_state", {})
         if workflow_state:
-            response.update(workflow_state)
+            # Add workflow state fields, but don't override session_id or status
+            for key, value in workflow_state.items():
+                if key not in ("session_id", "status"):
+                    response[key] = value
         
         return response
