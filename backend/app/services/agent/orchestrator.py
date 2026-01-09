@@ -94,7 +94,7 @@ class AgentOrchestrator:
             session_id: ID of the session
 
         Returns:
-            Step execution result
+            Step execution result including workflow state
         """
         # Get current state
         state = await self.session_manager.get_session_state(session_id)
@@ -180,6 +180,7 @@ class AgentOrchestrator:
                     "session_id": str(session_id),
                     "status": AgentSessionStatus.COMPLETED,
                     "message": "Session completed",
+                    "workflow_state": state,  # Include the state before deletion
                 }
         else:
             # Subsequent iterations (for future incremental execution)
@@ -192,6 +193,7 @@ class AgentOrchestrator:
             "status": AgentSessionStatus.RUNNING,
             "message": f"Step {iteration} completed",
             "current_step": state.get("current_step", "processing"),
+            "workflow_state": state,  # Include the state
         }
 
     async def cancel_session(
@@ -358,17 +360,15 @@ class AgentOrchestrator:
         # Execute the workflow step
         result = await self.execute_step(db, session_id)
         
-        # Get the final state
-        final_state = await self.session_manager.get_session_state(session_id)
-        
-        # Build response combining execution result and final state
+        # Build response combining execution result and workflow state
         response = {
             "session_id": str(session_id),
             "status": result.get("status", "completed"),
         }
         
-        # Add all state fields to the response for test compatibility
-        if final_state:
-            response.update(final_state)
+        # Add workflow state fields to the response for test compatibility
+        workflow_state = result.get("workflow_state", {})
+        if workflow_state:
+            response.update(workflow_state)
         
         return response
