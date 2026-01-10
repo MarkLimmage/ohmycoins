@@ -102,3 +102,78 @@ Requirements are specified using the Easy Approach to Requirements Syntax (EARS)
     *   Track B: `backend/app/services/agent/`
     *   Track C: `infrastructure/terraform/`
 *   **DS-003**: Outdated plans shall be proactively moved to `/docs/archive/`.
+
+---
+
+## 7. Bring Your Own Model (BYOM) Requirements
+
+### 7.1 Functional Requirements - BYOM
+
+#### User Credential Management
+*   **FR-BYOM-001**: While the user is authenticated, the system shall allow configuration of LLM provider credentials (OpenAI, Google, Anthropic).
+*   **FR-BYOM-002**: When the user submits an API key, the system shall validate the key with the provider before saving.
+*   **FR-BYOM-003**: While the user has multiple LLM credentials configured, the system shall allow designation of one as the default.
+*   **FR-BYOM-004**: When the user requests deletion of LLM credentials, the system shall perform a soft delete (set `is_active=False`).
+*   **FR-BYOM-005**: While viewing configured credentials, the system shall mask API keys (show first 4 and last 6 characters only).
+
+#### Agent Session Integration
+*   **FR-BYOM-006**: When an agent session starts, if the user has a default LLM credential configured, the system shall use that credential for all LLM operations.
+*   **FR-BYOM-007**: When an agent session starts, if the user has no BYOM configuration, the system shall fall back to the system default LLM.
+*   **FR-BYOM-008**: When an agent completes execution, the system shall record which LLM provider and model were used in the session metadata.
+*   **FR-BYOM-009**: While creating an agent session, the system shall allow the user to select from their configured LLM credentials.
+
+#### Multi-Provider Support
+*   **FR-BYOM-010**: The system shall support OpenAI models: gpt-4, gpt-4-turbo, gpt-3.5-turbo.
+*   **FR-BYOM-011**: The system shall support Google Gemini models: gemini-1.5-pro, gemini-1.5-flash.
+*   **FR-BYOM-012**: The system shall support Anthropic Claude models: claude-3-opus, claude-3-sonnet, claude-3-haiku.
+*   **FR-BYOM-013**: When instantiating an LLM, the system shall use provider-specific configurations (API endpoints, authentication methods).
+
+### 7.2 Non-Functional Requirements - BYOM
+
+#### Performance
+*   **NFR-BYOM-P-001**: Retrieving and decrypting user LLM credentials shall complete in **<100ms**.
+*   **NFR-BYOM-P-002**: Agent session initialization with BYOM shall add **<500ms** overhead compared to system default.
+*   **NFR-BYOM-P-003**: API key validation shall timeout after **10 seconds** if provider is unresponsive.
+
+#### Security
+*   **NFR-BYOM-S-001**: The system shall encrypt all user LLM API keys using **AES-256** encryption before storage.
+*   **NFR-BYOM-S-002**: The system shall never log plaintext API keys (all logs must mask keys).
+*   **NFR-BYOM-S-003**: The system shall audit-log all LLM credential retrievals with user ID, session ID, and timestamp.
+*   **NFR-BYOM-S-004**: The system shall enforce rate limiting: **max 10 key validations per user per hour**.
+*   **NFR-BYOM-S-005**: The system shall enforce rate limiting: **max 100 LLM API calls per agent session** (cost protection).
+*   **NFR-BYOM-S-006**: The system shall support API key rotation without service interruption.
+*   **NFR-BYOM-S-007**: The system shall prevent users from accessing other users' LLM credentials.
+
+#### Usability
+*   **NFR-BYOM-U-001**: Configuring a new LLM provider credential shall take **<2 minutes** for an average user.
+*   **NFR-BYOM-U-002**: The UI shall provide real-time feedback during API key validation (success/error within 3 seconds).
+*   **NFR-BYOM-U-003**: The UI shall display estimated cost per 1000 tokens for each provider/model.
+*   **NFR-BYOM-U-004**: The system shall alert users if an agent session exceeds **$10 in API costs**.
+
+#### Backward Compatibility
+*   **NFR-BYOM-BC-001**: Existing users without BYOM configuration shall continue using the system default LLM without interruption.
+*   **NFR-BYOM-BC-002**: All existing agent tests shall pass with all supported LLM providers (OpenAI, Google, Anthropic).
+
+### 7.3 Data Model Requirements - BYOM
+
+*   **DM-BYOM-001**: The system shall persist user LLM credentials in a new `user_llm_credentials` table.
+*   **DM-BYOM-002**: The `user_llm_credentials` table shall have a foreign key to the `user` table.
+*   **DM-BYOM-003**: The `agent_session` table shall be extended to store `llm_credentials_id`, `llm_provider`, and `llm_model_name`.
+*   **DM-BYOM-004**: LLM provider values shall be constrained to an ENUM: `['openai', 'google', 'anthropic', 'azure_openai']`.
+
+### 7.4 Integration Requirements - BYOM
+
+*   **IR-BYOM-001**: The system shall extend the existing `EncryptionService` to support LLM API key encryption (reuse CoinSpot pattern).
+*   **IR-BYOM-002**: The system shall implement an `LLMFactory` pattern to instantiate provider-specific LLM clients.
+*   **IR-BYOM-003**: The `AgentOrchestrator` shall be refactored to accept LLM instances via dependency injection.
+*   **IR-BYOM-004**: All agent classes (`BaseAgent`, `PlannerAgent`, `DataAnalystAgent`, etc.) shall accept an `llm` parameter in their constructors.
+*   **IR-BYOM-005**: The system shall use LangChain's provider-specific classes: `ChatOpenAI`, `ChatGoogleGenerativeAI`, `ChatAnthropic`.
+
+### 7.5 Testing Requirements - BYOM
+
+*   **TR-BYOM-001**: The system shall have unit tests for API key encryption/decryption with 100% coverage.
+*   **TR-BYOM-002**: The system shall have integration tests for creating agent sessions with all 3 supported providers.
+*   **TR-BYOM-003**: The system shall have E2E tests (Playwright) for the complete BYOM configuration workflow.
+*   **TR-BYOM-004**: The system shall validate that all 318 agent tests pass when using OpenAI, Google Gemini, and Anthropic Claude.
+
+---

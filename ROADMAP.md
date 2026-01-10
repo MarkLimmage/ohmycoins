@@ -80,6 +80,19 @@ This roadmap tracks the development of the OMC platform across its three paralle
 
 ## 4. Future Roadmap
 
+### Bring Your Own Model (BYOM) Feature (Sprints 2.8-2.11)
+*   **Planned Start**: Sprint 2.8 (Foundation)
+*   **Owner**: Developer B (Agent Track) with Backend Support from Developer A
+*   **Scope**: Enable users to configure custom LLM providers (OpenAI, Google Gemini, Anthropic Claude) for agent execution
+*   **Status**: 
+    *   [ ] Sprint 2.8 (Foundation - 8-12 hours): Database schema, encryption, OpenAI + Google support
+    *   [ ] Sprint 2.9 (Agent Integration - 16-20 hours): Agent orchestrator refactoring, Anthropic support, prompt templates
+    *   [ ] Sprint 2.10 (User Experience - 20-24 hours): Frontend LLM settings page, session creation modal extension
+    *   [ ] Sprint 2.11 (Production Hardening - 12-16 hours): Cost tracking, key rotation, monitoring, security audit
+*   **Total Effort**: 56-72 hours across 4 sprints
+*   **Requirements**: [BYOM User Stories](docs/requirements/BYOM_USER_STORIES.md), [BYOM EARS Requirements](docs/requirements/BYOM_EARS_REQUIREMENTS.md)
+*   **Architecture**: [Section 11: BYOM Architecture](docs/ARCHITECTURE.md#11-bring-your-own-model-byom-architecture)
+
 ### Phase 4: Strategy Execution (The Floor)
 *   **Planned Start**: Week 14
 *   **Scope**: Live paper trading, risk management enforcement, and gradual capital deployment.

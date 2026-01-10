@@ -618,3 +618,803 @@ pytest tests/services/agent/integration/test_data_integration.py -v
 - GraphQL interface for complex multi-ledger queries
 - Query result caching with Redis for frequently accessed data
 - Materialized views for common aggregations (daily summaries, volatility metrics)
+
+---
+
+## 11. Bring Your Own Model (BYOM) Architecture
+
+### 11.1 Overview
+
+The BYOM (Bring Your Own Model) feature enables users to configure custom LLM providers and models for agent execution, replacing the system-wide default LLM configuration with user-specific credentials.
+
+**Design Goals:**
+1. **User Autonomy**: Each user controls their AI provider, model, and API keys
+2. **Multi-Provider Support**: OpenAI, Google Gemini, Anthropic Claude, and extensible to future providers
+3. **Security First**: AES-256 encryption for API keys with audit logging
+4. **Backward Compatible**: Existing users continue using system defaults until they configure BYOM
+5. **Session-Specific**: LLM instances are created per agent session, not globally
+
+**Implementation Phases:**
+- **Sprint 2.8**: Database schema, encryption, OpenAI + Google Gemini support
+- **Sprint 2.9**: Agent orchestrator refactoring, Anthropic Claude support
+- **Sprint 2.10**: Frontend UI, session creation with model selection
+- **Sprint 2.11**: Production hardening, monitoring, key rotation
+
+---
+
+### 11.2 Data Model
+
+#### UserLLMCredentials Table
+
+New table to store user-specific LLM provider credentials:
+
+```python
+from sqlmodel import SQLModel, Field, Column
+from sqlalchemy import Enum
+import enum
+import uuid
+from datetime import datetime
+
+class LLMProvider(str, enum.Enum):
+    OPENAI = "openai"
+    GOOGLE = "google"
+    ANTHROPIC = "anthropic"
+    AZURE_OPENAI = "azure_openai"  # Future
+
+class UserLLMCredentials(SQLModel, table=True):
+    """Stores encrypted API keys for user-specific LLM providers"""
+    __tablename__ = "user_llm_credentials"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, index=True)
+    
+    # Provider configuration
+    provider: LLMProvider = Field(sa_column=Column(Enum(LLMProvider)))
+    model_name: str = Field(max_length=100)  # e.g., "gpt-4", "gemini-1.5-pro"
+    
+    # Encrypted credentials
+    encrypted_api_key: str = Field(max_length=512)  # AES-256 encrypted
+    encryption_key_id: str = Field(max_length=50)  # References encryption key version
+    
+    # Metadata
+    is_default: bool = Field(default=False)  # User's preferred model
+    is_active: bool = Field(default=True)  # Soft delete support
+    
+    # Audit
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_used_at: datetime | None = Field(default=None)
+    
+    # Unidirectional relationship (see Section 9.1)
+    user: "User" = Relationship(back_populates="llm_credentials")
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+# Extend User model
+class User(SQLModel, table=True):
+    # ... existing fields ...
+    
+    # No bidirectional collection (see Section 9.1)
+    # Access via: session.exec(select(UserLLMCredentials).where(...)).all()
+```
+
+#### AgentSession Extension
+
+Extend existing `AgentSession` to track which LLM was used:
+
+```python
+class AgentSession(SQLModel, table=True):
+    # ... existing fields ...
+    
+    # New fields for BYOM
+    llm_credentials_id: uuid.UUID | None = Field(
+        foreign_key="user_llm_credentials.id", 
+        nullable=True  # Nullable for backward compatibility
+    )
+    llm_provider: str | None = Field(max_length=50)  # "openai", "google", etc.
+    llm_model_name: str | None = Field(max_length=100)  # "gpt-4", "gemini-1.5-pro"
+    
+    # Unidirectional relationship
+    llm_credentials: "UserLLMCredentials" | None = Relationship()
+```
+
+**Migration Strategy:**
+- Existing sessions have `llm_credentials_id=None` (uses system default)
+- New sessions populate these fields based on user configuration
+
+---
+
+### 11.3 Encryption Architecture
+
+**Reuse Existing Pattern:**
+The system already encrypts CoinSpot API credentials using `EncryptionService` in `backend/app/services/encryption_service.py`. BYOM extends this pattern for LLM API keys.
+
+#### EncryptionService Extension
+
+```python
+# backend/app/services/encryption_service.py
+
+from cryptography.fernet import Fernet
+import base64
+import os
+
+class EncryptionService:
+    """Handles AES-256 encryption for sensitive credentials"""
+    
+    def __init__(self):
+        # Load encryption key from environment (same as CoinSpot credentials)
+        self._key = os.getenv("ENCRYPTION_KEY")
+        if not self._key:
+            raise ValueError("ENCRYPTION_KEY environment variable not set")
+        self._cipher = Fernet(self._key)
+    
+    def encrypt_api_key(self, plain_key: str) -> tuple[str, str]:
+        """
+        Encrypt LLM API key using AES-256.
+        
+        Returns:
+            (encrypted_key, encryption_key_id) tuple
+        """
+        encrypted = self._cipher.encrypt(plain_key.encode())
+        encrypted_b64 = base64.b64encode(encrypted).decode()
+        key_id = self._get_key_version()  # e.g., "v1-2026-01"
+        return encrypted_b64, key_id
+    
+    def decrypt_api_key(self, encrypted_key: str) -> str:
+        """Decrypt LLM API key"""
+        encrypted_bytes = base64.b64decode(encrypted_key)
+        decrypted = self._cipher.decrypt(encrypted_bytes)
+        return decrypted.decode()
+    
+    def _get_key_version(self) -> str:
+        """Return current encryption key version for audit trail"""
+        return os.getenv("ENCRYPTION_KEY_VERSION", "v1-default")
+```
+
+**Security Properties:**
+- **Algorithm**: AES-256 via Fernet (symmetric encryption)
+- **Key Storage**: Environment variable (AWS Secrets Manager in production)
+- **Key Rotation**: Supported via `encryption_key_id` tracking
+- **Audit Trail**: All decrypt operations logged with session ID
+
+**Key Rotation Process** (Sprint 2.11):
+1. Generate new `ENCRYPTION_KEY_V2`
+2. Decrypt existing credentials with old key
+3. Re-encrypt with new key
+4. Update `encryption_key_id` to "v2-2026-02"
+5. Deprecate old key after grace period
+
+---
+
+### 11.4 LLM Factory Pattern
+
+**Problem**: Agent code currently uses hardcoded `ChatOpenAI` instances from LangChain.
+
+**Solution**: LLMFactory creates provider-specific LLM instances based on user configuration.
+
+#### Factory Implementation
+
+```python
+# backend/app/services/agent/llm_factory.py
+
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
+from typing import Protocol
+import uuid
+
+class LLMProvider(Protocol):
+    """Protocol for LLM providers (duck typing)"""
+    def invoke(self, messages: list) -> dict: ...
+    async def ainvoke(self, messages: list) -> dict: ...
+
+
+class LLMFactory:
+    """Creates LLM instances based on user configuration"""
+    
+    def __init__(self, encryption_service: EncryptionService):
+        self.encryption_service = encryption_service
+    
+    async def create_llm(
+        self, 
+        session: Session, 
+        user_id: uuid.UUID
+    ) -> LLMProvider:
+        """
+        Create LLM instance for user.
+        Falls back to system default if user has no BYOM config.
+        """
+        # Check for user's default LLM credentials
+        credentials = session.exec(
+            select(UserLLMCredentials)
+            .where(UserLLMCredentials.user_id == user_id)
+            .where(UserLLMCredentials.is_default == True)
+            .where(UserLLMCredentials.is_active == True)
+        ).first()
+        
+        if not credentials:
+            # Fallback to system default (backward compatibility)
+            return self._create_system_default()
+        
+        # Decrypt API key
+        api_key = self.encryption_service.decrypt_api_key(
+            credentials.encrypted_api_key
+        )
+        
+        # Update last_used_at
+        credentials.last_used_at = datetime.utcnow()
+        session.add(credentials)
+        session.commit()
+        
+        # Provider-specific instantiation
+        if credentials.provider == LLMProvider.OPENAI:
+            return ChatOpenAI(
+                model=credentials.model_name,
+                openai_api_key=api_key,
+                temperature=0.7
+            )
+        
+        elif credentials.provider == LLMProvider.GOOGLE:
+            return ChatGoogleGenerativeAI(
+                model=credentials.model_name,
+                google_api_key=api_key,
+                temperature=0.7
+            )
+        
+        elif credentials.provider == LLMProvider.ANTHROPIC:
+            return ChatAnthropic(
+                model=credentials.model_name,
+                anthropic_api_key=api_key,
+                temperature=0.7
+            )
+        
+        else:
+            raise ValueError(f"Unsupported provider: {credentials.provider}")
+    
+    def _create_system_default(self) -> LLMProvider:
+        """System default (uses OPENAI_API_KEY from environment)"""
+        return ChatOpenAI(
+            model="gpt-4",
+            temperature=0.7
+        )
+```
+
+**Usage in Agent Orchestrator:**
+
+```python
+# backend/app/services/agent/agent_orchestrator.py
+
+class AgentOrchestrator:
+    def __init__(
+        self, 
+        session: Session, 
+        llm_factory: LLMFactory  # Inject factory
+    ):
+        self.session = session
+        self.llm_factory = llm_factory
+    
+    async def start_session(
+        self, 
+        user_id: uuid.UUID, 
+        goal: str
+    ) -> AgentSession:
+        """Create agent session with user's LLM"""
+        
+        # Create user-specific LLM instance
+        llm = await self.llm_factory.create_llm(self.session, user_id)
+        
+        # Store LLM metadata in session
+        session_record = AgentSession(
+            user_id=user_id,
+            goal=goal,
+            llm_provider=llm.model_provider if hasattr(llm, 'model_provider') else "openai",
+            llm_model_name=llm.model_name if hasattr(llm, 'model_name') else "gpt-4",
+            status="active"
+        )
+        self.session.add(session_record)
+        self.session.commit()
+        
+        # Pass LLM to agents via dependency injection
+        planner = PlannerAgent(llm=llm, session_id=session_record.id)
+        analyst = DataAnalystAgent(llm=llm, session_id=session_record.id)
+        
+        return session_record
+```
+
+---
+
+### 11.5 API Endpoints
+
+#### User Credentials Management
+
+**POST /api/v1/users/me/llm-credentials**
+Create new LLM provider credentials for authenticated user.
+
+```json
+{
+  "provider": "google",
+  "model_name": "gemini-1.5-pro",
+  "api_key": "AIzaSy...",  // Plain text (encrypted server-side)
+  "is_default": true
+}
+```
+
+**Response:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "provider": "google",
+  "model_name": "gemini-1.5-pro",
+  "is_default": true,
+  "created_at": "2026-01-10T10:00:00Z"
+  // API key NOT returned
+}
+```
+
+**GET /api/v1/users/me/llm-credentials**
+List user's configured LLM providers (API keys masked).
+
+**Response:**
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "provider": "google",
+    "model_name": "gemini-1.5-pro",
+    "is_default": true,
+    "api_key_preview": "AIza...440000",  // First 4 + last 6 chars
+    "last_used_at": "2026-01-10T09:30:00Z"
+  },
+  {
+    "id": "660e8400-e29b-41d4-a716-446655440001",
+    "provider": "openai",
+    "model_name": "gpt-4",
+    "is_default": false,
+    "api_key_preview": "sk-...440001",
+    "last_used_at": null
+  }
+]
+```
+
+**DELETE /api/v1/users/me/llm-credentials/{credential_id}**
+Soft delete LLM credentials (sets `is_active=False`).
+
+**PUT /api/v1/users/me/llm-credentials/{credential_id}/default**
+Set specified credentials as user's default model.
+
+#### API Key Validation
+
+**POST /api/v1/users/me/llm-credentials/validate**
+Test API key validity before saving.
+
+```json
+{
+  "provider": "anthropic",
+  "api_key": "sk-ant-...",
+  "model_name": "claude-3-opus-20240229"
+}
+```
+
+**Response:**
+```json
+{
+  "valid": true,
+  "model_info": {
+    "max_tokens": 200000,
+    "supports_function_calling": true,
+    "supports_streaming": true
+  }
+}
+```
+
+If invalid:
+```json
+{
+  "valid": false,
+  "error": "Invalid API key or insufficient permissions"
+}
+```
+
+---
+
+### 11.6 Frontend Integration
+
+#### New UI Components
+
+**Settings Page: LLM Provider Configuration**
+
+Location: `/settings/llm` (new tab in user settings)
+
+**Features:**
+1. **Provider Selection Dropdown**:
+   - OpenAI (GPT-4, GPT-4 Turbo)
+   - Google (Gemini 1.5 Pro, Gemini 1.5 Flash)
+   - Anthropic (Claude 3 Opus, Claude 3 Sonnet)
+
+2. **API Key Input**:
+   - Secure text field (masked input)
+   - "Test Connection" button (calls validation endpoint)
+   - Success/error feedback
+
+3. **Model Selection**:
+   - Provider-specific model dropdown
+   - Model descriptions (context window, capabilities)
+
+4. **Credentials List**:
+   - Table showing configured providers
+   - "Set as Default" action
+   - "Delete" action (with confirmation modal)
+   - Last used timestamp
+
+**Session Creation Modal Extension**
+
+Existing modal at `/lab` for starting agent sessions:
+
+**Before:**
+```
+┌─ Start Agent Session ─────────────────┐
+│ Goal: [text input]                    │
+│                                        │
+│ [Cancel] [Start Session]              │
+└────────────────────────────────────────┘
+```
+
+**After (Sprint 2.10):**
+```
+┌─ Start Agent Session ─────────────────┐
+│ Goal: [text input]                    │
+│                                        │
+│ LLM Model: [dropdown]                 │
+│   - My Default (GPT-4) ✓              │
+│   - Gemini 1.5 Pro (Google)           │
+│   - Claude 3 Opus (Anthropic)         │
+│   - System Default                    │
+│                                        │
+│ [Cancel] [Start Session]              │
+└────────────────────────────────────────┘
+```
+
+---
+
+### 11.7 Prompt Engineering Considerations
+
+Different LLM providers have different prompt optimization strategies:
+
+#### OpenAI (GPT-4)
+```python
+# Works well with structured prompts
+system_prompt = """You are a financial data analyst agent.
+Your goal is to analyze cryptocurrency market data.
+
+Tools available:
+- fetch_price_data: Retrieve historical prices
+- fetch_sentiment_data: Get sentiment analysis
+"""
+```
+
+#### Google Gemini
+```python
+# Prefers conversational style with examples
+system_prompt = """You're helping a user analyze crypto markets.
+
+Example task: "Show me Bitcoin's price trend"
+You would: Call fetch_price_data("BTC", last_7_days)
+
+Now, help the user with their request.
+"""
+```
+
+#### Anthropic Claude
+```python
+# Benefits from XML-style structured prompts
+system_prompt = """
+<role>Financial Data Analyst Agent</role>
+
+<capabilities>
+  <tool name="fetch_price_data">Retrieve historical prices</tool>
+  <tool name="fetch_sentiment_data">Get sentiment analysis</tool>
+</capabilities>
+
+<task>Analyze cryptocurrency market data for the user</task>
+"""
+```
+
+**Implementation Strategy:**
+- **Sprint 2.9**: Create provider-specific prompt templates in `backend/app/services/agent/prompts/`
+- **Sprint 2.10**: A/B test prompt variations, track success metrics
+- **Sprint 2.11**: Optimize prompts based on production usage patterns
+
+---
+
+### 11.8 Security & Compliance
+
+#### API Key Handling Rules
+
+1. **Never Log Plain Keys**:
+   ```python
+   # ❌ INCORRECT
+   logger.info(f"Using API key: {api_key}")
+   
+   # ✅ CORRECT
+   logger.info(f"Using API key: {mask_api_key(api_key)}")  # "AIza...440000"
+   ```
+
+2. **Audit Logging**:
+   ```python
+   # Log every key retrieval
+   audit_log.info({
+       "event": "llm_key_retrieved",
+       "user_id": user_id,
+       "provider": credentials.provider,
+       "session_id": session_id,
+       "timestamp": datetime.utcnow()
+   })
+   ```
+
+3. **Rate Limiting**:
+   - Max 10 key validations per user per hour (prevent brute force)
+   - Max 100 LLM API calls per session (cost control)
+
+4. **Access Control**:
+   - Users can only access their own credentials
+   - Admins cannot view user API keys (even encrypted)
+
+#### Cost Management
+
+**Problem**: Users with BYOM pay for their own LLM usage, but need cost visibility.
+
+**Solution** (Sprint 2.11):
+- Track token usage per session in `AgentSession.token_usage_count`
+- Display estimated cost in UI: `tokens × provider_rate`
+- Alert users if session exceeds $10 in API costs
+- Allow setting per-session cost limits
+
+#### Compliance Considerations
+
+- **GDPR**: API keys are personal data, support right to deletion
+- **SOC 2**: Encryption at rest (AES-256), access logging, key rotation
+- **PCI**: Not applicable (no payment card data)
+
+---
+
+### 11.9 Testing Strategy
+
+#### Unit Tests
+
+**Encryption Service Tests** (`tests/services/test_encryption_service.py`):
+```python
+def test_encrypt_decrypt_api_key():
+    service = EncryptionService()
+    plain_key = "sk-ant-api03-1234567890"
+    
+    encrypted, key_id = service.encrypt_api_key(plain_key)
+    decrypted = service.decrypt_api_key(encrypted)
+    
+    assert decrypted == plain_key
+    assert key_id.startswith("v1-")
+```
+
+**LLM Factory Tests** (`tests/services/agent/test_llm_factory.py`):
+```python
+async def test_create_llm_with_user_credentials(session, test_user):
+    # Create user credentials
+    credentials = UserLLMCredentials(
+        user_id=test_user.id,
+        provider=LLMProvider.GOOGLE,
+        model_name="gemini-1.5-pro",
+        encrypted_api_key="...",
+        is_default=True
+    )
+    session.add(credentials)
+    session.commit()
+    
+    factory = LLMFactory(encryption_service)
+    llm = await factory.create_llm(session, test_user.id)
+    
+    assert isinstance(llm, ChatGoogleGenerativeAI)
+    assert llm.model_name == "gemini-1.5-pro"
+```
+
+#### Integration Tests
+
+**Full Session with BYOM** (`tests/integration/test_byom_agent_session.py`):
+```python
+async def test_agent_session_with_custom_llm(client, test_user):
+    # 1. Configure user's LLM credentials
+    response = await client.post(
+        "/api/v1/users/me/llm-credentials",
+        json={
+            "provider": "anthropic",
+            "model_name": "claude-3-opus-20240229",
+            "api_key": os.getenv("TEST_ANTHROPIC_KEY"),
+            "is_default": True
+        }
+    )
+    assert response.status_code == 201
+    
+    # 2. Start agent session (should use Claude)
+    response = await client.post(
+        "/api/v1/agent/sessions",
+        json={"goal": "Analyze Bitcoin price trend"}
+    )
+    assert response.status_code == 201
+    session_id = response.json()["id"]
+    
+    # 3. Verify session used correct LLM
+    response = await client.get(f"/api/v1/agent/sessions/{session_id}")
+    assert response.json()["llm_provider"] == "anthropic"
+    assert response.json()["llm_model_name"] == "claude-3-opus-20240229"
+```
+
+#### E2E Tests (Playwright)
+
+**LLM Configuration Flow** (`frontend/tests/llm-settings.spec.ts`):
+```typescript
+test('configure Google Gemini credentials', async ({ page }) => {
+  await page.goto('/settings/llm');
+  
+  // Select provider
+  await page.selectOption('#provider-select', 'google');
+  
+  // Enter API key
+  await page.fill('#api-key-input', process.env.TEST_GOOGLE_API_KEY);
+  
+  // Select model
+  await page.selectOption('#model-select', 'gemini-1.5-pro');
+  
+  // Test connection
+  await page.click('button:has-text("Test Connection")');
+  await expect(page.locator('.success-message')).toBeVisible();
+  
+  // Save
+  await page.click('button:has-text("Save Credentials")');
+  await expect(page.locator('.credentials-list')).toContainText('Google');
+});
+```
+
+---
+
+### 11.10 Monitoring & Observability
+
+#### Metrics to Track
+
+**Sprint 2.11 Implementation:**
+
+1. **Usage Metrics**:
+   - `byom_sessions_created{provider="openai|google|anthropic"}` (counter)
+   - `byom_api_calls{provider, model}` (counter)
+   - `byom_token_usage{provider, model}` (histogram)
+   - `byom_session_duration{provider, model}` (histogram)
+
+2. **Error Metrics**:
+   - `byom_key_validation_failures{provider}` (counter)
+   - `byom_api_errors{provider, error_type}` (counter)
+   - `byom_rate_limit_hits{user_id, provider}` (counter)
+
+3. **Security Metrics**:
+   - `byom_key_retrievals{user_id}` (counter, for anomaly detection)
+   - `byom_encryption_errors` (counter)
+   - `byom_unauthorized_access_attempts` (counter)
+
+#### Dashboards
+
+**Grafana Dashboard: "BYOM Health"**
+- Panel 1: Sessions by provider (pie chart)
+- Panel 2: Average session cost by provider (bar chart)
+- Panel 3: API error rate by provider (time series)
+- Panel 4: Token usage trends (time series)
+- Panel 5: Top users by API usage (table)
+
+**Alerts:**
+- High error rate (>5%) for any provider → Page ops team
+- User exceeding cost limits → Email user
+- Unusual key retrieval pattern → Security review
+
+---
+
+### 11.11 Migration & Rollout Plan
+
+#### Phase 1: Sprint 2.8 (Foundation)
+**Goal**: Database schema, encryption, basic multi-provider support
+
+**Deliverables:**
+- Alembic migration for `user_llm_credentials` table
+- `EncryptionService` extension for LLM keys
+- `LLMFactory` with OpenAI + Google support
+- Backend API endpoints (CRUD for credentials)
+- Unit tests for encryption and factory
+
+**Validation:**
+- 100% test coverage for new components
+- Manual testing with test API keys
+- No impact on existing users (backward compatible)
+
+**Risks:**
+- Encryption key management (mitigated by reusing CoinSpot pattern)
+- Google Gemini API differences (mitigated by LangChain abstraction)
+
+#### Phase 2: Sprint 2.9 (Agent Integration)
+**Goal**: Refactor agents to use dependency-injected LLMs
+
+**Deliverables:**
+- Update `AgentOrchestrator.start_session` to use `LLMFactory`
+- Refactor `BaseAgent` to accept `llm` parameter
+- Add Anthropic Claude support
+- Provider-specific prompt templates
+- Integration tests with all 3 providers
+
+**Validation:**
+- Run full agent test suite with each provider
+- Compare agent performance across providers
+- Verify session metadata correctly tracks LLM usage
+
+**Risks:**
+- Function calling compatibility (Gemini + Claude may differ from OpenAI)
+- Prompt optimization required per provider
+
+#### Phase 3: Sprint 2.10 (User Experience)
+**Goal**: Frontend UI for LLM configuration
+
+**Deliverables:**
+- `/settings/llm` page (React + TanStack Router)
+- API key validation UI with real-time feedback
+- Session creation modal with model selection
+- Playwright E2E tests for full flow
+
+**Validation:**
+- User acceptance testing with Beta users
+- Measure time to configure credentials (<2 minutes target)
+- Track adoption rate (% of users configuring BYOM)
+
+**Risks:**
+- UX confusion (mitigated by clear help text and examples)
+- Security concerns about entering API keys (mitigated by HTTPS + education)
+
+#### Phase 4: Sprint 2.11 (Production Hardening)
+**Goal**: Cost management, monitoring, security hardening
+
+**Deliverables:**
+- Cost tracking and alerts
+- Rate limiting enforcement
+- Key rotation automation
+- Grafana dashboards
+- Security audit logging
+- Documentation updates
+
+**Validation:**
+- Penetration testing of API key handling
+- Load testing with 100 concurrent BYOM sessions
+- Verify cost alerts trigger correctly
+- Monitor for 1 week post-launch
+
+**Rollout Strategy:**
+1. Week 1: Beta users only (10 users)
+2. Week 2: All users, feature flag enabled
+3. Week 3: Monitor adoption + errors
+4. Week 4: Full general availability
+
+---
+
+### 11.12 Future Enhancements (Post-Sprint 2.11)
+
+**Azure OpenAI Support:**
+- Requires endpoint URL + deployment name configuration
+- Useful for enterprise customers with Azure subscriptions
+
+**Prompt Caching:**
+- Anthropic Claude supports prompt caching for repeated system prompts
+- Could reduce costs by 90% for frequent users
+
+**Model Fine-Tuning Integration:**
+- Allow users to configure fine-tuned model IDs
+- Useful for specialized trading strategies
+
+**Multi-Model Ensembles:**
+- Run same query through multiple models, aggregate results
+- Useful for high-stakes decisions (e.g., large trades)
+
+**Cost Optimization Recommendations:**
+- Suggest switching to cheaper models based on usage patterns
+- "Your queries could run on Gemini 1.5 Flash for 80% less cost"
