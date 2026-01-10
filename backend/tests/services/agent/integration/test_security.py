@@ -9,7 +9,7 @@ These tests verify security characteristics including:
 """
 
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from sqlmodel import Session, create_engine
@@ -66,13 +66,15 @@ class TestAuthentication:
 
     @pytest.mark.asyncio
     async def test_session_ownership_validation(
-        self, db: Session, session_manager: SessionManager, user_id: uuid.UUID, other_user_id: uuid.UUID
+        self,
+        db: Session,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
+        other_user_id: uuid.UUID,
     ):
         """Test users can only access their own sessions."""
         # User 1 creates a session
-        session_create = AgentSessionCreate(
-            user_goal="User 1 goal"
-        )
+        session_create = AgentSessionCreate(user_goal="User 1 goal")
         session = await session_manager.create_session(db, user_id, session_create)
 
         assert session.user_id == user_id
@@ -87,7 +89,11 @@ class TestAuthentication:
 
     @pytest.mark.asyncio
     async def test_session_isolation(
-        self, db: Session, session_manager: SessionManager, user_id: uuid.UUID, other_user_id: uuid.UUID
+        self,
+        db: Session,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
+        other_user_id: uuid.UUID,
     ):
         """Test sessions are isolated between users."""
         # User 1 creates a session
@@ -121,7 +127,7 @@ class TestInputValidation:
             session = await session_manager.create_session(db, user_id, session_create)
             # If no exception, goal may be allowed but should be empty string
             assert session.user_goal == ""
-        except (ValueError, Exception) as e:
+        except (ValueError, Exception):
             # Validation may reject empty goals
             pass
 
@@ -142,6 +148,7 @@ class TestInputValidation:
 
         # Table should still exist - query directly
         from app.models import AgentSession
+
         all_sessions = db.query(AgentSession).all()
         assert len(all_sessions) >= 1
 
@@ -171,15 +178,18 @@ class TestInputValidation:
         # Should raise validation error for exceeding max_length
         with pytest.raises(Exception) as exc_info:
             session_create = AgentSessionCreate(user_goal=long_goal)
-        
+
         # Verify it's a validation error
-        assert "validation" in str(exc_info.value).lower() or "string_too_long" in str(exc_info.value).lower()
-        
+        assert (
+            "validation" in str(exc_info.value).lower()
+            or "string_too_long" in str(exc_info.value).lower()
+        )
+
         # Test with valid length (5000 characters max)
         valid_goal = "A" * 5000
         session_create = AgentSessionCreate(user_goal=valid_goal)
         session = await session_manager.create_session(db, user_id, session_create)
-        
+
         assert session is not None
         assert len(session.user_goal) == 5000
 
@@ -204,8 +214,12 @@ class TestAccessControl:
 
     @pytest.mark.asyncio
     async def test_session_state_access_control(
-        self, db: Session, orchestrator: AgentOrchestrator, session_manager: SessionManager,
-        user_id: uuid.UUID, other_user_id: uuid.UUID
+        self,
+        db: Session,
+        orchestrator: AgentOrchestrator,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
+        other_user_id: uuid.UUID,
     ):
         """Test session state access is controlled."""
         # User 1 creates a session
@@ -214,17 +228,21 @@ class TestAccessControl:
 
         # Mock state update
         with patch.object(orchestrator, "update_session_state") as mock_update:
-            mock_update.return_value = True
+            mock_update.return_value = None
 
-            # Owner can update state
-            result = orchestrator.update_session_state(db, session.id, {"test": "data"})
-            assert result is True
+            # Owner can update state (note: update_session_state returns None)
+            orchestrator.update_session_state(session.id, {"test": "data"})
+            assert mock_update.called  # Just verify it was called
 
         # In production, API would verify user_id matches session.user_id
 
     @pytest.mark.asyncio
     async def test_artifact_access_control(
-        self, db: Session, session_manager: SessionManager, user_id: uuid.UUID, other_user_id: uuid.UUID
+        self,
+        db: Session,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
+        other_user_id: uuid.UUID,
     ):
         """Test artifact access is controlled by session ownership."""
         # User 1 creates a session
@@ -241,7 +259,11 @@ class TestDataProtection:
 
     @pytest.mark.asyncio
     async def test_session_data_isolation(
-        self, db: Session, session_manager: SessionManager, user_id: uuid.UUID, other_user_id: uuid.UUID
+        self,
+        db: Session,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
+        other_user_id: uuid.UUID,
     ):
         """Test session data is isolated between users."""
         # Create sessions for both users
@@ -340,7 +362,7 @@ class TestAuditAndLogging:
 
         # Update status
         await session_manager.update_status(db, session.id, AgentSessionStatus.RUNNING)
-        
+
         # Verify updated_at changed
         updated_session = await session_manager.get_session(db, session.id)
         assert updated_session.updated_at is not None

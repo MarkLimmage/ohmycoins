@@ -4,20 +4,21 @@ Data Retrieval Tools - Week 3-4 Implementation
 Tools for DataRetrievalAgent to fetch cryptocurrency data from the database.
 """
 
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
-from decimal import Decimal
 
-from sqlmodel import Session, select, func
 from sqlalchemy import and_
+from sqlmodel import Session, func, select
 
 from app.models import (
-    PriceData5Min,
-    ProtocolFundamentals,
-    OnChainMetrics,
-    NewsSentiment,
-    SocialSentiment,
     CatalystEvents,
+    NewsSentiment,
+    OnChainMetrics,
+    Order,
+    Position,
+    PriceData5Min,
+    SocialSentiment,
 )
 
 
@@ -55,7 +56,7 @@ async def fetch_price_data(
     )
 
     results = session.exec(statement).all()
-    
+
     return [
         {
             "timestamp": result.timestamp.isoformat(),
@@ -103,7 +104,7 @@ async def fetch_sentiment_data(
         news_statement = news_statement.where(
             NewsSentiment.currencies.overlap(currencies)
         )
-    
+
     news_results = session.exec(news_statement).all()
 
     # Fetch social sentiment
@@ -119,7 +120,7 @@ async def fetch_sentiment_data(
         social_statement = social_statement.where(
             SocialSentiment.currencies.overlap(currencies)
         )
-    
+
     social_results = session.exec(social_statement).all()
 
     return {
@@ -127,9 +128,13 @@ async def fetch_sentiment_data(
             {
                 "title": news.title,
                 "source": news.source,
-                "published_at": news.published_at.isoformat() if news.published_at else None,
+                "published_at": news.published_at.isoformat()
+                if news.published_at
+                else None,
                 "sentiment": news.sentiment,
-                "sentiment_score": float(news.sentiment_score) if news.sentiment_score else None,
+                "sentiment_score": float(news.sentiment_score)
+                if news.sentiment_score
+                else None,
                 "currencies": news.currencies,
             }
             for news in news_results
@@ -178,12 +183,12 @@ async def fetch_on_chain_metrics(
             OnChainMetrics.collected_at <= end_date,
         )
     )
-    
+
     if metric_names:
         statement = statement.where(OnChainMetrics.metric_name.in_(metric_names))
-    
+
     results = session.exec(statement.order_by(OnChainMetrics.collected_at)).all()
-    
+
     return [
         {
             "asset": result.asset,
@@ -225,24 +230,25 @@ async def fetch_catalyst_events(
             CatalystEvents.detected_at <= end_date,
         )
     )
-    
+
     if event_types:
         statement = statement.where(CatalystEvents.event_type.in_(event_types))
-    
+
     if currencies:
         # Since currencies is now JSON type (not ARRAY), we need to filter results after query
         # For now, we'll fetch all and filter in Python
         pass
-    
+
     results = session.exec(statement.order_by(CatalystEvents.detected_at)).all()
-    
+
     # Filter by currencies if specified (post-query filtering for JSON field)
     if currencies:
         results = [
-            r for r in results 
+            r
+            for r in results
             if r.currencies and any(c in r.currencies for c in currencies)
         ]
-    
+
     return [
         {
             "event_type": result.event_type,
@@ -301,11 +307,15 @@ async def get_data_statistics(
             func.max(PriceData5Min.timestamp).label("latest"),
             func.count(PriceData5Min.id).label("total_records"),
         )
-    
+
     price_stats = session.exec(price_statement).one()
     stats["price_data"] = {
-        "earliest_timestamp": price_stats.earliest.isoformat() if price_stats.earliest else None,
-        "latest_timestamp": price_stats.latest.isoformat() if price_stats.latest else None,
+        "earliest_timestamp": price_stats.earliest.isoformat()
+        if price_stats.earliest
+        else None,
+        "latest_timestamp": price_stats.latest.isoformat()
+        if price_stats.latest
+        else None,
         "total_records": price_stats.total_records,
     }
 
@@ -330,3 +340,101 @@ async def get_data_statistics(
     }
 
     return stats
+
+
+async def fetch_order_history(
+    session: Session,
+    user_id: uuid.UUID,
+    coin_type: str | None = None,
+    status: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Fetch order history from Exchange ledger.
+
+    Args:
+        session: Database session
+        user_id: User ID to fetch orders for
+        coin_type: Optional filter by cryptocurrency symbol
+        status: Optional filter by order status (pending, submitted, filled, etc.)
+        start_date: Start date for data retrieval
+        end_date: End date for data retrieval (default: now)
+
+    Returns:
+        List of order dictionaries
+    """
+    if end_date is None:
+        end_date = datetime.now()
+
+    if start_date is None:
+        # Default to last 30 days
+        start_date = end_date - timedelta(days=30)
+
+    statement = select(Order).where(
+        and_(
+            Order.user_id == user_id,
+            Order.created_at >= start_date,
+            Order.created_at <= end_date,
+        )
+    )
+
+    if coin_type:
+        statement = statement.where(Order.coin_type == coin_type)
+
+    if status:
+        statement = statement.where(Order.status == status)
+
+    results = session.exec(statement.order_by(Order.created_at.desc())).all()
+
+    return [
+        {
+            "id": str(result.id),
+            "coin_type": result.coin_type,
+            "side": result.side,
+            "order_type": result.order_type,
+            "quantity": float(result.quantity),
+            "price": float(result.price) if result.price else None,
+            "filled_quantity": float(result.filled_quantity),
+            "status": result.status,
+            "created_at": result.created_at.isoformat(),
+            "filled_at": result.filled_at.isoformat() if result.filled_at else None,
+        }
+        for result in results
+    ]
+
+
+async def fetch_user_positions(
+    session: Session,
+    user_id: uuid.UUID,
+    coin_type: str | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Fetch current positions from Exchange ledger.
+
+    Args:
+        session: Database session
+        user_id: User ID to fetch positions for
+        coin_type: Optional filter by cryptocurrency symbol
+
+    Returns:
+        List of position dictionaries
+    """
+    statement = select(Position).where(Position.user_id == user_id)
+
+    if coin_type:
+        statement = statement.where(Position.coin_type == coin_type)
+
+    results = session.exec(statement).all()
+
+    return [
+        {
+            "coin_type": result.coin_type,
+            "quantity": float(result.quantity),
+            "average_price": float(result.average_price),
+            "total_cost": float(result.total_cost),
+            "created_at": result.created_at.isoformat(),
+            "updated_at": result.updated_at.isoformat(),
+        }
+        for result in results
+    ]
