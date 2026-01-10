@@ -1,26 +1,33 @@
-# Sprint 2.6 Initialization
+# Sprint 2.7 Initialization
 
 **Sprint Status:** READY TO START  
-**Sprint Dates:** 2026-01-10 to 2026-01-24 (2 weeks)  
-**Pre-Sprint Baseline:** 565 passing, 18 failing, 77 errors (merged main branch)
+**Sprint Dates:** 2026-01-11 to 2026-01-25 (2 weeks)  
+**Pre-Sprint Baseline:** 581 passing, 17 failing, 44 errors (merged main branch)
+**Previous Sprint:** Sprint 2.6 Completed ✅ - [Archive](docs/archive/history/sprints/sprint-2.6/README.md)
 
 ---
 
-## 🎯 Sprint 2.6 Objectives
+## 🎯 Sprint 2.7 Objectives
 
-**Primary Goal:** Achieve production readiness through test hardening, 4-ledger completion, and infrastructure finalization.
+**Primary Goal:** Resolve test infrastructure blockers and achieve >90% test pass rate.
 
 **Success Criteria:**
-- Test suite: <10 failing tests, <20 errors (currently: 18 failing, 77 errors)
-- All 4 ledgers operational with quality monitoring implemented
-- Agent-data integration functional (agent can query all ledgers)
-- Terraform secrets module complete and deployed
-- Production deployment runbook validated
+- Test suite: >90% passing (currently: 84.7% - 581/686 passing)
+- SQLite ARRAY test fixtures replaced with PostgreSQL across all affected tests (~44 tests)
+- Track B agent-data integration tests passing (19/19)
+- Track C infrastructure deployed to staging environment
+- Test pass rate improvement from 84.7% to >90%
 
 **Key Dependencies:**
-- Track A → Track B: Schema stability maintained, seed data fixes enable agent testing
-- Track B → Track A: Agent tools require ledger data access patterns
-- Track C: Secrets management unblocks OpenAI integration for all agent tests
+- Track A → Track B: PostgreSQL test fixture pattern (already established in PR #81)
+- Track B → Track A: Apply same PostgreSQL fixture pattern to agent tests
+- Track C: Staging deployment validates production-ready infrastructure
+
+**Sprint 2.6 Achievements:**
+- ✅ Track A: 95% complete - Data layer and collectors production-ready
+- ✅ Track B: 90% complete - Agent-data integration implemented (blocked by test fixtures)
+- ✅ Track C: 100% complete - Infrastructure modules validated and deployment-ready
+- ✅ All PRs merged: #84 (Track A & B), #85 (Track C)
 
 ---
 
@@ -31,72 +38,88 @@
 - `backend/app/services/collectors/` (catalyst/, exchange/, glass/, human/)
 - `backend/app/models.py` (ledger models only)
 - `backend/tests/services/collectors/`
-- `backend/tests/utils/test_seed_data.py`
+- `backend/tests/api/routes/test_pnl.py`
 
-**Current Assets:**
-- ✅ SEC API collector: `collectors/catalyst/sec_api.py`
-- ✅ CoinSpot announcements: `collectors/catalyst/coinspot_announcements.py`
-- ✅ Quality monitor skeleton: `collectors/quality_monitor.py`
-- ⚠️ Seed data tests: 7 failures (idempotency issues)
-- ⚠️ PnL tests: 20 errors (calculation/session issues)
+**Sprint 2.6 Completion:**
+- ✅ SEC API collector: `collectors/catalyst/sec_api.py` - Production ready
+- ✅ CoinSpot announcements: `collectors/catalyst/coinspot_announcements.py` - Production ready
+- ✅ Quality monitor: `collectors/quality_monitor.py` - 17/17 tests passing
+- ✅ Seed data tests: 12/12 passing (assertion fixed)
+- ⚠️ PnL tests: 19/21 passing (2 tests have isolation issues)
+
+**Sprint 2.7 Focus:**
+- Fix remaining 2 PnL test isolation issues
+- Ensure all PostgreSQL test fixtures are properly implemented
+- Validate 100% test pass rate for Track A directories
 
 ### Track B: Agentic AI (OMC-ML-Scientist)
 **Primary Directories:**
 - `backend/app/services/agent/` (orchestrator.py, agents/, tools/, langgraph_workflow.py)
 - `backend/tests/services/agent/`
+- `backend/tests/services/agent/integration/test_data_integration.py` (NEW)
 
-**Current Assets:**
-- ✅ Orchestrator: run_workflow(), execute_step(), get_session_state()
-- ✅ Integration tests: 19/20 passing
-- ⚠️ Redis performance test: 1 failure (async context issue)
-- ⚠️ Security tests: 4 errors (needs investigation)
+**Sprint 2.6 Completion:**
+- ✅ Data retrieval tools: 8 functions covering all 4 ledgers (Glass, Human, Catalyst, Exchange)
+- ✅ Integration tests: 19 new tests in test_data_integration.py
+- ✅ Architecture documentation: Section 10 added to docs/ARCHITECTURE.md (+406 lines)
+- ⚠️ All 19 agent-data tests blocked by SQLite ARRAY incompatibility
+
+**Sprint 2.7 Focus:**
+- Replace SQLite test fixture with PostgreSQL in test_data_integration.py
+- Validate all 19 agent-data integration tests pass
+- Verify end-to-end, performance, and security tests remain stable
 
 ### Track C: Infrastructure (OMC-DevOps-Engineer)
 **Primary Directories:**
-- `infrastructure/terraform/modules/secrets/` (currently EMPTY)
-- `infrastructure/terraform/environments/`
+- `infrastructure/terraform/modules/secrets/`
+- `infrastructure/terraform/modules/monitoring/`
+- `infrastructure/terraform/scripts/`
 - `.github/workflows/`
 
-**Current Assets:**
-- ✅ ECS base deployment: VPC, RDS, Redis, ECS modules complete
-- ✅ Environment template: `.env.template` exists
-- ✅ Configuration files: `pytest.ini`, deployment docs
-- ⚠️ Secrets module: Empty directory (main.tf, variables.tf, outputs.tf needed)
+**Sprint 2.6 Completion:**
+- ✅ Secrets module: 422 lines - AWS Secrets Manager with KMS encryption (terraform validate ✓)
+- ✅ Monitoring module: 1,457 lines - CloudWatch dashboards + 8 alarms + SNS (terraform validate ✓)
+- ✅ Deployment script: 253 lines - One-command ECS deployment (bash syntax ✓)
+- ✅ Deployment automation guide: 468 lines - 3 deployment methods documented
+- ✅ Operations runbook: Enhanced from 56 to 1,268 lines
+
+**Sprint 2.7 Focus:**
+- Deploy secrets module to staging environment
+- Deploy monitoring module to staging and confirm SNS email subscriptions
+- Test deployment script on staging: `./deploy-ecs.sh staging`
+- Validate CloudWatch dashboard and alarm functionality
 
 ---
 
-## 🔧 Developer A: Data Specialist Sprint 2.6
+## 🔧 Developer A: Data Specialist Sprint 2.7
 
 **Role:** OMC-Data-Specialist  
-**Focus:** Fix Test Regressions + Complete 4-Ledger Quality Monitoring
+**Focus:** Fix Remaining PnL Test Issues
 
 ---
 
 ### 📚 Context Review (Read These First)
 
-1. **Sprint History:** [CURRENT_SPRINT.md](CURRENT_SPRINT.md) lines 80-216 - Review P2 follow-up items from Sprint 2.5
+1. **Sprint 2.6 Results:** [Sprint 2.6 Archive](docs/archive/history/sprints/sprint-2.6/README.md) - Review completed work
 2. **Technical Constraints:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#section-9-technical-constraints-best-practices) - SQLModel relationship patterns, async testing
-3. **Test Patterns:** [docs/TESTING.md](docs/TESTING.md) lines 1-50 - Async mock patterns, known issues
+3. **Test Patterns:** [docs/TESTING.md](docs/TESTING.md) - PostgreSQL test fixture patterns
 
 ---
 
-### 🎯 Sprint 2.6 Objectives
+### 🎯 Sprint 2.7 Objectives
 
-#### **PRIORITY 1: Fix Seed Data Test Assertion** ✅ COMPLETE
-**File:** [backend/tests/utils/test_seed_data.py](backend/tests/utils/test_seed_data.py) line 50  
-**Current Status:** 11/12 tests passing (91.7%)  
-**Issue:** Test assertion bug (NOT code bug) - expects delta count instead of absolute count
+#### **PRIORITY 1: Fix Remaining PnL Test Isolation Issues**
+**File:** [backend/tests/api/routes/test_pnl.py](backend/tests/api/routes/test_pnl.py)  
+**Current Status:** 19/21 tests passing (90.5%)  
+**Issue:** 2 tests have database state isolation issues
 
-**VALIDATED FINDING:** Code implementation is CORRECT. Idempotency properly implemented (lines 88-98 in seed_data.py). Test needs minor fix.
+**Sprint 2.6 Achievement:** Successfully replaced SQLite fixtures with PostgreSQL fixtures, fixing 19 tests.
 
 **Tasks:**
-1. ~~Investigate seed data generation logic~~ ✅ Code is correct
-2. Fix test assertion at line 50:
-   ```python
-   # Current (fails): assert final_count == initial_count + 5
-   # Fix: assert final_count == 5  # Absolute count
-   ```
-3. Alternatively, clear database before test for clean state
+1. Identify which 2 tests are failing (run pytest with -v flag)
+2. Review test isolation - ensure proper database cleanup between tests
+3. Verify PostgreSQL test fixture is used consistently
+4. Target: 21/21 tests passing (100%)
 
 **Acceptance Criteria:**
 - [ ] `test_generate_users` assertion fixed (30 minutes work)
@@ -285,149 +308,113 @@ pytest --tb=short --quiet | tee test_output.txt
 
 ---
 
-## 🤖 Developer B: ML Scientist Sprint 2.6
+## 🤖 Developer B: ML Scientist Sprint 2.7
 
 **Role:** OMC-ML-Scientist  
-**Focus:** Agent-Data Integration + Fix Remaining Test Issues
+**Focus:** Fix Agent-Data Integration Test Fixtures (SQLite→PostgreSQL)
 
 ---
 
 ### 📚 Context Review (Read These First)
 
-1. **Sprint History:** [CURRENT_SPRINT.md](CURRENT_SPRINT.md) lines 80-216 - Review Track B accomplishments and P2 items
-2. **Agent Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Section on agent system design
-3. **Test Status:** [docs/TESTING.md](docs/TESTING.md) - Current 19/20 integration test pass rate
+1. **Sprint 2.6 Results:** [Sprint 2.6 Archive](docs/archive/history/sprints/sprint-2.6/README.md) - Review completed work and test results
+2. **Agent Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) Section 10 - Agent-Data Interface (added in Sprint 2.6)
+3. **Test Patterns:** [docs/TESTING.md](docs/TESTING.md) - PostgreSQL test fixture patterns established in Sprint 2.5
 
 ---
 
-### 🎯 Sprint 2.6 Objectives
+### 🎯 Sprint 2.7 Objectives
 
-#### **PRIORITY 1: Fix Redis Performance Test** (P2 from Sprint 2.5)
-**File:** [backend/tests/services/agent/integration/test_performance.py](backend/tests/services/agent/integration/test_performance.py)  
-**Test:** `test_session_state_retrieval_performance`  
-**Current Status:** 1 test failing  
-**Issue:** Redis connection from async context - wrong number of arguments for `get_session_state()`
+#### **PRIORITY 1: Fix Agent-Data Integration Test Fixtures** ⚠️ CRITICAL BLOCKER
+**File:** [backend/tests/services/agent/integration/test_data_integration.py](backend/tests/services/agent/integration/test_data_integration.py)  
+**Current Status:** 0/19 tests passing (all blocked by SQLite ARRAY incompatibility)  
+**Issue:** Test fixture uses SQLite which doesn't support PostgreSQL ARRAY columns added in Sprint 2.5
+
+**Sprint 2.6 Achievement:** Created 19 comprehensive agent-data integration tests + Section 10 in ARCHITECTURE.md (406 lines), but all tests blocked by test infrastructure.
+
+**Error:**
+```
+AttributeError: 'SQLiteTypeCompiler' object has no attribute 'visit_ARRAY'
+```
 
 **Tasks:**
-1. Review orchestrator.py `get_session_state()` method signature (updated in Sprint 2.5)
-2. Fix test to use correct calling convention: `get_session_state(session_id)` or `get_session_state(db, session_id)`
-3. Ensure Redis client is properly awaited in async context
-4. Validate session_manager is used correctly
+1. Review PR#81 (Track A PnL test fix) - pattern already established for PostgreSQL fixtures
+2. Replace SQLite test fixture with PostgreSQL in test_data_integration.py:
+   ```python
+   # Replace SQLite with PostgreSQL
+   engine = create_engine(settings.SQLALCHEMY_DATABASE_URI)
+   # Use same pattern as test_pnl.py
+   ```
+3. Validate all 19 agent-data integration tests pass
+4. Ensure proper database cleanup between tests (test isolation)
 
 **Acceptance Criteria:**
-- [ ] `test_session_state_retrieval_performance` passes
-- [ ] Redis client properly handles async/sync contexts
-- [ ] Performance benchmarks meet <500ms target
+- [ ] Test fixture uses PostgreSQL instead of SQLite (2-3 hours work)
+- [ ] 19/19 agent-data integration tests passing (currently 0/19)
+- [ ] Test isolation validated - no shared state between tests
+- [ ] Document fixture pattern in TESTING.md
 
 **Validation Command:**
 ```bash
 cd backend
-pytest tests/services/agent/integration/test_performance.py::test_session_state_retrieval_performance -v --tb=long
+pytest tests/services/agent/integration/test_data_integration.py -v --tb=short
 ```
 
-**Expected Outcome:** 1/1 passing (currently 0/1)
+**Expected Outcome:** 19/19 passing (fixture refactor required)
 
 ---
 
-#### **PRIORITY 2: Investigate Security Test Errors**
-**File:** [backend/tests/services/agent/integration/test_security.py](backend/tests/services/agent/integration/test_security.py) (presumed)  
-**Current Status:** 4 errors in agent test domain  
-**Issue:** Unknown - requires investigation
-
-**Tasks:**
-1. Identify which tests are generating the 4 errors
-2. Capture full error stacktraces
-3. Fix or document if tests are aspirational (not yet implemented)
-4. Add security validation patterns to agent tools
-
-**Acceptance Criteria:**
-- [ ] 4 security-related errors resolved or documented
-- [ ] Agent input validation tested
-- [ ] Rate limiting patterns validated
-
-**Validation Command:**
-```bash
-cd backend
-pytest tests/services/agent/ -k security -v --tb=long
-```
-
-**Expected Outcome:** 0 errors, tests pass or are explicitly marked as xfail
-
----
-
-#### **PRIORITY 3: Agent-Data Integration**
+#### **PRIORITY 2: Validate Other Agent Tests Remain Stable**
 **Files:**
-- [backend/app/services/agent/tools/data_retrieval.py](backend/app/services/agent/tools/data_retrieval.py) (create or enhance)
-- [backend/app/services/agent/agents/retrieval.py](backend/app/services/agent/agents/retrieval.py)
+- `tests/services/agent/integration/test_performance.py`
+- `tests/services/agent/integration/test_end_to_end.py`
+- `tests/services/agent/integration/test_security.py`
 
-**Current Status:** Agent tools exist but may not query all 4 ledgers  
-**Goal:** Ensure agents can query Glass, Human, Catalyst, Exchange ledgers
+**Current Status (Sprint 2.6 Exit):**
+- Performance tests: Status unknown (verify after fixture changes)
+- End-to-end tests: Status unknown
+- Security tests: Status unknown
 
 **Tasks:**
-1. Review existing data retrieval tools
-2. Create tools to query each ledger:
-   - `get_price_data(symbol, timeframe)` → Glass ledger
-   - `get_sentiment_data(symbol, source)` → Human ledger
-   - `get_catalyst_events(symbol, event_type)` → Catalyst ledger
-   - `get_order_history(user_id)` → Exchange ledger
-3. Implement SQLModel queries using unidirectional relationship pattern (see Sprint 2.5 learnings)
-4. Create integration tests: `tests/services/agent/integration/test_data_integration.py`
+1. Run full agent test suite after fixture changes
+2. Identify any regressions caused by PostgreSQL migration
+3. Fix any broken tests or update to use PostgreSQL fixtures
+4. Validate all agent integration tests pass
 
 **Acceptance Criteria:**
-- [ ] 4 data retrieval tools implemented (one per ledger)
-- [ ] Tools handle missing data gracefully
-- [ ] 10+ integration tests validate agent can query all ledgers
-- [ ] No SQLModel relationship warnings
+- [ ] All agent integration tests reviewed and passing
+- [ ] No regressions from PostgreSQL fixture changes
+- [ ] Performance benchmarks still meet <500ms target
 
 **Validation Command:**
 ```bash
 cd backend
-pytest tests/services/agent/integration/test_data_integration.py -v
+pytest tests/services/agent/integration/ -v --tb=short
 ```
 
-**Expected Outcome:** 10+ new passing tests for data integration
-
----
-
-#### **PRIORITY 4: Document Agent Query Capabilities**
-**File:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Add Section 10: Agent-Data Interface
-
-**Tasks:**
-1. Document available agent tools and their parameters
-2. Provide example queries for each ledger
-3. Document data access patterns and performance considerations
-4. Link to test files showing usage examples
-
-**Acceptance Criteria:**
-- [ ] Section 10 added to ARCHITECTURE.md
-- [ ] All 4 ledgers documented with example queries
-- [ ] Performance guidelines documented (<1s per query target)
-
-**Validation:**
-- Review by Track A developer for accuracy
-- Validate examples work in actual agent workflow
+**Expected Outcome:** All integration tests passing
 
 ---
 
 ### 📊 Track B Test Targets
 
-**Baseline (Current):**
-- Total: 565 passing, 18 failing, 77 errors
-- Your domain: ~250 tests (agent unit + integration)
-- Current pass rate: 19/20 integration tests
+**Baseline (Sprint 2.6 Exit):**
+- Total: 581 passing, 17 failing, 44 errors
+- Your domain: 19 agent-data integration tests (all blocked by SQLite ARRAY)
+- Other agent tests: Status needs validation
 
-**Sprint 2.6 Target:**
-- Fix 5 issues (1 Redis performance + 4 security errors)
-- Add 10+ data integration tests
-- **End State:** ~260 passing tests in your domain, 20/20 integration tests
+**Sprint 2.7 Target:**
+- Fix 19 agent-data integration tests (PostgreSQL fixture replacement)
+- Validate all other agent tests remain stable
+- **End State:** 19/19 integration tests passing (target: 100%)
 
 **Daily Validation:**
 ```bash
 cd backend
-# Quick check your test domains
+# Quick check agent integration tests
 pytest tests/services/agent/integration/ --tb=short -q
 
-# Full baseline comparison
+# Full agent test suite
 pytest tests/services/agent/ --tb=short --quiet | tee test_output.txt
 ```
 
@@ -436,17 +423,17 @@ pytest tests/services/agent/ --tb=short --quiet | tee test_output.txt
 ### 🔗 Integration Points
 
 **Track A → Your Inputs:**
-- Seed data fixes (Track A P1) will provide valid test data for your agent queries
-- Quality monitor (Track A P3) results may be queryable by agents
-- Schema stability maintained by Track A
+- PR#81 (Track A) established PostgreSQL test fixture pattern - reuse this pattern
+- Schema stability maintained by Track A (no changes expected in Sprint 2.7)
+- Coordinate with Track A if both need to update test fixtures simultaneously
 
 **Your Outputs → Track A:**
-- Document any new model fields needed for agent queries
-- Coordinate on read-only access patterns for ledger tables
+- Share any learnings from fixture migration that might help Track A's remaining PnL test fixes
+- Coordinate on TESTING.md updates to document PostgreSQL fixture pattern
 
 **Track C → Your Dependencies:**
-- **CRITICAL:** Secrets management (Track C P1) needed for OPENAI_API_KEY
-- Until secrets deployed, use mock LLM responses in tests
+- Secrets management (Track C) complete in Sprint 2.6, staging deployment in Sprint 2.7
+- Once staging deployed, can test real OpenAI integration (currently using mocks)
 
 ---
 
@@ -458,215 +445,248 @@ pytest tests/services/agent/ --tb=short --quiet | tee test_output.txt
 - [ ] No event loop nesting issues in async agent code
 
 **Testing:**
-- [ ] Redis performance test fixed (1 test)
-- [ ] Security errors resolved (4 errors)
-- [ ] Data integration tests implemented (10+ tests)
-- [ ] 20/20 integration tests passing
+- [ ] PostgreSQL test fixture implemented in test_data_integration.py
+- [ ] 19/19 agent-data integration tests passing (currently 0/19)
+- [ ] All other agent integration tests validated and passing
+- [ ] Test isolation verified - no shared state between tests
 
 **Documentation:**
-- [ ] Section 10 added to ARCHITECTURE.md (Agent-Data Interface)
-- [ ] Tool docstrings complete with parameter descriptions
+- [ ] Update TESTING.md with PostgreSQL fixture pattern
+- [ ] Document fixture migration in PR description
 - [ ] Update CURRENT_SPRINT.md with final test counts
 
 **Commit Strategy:**
-- Commit P1 (Redis fix) and P2 (security) separately
-- Commit P3 (data integration) as single feature
-- Create PR titled "Track B Sprint 2.6: Test Fixes + Agent-Data Integration"
+- Single commit: "fix: Replace SQLite with PostgreSQL fixtures in agent-data integration tests"
+- Create PR titled "Track B Sprint 2.7: Fix Agent-Data Integration Test Fixtures"
 
 ---
 
-## 🏗️ Developer C: DevOps Engineer Sprint 2.6
+## 🏭️ Developer C: DevOps Engineer Sprint 2.7
 
 **Role:** OMC-DevOps-Engineer  
-**Focus:** Terraform Secrets Module + Production Readiness
+**Focus:** Deploy Infrastructure Modules to Staging Environment
 
 ---
 
 ### 📚 Context Review (Read These First)
 
-1. **Sprint History:** [CURRENT_SPRINT.md](CURRENT_SPRINT.md) lines 80-216 - Review Track C accomplishments and P2 items
+1. **Sprint 2.6 Results:** [Sprint 2.6 Archive](docs/archive/history/sprints/sprint-2.6/README.md) - All infrastructure modules completed
 2. **Infrastructure Overview:** [infrastructure/terraform/README.md](infrastructure/terraform/README.md) - ECS architecture (not EKS)
 3. **Deployment Guide:** [infrastructure/terraform/DEPLOYMENT_GUIDE_TERRAFORM_ECS.md](infrastructure/terraform/DEPLOYMENT_GUIDE_TERRAFORM_ECS.md)
+4. **Operations Runbook:** [infrastructure/terraform/OPERATIONS_RUNBOOK.md](infrastructure/terraform/OPERATIONS_RUNBOOK.md) - Enhanced in Sprint 2.6 (1,268 lines)
 
 ---
 
-### 🎯 Sprint 2.6 Objectives
+### 🎯 Sprint 2.7 Objectives
 
-#### **PRIORITY 1: Implement Terraform Secrets Module** (P2 from Sprint 2.5)
-**Directory:** [infrastructure/terraform/modules/secrets/](infrastructure/terraform/modules/secrets/) (currently EMPTY)  
-**Current Status:** Directory exists but contains no files  
-**Issue:** AWS Secrets Manager integration incomplete, blocking OPENAI_API_KEY injection
+#### **PRIORITY 1: Deploy Secrets Module to Staging** ✅ CODE COMPLETE
+**Directory:** [infrastructure/terraform/modules/secrets/](infrastructure/terraform/modules/secrets/)  
+**Current Status:** Terraform code complete (422 lines), validated, but NOT deployed  
+**Goal:** Deploy to AWS staging environment and verify functionality
+
+**Sprint 2.6 Achievement:**
+- ✅ Secrets module: 422 lines - AWS Secrets Manager with KMS encryption
+- ✅ Terraform validate: PASSED
+- ✅ 3 secrets configured: OpenAI API key, database credentials, Redis connection string
+- ⚠️ NOT deployed to any environment yet
 
 **Tasks:**
-1. Create `modules/secrets/main.tf`:
-   - Define `aws_secretsmanager_secret` resources for:
-     - `omc/openai/api_key`
-     - `omc/database/credentials`
-     - `omc/redis/connection_string`
-   - Define `aws_secretsmanager_secret_version` for initial values
-   - Create IAM policy for ECS task role secret access
-
-2. Create `modules/secrets/variables.tf`:
-   - `secret_name` (string)
-   - `secret_value` (string, sensitive)
-   - `environment` (string: staging/production)
-   - `recovery_window_in_days` (number, default 30)
-
-3. Create `modules/secrets/outputs.tf`:
-   - `secret_arn` (output)
-   - `secret_name` (output)
-   - `iam_policy_arn` (output for ECS task role attachment)
-
-4. Update `environments/staging/main.tf` to use secrets module:
-   ```hcl
-   module "secrets" {
-     source      = "../../modules/secrets"
-     environment = "staging"
-     secret_name = "omc/openai/api_key"
-     secret_value = var.openai_api_key  # from variables
-   }
+1. Review AWS credentials and permissions for staging environment
+2. Initialize Terraform backend for staging (if not already configured)
+3. Deploy secrets module to staging:
+   ```bash
+   cd infrastructure/terraform/environments/staging
+   terraform init
+   terraform plan -out=tfplan
+   terraform apply tfplan
    ```
-
-5. Update ECS task definitions to inject secrets as environment variables
+4. Verify secrets created in AWS Secrets Manager console
+5. Test secret retrieval from staging ECS tasks
+6. Document any issues or manual steps required
 
 **Acceptance Criteria:**
-- [ ] Secrets module contains main.tf, variables.tf, outputs.tf
-- [ ] Module creates secrets with proper KMS encryption
-- [ ] ECS task role has IAM policy attached for secret access
-- [ ] Secrets injected into ECS containers as environment variables
-- [ ] Manual validation: `terraform plan` in staging shows secret resources
+- [ ] Secrets module deployed to staging (terraform apply successful)
+- [ ] All 3 secrets visible in AWS Secrets Manager console
+- [ ] ECS tasks can retrieve secrets (validate via CloudWatch logs)
+- [ ] KMS encryption confirmed for all secrets
+- [ ] Deployment documented in OPERATIONS_RUNBOOK.md
 
-**Validation Command:**
+**Validation Commands:**
 ```bash
+# Deploy
 cd infrastructure/terraform/environments/staging
-terraform init
-terraform plan -out=tfplan
-terraform show tfplan | grep secretsmanager
+terraform apply
+
+# Verify secrets
+aws secretsmanager list-secrets --region us-east-1 | grep omc
+aws secretsmanager get-secret-value --secret-id omc/openai/api_key --region us-east-1
 ```
 
-**Expected Outcome:** Secret resources shown in plan, no errors
+**Expected Outcome:** Secrets deployed and retrievable from staging
 
 ---
 
-#### **PRIORITY 2: Deployment Automation**
-**Files:**
-- `.github/workflows/deploy.yml` (create or enhance)
-- `scripts/deploy.sh` (exists, may need updates)
+#### **PRIORITY 2: Deploy Monitoring Module to Staging** ✅ CODE COMPLETE
+**Directory:** [infrastructure/terraform/modules/monitoring/](infrastructure/terraform/modules/monitoring/)  
+**Current Status:** Terraform code complete (1,457 lines), validated, but NOT deployed  
+**Goal:** Deploy CloudWatch dashboards and alarms to staging
 
-**Current Status:** CI/CD pipeline exists but may not fully automate ECS deployment  
-**Goal:** One-command deployment to staging/production
+**Sprint 2.6 Achievement:**
+- ✅ Monitoring module: 1,457 lines - CloudWatch dashboards + 8 alarms + SNS
+- ✅ Terraform validate: PASSED
+- ✅ 8 alarms: High CPU, high memory, failed health checks, 5xx errors, RDS connections, Redis evictions, ECS tasks unhealthy, database disk space
+- ⚠️ NOT deployed to any environment yet
 
 **Tasks:**
-1. Review existing `scripts/deploy.sh` and `.github/workflows/` files
-2. Enhance GitHub Actions workflow:
-   - Build Docker images (backend, frontend)
-   - Push to ECR
-   - Update ECS service with new task definition
-   - Wait for deployment stability
-3. Add deployment gates:
-   - Require passing tests before deployment
-   - Manual approval for production
-4. Create rollback procedure documentation
+1. Deploy monitoring module to staging:
+   ```bash
+   cd infrastructure/terraform/environments/staging
+   terraform apply  # Should include monitoring module
+   ```
+2. Verify CloudWatch dashboard created and populated with metrics
+3. Configure SNS email subscription for alarm notifications (use test email)
+4. Trigger test alarm to verify notification flow:
+   - Manually stop an ECS task to trigger "unhealthy tasks" alarm
+   - Verify email notification received
+   - Restart task
+5. Document dashboard URL and alarm thresholds
 
 **Acceptance Criteria:**
-- [ ] `scripts/deploy.sh` deploys to staging with single command
-- [ ] GitHub Actions workflow deploys on merge to main
-- [ ] Deployment waits for ECS service to stabilize
-- [ ] Rollback procedure documented in OPERATIONS_RUNBOOK.md
+- [ ] Monitoring module deployed to staging
+- [ ] CloudWatch dashboard visible with 4+ widgets showing metrics
+- [ ] 8 alarms configured and in "OK" state (green)
+- [ ] SNS email subscription confirmed (test email received)
+- [ ] Test alarm triggered and notification received
+- [ ] Dashboard URL documented in OPERATIONS_RUNBOOK.md
 
-**Validation Command:**
+**Validation Commands:**
 ```bash
-# Test staging deployment
-bash scripts/deploy.sh staging
+# List CloudWatch dashboards
+aws cloudwatch list-dashboards --region us-east-1
 
-# Check ECS service status
-aws ecs describe-services --cluster omc-staging --services omc-backend
+# List alarms
+aws cloudwatch describe-alarms --region us-east-1 | grep omc
+
+# View dashboard
+echo "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=omc-staging"
 ```
 
-**Expected Outcome:** Deployment completes successfully, ECS tasks running
+**Expected Outcome:** Dashboard and alarms operational in staging
 
 ---
 
-#### **PRIORITY 3: Production Deployment Runbook**
-**File:** [infrastructure/terraform/OPERATIONS_RUNBOOK.md](infrastructure/terraform/OPERATIONS_RUNBOOK.md) (exists, enhance)
+#### **PRIORITY 3: Test Deployment Script on Staging** ✅ CODE COMPLETE
+**File:** [infrastructure/terraform/scripts/deploy-ecs.sh](infrastructure/terraform/scripts/deploy-ecs.sh)  
+**Current Status:** Script complete (253 lines), bash syntax validated, but NOT tested  
+**Goal:** Execute deployment script on staging and validate one-command deployment
+
+**Sprint 2.6 Achievement:**
+- ✅ Deployment script: 253 lines - One-command ECS deployment
+- ✅ Bash syntax check: PASSED
+- ✅ 3 deployment modes supported: ECR build+push, local build, skip build
+- ⚠️ NOT tested on real environment yet
 
 **Tasks:**
-1. Review and update existing runbook
-2. Add sections:
-   - **Pre-Deployment Checklist** (secrets configured, tests passing, backups taken)
-   - **Deployment Steps** (step-by-step with exact commands)
-   - **Health Check Validation** (how to verify deployment success)
-   - **Rollback Procedure** (how to revert to previous version)
-   - **Troubleshooting** (common issues and solutions)
-3. Validate runbook by performing staging deployment following documented steps
+1. Review script parameters and prerequisites:
+   ```bash
+   cd infrastructure/terraform/scripts
+   ./deploy-ecs.sh --help
+   ```
+2. Set up AWS credentials for staging deployment
+3. Execute deployment script:
+   ```bash
+   ./deploy-ecs.sh staging --build-mode ecr
+   ```
+4. Monitor ECS service deployment:
+   - Watch CloudWatch logs for errors
+   - Verify tasks reach "RUNNING" state
+   - Check health check endpoints
+5. Document execution time and any issues encountered
+6. Test rollback capability (revert to previous task definition)
 
 **Acceptance Criteria:**
-- [ ] Runbook contains all 5 sections
-- [ ] Commands tested and validated on staging
-- [ ] Rollback procedure successfully executed (test)
-- [ ] Health check endpoints documented with expected responses
+- [ ] Deployment script executed successfully on staging
+- [ ] ECS tasks deployed and reached "RUNNING" state
+- [ ] Health check endpoints responding (200 OK)
+- [ ] Deployment time < 10 minutes
+- [ ] Rollback procedure tested and documented
+- [ ] Script execution documented in OPERATIONS_RUNBOOK.md
 
-**Validation:**
-- Perform end-to-end staging deployment using only runbook instructions
-- Document any gaps or errors found
+**Validation Commands:**
+```bash
+# Check ECS service status
+aws ecs describe-services --cluster omc-staging --services omc-backend --region us-east-1
+
+# Check task status
+aws ecs list-tasks --cluster omc-staging --service-name omc-backend --region us-east-1
+
+# Test health check
+curl https://staging.ohmycoins.com/health
+```
+
+**Expected Outcome:** One-command deployment functional
 
 ---
 
-#### **PRIORITY 4: CloudWatch Monitoring Setup**
+#### **PRIORITY 4: Validate Production Readiness**
 **Files:**
-- `infrastructure/terraform/modules/monitoring/` (create if doesn't exist)
-- Update `environments/staging/main.tf` to use monitoring module
+- [infrastructure/terraform/OPERATIONS_RUNBOOK.md](infrastructure/terraform/OPERATIONS_RUNBOOK.md) (enhanced in Sprint 2.6)
+- [infrastructure/terraform/DEPLOYMENT_GUIDE_TERRAFORM_ECS.md](infrastructure/terraform/DEPLOYMENT_GUIDE_TERRAFORM_ECS.md) (created in Sprint 2.6)
+
+**Current Status:** Documentation complete but not validated on real deployments  
+**Goal:** Validate runbook by following documented procedures on staging
 
 **Tasks:**
-1. Create CloudWatch dashboards for:
-   - ECS Container Insights (CPU, Memory, Network)
-   - RDS Performance (Connections, Query Duration)
-   - Redis Metrics (Hit Rate, Evictions)
-   - Application Logs (Error Rate, Latency)
-2. Create CloudWatch alarms for:
-   - High CPU (>80% for 5 minutes)
-   - High Memory (>80% for 5 minutes)
-   - Failed Health Checks (>3 in 5 minutes)
-   - 5xx Error Rate (>5% in 5 minutes)
-3. Configure SNS topic for alarm notifications
+1. Review OPERATIONS_RUNBOOK.md sections:
+   - Pre-Deployment Checklist
+   - Deployment Steps
+   - Health Check Validation
+   - Rollback Procedure
+   - Troubleshooting
+2. Execute staging deployment following ONLY runbook instructions
+3. Document any gaps, errors, or missing steps
+4. Update runbook with lessons learned
+5. Create production deployment checklist
 
 **Acceptance Criteria:**
-- [ ] CloudWatch dashboard created with 4+ widgets
-- [ ] 4+ alarms configured with appropriate thresholds
-- [ ] SNS topic configured (can use dummy email for now)
-- [ ] Dashboard accessible via AWS console
+- [ ] Staging deployment completed using only runbook instructions
+- [ ] All health checks validated as documented
+- [ ] Rollback procedure tested successfully
+- [ ] Runbook updated with any corrections
+- [ ] Production deployment checklist created
+- [ ] Runbook marked as "validated on staging"
 
 **Validation:**
-- Open CloudWatch dashboard and verify metrics are populated
-- Trigger test alarm by simulating high CPU (optional)
+- Perform end-to-end staging deployment using ONLY runbook
+- Document any ambiguities or missing information
+- Confirm rollback works as documented
 
 ---
 
 ### 📊 Track C Deliverables
 
-**Baseline (Current):**
-- ECS base deployment: ✅ Complete
-- Secrets module: ⚠️ Empty directory
-- Deployment automation: 🟡 Partial
-- Monitoring: 🟡 Basic health checks only
+**Baseline (Sprint 2.6 Exit):**
+- Secrets module: ✅ Code complete (422 lines), ⚠️ Not deployed
+- Monitoring module: ✅ Code complete (1,457 lines), ⚠️ Not deployed
+- Deployment script: ✅ Code complete (253 lines), ⚠️ Not tested
+- Operations runbook: ✅ Enhanced (1,268 lines), ⚠️ Not validated
 
-**Sprint 2.6 Target:**
-- Secrets module: ✅ Complete with 3 secrets (OpenAI, DB, Redis)
-- Deployment automation: ✅ One-command staging deployment
-- Runbook: ✅ Validated on staging
-- Monitoring: ✅ Dashboards and alarms configured
+**Sprint 2.7 Target:**
+- Secrets module: ✅ Deployed to staging and functional
+- Monitoring module: ✅ Deployed to staging with confirmed alarms
+- Deployment script: ✅ Tested on staging, one-command deployment works
+- Operations runbook: ✅ Validated on staging, production-ready
 
 **Daily Validation:**
 ```bash
-# Check Terraform modules structure
-ls -la infrastructure/terraform/modules/secrets/
+# Check staging infrastructure status
+aws ecs describe-services --cluster omc-staging --services omc-backend --region us-east-1
+aws secretsmanager list-secrets --region us-east-1 | grep omc
+aws cloudwatch describe-alarms --region us-east-1 | grep omc
 
-# Validate Terraform configuration
-cd infrastructure/terraform/environments/staging
-terraform validate
-
-# Check ECS service status
-aws ecs describe-services --cluster omc-staging --services omc-backend --query 'services[0].deployments'
+# Test deployment script
+cd infrastructure/terraform/scripts
+./deploy-ecs.sh --help
 ```
 
 ---
@@ -674,7 +694,17 @@ aws ecs describe-services --cluster omc-staging --services omc-backend --query '
 ### 🔗 Integration Points
 
 **Your Outputs → Track A:**
-- Secrets management enables DB credential injection (eventually)
+- Secrets deployed to staging enables real database credential injection (currently using environment variables)
+- Monitoring dashboard provides visibility into data collector performance
+
+**Your Outputs → Track B:**
+- OpenAI API key secret deployed enables real LLM integration in staging (currently using mocks)
+- Staging environment allows end-to-end agent testing with real services
+
+**Track A & B → Your Dependencies:**
+- Application code must be deployable to ECS (already validated)
+- Health check endpoints must respond correctly (validate in staging)
+- Coordinate on deployment timing if both tracks have active PRs
 - CloudWatch logs available for debugging collector issues
 
 **Your Outputs → Track B:**
@@ -735,7 +765,7 @@ All developers:
 1. Merge PRs to main (must pass CI/CD)
 2. Run full test suite on merged main
 3. Update CURRENT_SPRINT.md with final status
-4. Document any P2 items for Sprint 2.7
+4. Document any P2 items for Sprint 2.8
 
 ---
 
@@ -765,11 +795,11 @@ docker compose run --rm prestart
 
 # Full test suite
 cd backend
-pytest --tb=short --quiet | tee sprint_2.6_final_tests.txt
+pytest --tb=short --quiet | tee sprint_2.7_final_tests.txt
 
 # Compare to baseline
-echo "Baseline: 565 passing, 18 failing, 77 errors"
-grep -E "passed|failed|error" sprint_2.6_final_tests.txt
+echo "Baseline: 581 passing, 17 failing, 44 errors"
+grep -E "passed|failed|error" sprint_2.7_final_tests.txt
 ```
 
 ---
@@ -791,15 +821,15 @@ grep -E "passed|failed|error" sprint_2.6_final_tests.txt
 # Start work on your track
 git checkout main
 git pull origin main
-git checkout -b track-[a|b|c]-sprint-2.6
+git checkout -b track-[a|b|c]-sprint-2.7
 
 # Daily commits
 git add .
 git commit -m "feat: descriptive message"
-git push origin track-[a|b|c]-sprint-2.6
+git push origin track-[a|b|c]-sprint-2.7
 
 # End of sprint
-# Create PR: "Track [A|B|C] Sprint 2.6: [Brief Summary]"
+# Create PR: "Track [A|B|C] Sprint 2.7: [Brief Summary]"
 # Wait for CI/CD to pass
 # Request review from other developers
 # Merge when approved
@@ -833,21 +863,21 @@ git push origin track-[a|b|c]-sprint-2.6
 - [ ] Documentation updated (ARCHITECTURE.md if needed)
 
 **Track A:**
-- [ ] 7 seed data tests fixed
-- [ ] 20 PnL errors resolved
-- [ ] Quality monitor implemented with 10+ tests
+- [ ] 2 remaining PnL tests fixed (isolation issues)
+- [ ] 21/21 PnL tests passing (100%)
+- [ ] Test isolation verified
 
 **Track B:**
-- [ ] 1 Redis performance test fixed
-- [ ] 4 security errors resolved
-- [ ] 10+ data integration tests added
-- [ ] Agent-Data Interface documented
+- [ ] PostgreSQL test fixture implemented in test_data_integration.py
+- [ ] 19/19 agent-data integration tests passing
+- [ ] All other agent tests validated
+- [ ] TESTING.md updated with fixture pattern
 
 **Track C:**
-- [ ] Secrets module complete (3 files)
-- [ ] Deployment automation tested
+- [ ] Secrets module deployed to staging
+- [ ] Monitoring module deployed to staging
+- [ ] Deployment script tested on staging
 - [ ] Operations runbook validated
-- [ ] CloudWatch monitoring configured
 
 **Sprint Close:**
 - [ ] All PRs merged to main
@@ -857,11 +887,11 @@ git push origin track-[a|b|c]-sprint-2.6
 
 ---
 
-**Ready to begin Sprint 2.6? Each developer should:**
+**Ready to begin Sprint 2.7? Each developer should:**
 1. Read this entire document
-2. Review the 5 context files listed in "Context Analysis Required"
+2. Review Sprint 2.6 results in [archive](docs/archive/history/sprints/sprint-2.6/README.md)
 3. Set up local test environment (see [TESTING.md](docs/TESTING.md))
 4. Create your track branch
-5. Post "Sprint 2.6 Started" update with Day 1 plan
+5. Post "Sprint 2.7 Started" update with Day 1 plan
 
 Good luck! 🚀
