@@ -15,8 +15,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
-from sqlmodel import Session, create_engine
-from sqlmodel.pool import StaticPool
+from sqlmodel import Session
 
 from app.models import (
     CatalystEvents,
@@ -41,121 +40,116 @@ from app.services.agent.tools.data_retrieval_tools import (
 
 
 @pytest.fixture(name="db")
-def db_fixture():
-    """Create a test database session with sample data."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+def db_fixture(session: Session):
+    """Create test data in PostgreSQL session for agent-data integration tests.
+
+    Uses the shared session fixture from conftest.py which provides:
+    - PostgreSQL database connection (supports ARRAY types)
+    - Transaction isolation via savepoints
+    - Automatic cleanup after each test
+    """
+    # Create test user
+    user = User(
+        email="test_agent_integration@example.com",
+        hashed_password="hashed",
+        full_name="Test Agent User",
     )
+    session.add(user)
+    session.flush()  # Flush to database without committing the transaction
+    session.refresh(user)
 
-    from sqlmodel import SQLModel
-
-    SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        # Create test user
-        user = User(
-            email="test@example.com",
-            hashed_password="hashed",
-            full_name="Test User",
+    # Add sample Glass Ledger data (PriceData5Min)
+    now = datetime.now(timezone.utc)
+    for i in range(5):
+        price_data = PriceData5Min(
+            coin_type="BTC",
+            timestamp=now - timedelta(minutes=i * 5),
+            bid=Decimal(f"{50000 + i * 100}"),
+            ask=Decimal(f"{50100 + i * 100}"),
+            last=Decimal(f"{50050 + i * 100}"),
         )
-        session.add(user)
-        session.commit()
-        session.refresh(user)
+        session.add(price_data)
 
-        # Add sample Glass Ledger data (PriceData5Min)
-        now = datetime.now(timezone.utc)
-        for i in range(5):
-            price_data = PriceData5Min(
-                coin_type="BTC",
-                timestamp=now - timedelta(minutes=i * 5),
-                bid=Decimal(f"{50000 + i * 100}"),
-                ask=Decimal(f"{50100 + i * 100}"),
-                last=Decimal(f"{50050 + i * 100}"),
-            )
-            session.add(price_data)
+    # Add sample Glass Ledger data (OnChainMetrics)
+    for i in range(3):
+        metric = OnChainMetrics(
+            asset="BTC",
+            metric_name="active_addresses",
+            metric_value=Decimal(f"{100000 + i * 1000}"),
+            source="test_source",
+            collected_at=now - timedelta(days=i),
+        )
+        session.add(metric)
 
-        # Add sample Glass Ledger data (OnChainMetrics)
-        for i in range(3):
-            metric = OnChainMetrics(
-                asset="BTC",
-                metric_name="active_addresses",
-                metric_value=Decimal(f"{100000 + i * 1000}"),
-                source="test_source",
-                collected_at=now - timedelta(days=i),
-            )
-            session.add(metric)
+    # Add sample Human Ledger data (NewsSentiment)
+    for i in range(3):
+        news = NewsSentiment(
+            title=f"Bitcoin News {i}",
+            source="test_news",
+            published_at=now - timedelta(hours=i),
+            sentiment="positive" if i % 2 == 0 else "negative",
+            sentiment_score=Decimal(f"0.{8 - i}"),
+            currencies=["BTC"],
+            collected_at=now - timedelta(hours=i),
+        )
+        session.add(news)
 
-        # Add sample Human Ledger data (NewsSentiment)
-        for i in range(3):
-            news = NewsSentiment(
-                title=f"Bitcoin News {i}",
-                source="test_news",
-                published_at=now - timedelta(hours=i),
-                sentiment="positive" if i % 2 == 0 else "negative",
-                sentiment_score=Decimal(f"0.{8 - i}"),
-                currencies=["BTC"],
-                collected_at=now - timedelta(hours=i),
-            )
-            session.add(news)
+    # Add sample Human Ledger data (SocialSentiment)
+    for i in range(3):
+        social = SocialSentiment(
+            platform="reddit" if i % 2 == 0 else "twitter",
+            content=f"Bitcoin social post {i}",
+            score=100 + i * 10,
+            sentiment="positive" if i % 2 == 0 else "neutral",
+            currencies=["BTC"],
+            posted_at=now - timedelta(hours=i),
+            collected_at=now - timedelta(hours=i),
+        )
+        session.add(social)
 
-        # Add sample Human Ledger data (SocialSentiment)
-        for i in range(3):
-            social = SocialSentiment(
-                platform="reddit" if i % 2 == 0 else "twitter",
-                content=f"Bitcoin social post {i}",
-                score=100 + i * 10,
-                sentiment="positive" if i % 2 == 0 else "neutral",
-                currencies=["BTC"],
-                posted_at=now - timedelta(hours=i),
-                collected_at=now - timedelta(hours=i),
-            )
-            session.add(social)
+    # Add sample Catalyst Ledger data (CatalystEvents)
+    for i in range(3):
+        event = CatalystEvents(
+            event_type="listing" if i % 2 == 0 else "sec_filing",
+            title=f"Bitcoin Event {i}",
+            description=f"Event description {i}",
+            source="test_source",
+            currencies=["BTC"],
+            impact_score=i + 1,
+            detected_at=now - timedelta(days=i),
+        )
+        session.add(event)
 
-        # Add sample Catalyst Ledger data (CatalystEvents)
-        for i in range(3):
-            event = CatalystEvents(
-                event_type="listing" if i % 2 == 0 else "sec_filing",
-                title=f"Bitcoin Event {i}",
-                description=f"Event description {i}",
-                source="test_source",
-                currencies=["BTC"],
-                impact_score=i + 1,
-                detected_at=now - timedelta(days=i),
-            )
-            session.add(event)
-
-        # Add sample Exchange Ledger data (Orders)
-        for i in range(3):
-            order = Order(
-                user_id=user.id,
-                coin_type="BTC",
-                side="buy" if i % 2 == 0 else "sell",
-                order_type="market",
-                quantity=Decimal(f"0.{i + 1}"),
-                filled_quantity=Decimal(f"0.{i + 1}"),
-                status="filled",
-                created_at=now - timedelta(days=i),
-                filled_at=now - timedelta(days=i, hours=-1),
-            )
-            session.add(order)
-
-        # Add sample Exchange Ledger data (Positions)
-        position = Position(
+    # Add sample Exchange Ledger data (Orders)
+    for i in range(3):
+        order = Order(
             user_id=user.id,
             coin_type="BTC",
-            quantity=Decimal("1.5"),
-            average_price=Decimal("50000"),
-            total_cost=Decimal("75000"),
+            side="buy" if i % 2 == 0 else "sell",
+            order_type="market",
+            quantity=Decimal(f"0.{i + 1}"),
+            filled_quantity=Decimal(f"0.{i + 1}"),
+            status="filled",
+            created_at=now - timedelta(days=i),
+            filled_at=now - timedelta(days=i, hours=-1),
         )
-        session.add(position)
+        session.add(order)
 
-        session.commit()
+    # Add sample Exchange Ledger data (Positions)
+    position = Position(
+        user_id=user.id,
+        coin_type="BTC",
+        quantity=Decimal("1.5"),
+        average_price=Decimal("50000"),
+        total_cost=Decimal("75000"),
+    )
+    session.add(position)
 
-        # Store user_id for tests
-        session.user_id = user.id  # type: ignore[attr-defined]
-        yield session
+    session.flush()  # Flush to ensure all data is written to the session
+
+    # Store user_id for tests
+    session.user_id = user.id  # type: ignore[attr-defined]
+    return session
 
 
 class TestGlassLedger:
