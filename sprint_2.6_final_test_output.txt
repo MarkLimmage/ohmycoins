@@ -1,0 +1,75 @@
+time="2026-01-10T17:11:00+11:00" level=warning msg="The \"CI\" variable is not set. Defaulting to a blank string."
+============================= test session starts ==============================
+platform linux -- Python 3.10.19, pytest-7.4.4, pluggy-1.5.0 -- /app/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+plugins: anyio-4.6.0, asyncio-0.23.8, langsmith-0.4.43, Faker-29.0.0
+asyncio: mode=strict
+collecting ... collected 672 items / 3 errors
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/services/collectors/catalyst/test_coinspot_announcements.py _
+ImportError while importing test module '/app/tests/services/collectors/catalyst/test_coinspot_announcements.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/services/collectors/catalyst/test_coinspot_announcements.py:5: in <module>
+    from app.services.collectors.catalyst.coinspot_announcements import CoinSpotAnnouncementsCollector
+app/services/collectors/catalyst/__init__.py:3: in <module>
+    from .coinspot_announcements import CoinSpotAnnouncementsCollector
+app/services/collectors/catalyst/coinspot_announcements.py:20: in <module>
+    from playwright.async_api import async_playwright
+E   ModuleNotFoundError: No module named 'playwright'
+_____ ERROR collecting tests/services/collectors/catalyst/test_sec_api.py ______
+ImportError while importing test module '/app/tests/services/collectors/catalyst/test_sec_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/services/collectors/catalyst/test_sec_api.py:5: in <module>
+    from app.services.collectors.catalyst.sec_api import SECAPICollector
+app/services/collectors/catalyst/__init__.py:3: in <module>
+    from .coinspot_announcements import CoinSpotAnnouncementsCollector
+app/services/collectors/catalyst/coinspot_announcements.py:20: in <module>
+    from playwright.async_api import async_playwright
+E   ModuleNotFoundError: No module named 'playwright'
+_ ERROR collecting tests/services/collectors/integration/test_collector_integration.py _
+ImportError while importing test module '/app/tests/services/collectors/integration/test_collector_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/services/collectors/integration/test_collector_integration.py:21: in <module>
+    from app.services.collectors.config import setup_collectors
+app/services/collectors/config.py:11: in <module>
+    from app.services.collectors.catalyst import SECAPICollector, CoinSpotAnnouncementsCollector
+app/services/collectors/catalyst/__init__.py:3: in <module>
+    from .coinspot_announcements import CoinSpotAnnouncementsCollector
+app/services/collectors/catalyst/coinspot_announcements.py:20: in <module>
+    from playwright.async_api import async_playwright
+E   ModuleNotFoundError: No module named 'playwright'
+=============================== warnings summary ===============================
+.venv/lib/python3.10/site-packages/starlette/formparsers.py:12
+  /app/.venv/lib/python3.10/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+tests/services/test_collector.py:241
+  /app/tests/services/test_collector.py:241: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/services/agent/integration/test_performance.py:288
+  /app/tests/services/agent/integration/test_performance.py:288: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests/services/agent/integration/test_performance.py:309
+  /app/tests/services/agent/integration/test_performance.py:309: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/services/collectors/catalyst/test_coinspot_announcements.py
+ERROR tests/services/collectors/catalyst/test_sec_api.py
+ERROR tests/services/collectors/integration/test_collector_integration.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!!
+======================== 4 warnings, 3 errors in 0.73s =========================
