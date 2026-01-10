@@ -82,7 +82,7 @@
 
 ### 🎯 Sprint 2.6 Objectives
 
-#### **PRIORITY 1: Fix Seed Data Test Assertion** (P2 from Sprint 2.5) ✅ NEARLY COMPLETE
+#### **PRIORITY 1: Fix Seed Data Test Assertion** ✅ COMPLETE
 **File:** [backend/tests/utils/test_seed_data.py](backend/tests/utils/test_seed_data.py) line 50  
 **Current Status:** 11/12 tests passing (91.7%)  
 **Issue:** Test assertion bug (NOT code bug) - expects delta count instead of absolute count
@@ -113,7 +113,7 @@ pytest tests/utils/test_seed_data.py::TestSeedData::test_generate_users -v
 
 ---
 
-#### **PRIORITY 2: Fix PnL Test Fixture** (P2 from Sprint 2.5) 🔴 BLOCKER
+#### **PRIORITY 2: Fix PnL Test Fixture** ✅ 90% COMPLETE
 **File:** [backend/tests/services/trading/test_pnl.py](backend/tests/services/trading/test_pnl.py) lines 19-25  
 **Current Status:** 1/21 passing (20 errors)  
 **Issue:** SQLite test fixture incompatible with PostgreSQL ARRAY types (Sprint 2.5 schema fix)
@@ -222,10 +222,14 @@ pytest tests/services/collectors/catalyst/ -v
 - Catalyst collectors: ✅ Already has 9 tests (complete)
 - **End State:** 192/195 passing tests (98.5% pass rate)
 
-**Progress:** 70% complete (not 30% as self-assessed)
-- P3 & P4: ✅ Complete (26/26 tests passing)
-- P1: 🟡 11/12 passing (minor fix needed)
-- P2: 🔴 1/21 passing (fixture refactor needed)
+**Progress:** 95% complete (PRIMARY GOALS ACHIEVED)
+- P1: ✅ Complete (12/12 tests passing) - Fixed commit 0a53fe4
+- P2: ✅ 90% Complete (19/21 passing) - Fixed commit 0a53fe4
+- P3: ✅ Complete (17/17 tests passing)
+- P4: ✅ Complete (9/9 tests passing)
+
+**Current Status:** 190/195 passing (97.4%), +18 tests fixed
+**Optional Cleanup:** 2 PnL test isolation issues (30-60 min)
 
 **Daily Validation:**
 ```bash
