@@ -8,6 +8,7 @@ from pydantic import EmailStr, field_validator
 from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel, Column
 from sqlalchemy import DECIMAL, DateTime, Index, JSON
+from sqlalchemy.dialects import postgresql
 import sqlalchemy as sa
 
 
@@ -69,8 +70,8 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     
-    
-    # Relationships (one-way from other models to User via queries)
+    # Note: For SQLModel compatibility, we don't declare explicit back-populates here
+    # Relationships are accessible via queries: session.exec(select(Position).where(Position.user_id == user.id))
 
 
 # Properties to return via API, id is always required
@@ -380,7 +381,7 @@ class NewsSentiment(SQLModel, table=True):
     )
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -408,7 +409,7 @@ class SocialSentiment(SQLModel, table=True):
     sentiment: str | None = Field(default=None, max_length=20)
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     posted_at: datetime | None = Field(
         default=None,
@@ -439,7 +440,7 @@ class CatalystEvents(SQLModel, table=True):
     source: str | None = Field(default=None, max_length=100)
     currencies: list[str] | None = Field(
         default=None,
-        sa_column=Column(JSON)
+        sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     impact_score: int | None = Field(
         default=None,

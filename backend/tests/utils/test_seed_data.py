@@ -167,18 +167,18 @@ class TestDataIntegrity:
         user = create_test_user(db)
         position = create_test_position(db, user)
         
-        # Fetch user and verify relationship
-        db.refresh(user)
-        assert any(p.id == position.id for p in user.positions)
+        # Verify relationship using explicit query (SQLModel compatibility)
+        user_positions = db.exec(select(Position).where(Position.user_id == user.id)).all()
+        assert any(p.id == position.id for p in user_positions)
     
     def test_user_order_relationship(self, db: Session) -> None:
         """Test that orders are correctly linked to users."""
         user = create_test_user(db)
         order = create_test_order(db, user)
         
-        # Fetch user and verify relationship
-        db.refresh(user)
-        assert any(o.id == order.id for o in user.orders)
+        # Verify relationship using explicit query (SQLModel compatibility)
+        user_orders = db.exec(select(Order).where(Order.user_id == user.id)).all()
+        assert any(o.id == order.id for o in user_orders)
     
     def test_algorithm_deployment_relationship(self, db: Session) -> None:
         """Test that algorithms can have deployments."""
