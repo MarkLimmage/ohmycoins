@@ -94,7 +94,7 @@ class AgentOrchestrator:
             session_id: ID of the session
 
         Returns:
-            Step execution result
+            Step execution result including workflow state
         """
         # Get current state
         state = await self.session_manager.get_session_state(session_id)
@@ -180,6 +180,7 @@ class AgentOrchestrator:
                     "session_id": str(session_id),
                     "status": AgentSessionStatus.COMPLETED,
                     "message": "Session completed",
+                    "workflow_state": state,  # Include the state before deletion
                 }
         else:
             # Subsequent iterations (for future incremental execution)
@@ -192,6 +193,7 @@ class AgentOrchestrator:
             "status": AgentSessionStatus.RUNNING,
             "message": f"Step {iteration} completed",
             "current_step": state.get("current_step", "processing"),
+            "workflow_state": state,  # Include the state
         }
 
     async def cancel_session(
@@ -221,32 +223,62 @@ class AgentOrchestrator:
             "message": "Session cancelled successfully",
         }
     
-    def get_session_state(self, session_id: uuid.UUID) -> dict[str, Any] | None:
+    def get_session_state(self, db: Session | uuid.UUID, session_id: uuid.UUID = None) -> dict[str, Any] | None:
         """
         Get the current state of a session synchronously.
         
         This is a synchronous wrapper for the async get_session_state method,
-        used by the HiTL endpoints.
+        used by the HiTL endpoints and tests.
+        
+        Supports two calling conventions:
+        - Legacy: get_session_state(session_id) - for existing production code
+        - Test: get_session_state(db, session_id) - for test compatibility
         
         Args:
-            session_id: ID of the session
+            db: Database session (for test compatibility) OR session_id for direct calls
+            session_id: ID of the session (optional if db is actually session_id)
             
         Returns:
             Session state dictionary or None if not found
         """
         import asyncio
         
-        # Get or create event loop
+        # Handle both calling conventions with type checking for robustness
+        if session_id is None:
+            # Called with just session_id (legacy style)
+            # Verify it's actually a UUID, not a Session object
+            if isinstance(db, uuid.UUID):
+                actual_session_id = db
+            else:
+                raise TypeError(
+                    "When called with single argument, it must be a UUID. "
+                    "Use get_session_state(db, session_id) or get_session_state(session_id)."
+                )
+        else:
+            # Called with db, session_id (test style)
+            actual_session_id = session_id
+        
+        # Check if we're already in an async context (e.g., from async tests)
         try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
+            asyncio.get_running_loop()
+            # We're in an async context - the caller should use the async method directly
+            # For now, raise an error to indicate this is not supported
+            raise RuntimeError(
+                "get_session_state() cannot be called from an async context. "
+                "Use 'await session_manager.get_session_state(session_id)' instead."
+            )
+        except RuntimeError as e:
+            if "get_session_state() cannot be called" in str(e):
+                raise
+            # No running loop - safe to create one and run
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
-        # Run the async method
-        return loop.run_until_complete(
-            self.session_manager.get_session_state(session_id)
-        )
+            try:
+                return loop.run_until_complete(
+                    self.session_manager.get_session_state(actual_session_id)
+                )
+            finally:
+                loop.close()
     
     def update_session_state(
         self, session_id: uuid.UUID, state: dict[str, Any]
@@ -319,3 +351,46 @@ class AgentOrchestrator:
             "message": "Session resumed successfully",
             "current_step": state.get("current_step"),
         }
+    
+    async def run_workflow(
+        self, db: Session, session_id: uuid.UUID
+    ) -> dict[str, Any]:
+        """
+        Run a complete workflow from start to finish.
+        
+        This is a high-level method that combines start_session and execute_step
+        to run the entire workflow. It's primarily used by integration tests.
+        
+        Args:
+            db: Database session
+            session_id: ID of the session to run
+            
+        Returns:
+            Workflow execution result with status and any generated data
+        """
+        # Get the session from database
+        session = await self.session_manager.get_session(db, session_id)
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+
+        # Start the session
+        await self.start_session(db, session_id)
+        
+        # Execute the workflow step
+        result = await self.execute_step(db, session_id)
+        
+        # Build response with execution result
+        response = {
+            "session_id": str(session_id),
+            "status": result.get("status", "completed"),
+        }
+        
+        # Merge workflow state fields, preserving response's session_id and status
+        workflow_state = result.get("workflow_state", {})
+        if workflow_state:
+            # Add workflow state fields, but don't override session_id or status
+            for key, value in workflow_state.items():
+                if key not in ("session_id", "status"):
+                    response[key] = value
+        
+        return response
