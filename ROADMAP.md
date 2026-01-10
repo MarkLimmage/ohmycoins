@@ -2,7 +2,8 @@
 
 **Status**: Active Development (Integration & Deployment)  
 **Last Updated**: 2026-01-10  
-**Current Sprint**: Sprint 2.7 (2026-01-11 to 2026-01-25)
+**Current Sprint**: Sprint 2.8 (Planning - Ready to Start)  
+**Previous Sprint**: Sprint 2.7 Complete ✅ (97.6% pass rate, all tracks delivered)
 
 ## 1. Project Overview
 This roadmap tracks the development of the OMC platform across its three parallel tracks:
@@ -36,9 +37,9 @@ This roadmap tracks the development of the OMC platform across its three paralle
     *   [x] Agent -> Data Integration (4-ledger query tools) (**Sprint 2.6 Complete**)
         - ✅ 8 data retrieval tools implemented (all 4 ledgers)
         - ✅ 19 integration tests created
-        - ⚠️ Tests blocked by SQLite ARRAY compatibility (Sprint 2.7 fix)
+        - ✅ All 318 agent tests passing (Sprint 2.7 - SQLite→PostgreSQL migration complete)
     *   [ ] Agent -> Trading Handoff (Artifact promotion) (**Future**)
-    *   [ ] System-wide Integration Tests (Staging) (**Sprint 2.7 in progress**)
+    *   [ ] System-wide Integration Tests (Staging) (**Sprint 2.8 pending**)
 
 ## 3. Completed Phases
 
@@ -53,17 +54,26 @@ This roadmap tracks the development of the OMC platform across its three paralle
     - ✅ PnL tests: 19/21 passing (90% - 2 isolation issues remaining)
     - 📊 Track A: 95% complete - 190/195 tests passing
 
-### Phase 3: Agentic Data Science System (**Sprint 2.6 Complete**)
+### Phase 3: Agentic Data Science System (**Sprint 2.7 Complete** ✅)
 *   **Owner**: Developer B
 *   **Outcome**: Autonomous ReAct agents capable of planning, analysis, and model training.
 *   **Sprint 2.6 Additions:**
     - ✅ Agent-data integration implemented (8 tools covering all 4 ledgers)
     - ✅ Section 10 added to ARCHITECTURE.md (Agent-Data Interface, 406 lines)
     - ✅ 19 comprehensive integration tests created
-    - ⚠️ All 19 tests blocked by SQLite ARRAY incompatibility (Sprint 2.7 fix)
-    - 📊 Track B: 90% complete - Functional code, test infrastructure issue
+*   **Sprint 2.7 Completion:**
+    - ✅ SQLite→PostgreSQL fixture migration complete
+    - ✅ All 318 agent tests passing (100%)
+    - ✅ TESTING.md enhanced with PostgreSQL fixture patterns
+    - 📊 Track B: 100% complete - All test infrastructure stable
 
 ### Recent Sprints
+- **Sprint 2.7** (2026-01-10): Test infrastructure fixes, PostgreSQL migration, deployment documentation ✅
+  - Final: 645/661 tests passing (97.6%), 16 failing, 0 errors
+  - Track A: 13/13 PnL tests passing (UUID isolation fix)
+  - Track B: 318/318 agent tests passing (SQLite→PostgreSQL migration)
+  - Track C: Comprehensive staging deployment documentation
+  - [Sprint 2.7 Archive](docs/archive/history/sprints/sprint-2.7/SPRINT_2.7_FINAL_REPORT.md)
 - **Sprint 2.6** (2026-01-10): Test hardening, 4-ledger quality monitoring, agent-data integration, infrastructure modules
   - Final: 581/686 tests passing (84.7%), 17 failing, 44 errors
   - [Sprint 2.6 Archive](docs/archive/history/sprints/sprint-2.6/README.md)

@@ -1,0 +1,117 @@
+time="2026-01-10T20:44:29+11:00" level=warning msg="The \"CI\" variable is not set. Defaulting to a blank string."
+ Container ohmycoins-db-1  Running
+ Container ohmycoins-redis-1  Running
+ Container ohmycoins-db-1  Waiting
+ Container ohmycoins-db-1  Healthy
+ Container ohmycoins-prestart-1  Starting
+ Container ohmycoins-prestart-1  Started
+....s.......................ssss........................................ [ 10%]
+....................................................F................... [ 21%]
+........................................................................ [ 32%]
+.................................ss....s.............................s.. [ 42%]
+.........ss............................................................. [ 53%]
+........................................................................ [ 64%]
+........................................................................ [ 75%]
+........................................................................ [ 85%]
+...............................F........F............................... [ 96%]
+......F.....FFFFFFFFFFFF                                                 [100%]
+=================================== FAILURES ===================================
+/app/tests/integration/test_synthetic_data_examples.py:223: AssertionError: assert 1 > 1
+/app/tests/services/trading/test_pnl.py:432: AssertionError: assert Decimal('31628.799829620000000000') == Decimal('4000.00')
+/app/tests/services/trading/test_pnl.py:875: AssertionError: assert Decimal('15814.399914810000000000') == Decimal('0')
+/app/app/services/trading/safety.py:240: app.services.trading.safety.SafetyViolation: Daily loss limit exceeded. Loss: 1000.00 AUD, Limit: 500.00 AUD (5% of portfolio)
+/app/.venv/lib/python3.10/site-packages/psycopg/cursor.py:128: sqlalchemy.exc.IntegrityError: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+/app/.venv/lib/python3.10/site-packages/sqlalchemy/orm/session.py:973: sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg.errors.UniqueViolation) duplicate key value violates unique constraint "ix_user_email"
+=============================== warnings summary ===============================
+.venv/lib/python3.10/site-packages/starlette/formparsers.py:12
+  /app/.venv/lib/python3.10/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+tests/services/test_collector.py:241
+  /app/tests/services/test_collector.py:241: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+tests/services/agent/integration/test_performance.py:294
+  /app/tests/services/agent/integration/test_performance.py:294: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests/services/agent/integration/test_performance.py:315
+  /app/tests/services/agent/integration/test_performance.py:315: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests/api/test_user_profile.py: 6 warnings
+tests/api/routes/test_login.py: 2 warnings
+tests/api/routes/test_users.py: 5 warnings
+tests/crud/test_user.py: 3 warnings
+  /app/.venv/lib/python3.10/site-packages/sqlmodel/_compat.py:106: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    return model.model_fields
+
+tests/scripts/test_backend_pre_start.py::test_init_successful_connection
+tests/scripts/test_test_pre_start.py::test_init_successful_connection
+  /app/.venv/lib/python3.10/site-packages/sqlmodel/orm/session.py:66: SAWarning: The engine provided as bind produced a connection that is already in a transaction. This is usually caused by a core event, such as 'engine_connect', that has left a transaction open. The effective join transaction mode used by this session is 'create_savepoint'. To silence this warning, do not leave transactions open
+    results = super().execute(
+
+tests/services/agent/test_data_analysis_tools.py::TestCalculateTechnicalIndicators::test_calculate_technical_indicators_basic
+  /app/.venv/lib/python3.10/site-packages/ta/trend.py:988: FutureWarning: Setting an item of incompatible dtype is deprecated and will raise an error in a future version of pandas. Value '50035.28' has dtype incompatible with int64, please explicitly cast to a compatible dtype first.
+    self._psar.iloc[i] = self._psar.iloc[i - 1] + (
+
+tests/services/agent/test_data_analysis_tools.py::TestAnalyzeSentimentTrends::test_analyze_sentiment_trends_empty_data
+  /app/.venv/lib/python3.10/site-packages/numpy/_core/fromnumeric.py:3860: RuntimeWarning: Mean of empty slice.
+    return _methods._mean(a, axis=axis, dtype=dtype,
+
+tests/services/agent/test_data_analysis_tools.py::TestAnalyzeSentimentTrends::test_analyze_sentiment_trends_empty_data
+  /app/.venv/lib/python3.10/site-packages/numpy/_core/_methods.py:145: RuntimeWarning: invalid value encountered in scalar divide
+    ret = ret.dtype.type(ret / rcount)
+
+tests/services/agent/test_data_analysis_tools.py::TestCleanData::test_clean_data_dataframe
+tests/services/agent/test_data_analysis_tools.py::TestCleanData::test_clean_data_list
+tests/services/agent/test_data_analysis_tools.py::TestCleanData::test_clean_data_with_outliers
+  /app/app/services/agent/tools/data_analysis_tools.py:280: FutureWarning: DataFrame.fillna with 'method' is deprecated and will raise in a future version. Use obj.ffill() or obj.bfill() instead.
+    df = df.fillna(method="ffill").fillna(method="bfill")
+
+tests/services/agent/integration/test_security.py::TestInputValidation::test_sql_injection_prevention
+  /app/tests/services/agent/integration/test_security.py:170: DeprecationWarning: 
+          🚨 You probably want to use `session.exec()` instead of `session.query()`.
+  
+          `session.exec()` is SQLModel's own short version with increased type
+          annotations.
+  
+          Or otherwise you might want to use `session.execute()` instead of
+          `session.query()`.
+          
+    all_sessions = db.query(AgentSession).all()
+
+tests/utils/test_seed_data.py::TestDataIntegrity::test_algorithm_deployment_relationship
+  /app/tests/conftest.py:70: SAWarning: Session's state has been changed on a non-active transaction - this state will be discarded.
+    session.rollback()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthetic_data_examples.py::TestDataRealism::test_user_profiles_diversity
+FAILED tests/services/trading/test_pnl.py::test_calculate_unrealized_pnl_with_position
+FAILED tests/services/trading/test_pnl.py::test_pnl_with_no_price_data - Asse...
+FAILED tests/services/trading/test_safety.py::TestSafetyManager::test_algorithm_exposure_limit_within_limit
+FAILED tests/utils/test_seed_data.py::TestSeedData::test_generate_users - sql...
+FAILED tests/utils/test_seed_data.py::TestSeedData::test_generate_algorithms
+FAILED tests/utils/test_seed_data.py::TestSeedData::test_generate_positions_and_orders
+FAILED tests/utils/test_seed_data.py::TestSeedData::test_clear_all_data - sql...
+FAILED tests/utils/test_seed_data.py::TestTestFixtures::test_create_test_user
+FAILED tests/utils/test_seed_data.py::TestTestFixtures::test_create_test_price_data
+FAILED tests/utils/test_seed_data.py::TestTestFixtures::test_create_test_algorithm
+FAILED tests/utils/test_seed_data.py::TestTestFixtures::test_create_test_position
+FAILED tests/utils/test_seed_data.py::TestTestFixtures::test_create_test_order
+FAILED tests/utils/test_seed_data.py::TestDataIntegrity::test_user_position_relationship
+FAILED tests/utils/test_seed_data.py::TestDataIntegrity::test_user_order_relationship
+FAILED tests/utils/test_seed_data.py::TestDataIntegrity::test_algorithm_deployment_relationship
+16 failed, 645 passed, 11 skipped, 30 warnings in 74.38s (0:01:14)
+
