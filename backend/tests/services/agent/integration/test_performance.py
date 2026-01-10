@@ -182,7 +182,7 @@ class TestPerformance:
 
         # Measure state retrieval time
         start_time = time.time()
-        state = orchestrator.get_session_state(db, session.id)
+        state = await session_manager.get_session_state(session.id)
         elapsed_time = time.time() - start_time
 
         # State retrieval should be fast (generous timeout for slower systems)

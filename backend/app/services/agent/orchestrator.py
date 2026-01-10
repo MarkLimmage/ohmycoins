@@ -258,17 +258,27 @@ class AgentOrchestrator:
             # Called with db, session_id (test style)
             actual_session_id = session_id
         
-        # Get or create event loop
+        # Check if we're already in an async context (e.g., from async tests)
         try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
+            asyncio.get_running_loop()
+            # We're in an async context - the caller should use the async method directly
+            # For now, raise an error to indicate this is not supported
+            raise RuntimeError(
+                "get_session_state() cannot be called from an async context. "
+                "Use 'await session_manager.get_session_state(session_id)' instead."
+            )
+        except RuntimeError as e:
+            if "get_session_state() cannot be called" in str(e):
+                raise
+            # No running loop - safe to create one and run
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
-        # Run the async method
-        return loop.run_until_complete(
-            self.session_manager.get_session_state(actual_session_id)
-        )
+            try:
+                return loop.run_until_complete(
+                    self.session_manager.get_session_state(actual_session_id)
+                )
+            finally:
+                loop.close()
     
     def update_session_state(
         self, session_id: uuid.UUID, state: dict[str, Any]
