@@ -4,6 +4,7 @@ Data Retrieval Tools - Week 3-4 Implementation
 Tools for DataRetrievalAgent to fetch cryptocurrency data from the database.
 """
 
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 from decimal import Decimal
@@ -18,6 +19,8 @@ from app.models import (
     NewsSentiment,
     SocialSentiment,
     CatalystEvents,
+    Order,
+    Position,
 )
 
 
@@ -330,3 +333,101 @@ async def get_data_statistics(
     }
 
     return stats
+
+
+async def fetch_order_history(
+    session: Session,
+    user_id: uuid.UUID,
+    coin_type: str | None = None,
+    status: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Fetch order history from Exchange ledger.
+
+    Args:
+        session: Database session
+        user_id: User ID to fetch orders for
+        coin_type: Optional filter by cryptocurrency symbol
+        status: Optional filter by order status (pending, submitted, filled, etc.)
+        start_date: Start date for data retrieval
+        end_date: End date for data retrieval (default: now)
+
+    Returns:
+        List of order dictionaries
+    """
+    if end_date is None:
+        end_date = datetime.now()
+    
+    if start_date is None:
+        # Default to last 30 days
+        start_date = end_date - timedelta(days=30)
+
+    statement = select(Order).where(
+        and_(
+            Order.user_id == user_id,
+            Order.created_at >= start_date,
+            Order.created_at <= end_date,
+        )
+    )
+    
+    if coin_type:
+        statement = statement.where(Order.coin_type == coin_type)
+    
+    if status:
+        statement = statement.where(Order.status == status)
+    
+    results = session.exec(statement.order_by(Order.created_at.desc())).all()
+    
+    return [
+        {
+            "id": str(result.id),
+            "coin_type": result.coin_type,
+            "side": result.side,
+            "order_type": result.order_type,
+            "quantity": float(result.quantity),
+            "price": float(result.price) if result.price else None,
+            "filled_quantity": float(result.filled_quantity),
+            "status": result.status,
+            "created_at": result.created_at.isoformat(),
+            "filled_at": result.filled_at.isoformat() if result.filled_at else None,
+        }
+        for result in results
+    ]
+
+
+async def fetch_user_positions(
+    session: Session,
+    user_id: uuid.UUID,
+    coin_type: str | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Fetch current positions from Exchange ledger.
+
+    Args:
+        session: Database session
+        user_id: User ID to fetch positions for
+        coin_type: Optional filter by cryptocurrency symbol
+
+    Returns:
+        List of position dictionaries
+    """
+    statement = select(Position).where(Position.user_id == user_id)
+    
+    if coin_type:
+        statement = statement.where(Position.coin_type == coin_type)
+    
+    results = session.exec(statement).all()
+    
+    return [
+        {
+            "coin_type": result.coin_type,
+            "quantity": float(result.quantity),
+            "average_price": float(result.average_price),
+            "total_cost": float(result.total_cost),
+            "created_at": result.created_at.isoformat(),
+            "updated_at": result.updated_at.isoformat(),
+        }
+        for result in results
+    ]
