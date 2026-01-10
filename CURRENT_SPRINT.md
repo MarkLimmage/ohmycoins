@@ -1,4 +1,13 @@
-# Current Sprint - Sprint 2.5 Complete ✅
+# Current Sprint - Sprint 2.6 In Progress
+
+**Status:** 🔄 IN PROGRESS  
+**Date Started:** January 10, 2026  
+**Sprint End:** January 24, 2026  
+**Focus:** Test hardening, 4-ledger completion, infrastructure finalization
+
+---
+
+## Previous Sprint: 2.5 Complete ✅
 
 **Status:** ✅ COMPLETED  
 **Date:** January 10, 2026  
@@ -73,19 +82,50 @@ Successfully completed parallel development across three tracks, resolving criti
 
 ---
 
-## 🚀 Next Sprint Focus
+## 🚀 Sprint 2.6 Progress (In Progress)
 
-### Sprint 2.6 Objectives
-1. **Complete 4-Ledger Implementation** - SEC API, CoinSpot announcements, quality monitoring
-2. **Agent-Data Integration** - Connect agent workflows to all 4 ledgers
-3. **Trading System Hardening** - Resolve PnL errors, expand safety manager coverage
-4. **Infrastructure Completion** - Terraform secrets, deployment automation
+### Track A: Data & Backend ✅ 70% Complete
+**Developer:** OMC-Data-Specialist  
+**Status:** Initial assessment and code review complete  
+**Test Results:** 172/195 passing (88.2%)  
+**Report:** [TRACK_A_TEST_REPORT.md](TRACK_A_TEST_REPORT.md)
 
-### Success Criteria
-- All 4 ledgers operational with quality monitoring
-- Agent can query and analyze data from all ledgers
-- <10 failing tests, <20 errors
-- Production deployment ready (Terraform complete)
+**Validated Completion:**
+- ✅ **Priority 3: Quality Monitor** - 17/17 tests passing (COMPLETE)
+- ✅ **Priority 4: Catalyst Collectors** - 9/9 tests passing (COMPLETE)
+- 🟡 **Priority 1: Seed Data** - 11/12 passing (1 test assertion fix needed)
+- 🔴 **Priority 2: PnL Tests** - 1/21 passing (test fixture refactor needed)
+
+**Remaining Work:** 2.5-4.5 hours (revised from 18-24 hours estimate)
+- Fix PnL test fixture (SQLite → PostgreSQL): 2-4 hours
+- Fix seed data test assertion: 30 minutes
+
+**Key Finding:** Documented Sprint 2.6 expectations based on outdated baseline. Quality monitor already complete (not documented). Catalyst collectors already excellent (not validated). Actual scope 82% smaller than estimated.
+
+### Track B: Agentic AI 🔲 Not Started
+**Developer:** OMC-ML-Scientist  
+**Status:** Awaiting Track A completion  
+**Dependencies:** Track A seed data fixes (for test data), Track C secrets (for OPENAI_API_KEY)
+
+### Track C: Infrastructure 🔲 Not Started
+**Developer:** OMC-DevOps-Engineer  
+**Status:** Awaiting developer assignment  
+**Priority:** Secrets module (blocks Track B agent testing)
+
+---
+
+## 📋 Sprint 2.5 Follow-Up Items (Being Addressed)
+
+### Priority: P2 (Non-Blocking)
+1. ~~**Seed Data Test Failures**~~ → ✅ VALIDATED: Only 1 test needs fix (test bug, not code bug)
+2. **PnL Calculation Errors** → 🔴 VALIDATED: SQLite test fixture incompatible with PostgreSQL ARRAY
+3. **Agent Security Tests** → 🔲 Track B Sprint 2.6 scope
+4. **Terraform Secrets Module** → 🔲 Track C Sprint 2.6 scope
+
+### Priority: P3 (Optimization)
+1. Performance test Redis configuration → 🔲 Track B Sprint 2.6 scope
+2. Documentation structure review → ✅ COMPLETE (Sprint 2.5 cleanup)
+3. Test coverage expansion → ✅ EXCELLENT coverage found in Track A (17 quality monitor, 9 catalyst)
 
 ---
 
