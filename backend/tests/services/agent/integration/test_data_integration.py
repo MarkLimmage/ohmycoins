@@ -42,7 +42,7 @@ from app.services.agent.tools.data_retrieval_tools import (
 @pytest.fixture(name="db")
 def db_fixture(session: Session):
     """Create test data in PostgreSQL session for agent-data integration tests.
-    
+
     Uses the shared session fixture from conftest.py which provides:
     - PostgreSQL database connection (supports ARRAY types)
     - Transaction isolation via savepoints

@@ -24,7 +24,7 @@ from app.services.agent.session_manager import SessionManager
 @pytest.fixture(name="db")
 def db_fixture(session: Session):
     """Create a test database session using PostgreSQL.
-    
+
     Uses the shared session fixture from conftest.py which provides:
     - PostgreSQL database connection (supports ARRAY types)
     - Transaction isolation via savepoints
@@ -36,9 +36,10 @@ def db_fixture(session: Session):
 @pytest.fixture
 def user_id(db: Session):
     """Generate a test user and return its ID."""
-    from app.models import User
     import uuid
-    
+
+    from app.models import User
+
     user = User(
         id=uuid.uuid4(),
         email=f"test_perf_{uuid.uuid4()}@example.com",

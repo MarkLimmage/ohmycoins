@@ -68,6 +68,54 @@ def session():
 - It provides PostgreSQL connection with proper isolation
 - Automatic cleanup between tests via savepoints
 
+**Example: Custom fixture with test data**
+```python
+# For tests that need pre-populated data
+@pytest.fixture(name="db")
+def db_fixture(session: Session):
+    """Create test data in PostgreSQL session.
+    
+    Uses the shared session fixture from conftest.py which provides:
+    - PostgreSQL database connection (supports ARRAY types)
+    - Transaction isolation via savepoints
+    - Automatic cleanup after each test
+    """
+    # Create test data
+    user = User(email="test@example.com", hashed_password="hashed")
+    session.add(user)
+    session.flush()  # Use flush(), not commit() to preserve savepoint
+    session.refresh(user)
+    
+    # Store IDs for tests
+    session.user_id = user.id  # type: ignore[attr-defined]
+    return session
+```
+
+**Important: Use flush(), not commit()**
+- The shared `session` fixture uses savepoints for transaction isolation
+- Calling `commit()` breaks out of the savepoint and causes isolation issues
+- Use `flush()` to write to the database while staying within the transaction
+- The savepoint is automatically rolled back after each test
+
+**Foreign Key Constraints**
+- PostgreSQL enforces foreign key constraints (unlike SQLite)
+- Tests must create required parent records before creating child records
+- Example: Create User before creating AgentSession
+
+```python
+# ✅ CORRECT - Create user first
+@pytest.fixture
+def user_id(db: Session):
+    user = User(email="test@example.com", hashed_password="hashed")
+    db.add(user)
+    db.flush()  # Flush without committing
+    return user.id
+
+# Then use user_id in tests that create agent sessions
+async def test_agent_session(db: Session, user_id: uuid.UUID):
+    session = await session_manager.create_session(db, user_id, ...)
+```
+
 ### Async Mock for Context Managers
 ```python
 from unittest.mock import MagicMock, AsyncMock
