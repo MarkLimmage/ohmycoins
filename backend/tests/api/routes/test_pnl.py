@@ -17,10 +17,10 @@ from app.utils.test_fixtures import create_test_user
 
 @pytest.fixture
 def pnl_test_user(session: Session) -> User:
-    """Create a test user for PnL tests using PostgreSQL session"""
+    """Create a test user for PnL tests using PostgreSQL session with unique email"""
     user = create_test_user(
         session,
-        email="pnl_test@example.com",
+        email=f"pnl_test_{uuid.uuid4()}@example.com",
         full_name="PnL Test User"
     )
     return user
