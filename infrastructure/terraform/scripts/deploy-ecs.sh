@@ -96,11 +96,28 @@ echo -e "${BLUE}[2/5] Building and pushing Docker images...${NC}"
 
 # Login to ECR
 echo "Logging in to Amazon ECR..."
-aws ecr get-login-password --region $AWS_REGION | \
-    docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+if ! aws ecr get-login-password --region $AWS_REGION | \
+    docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com 2>&1; then
+    echo -e "${RED}✗ ECR login failed${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ ECR login successful${NC}"
 
 ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
-IMAGE_TAG="$(git rev-parse --short HEAD)"
+
+# Validate git is available and we're in a git repo
+if ! command -v git &> /dev/null; then
+    echo -e "${RED}✗ Git not found${NC}"
+    echo "Using timestamp as image tag instead"
+    IMAGE_TAG="$(date +%Y%m%d-%H%M%S)"
+elif ! git rev-parse --git-dir > /dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ Not in a git repository${NC}"
+    echo "Using timestamp as image tag instead"
+    IMAGE_TAG="$(date +%Y%m%d-%H%M%S)"
+else
+    IMAGE_TAG="$(git rev-parse --short HEAD)"
+fi
+
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 echo "Building backend image..."
@@ -217,11 +234,19 @@ echo ""
 
 # Optional: Show current task status
 echo "Current running tasks:"
-BACKEND_TASKS=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $BACKEND_SERVICE --region $AWS_REGION --query 'taskArns' --output text | wc -w)
-FRONTEND_TASKS=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $FRONTEND_SERVICE --region $AWS_REGION --query 'taskArns' --output text | wc -w)
+if aws ecs describe-services --cluster $CLUSTER_NAME --services $BACKEND_SERVICE --region $AWS_REGION &> /dev/null; then
+    BACKEND_TASKS=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $BACKEND_SERVICE --region $AWS_REGION --query 'taskArns' --output text 2>/dev/null | wc -w)
+    echo "  Backend: $BACKEND_TASKS tasks running"
+else
+    echo "  Backend: Service not found or inaccessible"
+fi
 
-echo "  Backend: $BACKEND_TASKS tasks running"
-echo "  Frontend: $FRONTEND_TASKS tasks running"
+if aws ecs describe-services --cluster $CLUSTER_NAME --services $FRONTEND_SERVICE --region $AWS_REGION &> /dev/null; then
+    FRONTEND_TASKS=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $FRONTEND_SERVICE --region $AWS_REGION --query 'taskArns' --output text 2>/dev/null | wc -w)
+    echo "  Frontend: $FRONTEND_TASKS tasks running"
+else
+    echo "  Frontend: Service not found or inaccessible"
+fi
 echo ""
 
 echo -e "${GREEN}Deployment to $ENVIRONMENT completed successfully!${NC}"

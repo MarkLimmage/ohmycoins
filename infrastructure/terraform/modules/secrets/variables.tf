@@ -23,13 +23,13 @@ variable "environment" {
 }
 
 variable "recovery_window_in_days" {
-  description = "Number of days AWS Secrets Manager waits before deleting a secret (0-30)"
+  description = "Number of days AWS Secrets Manager waits before deleting a secret. Set to 0 for immediate deletion (staging), 7-30 for production safety. AWS maximum is 30 days."
   type        = number
   default     = 30
 
   validation {
     condition     = var.recovery_window_in_days >= 0 && var.recovery_window_in_days <= 30
-    error_message = "Recovery window must be between 0 and 30 days."
+    error_message = "Recovery window must be between 0 and 30 days. Use 0 for immediate deletion (staging only), 7-30 for production."
   }
 }
 
