@@ -10,16 +10,18 @@ The documentation has been consolidated to provide a Single Source of Truth:
 
 ### Core Documentation
 *   **[System Requirements](/docs/SYSTEM_REQUIREMENTS.md)**: Comprehensive EARS-compliant requirements for Data Collection and Agentic AI.
-*   **[Architecture](/docs/ARCHITECTURE.md)**: High-level system design, microservices breakdown, and infrastructure stack.
+*   **[Architecture](/docs/ARCHITECTURE.md)**: High-level system design, technical constraints, and best practices.
 *   **[Project Handoff](/docs/PROJECT_HANDOFF.md)**: Current status of parallel development tracks and next steps.
 *   **[Roadmap](/ROADMAP.md)**: Active project timeline and progress tracking.
+*   **[Current Sprint](/CURRENT_SPRINT.md)**: Current sprint objectives and status (updated each sprint).
 
 ### Operations & Deployment
 *   **[Deployment Status](/docs/DEPLOYMENT_STATUS.md)**: Current state of local/staging/production environments
 *   **[Secrets Management](/docs/SECRETS_MANAGEMENT.md)**: Guide to managing secrets across environments
+*   **[Testing Guide](/docs/TESTING.md)**: Test patterns, known issues, and coverage goals
 *   **[Terraform Infrastructure](/infrastructure/terraform/README.md)**: AWS ECS infrastructure documentation
 
-> **Note**: Historical planning documents and decision records have been archived in `/docs/archive/`.
+> **Note**: Historical planning documents and sprint reports have been archived in `/docs/archive/history/`.
 
 ## Quick Start
 

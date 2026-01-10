@@ -149,4 +149,70 @@ graph TD
 *   **Backend**: FastAPI, SQLAlchemy, Pydantic.
 *   **AI/ML**: LangChain, LangGraph, OpenAI/Anthropic, Scikit-learn, Pandas.
 *   **Data**: PostgreSQL 15+, Redis 7+.
-*   **Infra**: AWS (EKS, RDS, ElastiCache), Terraform.
+*   **Infra**: AWS (ECS/Fargate, RDS, ElastiCache), Terraform.
+*   **ORM**: SQLModel (with known constraints - see Technical Constraints below).
+
+---
+
+## 9. Technical Constraints & Best Practices
+
+### 9.1 SQLModel ORM Patterns
+**Constraint**: SQLModel's `Relationship()` cannot parse `list["Model"]` type annotations.
+
+**Solution**: Use unidirectional relationships:
+```python
+# ✅ CORRECT - Unidirectional from child to parent
+class Position(SQLModel, table=True):
+    user_id: uuid.UUID = Field(foreign_key="user.id")
+    user: "User" = Relationship()
+
+class User(SQLModel, table=True):
+    # No positions relationship declared
+    pass
+
+# Access via explicit query:
+positions = session.exec(select(Position).where(Position.user_id == user.id)).all()
+```
+
+**Avoid**: Bidirectional relationships with collections cause runtime errors:
+```python
+# ❌ INCORRECT - Causes InvalidRequestError
+class User(SQLModel, table=True):
+    positions: list["Position"] = Relationship(back_populates="user")
+```
+
+### 9.2 Async Testing with Mocks
+**Constraint**: `AsyncMock(return_value=X)` wraps return values in coroutines, incompatible with `async with` statements.
+
+**Solution**: Use `MagicMock` for callables returning context managers:
+```python
+# ✅ CORRECT - MagicMock returns context manager directly
+mock_session.post = MagicMock(return_value=mock_response)
+mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+mock_response.__aexit__ = AsyncMock(return_value=None)
+
+# ❌ INCORRECT - AsyncMock returns coroutine first
+mock_session.post = AsyncMock(return_value=mock_response)
+```
+
+### 9.3 Schema-Model Alignment
+**Best Practice**: Always verify model field types match migration column definitions.
+
+**Example**: Arrays must use `postgresql.ARRAY()`, not `Column(JSON)`:
+```python
+from sqlalchemy.dialects import postgresql
+
+# ✅ CORRECT
+currencies: list[str] | None = Field(
+    default=None, 
+    sa_column=Column(postgresql.ARRAY(sa.String()))
+)
+```
+
+### 9.4 Event Loop Management
+**Constraint**: Cannot use `loop.run_until_complete()` from within an already-running async context.
+
+**Solution**: 
+- For async tests: Use `await` directly on async methods
+- For sync API routes: Create new event loop or use sync wrappers
+- Detect context: `asyncio.get_running_loop()` raises `RuntimeError` if no loop
