@@ -171,11 +171,11 @@
 ## 📚 Sprint 2.6 Archive
 
 **Complete sprint details archived in progress reports:**
-- [Sprint 2.6 Archive](docs/archive/sprints/sprint-2.6/README.md) - Complete sprint summary
-- [TRACK_A_FINAL_STATUS.md](docs/archive/sprints/sprint-2.6/TRACK_A_FINAL_STATUS.md) - Track A completion summary
-- [TRACK_A_RETEST_REPORT.md](docs/archive/sprints/sprint-2.6/TRACK_A_RETEST_REPORT.md) - Track A remediation validation
-- [TRACK_B_SPRINT_2.6_REPORT.md](docs/archive/sprints/sprint-2.6/TRACK_B_SPRINT_2.6_REPORT.md) - Track B progress assessment  
-- [TRACK_C_SPRINT_2.6_REPORT.md](docs/archive/sprints/sprint-2.6/TRACK_C_SPRINT_2.6_REPORT.md) - Track C infrastructure deliverables
+- [Sprint 2.6 Archive](docs/archive/history/sprints/sprint-2.6/README.md) - Complete sprint summary
+- [TRACK_A_FINAL_STATUS.md](docs/archive/history/sprints/sprint-2.6/TRACK_A_FINAL_STATUS.md) - Track A completion summary
+- [TRACK_A_RETEST_REPORT.md](docs/archive/history/sprints/sprint-2.6/TRACK_A_RETEST_REPORT.md) - Track A remediation validation
+- [TRACK_B_SPRINT_2.6_REPORT.md](docs/archive/history/sprints/sprint-2.6/TRACK_B_SPRINT_2.6_REPORT.md) - Track B progress assessment  
+- [TRACK_C_SPRINT_2.6_REPORT.md](docs/archive/history/sprints/sprint-2.6/TRACK_C_SPRINT_2.6_REPORT.md) - Track C infrastructure deliverables
 
 **Key Learnings for Next Sprint:**
 - SQLite test fixtures incompatible with PostgreSQL ARRAY types
