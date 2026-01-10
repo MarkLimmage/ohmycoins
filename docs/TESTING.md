@@ -1,7 +1,7 @@
 # Testing Guide
 
 **Last Updated:** 2026-01-10  
-**Current Status:** 565 passing tests, 18 failures, 77 errors
+**Current Status:** 192 passing tests, 3 failures, 0 errors (Track A domain)
 
 ---
 
@@ -38,6 +38,36 @@ pytest tests/services/collectors/ -v
 
 ## Test Patterns
 
+### Database Testing with PostgreSQL
+
+**✅ CORRECT - Use PostgreSQL for tests**
+```python
+# Use the shared session fixture from tests/conftest.py
+def test_my_feature(session: Session):
+    # This session connects to actual PostgreSQL (via Docker)
+    # It includes proper transaction isolation and cleanup
+    pass
+```
+
+**❌ INCORRECT - Don't use SQLite with PostgreSQL-specific types**
+```python
+# This will fail with models using ARRAY, JSONB, etc.
+@pytest.fixture
+def session():
+    engine = create_engine("sqlite:///:memory:")  # ❌ Won't work
+    SQLModel.metadata.create_all(engine)  # Fails on ARRAY columns
+```
+
+**Why?** 
+- Sprint 2.5 introduced PostgreSQL-specific types (`ARRAY(String)`) for currency fields
+- SQLite doesn't support these types
+- Test fixtures must match production database type
+
+**Best Practice:**
+- Use the shared `session` fixture from `tests/conftest.py`
+- It provides PostgreSQL connection with proper isolation
+- Automatic cleanup between tests via savepoints
+
 ### Async Mock for Context Managers
 ```python
 from unittest.mock import MagicMock, AsyncMock
@@ -46,14 +76,6 @@ from unittest.mock import MagicMock, AsyncMock
 mock_session.post = MagicMock(return_value=mock_response)
 mock_response.__aenter__ = AsyncMock(return_value=mock_response)
 mock_response.__aexit__ = AsyncMock(return_value=None)
-```
-
-### Database Testing
-```python
-@pytest.fixture
-def db(session: Session) -> Generator[Session, None, None]:
-    yield session
-    session.rollback()
 ```
 
 ### Agent Testing
@@ -76,8 +98,10 @@ async def test_agent_workflow(db: Session, orchestrator: AgentOrchestrator):
 positions = session.exec(select(Position).where(Position.user_id == user.id)).all()
 ```
 
-### Issue: PnL Calculation Tests (20 errors)
-**Status:** Tracked for next sprint  
+### ✅ RESOLVED: PnL Test Fixture (Sprint 2.6)
+**Problem:** SQLite fixture couldn't handle PostgreSQL ARRAY types  
+**Solution:** Removed local SQLite fixture, now uses shared PostgreSQL session from conftest.py  
+**Result:** 21/21 PnL tests now passing  
 **Impact:** Does not block development  
 **Workaround:** Skip with `pytest -k "not pnl"`
 

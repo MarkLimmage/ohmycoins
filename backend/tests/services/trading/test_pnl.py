@@ -1,29 +1,19 @@
 """
 Tests for the P&L (Profit & Loss) calculation engine
+
+Note: These tests use the PostgreSQL session fixture from tests/conftest.py
+rather than SQLite, as the schema includes PostgreSQL-specific types (ARRAY)
+that are not supported by SQLite.
 """
 import uuid
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 
 import pytest
-from sqlmodel import Session, create_engine, SQLModel
-from sqlmodel.pool import StaticPool
+from sqlmodel import Session
 
 from app.models import User, Order, Position, PriceData5Min
 from app.services.trading.pnl import PnLEngine, PnLMetrics, get_pnl_engine
-
-
-@pytest.fixture(name="session")
-def session_fixture():
-    """Create a test database session"""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
 
 
 @pytest.fixture
