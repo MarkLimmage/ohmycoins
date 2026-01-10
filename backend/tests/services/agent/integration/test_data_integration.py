@@ -11,31 +11,29 @@ Tests follow SQLModel unidirectional relationship pattern and validate
 data access patterns for agent workflows.
 """
 
-import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock
 
 import pytest
 from sqlmodel import Session, create_engine
 from sqlmodel.pool import StaticPool
 
 from app.models import (
-    PriceData5Min,
-    OnChainMetrics,
-    NewsSentiment,
-    SocialSentiment,
     CatalystEvents,
+    NewsSentiment,
+    OnChainMetrics,
     Order,
     Position,
+    PriceData5Min,
+    SocialSentiment,
     User,
 )
 from app.services.agent.tools.data_retrieval_tools import (
+    fetch_catalyst_events,
+    fetch_on_chain_metrics,
+    fetch_order_history,
     fetch_price_data,
     fetch_sentiment_data,
-    fetch_on_chain_metrics,
-    fetch_catalyst_events,
-    fetch_order_history,
     fetch_user_positions,
     get_available_coins,
     get_data_statistics,
@@ -243,9 +241,7 @@ class TestHumanLedger:
         now = datetime.now(timezone.utc)
         start_date = now - timedelta(days=1)
 
-        result = await fetch_sentiment_data(
-            db, start_date, now, currencies=["BTC"]
-        )
+        result = await fetch_sentiment_data(db, start_date, now, currencies=["BTC"])
 
         assert len(result["news_sentiment"]) > 0
         # Verify all results mention BTC
@@ -258,14 +254,10 @@ class TestHumanLedger:
         now = datetime.now(timezone.utc)
         start_date = now - timedelta(days=1)
 
-        result = await fetch_sentiment_data(
-            db, start_date, now, platform="reddit"
-        )
+        result = await fetch_sentiment_data(db, start_date, now, platform="reddit")
 
         assert len(result["social_sentiment"]) > 0
-        assert all(
-            s["platform"] == "reddit" for s in result["social_sentiment"]
-        )
+        assert all(s["platform"] == "reddit" for s in result["social_sentiment"])
 
 
 class TestCatalystLedger:
@@ -302,9 +294,7 @@ class TestCatalystLedger:
         now = datetime.now(timezone.utc)
         start_date = now - timedelta(days=7)
 
-        result = await fetch_catalyst_events(
-            db, start_date, now, currencies=["BTC"]
-        )
+        result = await fetch_catalyst_events(db, start_date, now, currencies=["BTC"])
 
         assert len(result) > 0
         # Verify all results mention BTC

@@ -11,7 +11,6 @@ These tests verify performance characteristics including:
 import asyncio
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -68,9 +67,7 @@ class TestPerformance:
         """Test session creation is fast."""
         start_time = time.time()
 
-        session_create = AgentSessionCreate(
-            user_goal="Test performance goal"
-        )
+        session_create = AgentSessionCreate(user_goal="Test performance goal")
         session = await session_manager.create_session(db, user_id, session_create)
 
         elapsed_time = time.time() - start_time
@@ -81,12 +78,14 @@ class TestPerformance:
 
     @pytest.mark.asyncio
     async def test_large_dataset_handling(
-        self, db: Session, orchestrator: AgentOrchestrator, session_manager: SessionManager, user_id: uuid.UUID
+        self,
+        db: Session,
+        orchestrator: AgentOrchestrator,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
     ):
         """Test workflow handles large datasets efficiently."""
-        session_create = AgentSessionCreate(
-            user_goal="Analyze large dataset"
-        )
+        session_create = AgentSessionCreate(user_goal="Analyze large dataset")
         session = await session_manager.create_session(db, user_id, session_create)
 
         # Mock large dataset (10,000 records)
@@ -125,9 +124,7 @@ class TestPerformance:
         # Create multiple sessions concurrently
         start_time = time.time()
         for i in range(num_sessions):
-            session_create = AgentSessionCreate(
-                user_goal=f"Concurrent test goal {i}"
-            )
+            session_create = AgentSessionCreate(user_goal=f"Concurrent test goal {i}")
             session = await session_manager.create_session(db, user_id, session_create)
             sessions.append(session)
 
@@ -144,19 +141,21 @@ class TestPerformance:
 
     @pytest.mark.asyncio
     async def test_workflow_execution_time(
-        self, db: Session, orchestrator: AgentOrchestrator, session_manager: SessionManager, user_id: uuid.UUID
+        self,
+        db: Session,
+        orchestrator: AgentOrchestrator,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
     ):
         """Test workflow execution completes in reasonable time."""
-        session_create = AgentSessionCreate(
-            user_goal="Test execution time"
-        )
+        session_create = AgentSessionCreate(user_goal="Test execution time")
         session = await session_manager.create_session(db, user_id, session_create)
 
         start_time = time.time()
 
         with patch.object(orchestrator, "run_workflow") as mock_run:
             # Simulate workflow taking 2 seconds
-            async def slow_workflow(*args, **kwargs):
+            async def slow_workflow(*_args, **_kwargs):
                 await asyncio.sleep(0.1)  # Simulate work
                 return {"status": "completed", "execution_time": 0.1}
 
@@ -171,21 +170,23 @@ class TestPerformance:
 
     @pytest.mark.asyncio
     async def test_session_state_retrieval_performance(
-        self, db: Session, session_manager: SessionManager, orchestrator: AgentOrchestrator, user_id: uuid.UUID
+        self,
+        db: Session,
+        session_manager: SessionManager,
+        orchestrator: AgentOrchestrator,
+        user_id: uuid.UUID,
     ):
         """Test session state can be retrieved quickly."""
         # Create a session
-        session_create = AgentSessionCreate(
-            user_goal="Test state retrieval"
-        )
+        session_create = AgentSessionCreate(user_goal="Test state retrieval")
         session = await session_manager.create_session(db, user_id, session_create)
 
         # Mock Redis for state retrieval
         import json
-        from unittest.mock import AsyncMock
+
         mock_redis = AsyncMock()
         session_manager.redis_client = mock_redis
-        
+
         # Mock state data
         test_state = {
             "session_id": str(session.id),
@@ -206,12 +207,14 @@ class TestPerformance:
 
     @pytest.mark.asyncio
     async def test_multiple_workflow_runs(
-        self, db: Session, orchestrator: AgentOrchestrator, session_manager: SessionManager, user_id: uuid.UUID
+        self,
+        db: Session,
+        orchestrator: AgentOrchestrator,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
     ):
         """Test multiple workflow runs don't degrade performance."""
-        session_create = AgentSessionCreate(
-            user_goal="Test multiple runs"
-        )
+        session_create = AgentSessionCreate(user_goal="Test multiple runs")
         session = await session_manager.create_session(db, user_id, session_create)
 
         execution_times = []
@@ -220,7 +223,7 @@ class TestPerformance:
             mock_run.return_value = {"status": "completed"}
 
             # Run workflow 10 times
-            for i in range(10):
+            for _i in range(10):
                 start_time = time.time()
                 result = await orchestrator.run_workflow(db, session.id)
                 elapsed_time = time.time() - start_time
@@ -245,16 +248,13 @@ class TestResourceUsage:
     ):
         """Test creating sessions doesn't leak memory."""
         import gc
-        import sys
 
         initial_objects = len(gc.get_objects())
 
         # Create and delete multiple sessions
         for i in range(100):
-            session_create = AgentSessionCreate(
-                user_goal=f"Memory test {i}"
-            )
-            session = await session_manager.create_session(db, user_id, session_create)
+            session_create = AgentSessionCreate(user_goal=f"Memory test {i}")
+            _ = await session_manager.create_session(db, user_id, session_create)
             # Session goes out of scope
 
         # Force garbage collection
@@ -273,9 +273,7 @@ class TestResourceUsage:
         """Test database connections are properly managed."""
         # Create multiple sessions to verify connection handling
         for i in range(20):
-            session_create = AgentSessionCreate(
-                user_goal=f"Connection test {i}"
-            )
+            session_create = AgentSessionCreate(user_goal=f"Connection test {i}")
             session = await session_manager.create_session(db, user_id, session_create)
             assert session is not None
 
@@ -296,9 +294,7 @@ class TestScalability:
         sessions_created = []
 
         for i in range(num_sessions):
-            session_create = AgentSessionCreate(
-                user_goal=f"Scalability test {i}"
-            )
+            session_create = AgentSessionCreate(user_goal=f"Scalability test {i}")
             session = await session_manager.create_session(db, user_id, session_create)
             sessions_created.append(session)
 
@@ -312,7 +308,11 @@ class TestScalability:
     @pytest.mark.asyncio
     @pytest.mark.slow
     async def test_concurrent_workflow_execution(
-        self, db: Session, orchestrator: AgentOrchestrator, session_manager: SessionManager, user_id: uuid.UUID
+        self,
+        db: Session,
+        orchestrator: AgentOrchestrator,
+        session_manager: SessionManager,
+        user_id: uuid.UUID,
     ):
         """Test multiple workflows can run concurrently."""
         num_workflows = 5
@@ -320,9 +320,7 @@ class TestScalability:
         # Create sessions
         sessions = []
         for i in range(num_workflows):
-            session_create = AgentSessionCreate(
-                user_goal=f"Concurrent workflow {i}"
-            )
+            session_create = AgentSessionCreate(user_goal=f"Concurrent workflow {i}")
             session = await session_manager.create_session(db, user_id, session_create)
             sessions.append(session)
 
