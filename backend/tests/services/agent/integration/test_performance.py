@@ -180,6 +180,20 @@ class TestPerformance:
         )
         session = await session_manager.create_session(db, user_id, session_create)
 
+        # Mock Redis for state retrieval
+        import json
+        from unittest.mock import AsyncMock
+        mock_redis = AsyncMock()
+        session_manager.redis_client = mock_redis
+        
+        # Mock state data
+        test_state = {
+            "session_id": str(session.id),
+            "user_goal": "Test state retrieval",
+            "status": "pending",
+        }
+        mock_redis.get.return_value = json.dumps(test_state)
+
         # Measure state retrieval time
         start_time = time.time()
         state = await session_manager.get_session_state(session.id)
@@ -187,6 +201,8 @@ class TestPerformance:
 
         # State retrieval should be fast (generous timeout for slower systems)
         assert elapsed_time < 1.0  # 1 second
+        assert state is not None
+        assert state["session_id"] == str(session.id)
 
     @pytest.mark.asyncio
     async def test_multiple_workflow_runs(

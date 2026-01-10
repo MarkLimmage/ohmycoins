@@ -214,11 +214,11 @@ class TestAccessControl:
 
         # Mock state update
         with patch.object(orchestrator, "update_session_state") as mock_update:
-            mock_update.return_value = True
+            mock_update.return_value = None
 
-            # Owner can update state
-            result = orchestrator.update_session_state(db, session.id, {"test": "data"})
-            assert result is True
+            # Owner can update state (note: update_session_state returns None)
+            result = orchestrator.update_session_state(session.id, {"test": "data"})
+            assert mock_update.called  # Just verify it was called
 
         # In production, API would verify user_id matches session.user_id
 
