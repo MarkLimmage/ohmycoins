@@ -55,7 +55,7 @@ def db_fixture(session: Session):
         full_name="Test Agent User",
     )
     session.add(user)
-    session.commit()
+    session.flush()  # Flush to database without committing the transaction
     session.refresh(user)
 
     # Add sample Glass Ledger data (PriceData5Min)
@@ -145,7 +145,7 @@ def db_fixture(session: Session):
     )
     session.add(position)
 
-    session.commit()
+    session.flush()  # Flush to ensure all data is written to the session
 
     # Store user_id for tests
     session.user_id = user.id  # type: ignore[attr-defined]

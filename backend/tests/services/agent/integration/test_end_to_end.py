@@ -10,8 +10,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from sqlmodel import Session, create_engine
-from sqlmodel.pool import StaticPool
+from sqlmodel import Session
 
 from app.models import (
     AgentArtifact,
@@ -26,27 +25,32 @@ from app.services.agent.session_manager import SessionManager
 
 
 @pytest.fixture(name="db")
-def db_fixture():
-    """Create a test database session."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    # Import all models to ensure they're registered
-    from sqlmodel import SQLModel
-
-    SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        yield session
+def db_fixture(session: Session):
+    """Create a test database session using PostgreSQL.
+    
+    Uses the shared session fixture from conftest.py which provides:
+    - PostgreSQL database connection (supports ARRAY types)
+    - Transaction isolation via savepoints
+    - Automatic cleanup after each test
+    """
+    return session
 
 
 @pytest.fixture
-def user_id():
-    """Generate a test user ID."""
-    return uuid.uuid4()
+def user_id(db: Session):
+    """Generate a test user and return its ID."""
+    from app.models import User
+    import uuid
+    
+    user = User(
+        id=uuid.uuid4(),
+        email=f"test_agent_{uuid.uuid4()}@example.com",
+        hashed_password="hashed",
+        full_name="Test Agent User",
+    )
+    db.add(user)
+    db.flush()  # Flush without committing to stay within the savepoint
+    return user.id
 
 
 @pytest.fixture
