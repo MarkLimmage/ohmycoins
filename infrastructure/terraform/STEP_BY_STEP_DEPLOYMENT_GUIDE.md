@@ -709,8 +709,13 @@ curl -s -o /dev/null -w "%{http_code}" http://$ALB_DNS/ | grep -q "200" && echo 
 ### 9.3 Check ALB Target Health
 
 ```bash
-# Get backend target group ARN
-export TG_ARN=$(cd infrastructure/terraform/environments/staging && terraform output -raw backend_target_group_arn)
+# Get backend target group ARN from AWS
+export TG_ARN=$(aws elbv2 describe-target-groups \
+    --region ap-southeast-2 \
+    --query "TargetGroups[?contains(TargetGroupName, 'ohmycoins-staging-backend')].TargetGroupArn" \
+    --output text)
+
+echo "Target Group ARN: $TG_ARN"
 
 # Check target health
 aws elbv2 describe-target-health \
