@@ -278,8 +278,10 @@ echo "✓ Terraform backend ready"
 ### 5.1 Generate Secure Passwords
 
 ```bash
-# Generate secure passwords (save these!)
-export DB_PASSWORD=$(openssl rand -base64 32)
+# Generate RDS-compatible database password (no /, @, ", or space characters)
+export DB_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
+
+# Generate other secure credentials
 export APP_SECRET_KEY=$(openssl rand -base64 32)
 export ADMIN_PASSWORD=$(openssl rand -base64 16)
 
@@ -288,6 +290,12 @@ echo "Database Password: $DB_PASSWORD"
 echo "App Secret Key: $APP_SECRET_KEY"
 echo "Admin Password: $ADMIN_PASSWORD"
 echo "=============================="
+echo ""
+echo "⚠️  IMPORTANT: Save these in a password manager NOW!"
+echo "Note: DB password excludes /+= characters (RDS requirement)"
+echo "Press Enter to continue after saving..."
+read
+```
 echo ""
 echo "⚠️  IMPORTANT: Save these in a password manager NOW!"
 echo "Press Enter to continue after saving..."
@@ -341,8 +349,16 @@ frontend_image_tag = "latest"
 # Validate terraform.tfvars syntax
 terraform fmt terraform.tfvars
 
-# Check that password was set
-grep -q "CHANGE_ME" terraform.tfvars && echo "⚠️  ERROR: Update master_password!" || echo "✓ Password configured"
+# Check that password was set (not the placeholder)
+grep -q "<PASTE_DB_PASSWORD_HERE>" terraform.tfvars && echo "⚠️  ERROR: Update master_password!" || echo "✓ Password configured"
+
+# Validate password doesn't contain invalid characters for RDS
+if grep "master_password" terraform.tfvars | grep -q "[/@\" ]"; then
+    echo "⚠️  ERROR: Password contains invalid characters (/, @, \", or space)"
+    echo "Regenerate with: openssl rand -base64 32 | tr -d '/+=' | head -c 32"
+else
+    echo "✓ Password is RDS-compatible"
+fi
 ```
 
 ---
