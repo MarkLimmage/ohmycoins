@@ -460,9 +460,9 @@ terraform output > outputs.txt
 echo "=== DEPLOYMENT OUTPUTS ==="
 terraform output alb_dns_name
 terraform output ecs_cluster_name
-terraform output db_instance_address
-terraform output redis_primary_endpoint_address
-terraform output app_secrets_arn
+terraform output db_endpoint
+terraform output redis_endpoint
+terraform output secrets_manager_secret_arn
 echo "=========================="
 
 # Save these for later reference
@@ -476,9 +476,9 @@ echo "=========================="
 
 ```bash
 # Get output values
-export SECRET_ARN=$(terraform output -raw app_secrets_arn)
-export DB_HOST=$(terraform output -raw db_instance_address)
-export REDIS_HOST=$(terraform output -raw redis_primary_endpoint_address)
+export SECRET_ARN=$(terraform output -raw secrets_manager_secret_arn)
+export DB_HOST=$(terraform output -raw rds_endpoint | cut -d: -f1)
+export REDIS_HOST=$(terraform output -raw redis_endpoint | cut -d: -f1)
 export ALB_DNS=$(terraform output -raw alb_dns_name)
 
 # Create secrets JSON file
@@ -951,8 +951,8 @@ CloudWatch Dashboard: https://console.aws.amazon.com/cloudwatch/home?region=ap-s
 === Resources ===
 ECS Cluster: $CLUSTER_NAME
 VPC ID: $(cd infrastructure/terraform/environments/staging && terraform output -raw vpc_id)
-Database Endpoint: $(cd infrastructure/terraform/environments/staging && terraform output -raw db_instance_address)
-Redis Endpoint: $(cd infrastructure/terraform/environments/staging && terraform output -raw redis_primary_endpoint_address)
+Database Endpoint: $(cd infrastructure/terraform/environments/staging && terraform output -raw rds_endpoint)
+Redis Endpoint: $(cd infrastructure/terraform/environments/staging && terraform output -raw redis_endpoint)
 Secrets ARN: $SECRET_ARN
 SNS Topic ARN: $SNS_TOPIC_ARN
 
