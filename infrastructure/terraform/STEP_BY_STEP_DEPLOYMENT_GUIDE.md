@@ -624,14 +624,14 @@ echo "Deploying to cluster: $CLUSTER_NAME"
 # Trigger new deployment of backend service
 aws ecs update-service \
     --cluster $CLUSTER_NAME \
-    --service ohmycoins-staging-backend-service \
+    --service ohmycoins-staging-backend \
     --force-new-deployment \
     --region ap-southeast-2
 
 # Trigger new deployment of frontend service
 aws ecs update-service \
     --cluster $CLUSTER_NAME \
-    --service ohmycoins-staging-frontend-service \
+    --service ohmycoins-staging-frontend \
     --force-new-deployment \
     --region ap-southeast-2
 
@@ -645,7 +645,7 @@ echo "⏱️  Waiting for services to stabilize (5-10 minutes)..."
 # Wait for services to become stable
 aws ecs wait services-stable \
     --cluster $CLUSTER_NAME \
-    --services ohmycoins-staging-backend-service ohmycoins-staging-frontend-service \
+    --services ohmycoins-staging-backend ohmycoins-staging-frontend \
     --region ap-southeast-2
 
 echo "✓ Services are stable and running"
@@ -657,7 +657,7 @@ echo "✓ Services are stable and running"
 # Check service status
 aws ecs describe-services \
     --cluster $CLUSTER_NAME \
-    --services ohmycoins-staging-backend-service ohmycoins-staging-frontend-service \
+    --services ohmycoins-staging-backend ohmycoins-staging-frontend \
     --region ap-southeast-2 \
     --query 'services[*].[serviceName,status,runningCount,desiredCount,deployments[0].rolloutState]' \
     --output table
@@ -825,7 +825,7 @@ aws cloudwatch describe-alarms \
 # Get a task ARN
 export TASK_ARN=$(aws ecs list-tasks \
     --cluster $CLUSTER_NAME \
-    --service-name ohmycoins-staging-backend-service \
+    --service-name ohmycoins-staging-backend \
     --region ap-southeast-2 \
     --query 'taskArns[0]' \
     --output text)
@@ -997,7 +997,7 @@ Database Name: ohmycoins
 aws logs tail /ecs/ohmycoins-staging-backend --follow --region ap-southeast-2
 
 # Update service (redeploy)
-aws ecs update-service --cluster $CLUSTER_NAME --service ohmycoins-staging-backend-service --force-new-deployment --region ap-southeast-2
+aws ecs update-service --cluster $CLUSTER_NAME --service ohmycoins-staging-backend --force-new-deployment --region ap-southeast-2
 
 # View running tasks
 aws ecs list-tasks --cluster $CLUSTER_NAME --region ap-southeast-2
@@ -1200,20 +1200,20 @@ aws cloudwatch put-metric-alarm \
 # Stop ECS tasks when not in use (saves ~$15/month)
 aws ecs update-service \
     --cluster $CLUSTER_NAME \
-    --service ohmycoins-staging-backend-service \
+    --service ohmycoins-staging-backend \
     --desired-count 0 \
     --region ap-southeast-2
 
 aws ecs update-service \
     --cluster $CLUSTER_NAME \
-    --service ohmycoins-staging-frontend-service \
+    --service ohmycoins-staging-frontend \
     --desired-count 0 \
     --region ap-southeast-2
 
 # Restart when needed
 aws ecs update-service \
     --cluster $CLUSTER_NAME \
-    --service ohmycoins-staging-backend-service \
+    --service ohmycoins-staging-backend \
     --desired-count 1 \
     --region ap-southeast-2
 ```
