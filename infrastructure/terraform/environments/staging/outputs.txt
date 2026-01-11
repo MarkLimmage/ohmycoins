@@ -1,0 +1,13 @@
+alb_dns_name = "ohmycoins-staging-alb-1628790289.ap-southeast-2.elb.amazonaws.com"
+backend_service_name = "ohmycoins-staging-backend"
+db_endpoint = "ohmycoins-staging-postgres.cnuko2w8idh1.ap-southeast-2.rds.amazonaws.com:5432"
+ecs_cluster_name = "ohmycoins-staging-cluster"
+frontend_service_name = "ohmycoins-staging-frontend"
+github_actions_role_arn = "arn:aws:iam::220711411889:role/ohmycoins-staging-github-actions-role"
+rds_db_name = "app"
+rds_endpoint = "ohmycoins-staging-postgres.cnuko2w8idh1.ap-southeast-2.rds.amazonaws.com:5432"
+rds_password = <sensitive>
+rds_username = <sensitive>
+redis_endpoint = "ohmycoins-staging-redis.faxg1m.ng.0001.apse2.cache.amazonaws.com"
+secrets_manager_secret_arn = "arn:aws:secretsmanager:ap-southeast-2:220711411889:secret:ohmycoins-staging-app-secrets-wlrl9g"
+vpc_id = "vpc-0231b3727fd3dffcb"
