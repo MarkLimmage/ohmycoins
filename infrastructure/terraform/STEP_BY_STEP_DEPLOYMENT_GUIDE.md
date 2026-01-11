@@ -731,7 +731,7 @@ aws elbv2 describe-target-health \
 
 ```bash
 # View backend logs (last 10 minutes)
-aws logs tail /ecs/ohmycoins-staging-backend \
+aws logs tail /ecs/ohmycoins-staging/backend \
     --since 10m \
     --region ap-southeast-2
 
