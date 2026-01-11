@@ -191,8 +191,8 @@ module "ecs" {
   frontend_image_tag = var.frontend_image_tag
 
   # Task resources (smaller for staging)
-  backend_cpu      = 512
-  backend_memory   = 1024
+  backend_cpu      = 1024
+  backend_memory   = 2048
   frontend_cpu     = 256
   frontend_memory  = 512
 

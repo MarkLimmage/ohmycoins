@@ -125,7 +125,7 @@ variable "certificate_arn" {
 variable "backend_image" {
   description = "Backend Docker image"
   type        = string
-  default     = "ghcr.io/marklimmage/ohmycoins-backend"
+  default     = "220711411889.dkr.ecr.ap-southeast-2.amazonaws.com/omc-backend"
 }
 
 variable "backend_image_tag" {
