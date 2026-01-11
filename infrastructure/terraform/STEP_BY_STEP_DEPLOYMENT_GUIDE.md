@@ -475,11 +475,25 @@ echo "=========================="
 ### 7.1 Prepare Secrets JSON
 
 ```bash
-# Get output values
+# IMPORTANT: Navigate to the Terraform staging directory first
+cd infrastructure/terraform/environments/staging
+
+# Get output values from Terraform
 export SECRET_ARN=$(terraform output -raw secrets_manager_secret_arn)
 export DB_HOST=$(terraform output -raw rds_endpoint | cut -d: -f1)
+export DB_PASSWORD=$(terraform output -raw rds_password)
 export REDIS_HOST=$(terraform output -raw redis_endpoint | cut -d: -f1)
 export ALB_DNS=$(terraform output -raw alb_dns_name)
+
+# Verify all variables are set correctly
+echo "SECRET_ARN: ${SECRET_ARN:0:50}..."
+echo "DB_HOST: $DB_HOST"
+echo "DB_PASSWORD: ${DB_PASSWORD:0:4}...${DB_PASSWORD: -4}"
+echo "REDIS_HOST: $REDIS_HOST"
+echo "ALB_DNS: $ALB_DNS"
+
+# Return to project root
+cd /home/mark/omc/ohmycoins
 
 # Create secrets JSON file
 cat > /tmp/staging-secrets.json << EOF
@@ -489,7 +503,7 @@ cat > /tmp/staging-secrets.json << EOF
   "FIRST_SUPERUSER_PASSWORD": "$ADMIN_PASSWORD",
   "POSTGRES_SERVER": "$DB_HOST",
   "POSTGRES_PORT": "5432",
-  "POSTGRES_DB": "ohmycoins",
+  "POSTGRES_DB": "app",
   "POSTGRES_USER": "postgres",
   "POSTGRES_PASSWORD": "$DB_PASSWORD",
   "REDIS_HOST": "$REDIS_HOST",
@@ -510,20 +524,24 @@ cat > /tmp/staging-secrets.json << EOF
 EOF
 
 echo "✓ Secrets file created at /tmp/staging-secrets.json"
+
+# Verify the JSON is valid
+cat /tmp/staging-secrets.json | jq '.' > /dev/null 2>&1 && echo "✓ JSON is valid" || echo "⚠️  Warning: JSON may be invalid"
 ```
 
 ### 7.2 Update Secrets in AWS
 
 ```bash
 # Upload secrets to AWS Secrets Manager
+# Note: Using $(cat ...) instead of file:// for better compatibility
 aws secretsmanager put-secret-value \
-    --secret-id $SECRET_ARN \
-    --secret-string file:///tmp/staging-secrets.json \
+    --secret-id "$SECRET_ARN" \
+    --secret-string "$(cat /tmp/staging-secrets.json)" \
     --region ap-southeast-2
 
 # Verify secret was updated
 aws secretsmanager describe-secret \
-    --secret-id $SECRET_ARN \
+    --secret-id "$SECRET_ARN" \
     --region ap-southeast-2 \
     --query '[Name,LastChangedDate]' \
     --output table
