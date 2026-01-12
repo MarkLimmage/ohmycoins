@@ -197,8 +197,8 @@ module "ecs" {
   frontend_memory  = 512
 
   # Service configuration
-  backend_desired_count  = 1 # Single task for staging
-  frontend_desired_count = 1
+  backend_desired_count  = 1 # Can be scaled down to save costs
+  frontend_desired_count = 1 # Can be scaled down to save costs
   enable_execute_command = true # Enable for debugging
 
   # Auto scaling
