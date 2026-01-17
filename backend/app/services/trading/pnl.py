@@ -521,8 +521,13 @@ class PnLEngine:
         
         if price_data:
             # Use last price (most recent trade price)
+            logger.debug(
+                f"Using price for {coin_type}: {price_data.last} "
+                f"(timestamp: {price_data.timestamp})"
+            )
             return price_data.last
         
+        logger.debug(f"No price data found for {coin_type}")
         return None
 
 
