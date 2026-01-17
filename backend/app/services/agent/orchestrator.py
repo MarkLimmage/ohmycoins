@@ -115,7 +115,9 @@ class AgentOrchestrator:
                 raise ValueError(f"Session {session_id} not found")
             
             # Create workflow with BYOM support (Sprint 2.9)
-            # Pass user_id and credential_id to enable LLM Factory
+            # Note: We create a new workflow instance per execution (vs reusing self.workflow)
+            # because each session may use different user credentials/LLM providers.
+            # The LLM selection is session-specific and must be determined at execution time.
             workflow = LangGraphWorkflow(
                 session=db,
                 user_id=session.user_id,

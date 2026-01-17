@@ -115,8 +115,6 @@ class TestLLMFactoryBasicCreation:
     
     def test_create_anthropic_from_api_key(self):
         """Test creating Anthropic Claude LLM directly from API key (Sprint 2.9)"""
-        from langchain_anthropic import ChatAnthropic
-        
         api_key = "sk-ant-test-key"
         
         llm = LLMFactory.create_llm_from_api_key(
