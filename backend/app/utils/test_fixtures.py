@@ -52,8 +52,8 @@ def create_test_user(
         is_superuser=is_superuser,
         timezone=kwargs.get("timezone", "UTC"),
         preferred_currency=kwargs.get("preferred_currency", "AUD"),
-        risk_tolerance=kwargs.get("risk_tolerance", "medium"),
-        trading_experience=kwargs.get("trading_experience", "intermediate"),
+        risk_tolerance=kwargs.get("risk_tolerance", random.choice(["low", "medium", "high"])),
+        trading_experience=kwargs.get("trading_experience", random.choice(["beginner", "intermediate", "advanced"])),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )

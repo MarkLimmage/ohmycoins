@@ -296,6 +296,8 @@ class TestSafetyManager:
         algorithm_id = uuid4()
         
         # Create previous algorithmic buy order (1,000 AUD)
+        # Set filled_at to yesterday to avoid triggering daily loss limit check
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
         order = Order(
             user_id=test_user_with_portfolio.id,
             algorithm_id=algorithm_id,
@@ -305,9 +307,9 @@ class TestSafetyManager:
             price=Decimal('0.50'),
             filled_quantity=Decimal('2000'),
             status='filled',
-            filled_at=datetime.now(timezone.utc),
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            filled_at=yesterday,
+            created_at=yesterday,
+            updated_at=yesterday
         )
         session.add(order)
         session.commit()
