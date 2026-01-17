@@ -100,7 +100,7 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
     for i in range(start_index, count):
         is_superuser = i == 0 and not existing_superuser  # First user is superuser only if doesn't exist
         user = User(
-            email=f"user{i}@example.com" if not is_superuser else settings.FIRST_SUPERUSER,
+            email=f"user{i}_{uuid.uuid4()}@example.com" if not is_superuser else settings.FIRST_SUPERUSER,
             hashed_password=get_password_hash("TestPassword123!" if not is_superuser else settings.FIRST_SUPERUSER_PASSWORD),
             full_name=fake.name(),
             is_active=True,

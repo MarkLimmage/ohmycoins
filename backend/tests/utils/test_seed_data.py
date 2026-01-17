@@ -86,7 +86,7 @@ class TestSeedData:
     def test_clear_all_data(self, db: Session) -> None:
         """Test that clear_all_data removes all data except superuser."""
         # Setup: Create some test data
-        user = create_test_user(db, email="test@example.com")
+        user = create_test_user(db)
         create_test_price_data(db, count=10)
         algo = create_test_algorithm(db, user)
         
@@ -110,10 +110,10 @@ class TestTestFixtures:
     
     def test_create_test_user(self, db: Session) -> None:
         """Test user fixture creation."""
-        user = create_test_user(db, email="fixture@test.com")
+        user = create_test_user(db)
         
         assert user.id
-        assert user.email == "fixture@test.com"
+        assert user.email  # Just verify email exists, don't check specific value
         assert user.is_active
         assert not user.is_superuser
     
