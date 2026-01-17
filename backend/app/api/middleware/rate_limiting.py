@@ -20,7 +20,7 @@ import redis
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from jose import jwt, JWTError
+import jwt
 
 from app.core.config import settings
 
@@ -69,7 +69,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             user_id = payload.get("sub")
             is_superuser = payload.get("is_superuser", False)
             return user_id, is_superuser
-        except JWTError:
+        except (jwt.DecodeError, jwt.ExpiredSignatureError, KeyError):
             return None, False
     
     def get_rate_limits(self, is_superuser: bool) -> dict:
