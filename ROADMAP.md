@@ -1,9 +1,9 @@
 # Oh My Coins (OMC) - Project Roadmap
 
-**Status**: Active Development (Integration & Deployment)  
+**Status**: Active Development (Production Readiness)  
 **Last Updated**: 2026-01-17  
-**Current Sprint**: Sprint 2.9 (Planning - Ready to Start)  
-**Previous Sprint**: Sprint 2.8 Partial Complete 🟡 (91.8% pass rate, BYOM Foundation delivered)
+**Current Sprint**: Sprint 2.10 (Planning - Production Readiness & Testing)  
+**Previous Sprint**: Sprint 2.9 Complete ✅ (P&L fixes + BYOM Agent Integration)
 
 ## 1. Project Overview
 This roadmap tracks the development of the OMC platform across its three parallel tracks:
@@ -68,6 +68,14 @@ This roadmap tracks the development of the OMC platform across its three paralle
     - 📊 Track B: 100% complete - All test infrastructure stable
 
 ### Recent Sprints
+- **Sprint 2.9** (2026-01-17): P&L Test Fixes + BYOM Agent Integration ✅
+  - Final: Both Track A and Track B complete (100%)
+  - Track A: 33/33 tests passing (P&L + seed data fixes)
+  - Track B: 342/344 agent tests passing (BYOM integration, Anthropic support)
+  - Track C: Deferred to Sprint 2.10
+  - P&L: Critical test failures resolved, production-ready ✅
+  - BYOM: Agent integration complete, 3 LLM providers working ✅
+  - [Sprint 2.9 Archive](docs/archive/history/sprints/sprint-2.9/)
 - **Sprint 2.8** (2026-01-17): BYOM Foundation + Test Stabilization 🟡
   - Final: 646/704 tests passing (91.8%), 58 failing
   - Track A: 10/11 seed data tests fixed (90% - UUID pattern applied)
@@ -87,8 +95,8 @@ This roadmap tracks the development of the OMC platform across its three paralle
 
 ## 4. Future Roadmap
 
-### Bring Your Own Model (BYOM) Feature (Sprints 2.8-2.11)
-*   **Started**: Sprint 2.8 (Foundation Complete ✅)
+### Bring Your Own Model (BYOM) Feature (Sprints 2.8-2.9) ✅
+*   **Completed**: Sprint 2.9 (Agent Integration Complete)
 *   **Owner**: Developer B (Agent Track) with Backend Support from Developer A
 *   **Scope**: Enable users to configure custom LLM providers (OpenAI, Google Gemini, Anthropic Claude) for agent execution
 *   **Status**: 
@@ -97,7 +105,13 @@ This roadmap tracks the development of the OMC platform across its three paralle
         - LLM Factory (OpenAI + Google Gemini)
         - 5 API endpoints (create, list, set default, delete, validate)
         - 43/43 tests passing (100%)
-    *   [ ] Sprint 2.9 (Agent Integration - 16-20 hours): Agent orchestrator refactoring, Anthropic support, prompt templates
+    *   [x] Sprint 2.9 (Agent Integration - 8 hours): Agent orchestrator integration, Anthropic support ✅
+        - LangGraphWorkflow accepts user_id/credential_id
+        - AgentOrchestrator session tracking
+        - Anthropic Claude support added
+        - Backward compatibility maintained
+        - 342/344 agent tests passing (99.4%)
+    *   [ ] Sprint 2.10 (UI/UX - 6-8 hours): Frontend credential management, provider selection UI
     *   [ ] Sprint 2.10 (User Experience - 20-24 hours): Frontend LLM settings page, session creation modal extension
     *   [ ] Sprint 2.11 (Production Hardening - 12-16 hours): Cost tracking, key rotation, monitoring, security audit
 *   **Total Effort**: 56-72 hours across 4 sprints (8 hours completed)
