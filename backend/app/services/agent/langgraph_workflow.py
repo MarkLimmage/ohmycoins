@@ -13,6 +13,7 @@ Week 7-8 enhancement: Added ReAct loop with reasoning, conditional routing, and 
 from typing import Any, TypedDict, Literal
 from sqlmodel import Session
 import logging
+import uuid
 
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
@@ -107,14 +108,18 @@ class LangGraphWorkflow:
     Week 11: Enhanced with ReportingAgent for report generation.
     """
 
-    def __init__(self, session: Session | None = None) -> None:
+    def __init__(self, session: Session | None = None, user_id: uuid.UUID | None = None, credential_id: uuid.UUID | None = None) -> None:
         """
         Initialize the LangGraph workflow with agents and state graph.
         
         Args:
             session: Optional database session for agents
+            user_id: Optional user ID for BYOM (Bring Your Own Model) support
+            credential_id: Optional specific LLM credential ID to use
         """
         self.session = session
+        self.user_id = user_id
+        self.credential_id = credential_id
         self.graph = self._build_graph()
         self.data_retrieval_agent = DataRetrievalAgent(session=session)
         self.data_analyst_agent = DataAnalystAgent()
@@ -122,9 +127,31 @@ class LangGraphWorkflow:
         self.model_evaluator_agent = ModelEvaluatorAgent()
         self.reporting_agent = ReportingAgent()
         
-        # Initialize LLM for reasoning (if API key available)
+        # Initialize LLM for reasoning using LLM Factory (Sprint 2.9)
         self.llm = None
-        if settings.OPENAI_API_KEY:
+        if session and user_id:
+            # Use BYOM - user's configured LLM or system default
+            from app.services.agent.llm_factory import LLMFactory
+            try:
+                self.llm = LLMFactory.create_llm(
+                    session=session,
+                    user_id=user_id,
+                    credential_id=credential_id
+                )
+            except Exception as e:
+                logger.warning(f"Failed to create LLM via factory: {e}. Falling back to system default.")
+                # Fallback to system default if BYOM fails
+                if settings.OPENAI_API_KEY:
+                    from langchain_openai import ChatOpenAI
+                    self.llm = ChatOpenAI(
+                        model=settings.OPENAI_MODEL,
+                        api_key=settings.OPENAI_API_KEY,
+                        max_tokens=settings.MAX_TOKENS_PER_REQUEST,
+                        streaming=settings.ENABLE_STREAMING,
+                    )
+        elif settings.OPENAI_API_KEY:
+            # No BYOM context - use system default OpenAI
+            from langchain_openai import ChatOpenAI
             self.llm = ChatOpenAI(
                 model=settings.OPENAI_MODEL,
                 api_key=settings.OPENAI_API_KEY,

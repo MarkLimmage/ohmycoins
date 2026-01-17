@@ -88,6 +88,7 @@ class AgentOrchestrator:
 
         Week 1-2: Basic LangGraph workflow execution.
         Weeks 7-8: Enhanced with full ReAct loop.
+        Sprint 2.9: Enhanced with BYOM support.
 
         Args:
             db: Database session
@@ -110,8 +111,42 @@ class AgentOrchestrator:
             if not session:
                 raise ValueError(f"Session {session_id} not found")
             
-            # Set database session for workflow agents
-            self.workflow.set_session(db)
+            # Create workflow with BYOM support (Sprint 2.9)
+            # Pass user_id and credential_id to enable LLM Factory
+            workflow = LangGraphWorkflow(
+                session=db,
+                user_id=session.user_id,
+                credential_id=session.llm_credential_id
+            )
+            
+            # Track which LLM was selected by the factory
+            if workflow.llm:
+                # Extract provider and model info from the LLM instance
+                llm_provider = None
+                llm_model = None
+                
+                from langchain_openai import ChatOpenAI
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                from langchain_anthropic import ChatAnthropic
+                
+                if isinstance(workflow.llm, ChatOpenAI):
+                    llm_provider = "openai"
+                    llm_model = workflow.llm.model_name
+                elif isinstance(workflow.llm, ChatGoogleGenerativeAI):
+                    llm_provider = "google"
+                    llm_model = workflow.llm.model
+                elif isinstance(workflow.llm, ChatAnthropic):
+                    llm_provider = "anthropic"
+                    llm_model = workflow.llm.model
+                
+                # Update session with LLM tracking info
+                if llm_provider and llm_model:
+                    session.llm_provider = llm_provider
+                    session.llm_model = llm_model
+                    # Note: llm_credential_id already set from request if provided
+                    db.add(session)
+                    db.commit()
+                    db.refresh(session)
             
             # Prepare initial state for LangGraph
             langgraph_state: AgentState = {
@@ -152,7 +187,7 @@ class AgentOrchestrator:
             }
             
             # Execute the workflow
-            final_state = await self.workflow.execute(langgraph_state)
+            final_state = await workflow.execute(langgraph_state)
             
             # Update session state with results
             state.update(final_state)
