@@ -6,7 +6,7 @@ Week 3-4: Enhanced tests for DataAnalystAgent node.
 """
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 from app.services.agent.langgraph_workflow import LangGraphWorkflow, AgentState
 
 
