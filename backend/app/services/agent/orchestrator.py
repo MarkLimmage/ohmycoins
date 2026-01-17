@@ -8,6 +8,9 @@ import uuid
 from typing import Any
 
 from sqlmodel import Session
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 
 from app.models import AgentSessionStatus
 
@@ -124,10 +127,6 @@ class AgentOrchestrator:
                 # Extract provider and model info from the LLM instance
                 llm_provider = None
                 llm_model = None
-                
-                from langchain_openai import ChatOpenAI
-                from langchain_google_genai import ChatGoogleGenerativeAI
-                from langchain_anthropic import ChatAnthropic
                 
                 if isinstance(workflow.llm, ChatOpenAI):
                     llm_provider = "openai"

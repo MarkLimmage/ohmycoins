@@ -20,6 +20,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.config import settings
+from app.services.agent.llm_factory import LLMFactory
 from app.services.agent.agents.base import BaseAgent
 from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.data_analyst import DataAnalystAgent
@@ -131,7 +132,6 @@ class LangGraphWorkflow:
         self.llm = None
         if session and user_id:
             # Use BYOM - user's configured LLM or system default
-            from app.services.agent.llm_factory import LLMFactory
             try:
                 self.llm = LLMFactory.create_llm(
                     session=session,
@@ -142,7 +142,6 @@ class LangGraphWorkflow:
                 logger.warning(f"Failed to create LLM via factory: {e}. Falling back to system default.")
                 # Fallback to system default if BYOM fails
                 if settings.OPENAI_API_KEY:
-                    from langchain_openai import ChatOpenAI
                     self.llm = ChatOpenAI(
                         model=settings.OPENAI_MODEL,
                         api_key=settings.OPENAI_API_KEY,
@@ -151,7 +150,6 @@ class LangGraphWorkflow:
                     )
         elif settings.OPENAI_API_KEY:
             # No BYOM context - use system default OpenAI
-            from langchain_openai import ChatOpenAI
             self.llm = ChatOpenAI(
                 model=settings.OPENAI_MODEL,
                 api_key=settings.OPENAI_API_KEY,
