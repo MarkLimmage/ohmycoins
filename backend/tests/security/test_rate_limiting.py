@@ -367,14 +367,14 @@ class TestRateLimitBypassPrevention:
         # Login to get first token
         login1 = client.post(
             "/api/v1/login/access-token",
-            data={"username": normal_user.email, "password": "password123"}
+            data={"username": normal_user.email, "password": "TestPassword123!"}
         )
         token1 = login1.json()["access_token"]
         
         # Login again to get second token (same user)
         login2 = client.post(
             "/api/v1/login/access-token",
-            data={"username": normal_user.email, "password": "password123"}
+            data={"username": normal_user.email, "password": "TestPassword123!"}
         )
         token2 = login2.json()["access_token"]
         
@@ -434,7 +434,7 @@ class TestRateLimitBypassPrevention:
         # Make requests in first session
         login1 = client.post(
             "/api/v1/login/access-token",
-            data={"username": normal_user.email, "password": "password123"}
+            data={"username": normal_user.email, "password": "TestPassword123!"}
         )
         token1 = login1.json()["access_token"]
         headers1 = {"Authorization": f"Bearer {token1}"}
@@ -447,7 +447,7 @@ class TestRateLimitBypassPrevention:
         # (Note: We don't actually invalidate JWT in this simple implementation)
         login2 = client.post(
             "/api/v1/login/access-token",
-            data={"username": normal_user.email, "password": "password123"}
+            data={"username": normal_user.email, "password": "TestPassword123!"}
         )
         token2 = login2.json()["access_token"]
         headers2 = {"Authorization": f"Bearer {token2}"}

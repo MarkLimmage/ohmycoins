@@ -124,6 +124,12 @@ class Settings(BaseSettings):
             return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
+    # Rate limiting configuration (Sprint 2.11)
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_PER_MINUTE: int = 60
+    RATE_LIMIT_PER_HOUR: int = 1000
+    RATE_LIMIT_ADMIN_MULTIPLIER: int = 5
+
     # LLM Provider configuration (Phase 3)
     LLM_PROVIDER: Literal["openai", "anthropic", "azure", "local"] = "openai"
     OPENAI_API_KEY: str | None = None

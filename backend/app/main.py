@@ -5,6 +5,7 @@ from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
+from app.api.middleware import RateLimitMiddleware
 from app.core.config import settings
 from app.services.scheduler import start_scheduler, stop_scheduler
 
@@ -42,5 +43,9 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Add rate limiting middleware
+if settings.RATE_LIMIT_ENABLED:
+    app.add_middleware(RateLimitMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

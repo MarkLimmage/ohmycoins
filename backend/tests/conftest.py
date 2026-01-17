@@ -147,6 +147,13 @@ def test_superuser(db: Session) -> Generator[User, None, None]:
 
 
 @pytest.fixture
+def normal_user(db: Session) -> Generator[User, None, None]:
+    """Fixture that creates a normal (non-superuser) test user for use in tests."""
+    user = create_test_user(db)
+    yield user
+
+
+@pytest.fixture
 def test_price_data(db: Session) -> Generator[list[PriceData5Min], None, None]:
     """Fixture that creates test price data for use in tests."""
     prices = create_test_price_data(db, count=50)
