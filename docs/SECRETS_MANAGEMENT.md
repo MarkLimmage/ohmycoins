@@ -53,6 +53,9 @@ FIRST_SUPERUSER_PASSWORD=your-admin-password
 
 # AI Agent API Key - Get from: https://platform.openai.com/api-keys
 OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# CryptoPanic API Key - Get from: https://cryptopanic.com/developers/api/
+CRYPTOPANIC_API_KEY=your-cryptopanic-api-key-here
 ```
 
 ### 3. Configure Optional Secrets
@@ -67,6 +70,10 @@ SMTP_PASSWORD=your-app-password
 
 # Error tracking (optional)
 SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
+
+# Tier 2 Data Collection APIs (optional)
+NEWSCATCHER_API_KEY=your-newscatcher-api-key
+NANSEN_API_KEY=your-nansen-api-key
 ```
 
 ### 4. Security Best Practices
@@ -120,7 +127,10 @@ Secrets are stored in JSON format in AWS Secrets Manager:
   "SMTP_HOST": "smtp.gmail.com",
   "SMTP_USER": "...",
   "SMTP_PASSWORD": "...",
-  "SENTRY_DSN": "..."
+  "SENTRY_DSN": "...",
+  "omc-CryptoPanic-testkey": "...",
+  "omc-newscatcher-testkey": "...",
+  "omc-nasen-testkey": "..."
 }
 ```
 

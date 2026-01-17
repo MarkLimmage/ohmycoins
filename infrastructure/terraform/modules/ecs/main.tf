@@ -135,6 +135,18 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name      = "OPENAI_API_KEY"
           valueFrom = "${var.secrets_arn}:OPENAI_API_KEY::"
+        },
+        {
+          name      = "CRYPTOPANIC_API_KEY"
+          valueFrom = "${var.secrets_arn}:omc-CryptoPanic-testkey::"
+        },
+        {
+          name      = "NEWSCATCHER_API_KEY"
+          valueFrom = "${var.secrets_arn}:omc-newscatcher-testkey::"
+        },
+        {
+          name      = "NANSEN_API_KEY"
+          valueFrom = "${var.secrets_arn}:omc-nasen-testkey::"
         }
       ]
 
