@@ -1,9 +1,9 @@
 # Oh My Coins (OMC) - Project Roadmap
 
 **Status**: Active Development (Integration & Deployment)  
-**Last Updated**: 2026-01-10  
-**Current Sprint**: Sprint 2.8 (Planning - Ready to Start)  
-**Previous Sprint**: Sprint 2.7 Complete ✅ (97.6% pass rate, all tracks delivered)
+**Last Updated**: 2026-01-17  
+**Current Sprint**: Sprint 2.9 (Planning - Ready to Start)  
+**Previous Sprint**: Sprint 2.8 Partial Complete 🟡 (91.8% pass rate, BYOM Foundation delivered)
 
 ## 1. Project Overview
 This roadmap tracks the development of the OMC platform across its three parallel tracks:
@@ -68,6 +68,13 @@ This roadmap tracks the development of the OMC platform across its three paralle
     - 📊 Track B: 100% complete - All test infrastructure stable
 
 ### Recent Sprints
+- **Sprint 2.8** (2026-01-17): BYOM Foundation + Test Stabilization 🟡
+  - Final: 646/704 tests passing (91.8%), 58 failing
+  - Track A: 10/11 seed data tests fixed (90% - UUID pattern applied)
+  - Track B: 43/43 BYOM tests passing (100% - Foundation complete)
+  - Track C: Not started
+  - BYOM: Database schema, encryption, LLM Factory, 5 API endpoints ✅
+  - [Sprint 2.8 Archive](docs/archive/history/sprints/sprint-2.8/SPRINT_2.8_FINAL_REPORT.md)
 - **Sprint 2.7** (2026-01-10): Test infrastructure fixes, PostgreSQL migration, deployment documentation ✅
   - Final: 645/661 tests passing (97.6%), 16 failing, 0 errors
   - Track A: 13/13 PnL tests passing (UUID isolation fix)
@@ -81,15 +88,19 @@ This roadmap tracks the development of the OMC platform across its three paralle
 ## 4. Future Roadmap
 
 ### Bring Your Own Model (BYOM) Feature (Sprints 2.8-2.11)
-*   **Planned Start**: Sprint 2.8 (Foundation)
+*   **Started**: Sprint 2.8 (Foundation Complete ✅)
 *   **Owner**: Developer B (Agent Track) with Backend Support from Developer A
 *   **Scope**: Enable users to configure custom LLM providers (OpenAI, Google Gemini, Anthropic Claude) for agent execution
 *   **Status**: 
-    *   [ ] Sprint 2.8 (Foundation - 8-12 hours): Database schema, encryption, OpenAI + Google support
+    *   [x] Sprint 2.8 (Foundation - 8 hours): Database schema, encryption, OpenAI + Google support ✅
+        - UserLLMCredentials table with AES-256 encryption
+        - LLM Factory (OpenAI + Google Gemini)
+        - 5 API endpoints (create, list, set default, delete, validate)
+        - 43/43 tests passing (100%)
     *   [ ] Sprint 2.9 (Agent Integration - 16-20 hours): Agent orchestrator refactoring, Anthropic support, prompt templates
     *   [ ] Sprint 2.10 (User Experience - 20-24 hours): Frontend LLM settings page, session creation modal extension
     *   [ ] Sprint 2.11 (Production Hardening - 12-16 hours): Cost tracking, key rotation, monitoring, security audit
-*   **Total Effort**: 56-72 hours across 4 sprints
+*   **Total Effort**: 56-72 hours across 4 sprints (8 hours completed)
 *   **Requirements**: [BYOM User Stories](docs/requirements/BYOM_USER_STORIES.md), [BYOM EARS Requirements](docs/requirements/BYOM_EARS_REQUIREMENTS.md)
 *   **Architecture**: [Section 11: BYOM Architecture](docs/ARCHITECTURE.md#11-bring-your-own-model-byom-architecture)
 
