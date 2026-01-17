@@ -41,12 +41,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.redis_url = redis_url or settings.REDIS_URL
         self.redis_client = redis.from_url(self.redis_url, decode_responses=True)
         
-        # Rate limit configuration
+        # Rate limit configuration from settings
         self.normal_user_limits = {
-            "minute": 60,
-            "hour": 1000,
+            "minute": settings.RATE_LIMIT_PER_MINUTE,
+            "hour": settings.RATE_LIMIT_PER_HOUR,
         }
-        self.admin_multiplier = 5  # Admins get 5x limits
+        self.admin_multiplier = settings.RATE_LIMIT_ADMIN_MULTIPLIER
         
     def get_user_id_from_token(self, request: Request) -> tuple[str | None, bool]:
         """
