@@ -257,3 +257,127 @@ async def test_workflow_with_different_goals(mock_db_session):
         
         assert final_state["status"] == "completed"
         assert final_state["user_goal"] == goal
+
+
+# Sprint 2.9: BYOM Integration Tests
+@pytest.mark.asyncio
+async def test_workflow_initialization_with_user_id():
+    """Test that workflow initializes with BYOM user context (Sprint 2.9)."""
+    from uuid import uuid4
+    from unittest.mock import MagicMock, patch
+    
+    user_id = uuid4()
+    mock_session = MagicMock()
+    
+    # Mock LLMFactory to return a mock LLM
+    with patch('app.services.agent.langgraph_workflow.LLMFactory') as mock_factory:
+        mock_llm = MagicMock()
+        mock_factory.create_llm.return_value = mock_llm
+        
+        workflow = LangGraphWorkflow(session=mock_session, user_id=user_id)
+        
+        # Verify factory was called with correct parameters
+        mock_factory.create_llm.assert_called_once_with(
+            session=mock_session,
+            user_id=user_id,
+            credential_id=None
+        )
+        
+        # Verify LLM was set
+        assert workflow.llm == mock_llm
+        assert workflow.user_id == user_id
+
+
+@pytest.mark.asyncio
+async def test_workflow_initialization_with_credential_id():
+    """Test that workflow initializes with specific credential (Sprint 2.9)."""
+    from uuid import uuid4
+    from unittest.mock import MagicMock, patch
+    
+    user_id = uuid4()
+    credential_id = uuid4()
+    mock_session = MagicMock()
+    
+    with patch('app.services.agent.langgraph_workflow.LLMFactory') as mock_factory:
+        mock_llm = MagicMock()
+        mock_factory.create_llm.return_value = mock_llm
+        
+        workflow = LangGraphWorkflow(
+            session=mock_session,
+            user_id=user_id,
+            credential_id=credential_id
+        )
+        
+        # Verify factory was called with credential_id
+        mock_factory.create_llm.assert_called_once_with(
+            session=mock_session,
+            user_id=user_id,
+            credential_id=credential_id
+        )
+        
+        assert workflow.llm == mock_llm
+        assert workflow.credential_id == credential_id
+
+
+@pytest.mark.asyncio
+async def test_workflow_fallback_to_system_default():
+    """Test that workflow falls back to system default if BYOM fails (Sprint 2.9)."""
+    from uuid import uuid4
+    from unittest.mock import MagicMock, patch
+    import os
+    
+    user_id = uuid4()
+    mock_session = MagicMock()
+    
+    # Set OpenAI API key for fallback
+    original_key = os.environ.get('OPENAI_API_KEY')
+    os.environ['OPENAI_API_KEY'] = 'sk-test-key'
+    
+    try:
+        with patch('app.services.agent.langgraph_workflow.LLMFactory') as mock_factory:
+            # Make factory raise an exception
+            mock_factory.create_llm.side_effect = Exception("BYOM failed")
+            
+            with patch('app.services.agent.langgraph_workflow.ChatOpenAI') as mock_openai:
+                mock_llm = MagicMock()
+                mock_openai.return_value = mock_llm
+                
+                workflow = LangGraphWorkflow(session=mock_session, user_id=user_id)
+                
+                # Verify fallback to ChatOpenAI was used
+                mock_openai.assert_called_once()
+                assert workflow.llm == mock_llm
+    finally:
+        # Restore original env var
+        if original_key:
+            os.environ['OPENAI_API_KEY'] = original_key
+        elif 'OPENAI_API_KEY' in os.environ:
+            del os.environ['OPENAI_API_KEY']
+
+
+@pytest.mark.asyncio  
+async def test_workflow_initialization_without_byom():
+    """Test that workflow still works without BYOM context (backward compatibility)."""
+    from unittest.mock import patch
+    import os
+    
+    # Set OpenAI API key for system default
+    original_key = os.environ.get('OPENAI_API_KEY')
+    os.environ['OPENAI_API_KEY'] = 'sk-test-key'
+    
+    try:
+        with patch('app.services.agent.langgraph_workflow.ChatOpenAI') as mock_openai:
+            mock_llm = MagicMock()
+            mock_openai.return_value = mock_llm
+            
+            workflow = LangGraphWorkflow()  # No session or user_id
+            
+            # Verify system default was used
+            mock_openai.assert_called_once()
+            assert workflow.llm == mock_llm
+    finally:
+        if original_key:
+            os.environ['OPENAI_API_KEY'] = original_key
+        elif 'OPENAI_API_KEY' in os.environ:
+            del os.environ['OPENAI_API_KEY']
+
