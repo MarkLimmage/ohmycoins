@@ -3,6 +3,7 @@
 import type { SelectValueTextProps } from "@chakra-ui/react"
 import { Select as ChakraSelect, Portal } from "@chakra-ui/react"
 import * as React from "react"
+import { CloseButton } from "./close-button"
 
 interface SelectTriggerProps extends ChakraSelect.ControlProps {
   clearable?: boolean
@@ -74,16 +75,7 @@ export const SelectValueText = React.forwardRef<
   const { children, ...rest } = props
   return (
     <ChakraSelect.ValueText {...rest} ref={ref}>
-      <ChakraSelect.Context>
-        {(select) => {
-          const items = select.selectedItems
-          if (items.length === 0) return props.placeholder
-          if (children) return children(items)
-          if (items.length === 1)
-            return select.collection.stringifyItem(items[0])
-          return `${items.length} selected`
-        }}
-      </ChakraSelect.Context>
+      {children}
     </ChakraSelect.ValueText>
   )
 })
@@ -123,6 +115,3 @@ export const SelectItemGroup = React.forwardRef<
 
 export const SelectLabel = ChakraSelect.Label
 export const SelectItemText = ChakraSelect.ItemText
-
-// Add missing CloseButton import
-import { CloseButton } from "./close-button"
