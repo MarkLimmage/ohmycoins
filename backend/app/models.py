@@ -305,6 +305,116 @@ class CoinspotCredentialsPublic(CoinspotCredentialsBase):
 
 
 # ============================================================================
+# User LLM Credentials Models (BYOM - Bring Your Own Model) - Sprint 2.8
+# ============================================================================
+
+class UserLLMCredentialsBase(SQLModel):
+    """Base model for user LLM credentials"""
+    provider: str = Field(max_length=20, nullable=False)  # openai, google, anthropic
+    model_name: str | None = Field(default=None, max_length=100)  # gpt-4, gemini-1.5-pro, etc.
+    is_default: bool = False  # Whether this is the user's default LLM
+    is_active: bool = True  # Soft delete flag
+
+
+# Database model for user LLM credentials
+class UserLLMCredentials(UserLLMCredentialsBase, table=True):
+    """
+    Stores encrypted LLM API credentials for users (BYOM feature).
+    
+    Credentials are encrypted at rest using Fernet (AES-256).
+    The api_key is stored as encrypted bytes.
+    Users can configure multiple providers (OpenAI, Google Gemini, Anthropic Claude).
+    """
+    __tablename__ = "user_llm_credentials"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
+    )
+    encrypted_api_key: bytes = Field(sa_column=Column(sa.LargeBinary, nullable=False))
+    encryption_key_id: str | None = Field(default="default", max_length=50)  # For key rotation
+    last_validated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    
+    # Relationship to user (one-way, use queries to access from User)
+    user: User = Relationship()
+
+
+# Properties to receive via API on creation
+class UserLLMCredentialsCreate(SQLModel):
+    """Schema for creating user LLM credentials"""
+    provider: str = Field(min_length=1, max_length=20, description="LLM provider: openai, google, anthropic")
+    model_name: str | None = Field(default=None, max_length=100, description="Model name (e.g., gpt-4, gemini-1.5-pro)")
+    api_key: str = Field(min_length=1, max_length=500, description="API key from the provider")
+    is_default: bool = Field(default=False, description="Set as default LLM for this user")
+    
+    @field_validator('provider')
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        """Validate provider field"""
+        valid_providers = {"openai", "google", "anthropic"}
+        if v.lower() not in valid_providers:
+            raise ValueError(f"Provider must be one of: {', '.join(sorted(valid_providers))}")
+        return v.lower()
+
+
+# Properties to receive via API on update
+class UserLLMCredentialsUpdate(SQLModel):
+    """Schema for updating user LLM credentials"""
+    model_name: str | None = Field(default=None, max_length=100)
+    api_key: str | None = Field(default=None, min_length=1, max_length=500)
+    is_default: bool | None = Field(default=None)
+    is_active: bool | None = Field(default=None)
+
+
+# Properties to return via API (masked for security)
+class UserLLMCredentialsPublic(UserLLMCredentialsBase):
+    """Schema for returning user LLM credentials via API (with masked API key)"""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    api_key_masked: str = Field(description="Masked API key (last 4 characters visible)")
+    last_validated_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+# Validation request/response models
+class UserLLMCredentialsValidate(SQLModel):
+    """Schema for validating an API key before saving"""
+    provider: str = Field(description="LLM provider: openai, google, anthropic")
+    api_key: str = Field(description="API key to validate")
+    model_name: str | None = Field(default=None, description="Optional model name to test")
+    
+    @field_validator('provider')
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        """Validate provider field"""
+        valid_providers = {"openai", "google", "anthropic"}
+        if v.lower() not in valid_providers:
+            raise ValueError(f"Provider must be one of: {', '.join(sorted(valid_providers))}")
+        return v.lower()
+
+
+class UserLLMCredentialsValidationResult(SQLModel):
+    """Response for API key validation"""
+    is_valid: bool
+    provider: str
+    model_name: str | None = None
+    error_message: str | None = None
+    details: dict | None = None
+
+
+# ============================================================================
 # Comprehensive Data Collection Models (Phase 2.5 - The 4 Ledgers)
 # ============================================================================
 
@@ -585,6 +695,10 @@ class AgentSession(AgentSessionBase, table=True):
     status: str = Field(default=AgentSessionStatus.PENDING, max_length=20)
     error_message: str | None = Field(default=None, description="Error message if failed")
     result_summary: str | None = Field(default=None, description="Natural language summary of results")
+    # BYOM fields (Sprint 2.8) - Track which LLM configuration was used
+    llm_provider: str | None = Field(default=None, max_length=20, description="LLM provider used: openai, google, anthropic, or system_default")
+    llm_model: str | None = Field(default=None, max_length=100, description="Specific model used (e.g., gpt-4, gemini-1.5-pro)")
+    llm_credential_id: uuid.UUID | None = Field(default=None, foreign_key="user_llm_credentials.id", description="User LLM credential used (null if system default)")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
