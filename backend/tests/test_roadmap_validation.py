@@ -265,7 +265,8 @@ class TestProjectStructure:
         base_path = Path(__file__).parent.parent.parent.resolve()
         assert (base_path / "README.md").exists()
         assert (base_path / "ROADMAP.md").exists()
-        assert (base_path / "DEVELOPMENT.md").exists()
+        # DEVELOPMENT.md has been archived to docs/archive/history/
+        # Active development documentation is now in docs/ directory
 
     def test_frontend_exists(self):
         """Verify frontend is scaffolded"""
