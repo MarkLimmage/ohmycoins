@@ -110,3 +110,112 @@ class TestEncryptionService:
         
         assert decrypted == plaintext
         assert len(decrypted) == 10000
+
+
+class TestEncryptionServiceBYOM:
+    """Tests for BYOM-specific encryption methods (Sprint 2.8)"""
+
+    @pytest.fixture
+    def encryption_service(self):
+        """Create a test encryption service with a known key"""
+        test_key = Fernet.generate_key()
+        return EncryptionService(key=test_key.decode())
+
+    def test_encrypt_api_key_openai(self, encryption_service):
+        """Test encrypting OpenAI API key"""
+        api_key = "sk-proj-abcdefghijklmnopqrstuvwxyz1234567890"
+        
+        encrypted = encryption_service.encrypt_api_key(api_key)
+        decrypted = encryption_service.decrypt_api_key(encrypted)
+        
+        assert decrypted == api_key
+        assert isinstance(encrypted, bytes)
+        assert len(encrypted) > 0
+
+    def test_encrypt_api_key_google(self, encryption_service):
+        """Test encrypting Google Gemini API key"""
+        api_key = "AIzaSyD1234567890abcdefghijklmnopqrstuvwxyz"
+        
+        encrypted = encryption_service.encrypt_api_key(api_key)
+        decrypted = encryption_service.decrypt_api_key(encrypted)
+        
+        assert decrypted == api_key
+
+    def test_encrypt_api_key_anthropic(self, encryption_service):
+        """Test encrypting Anthropic Claude API key"""
+        api_key = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890"
+        
+        encrypted = encryption_service.encrypt_api_key(api_key)
+        decrypted = encryption_service.decrypt_api_key(encrypted)
+        
+        assert decrypted == api_key
+
+    def test_decrypt_api_key_roundtrip(self, encryption_service):
+        """Test full roundtrip encryption/decryption of API key"""
+        original_key = "sk-test-key-123456"
+        
+        encrypted = encryption_service.encrypt_api_key(original_key)
+        decrypted = encryption_service.decrypt_api_key(encrypted)
+        
+        assert decrypted == original_key
+        # Verify encrypted is different from original
+        assert encrypted.decode('utf-8', errors='ignore') != original_key
+
+    def test_encrypt_api_key_empty_raises_error(self, encryption_service):
+        """Test that encrypting empty API key raises ValueError"""
+        with pytest.raises(ValueError, match="Cannot encrypt empty string"):
+            encryption_service.encrypt_api_key("")
+
+    def test_decrypt_api_key_empty_raises_error(self, encryption_service):
+        """Test that decrypting empty bytes raises ValueError"""
+        with pytest.raises(ValueError, match="Cannot decrypt empty bytes"):
+            encryption_service.decrypt_api_key(b"")
+
+    def test_encrypt_api_key_produces_different_ciphertext(self, encryption_service):
+        """Test that encrypting same API key produces different ciphertext (due to IV)"""
+        api_key = "sk-test-key-identical"
+        
+        encrypted1 = encryption_service.encrypt_api_key(api_key)
+        encrypted2 = encryption_service.encrypt_api_key(api_key)
+        
+        # Ciphertext should be different due to random IV
+        assert encrypted1 != encrypted2
+        
+        # But both should decrypt to same plaintext
+        assert encryption_service.decrypt_api_key(encrypted1) == api_key
+        assert encryption_service.decrypt_api_key(encrypted2) == api_key
+
+    def test_encrypt_api_key_uses_same_mechanism_as_encrypt(self, encryption_service):
+        """Test that encrypt_api_key and encrypt produce compatible results"""
+        api_key = "sk-test-compatibility"
+        
+        # Encrypt using both methods
+        encrypted_via_api_key = encryption_service.encrypt_api_key(api_key)
+        encrypted_via_encrypt = encryption_service.encrypt(api_key)
+        
+        # Should be able to decrypt with either method
+        assert encryption_service.decrypt_api_key(encrypted_via_api_key) == api_key
+        assert encryption_service.decrypt(encrypted_via_api_key) == api_key
+        assert encryption_service.decrypt_api_key(encrypted_via_encrypt) == api_key
+        assert encryption_service.decrypt(encrypted_via_encrypt) == api_key
+
+    def test_encrypt_api_key_special_characters(self, encryption_service):
+        """Test encrypting API keys with special characters"""
+        api_key = "sk-test-!@#$%^&*()_+-=[]{}|;:',.<>?/~`"
+        
+        encrypted = encryption_service.encrypt_api_key(api_key)
+        decrypted = encryption_service.decrypt_api_key(encrypted)
+        
+        assert decrypted == api_key
+
+    def test_decrypt_api_key_with_wrong_key_fails(self):
+        """Test that decrypting with wrong encryption key fails"""
+        service1 = EncryptionService(key=Fernet.generate_key().decode())
+        service2 = EncryptionService(key=Fernet.generate_key().decode())
+        
+        api_key = "sk-test-wrong-key"
+        encrypted = service1.encrypt_api_key(api_key)
+        
+        # Attempting to decrypt with different key should raise error
+        with pytest.raises(Exception):
+            service2.decrypt_api_key(encrypted)
