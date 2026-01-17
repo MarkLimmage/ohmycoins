@@ -29,6 +29,7 @@ dependencies = [
     # Phase 3: Agentic Data Science dependencies
     "langchain<1.0.0,>=0.1.0",
     "langchain-openai<1.0.0,>=0.0.5",
+    "langchain-google-genai<2.0.0,>=1.0.0",  # BYOM: Google Gemini support (Sprint 2.8)
     "langgraph<1.0.0,>=0.0.20",
     "redis<6.0.0,>=5.0.0",
     "pandas<3.0.0,>=2.0.0",

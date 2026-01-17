@@ -89,6 +89,47 @@ class EncryptionService:
         visible_chars = 4
         masked_length = len(api_key) - visible_chars
         return "*" * masked_length + api_key[-visible_chars:]
+    
+    # ============================================================================
+    # BYOM (Bring Your Own Model) - LLM API Key Methods (Sprint 2.8)
+    # ============================================================================
+    
+    def encrypt_api_key(self, api_key: str) -> bytes:
+        """
+        Encrypt an LLM API key for secure storage (BYOM feature)
+        
+        This is a convenience wrapper around encrypt() to make it explicit
+        that LLM API keys use the same encryption as Coinspot credentials.
+        
+        Args:
+            api_key: The LLM API key to encrypt (OpenAI, Google, Anthropic)
+            
+        Returns:
+            Encrypted bytes suitable for database storage
+            
+        Raises:
+            ValueError: If api_key is empty
+        """
+        return self.encrypt(api_key)
+    
+    def decrypt_api_key(self, encrypted_api_key: bytes) -> str:
+        """
+        Decrypt an LLM API key from storage (BYOM feature)
+        
+        This is a convenience wrapper around decrypt() to make it explicit
+        that LLM API keys use the same encryption as Coinspot credentials.
+        
+        Args:
+            encrypted_api_key: The encrypted API key bytes from database
+            
+        Returns:
+            Decrypted API key string
+            
+        Raises:
+            ValueError: If encrypted_api_key is empty
+            cryptography.fernet.InvalidToken: If decryption fails
+        """
+        return self.decrypt(encrypted_api_key)
 
 
 # Singleton instance
