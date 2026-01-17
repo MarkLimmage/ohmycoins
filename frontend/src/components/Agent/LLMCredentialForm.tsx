@@ -6,6 +6,7 @@ import {
   HStack,
   Heading,
   Input,
+  Select,
   Text,
   VStack,
   createListCollection,
@@ -171,8 +172,13 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
               <SelectRoot
                 collection={providers}
                 size="md"
-                onValueChange={(e: any) => {
-                  setValue("provider_name", e.value[0])
+                onValueChange={(
+                  details: Select.ValueChangeDetails<{
+                    label: string
+                    value: string
+                  }>,
+                ) => {
+                  setValue("provider_name", details.value[0])
                   setValidationResult(null)
                 }}
               >
