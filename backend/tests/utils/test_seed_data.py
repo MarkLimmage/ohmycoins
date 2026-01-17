@@ -35,19 +35,33 @@ class TestSeedData:
     
     def test_generate_users(self, db: Session) -> None:
         """Test that user generation creates the expected number of users."""
-        # Clear existing users first
+        # Get the initial superuser count
+        from app.core.config import settings
+        initial_superuser_exists = db.exec(
+            select(func.count(User.id)).where(User.email == settings.FIRST_SUPERUSER)
+        ).one() > 0
+        
         initial_count = db.exec(select(func.count(User.id))).one()
         
         # Generate 5 test users
         users = generate_users(db, count=5)
         
-        assert len(users) == 5
-        assert users[0].is_superuser  # First user should be superuser
-        assert not users[1].is_superuser  # Others should not be superuser
-        
-        # Verify in database - check delta, not absolute count (for test isolation)
-        final_count = db.exec(select(func.count(User.id))).one()
-        assert final_count == initial_count + 5  # Should have increased by 5 users
+        # The function returns either 5 users (if no superuser exists) or 1 superuser + 4 new users
+        if initial_superuser_exists:
+            # If superuser exists, we get 1 superuser + 4 new users = 5 total returned
+            assert len(users) == 5
+            assert users[0].is_superuser  # First returned should be superuser
+            assert not users[1].is_superuser  # Others should not be superuser
+            # Only 4 new users were actually created
+            final_count = db.exec(select(func.count(User.id))).one()
+            assert final_count == initial_count + 4
+        else:
+            # If no superuser exists, we create 5 new users
+            assert len(users) == 5
+            assert users[0].is_superuser  # First user should be superuser
+            assert not users[1].is_superuser  # Others should not be superuser
+            final_count = db.exec(select(func.count(User.id))).one()
+            assert final_count == initial_count + 5
     
     def test_generate_algorithms(self, db: Session) -> None:
         """Test algorithm generation."""

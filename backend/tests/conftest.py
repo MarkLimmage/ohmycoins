@@ -89,6 +89,21 @@ def session(db: Session) -> Generator[Session, None, None]:
             # Close and create a new session
             db.close()
             pass
+        
+        # Additional cleanup: explicitly delete test-created price data
+        # to ensure test isolation (savepoint rollback doesn't always work properly
+        # for PriceData5Min, likely due to timestamp/cascade behavior)
+        # Note: We use a fresh transaction context since the savepoint is rolled back
+        try:
+            db.execute(delete(PriceData5Min))
+            db.commit()
+        except Exception:
+            # Ignore cleanup errors - they shouldn't prevent test execution
+            # This could happen if the session is already in a bad state
+            try:
+                db.rollback()
+            except Exception:
+                pass
 
 
 @pytest.fixture(scope="module")
