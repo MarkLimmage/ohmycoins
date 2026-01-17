@@ -42,14 +42,109 @@ For detailed Sprint 2.8 report, see: [Sprint 2.8 Final Report](docs/archive/hist
 **Success Criteria:**
 - 🔲 Fix 3 PnL calculation tests (CRITICAL - blocks production)
 - 🔲 Fix seed data assertion logic
-- 🔲 BYOM agent integration: Update AgentOrchestrator to use LLMFactory
-- 🔲 Add Anthropic Claude support to LLM Factory
+- ✅ BYOM agent integration: Update AgentOrchestrator to use LLMFactory
+- ✅ Add Anthropic Claude support to LLM Factory
 - 🔲 Test pass rate >95%
 
 **Priority Tasks:**
 1. **Track A - Critical Test Fixes (P0):** Fix 3 PnL calculation tests (4-6 hours)
-2. **Track B - Agent Integration:** Update AgentOrchestrator to use LLMFactory (16-20 hours)
+2. ✅ **Track B - Agent Integration:** Update AgentOrchestrator to use LLMFactory (16-20 hours) - COMPLETE
 3. **Track A - Minor Fixes (P3):** Fix seed data assertion logic (2 minutes)
+
+---
+
+## 📋 Sprint 2.9 - Track B (Agent Integration) - COMPLETE ✅
+
+**Developer:** OMC-ML-Scientist (Developer B)  
+**Status:** ✅ COMPLETE  
+**Date Started:** January 17, 2026  
+**Date Completed:** January 17, 2026  
+**Actual Effort:** 8 hours  
+**PRs:** In Progress
+
+### Sprint 2.9 Track B Objectives ✅
+
+**Primary Goal:** Complete BYOM agent integration and add Anthropic Claude support
+
+**Deliverables:**
+
+#### Phase 1: Anthropic Claude Support ✅
+- ✅ Added langchain-anthropic>=0.1.0 dependency
+- ✅ Implemented `_create_anthropic_llm()` method
+- ✅ Updated `create_llm_from_api_key()` to handle Anthropic
+- ✅ Updated `_create_system_default_llm()` for Anthropic
+- ✅ Created 4 new Anthropic unit tests
+- ✅ All 26 LLM Factory tests passing
+
+**Files Modified:**
+- `backend/pyproject.toml` - Added dependency
+- `backend/app/services/agent/llm_factory.py` - Anthropic integration (+45 lines)
+- `backend/tests/services/agent/test_llm_factory.py` - New tests (+80 lines)
+
+#### Phase 2: Agent Integration ✅
+- ✅ Modified LangGraphWorkflow to accept user_id and credential_id
+- ✅ Replaced hardcoded ChatOpenAI with LLMFactory.create_llm()
+- ✅ Added graceful fallback to system default
+- ✅ Updated AgentOrchestrator to pass user context
+- ✅ Auto-tracking of LLM provider/model in AgentSession
+
+**Files Modified:**
+- `backend/app/services/agent/langgraph_workflow.py` - BYOM integration (+55 lines)
+- `backend/app/services/agent/orchestrator.py` - Session tracking (+50 lines)
+
+#### Phase 3: Database & Session Tracking ✅
+- ✅ Verified AgentSession BYOM fields (from Sprint 2.8)
+- ✅ Auto-capture of llm_provider, llm_model, llm_credential_id
+- ✅ Migration a1b2c3d4e5f6 already applied
+
+#### Phase 4: Testing ✅
+- ✅ Added 4 BYOM integration tests
+- ✅ test_workflow_initialization_with_user_id
+- ✅ test_workflow_initialization_with_credential_id
+- ✅ test_workflow_fallback_to_system_default
+- ✅ test_workflow_initialization_without_byom
+- ✅ Backward compatibility verified
+
+**Files Modified:**
+- `backend/tests/services/agent/test_langgraph_workflow.py` - Integration tests (+124 lines)
+
+#### Phase 5: Documentation ✅
+- ✅ Created comprehensive Track B progress report
+- ✅ Updated CURRENT_SPRINT.md with completion status
+- ✅ Followed documentation plan for sprint archive
+
+**Files Created:**
+- `docs/archive/history/sprints/sprint-2.9/TRACK_B_SPRINT_2.9_REPORT.md` - Complete report
+
+### Technical Achievement
+
+**BYOM Agent Integration:**
+- Users can now use their own API keys (OpenAI, Google, Anthropic) for agent execution
+- Automatic fallback to system default if user has no credentials
+- Session-level tracking of which LLM was used
+- Zero breaking changes - backward compatible
+
+**Supported Providers:**
+| Provider | Models | Status |
+|----------|--------|--------|
+| OpenAI | gpt-4, gpt-3.5-turbo | ✅ Sprint 2.8 |
+| Google | gemini-1.5-pro, gemini-pro | ✅ Sprint 2.8 |
+| Anthropic | claude-3-opus, claude-3-sonnet | ✅ Sprint 2.9 |
+
+### Code Metrics
+- **Production Code:** +150 lines
+- **Test Code:** +204 lines
+- **Documentation:** +488 lines
+- **Files Modified:** 5 files
+- **Files Created:** 1 file (report)
+
+### Next Steps (Sprint 2.10)
+1. Frontend UI for LLM credential management
+2. End-to-end integration tests
+3. Cost tracking and budget limits
+4. Provider-specific prompt optimization
+
+**For detailed Sprint 2.9 Track B report, see:** [Track B Sprint 2.9 Report](docs/archive/history/sprints/sprint-2.9/TRACK_B_SPRINT_2.9_REPORT.md)
 
 ---
 
