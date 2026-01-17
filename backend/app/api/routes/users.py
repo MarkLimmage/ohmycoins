@@ -1,8 +1,10 @@
 import uuid
 from typing import Any
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select
+from langchain_core.messages import HumanMessage
 
 from app import crud
 from app.api.deps import (
@@ -24,9 +26,18 @@ from app.models import (
     UserUpdateMe,
     UserProfilePublic,
     UserProfileUpdate,
+    UserLLMCredentials,
+    UserLLMCredentialsCreate,
+    UserLLMCredentialsUpdate,
+    UserLLMCredentialsPublic,
+    UserLLMCredentialsValidate,
+    UserLLMCredentialsValidationResult,
 )
+from app.services.encryption import encryption_service
+from app.services.agent.llm_factory import LLMFactory
 from app.utils import generate_new_account_email, send_email
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
 
 
@@ -283,21 +294,6 @@ def delete_user(
 # ============================================================================
 # LLM Credentials Endpoints (BYOM Feature - Sprint 2.8)
 # ============================================================================
-
-from app.models import (
-    UserLLMCredentials,
-    UserLLMCredentialsCreate,
-    UserLLMCredentialsUpdate,
-    UserLLMCredentialsPublic,
-    UserLLMCredentialsValidate,
-    UserLLMCredentialsValidationResult,
-)
-from app.services.encryption import encryption_service
-from app.services.agent.llm_factory import LLMFactory
-from langchain_core.messages import HumanMessage
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 @router.post("/me/llm-credentials", response_model=UserLLMCredentialsPublic)

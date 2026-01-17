@@ -159,7 +159,7 @@ class TestEncryptionServiceBYOM:
         
         assert decrypted == original_key
         # Verify encrypted is different from original
-        assert encrypted.decode('utf-8', errors='ignore') != original_key
+        assert encrypted != original_key.encode('utf-8')
 
     def test_encrypt_api_key_empty_raises_error(self, encryption_service):
         """Test that encrypting empty API key raises ValueError"""
