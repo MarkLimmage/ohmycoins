@@ -1,4 +1,9 @@
 from collections.abc import Generator
+import os
+
+# Set encryption key BEFORE any app imports
+# This is for testing only - production uses AWS Secrets Manager
+os.environ["ENCRYPTION_KEY"] = "_KLoPGOzT2wEFRDU1Rmb7-85GIDf4QJUVGPzkTKRTis="
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,6 +19,7 @@ from app.models import (
     Order,
     Position,
     CoinspotCredentials,
+    UserLLMCredentials,
     AgentSession,
     AgentSessionMessage,
     AgentArtifact,
@@ -57,6 +63,7 @@ def db() -> Generator[Session, None, None]:
             
             # Delete credentials
             session.execute(delete(CoinspotCredentials))
+            session.execute(delete(UserLLMCredentials))
             
             # Delete ledger data
             session.execute(delete(CatalystEvents))

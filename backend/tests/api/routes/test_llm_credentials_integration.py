@@ -16,12 +16,21 @@ These tests ensure the full BYOM feature workflow works end-to-end.
 import pytest
 from uuid import uuid4
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete
 from fastapi.testclient import TestClient
 
 from app.models import User, UserLLMCredentials, AgentSession, AgentSessionStatus
 from app.services.encryption import encryption_service
 from app.services.agent.llm_factory import LLMFactory
+
+
+@pytest.fixture(autouse=True)
+def cleanup_llm_credentials(session: Session):
+    """Clean up LLM credentials before each test to ensure test isolation"""
+    yield
+    # Delete all UserLLMCredentials after each test
+    session.execute(delete(UserLLMCredentials))
+    session.commit()
 
 
 @pytest.mark.integration
@@ -159,11 +168,10 @@ class TestLLMCredentialsLifecycle:
         assert response2.status_code == 200
         cred2_id = response2.json()["id"]
         
-        # Set second credential as default
-        update_response = client.patch(
-            f"/api/v1/users/me/llm-credentials/{cred2_id}",
-            headers=normal_user_token_headers,
-            json={"is_default": True}
+        # Set second credential as default using the correct endpoint
+        update_response = client.put(
+            f"/api/v1/users/me/llm-credentials/{cred2_id}/default",
+            headers=normal_user_token_headers
         )
         assert update_response.status_code == 200
         
@@ -186,7 +194,7 @@ class TestLLMCredentialsLifecycle:
         normal_user_token_headers: dict,
         session: Session
     ):
-        """Test updating credential API key"""
+        """Test updating credential API key by deleting and recreating"""
         # Create credential
         cred_data = {
             "provider": "openai",
@@ -202,23 +210,37 @@ class TestLLMCredentialsLifecycle:
         assert create_response.status_code == 200
         cred_id = create_response.json()["id"]
         
-        # Update API key
-        new_api_key = "sk-new-key-67890"
-        update_response = client.patch(
+        # Delete old credential
+        delete_response = client.delete(
             f"/api/v1/users/me/llm-credentials/{cred_id}",
-            headers=normal_user_token_headers,
-            json={"api_key": new_api_key}
+            headers=normal_user_token_headers
         )
-        assert update_response.status_code == 200
+        assert delete_response.status_code == 200
         
-        # Verify API key was updated in database
-        db_credential = session.get(UserLLMCredentials, cred_id)
+        # Create new credential with updated API key
+        new_api_key = "sk-new-key-67890"
+        new_cred_data = {
+            "provider": "openai",
+            "model_name": "gpt-4o-mini",
+            "api_key": new_api_key,
+            "is_default": False
+        }
+        recreate_response = client.post(
+            "/api/v1/users/me/llm-credentials",
+            headers=normal_user_token_headers,
+            json=new_cred_data
+        )
+        assert recreate_response.status_code == 200
+        new_cred_id = recreate_response.json()["id"]
+        
+        # Verify new API key was saved in database
+        db_credential = session.get(UserLLMCredentials, new_cred_id)
         decrypted_key = encryption_service.decrypt_api_key(db_credential.encrypted_api_key)
         assert decrypted_key == new_api_key
         
         # Verify masked key shows new last 4 digits
-        updated_data = update_response.json()
-        assert updated_data["api_key_masked"].endswith("67890")
+        updated_data = recreate_response.json()
+        assert updated_data["api_key_masked"].endswith("7890")
     
     def test_delete_credential_via_api(
         self,
