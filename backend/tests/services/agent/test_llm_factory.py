@@ -90,7 +90,7 @@ class TestLLMFactoryBasicCreation:
         )
         
         assert isinstance(llm, ChatGoogleGenerativeAI)
-        assert llm.model == "gemini-1.5-pro"
+        assert llm.model.endswith("gemini-1.5-pro")  # Google prepends "models/" prefix
         # Verify Gemini-specific settings
         assert llm.convert_system_message_to_human == True
     
@@ -135,7 +135,7 @@ class TestLLMFactoryBasicCreation:
         )
         
         assert isinstance(llm, ChatGoogleGenerativeAI)
-        assert llm.model == "gemini-1.5-pro"  # Default model
+        assert llm.model.endswith("gemini-1.5-pro")  # Default model (Google prepends "models/" prefix)
 
 
 class TestLLMFactoryUserCredentials:
@@ -183,7 +183,7 @@ class TestLLMFactoryUserCredentials:
         )
         
         assert isinstance(llm, ChatGoogleGenerativeAI)
-        assert llm.model == "gemini-1.5-pro"
+        assert llm.model.endswith("gemini-1.5-pro")  # Google prepends "models/" prefix
     
     def test_create_credential_not_found_raises_error(self, mock_user):
         """Test that missing credential raises ValueError"""
