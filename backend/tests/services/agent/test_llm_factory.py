@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 
 from app.services.agent.llm_factory import LLMFactory, create_llm
 from app.models import UserLLMCredentials, User
@@ -63,6 +64,24 @@ def mock_google_credential(mock_user):
     )
 
 
+@pytest.fixture
+def mock_anthropic_credential(mock_user):
+    """Create a mock Anthropic Claude credential"""
+    api_key = "sk-ant-test123456789"
+    encrypted_key = encryption_service.encrypt_api_key(api_key)
+    
+    return UserLLMCredentials(
+        id=uuid4(),
+        user_id=mock_user.id,
+        provider="anthropic",
+        model_name="claude-3-sonnet-20240229",
+        encrypted_api_key=encrypted_key,
+        encryption_key_id="default",
+        is_default=False,
+        is_active=True
+    )
+
+
 class TestLLMFactoryBasicCreation:
     """Test basic LLM creation from API keys"""
     
@@ -94,15 +113,20 @@ class TestLLMFactoryBasicCreation:
         # Verify Gemini-specific settings
         assert llm.convert_system_message_to_human == True
     
-    def test_create_anthropic_raises_not_implemented(self):
-        """Test that Anthropic raises NotImplementedError in Sprint 2.8"""
+    def test_create_anthropic_from_api_key(self):
+        """Test creating Anthropic Claude LLM directly from API key (Sprint 2.9)"""
+        from langchain_anthropic import ChatAnthropic
+        
         api_key = "sk-ant-test-key"
         
-        with pytest.raises(NotImplementedError, match="Sprint 2.9"):
-            LLMFactory.create_llm_from_api_key(
-                provider="anthropic",
-                api_key=api_key
-            )
+        llm = LLMFactory.create_llm_from_api_key(
+            provider="anthropic",
+            api_key=api_key,
+            model_name="claude-3-sonnet-20240229"
+        )
+        
+        assert isinstance(llm, ChatAnthropic)
+        assert llm.model == "claude-3-sonnet-20240229"
     
     def test_create_unsupported_provider_raises_error(self):
         """Test that unsupported provider raises ValueError"""
@@ -136,6 +160,18 @@ class TestLLMFactoryBasicCreation:
         
         assert isinstance(llm, ChatGoogleGenerativeAI)
         assert llm.model.endswith("gemini-1.5-pro")  # Default model (Google prepends "models/" prefix)
+    
+    def test_create_anthropic_with_default_model(self):
+        """Test creating Anthropic LLM without specifying model (uses default)"""
+        api_key = "sk-ant-test-key"
+        
+        llm = LLMFactory.create_llm_from_api_key(
+            provider="anthropic",
+            api_key=api_key
+        )
+        
+        assert isinstance(llm, ChatAnthropic)
+        assert llm.model == "claude-3-sonnet-20240229"  # Default model
 
 
 class TestLLMFactoryUserCredentials:
@@ -184,6 +220,20 @@ class TestLLMFactoryUserCredentials:
         
         assert isinstance(llm, ChatGoogleGenerativeAI)
         assert llm.model.endswith("gemini-1.5-pro")  # Google prepends "models/" prefix
+    
+    def test_create_with_anthropic_credential(self, mock_user, mock_anthropic_credential):
+        """Test creating Anthropic LLM from credential (Sprint 2.9)"""
+        mock_session = MagicMock()
+        mock_session.get.return_value = mock_anthropic_credential
+        
+        llm = LLMFactory.create_llm(
+            session=mock_session,
+            user_id=mock_user.id,
+            credential_id=mock_anthropic_credential.id
+        )
+        
+        assert isinstance(llm, ChatAnthropic)
+        assert llm.model == "claude-3-sonnet-20240229"
     
     def test_create_credential_not_found_raises_error(self, mock_user):
         """Test that missing credential raises ValueError"""
@@ -317,6 +367,7 @@ class TestLLMFactoryHelpers:
         assert "anthropic" in defaults
         assert defaults["openai"] == "gpt-4-turbo-preview"
         assert defaults["google"] == "gemini-1.5-pro"
+        assert defaults["anthropic"] == "claude-3-sonnet-20240229"
     
     def test_convenience_function_create_llm(self, mock_user, mock_openai_credential):
         """Test convenience function works same as LLMFactory.create_llm"""
@@ -367,6 +418,23 @@ class TestLLMFactoryProviderSpecific:
         assert isinstance(llm, ChatGoogleGenerativeAI)
         # Verify Gemini-specific workaround is applied
         assert llm.convert_system_message_to_human == True
+    
+    def test_anthropic_custom_parameters(self):
+        """Test Anthropic LLM with custom parameters (Sprint 2.9)"""
+        api_key = "sk-ant-test-key"
+        
+        llm = LLMFactory.create_llm_from_api_key(
+            provider="anthropic",
+            api_key=api_key,
+            model_name="claude-3-opus-20240229",
+            max_tokens=3000,
+            temperature=0.5
+        )
+        
+        assert isinstance(llm, ChatAnthropic)
+        assert llm.model == "claude-3-opus-20240229"
+        assert llm.max_tokens == 3000
+        assert llm.temperature == 0.5
     
     def test_provider_case_insensitive(self):
         """Test that provider names are case-insensitive"""

@@ -21,6 +21,7 @@ from uuid import UUID
 
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -180,14 +181,11 @@ class LLMFactory:
         elif provider == "google":
             return LLMFactory._create_google_llm(api_key, model_name, **kwargs)
         elif provider == "anthropic":
-            raise NotImplementedError(
-                "Anthropic Claude support will be added in Sprint 2.9. "
-                "Please use OpenAI or Google for now."
-            )
+            return LLMFactory._create_anthropic_llm(api_key, model_name, **kwargs)
         else:
             raise ValueError(
                 f"Unsupported provider: {provider}. "
-                f"Supported providers: openai, google, anthropic (coming in Sprint 2.9)"
+                f"Supported providers: openai, google, anthropic"
             )
     
     @staticmethod
@@ -210,8 +208,10 @@ class LLMFactory:
         elif provider == "anthropic":
             if not settings.ANTHROPIC_API_KEY:
                 raise ValueError("ANTHROPIC_API_KEY not configured in environment")
-            # Anthropic support coming in Sprint 2.9
-            raise NotImplementedError("Anthropic system default will be added in Sprint 2.9")
+            return LLMFactory._create_anthropic_llm(
+                api_key=settings.ANTHROPIC_API_KEY,
+                model_name=getattr(settings, 'ANTHROPIC_MODEL', 'claude-3-sonnet-20240229')
+            )
         else:
             # Default to OpenAI if provider not recognized
             logger.warning(
@@ -285,6 +285,36 @@ class LLMFactory:
             google_api_key=api_key,
             max_output_tokens=max_tokens,
             convert_system_message_to_human=True,  # Required for Gemini
+            **kwargs
+        )
+    
+    @staticmethod
+    def _create_anthropic_llm(
+        api_key: str,
+        model_name: Optional[str] = None,
+        **kwargs
+    ) -> ChatAnthropic:
+        """
+        Create Anthropic Claude LLM instance.
+        
+        Args:
+            api_key: Anthropic API key
+            model_name: Model name (defaults to claude-3-sonnet-20240229)
+            **kwargs: Additional ChatAnthropic parameters
+            
+        Returns:
+            ChatAnthropic instance
+        """
+        model = model_name or "claude-3-sonnet-20240229"
+        max_tokens = kwargs.pop('max_tokens', settings.MAX_TOKENS_PER_REQUEST)
+        
+        logger.debug(f"Creating Anthropic Claude LLM with model={model}")
+        
+        # Anthropic uses max_tokens directly (same as OpenAI)
+        return ChatAnthropic(
+            model=model,
+            anthropic_api_key=api_key,
+            max_tokens=max_tokens,
             **kwargs
         )
     
