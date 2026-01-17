@@ -45,9 +45,9 @@ class TestSeedData:
         assert users[0].is_superuser  # First user should be superuser
         assert not users[1].is_superuser  # Others should not be superuser
         
-        # Verify in database - check absolute count (accounts for pre-existing superuser)
+        # Verify in database - check delta, not absolute count (for test isolation)
         final_count = db.exec(select(func.count(User.id))).one()
-        assert final_count == 5  # Should have exactly 5 users total
+        assert final_count == initial_count + 5  # Should have increased by 5 users
     
     def test_generate_algorithms(self, db: Session) -> None:
         """Test algorithm generation."""
