@@ -54,10 +54,10 @@ module "vpc" {
   private_app_subnet_cidrs = var.private_app_subnet_cidrs
   private_db_subnet_cidrs  = var.private_db_subnet_cidrs
 
-  enable_nat_gateway   = true
+  enable_nat_gateway   = false # Disabled for development pause - saves ~$97/month
   single_nat_gateway   = false # Multi-AZ for production
   enable_flow_logs     = true  # Enable for security
-  enable_vpc_endpoints = true  # Cost optimization
+  enable_vpc_endpoints = false # Disabled with NAT gateways
 
   tags = local.tags
 }
