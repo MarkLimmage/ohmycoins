@@ -12,10 +12,10 @@ aws_region = "ap-southeast-2"
 # VPC Configuration - Production uses separate CIDR from staging
 vpc_cidr = "10.0.0.0/16"
 
-# Subnet CIDRs - Multi-AZ for high availability
-public_subnet_cidrs      = ["10.0.1.0/24", "10.0.2.0/24"]
-private_app_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
-private_db_subnet_cidrs  = ["10.0.21.0/24", "10.0.22.0/24"]
+# Subnet CIDRs - Multi-AZ for high availability (3 AZs)
+public_subnet_cidrs      = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_app_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24", "10.0.13.0/24"]
+private_db_subnet_cidrs  = ["10.0.21.0/24", "10.0.22.0/24", "10.0.23.0/24"]
 
 # =============================================================================
 # Security Configuration
