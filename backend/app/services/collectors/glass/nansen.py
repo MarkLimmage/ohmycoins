@@ -17,7 +17,9 @@ from typing import Any
 
 from sqlmodel import Session
 
-from app.models import SmartMoneyFlow
+# Note: SmartMoneyFlow model will be added in future sprint
+# For now, collector logs data without storing to demonstrate functionality
+# from app.models import SmartMoneyFlow
 from app.services.collectors.api_collector import APICollector
 
 logger = logging.getLogger(__name__)
@@ -181,30 +183,22 @@ class NansenCollector(APICollector):
         """
         Store validated smart money flow data in the database.
         
+        Note: SmartMoneyFlow model needs to be added to models.py in a future sprint.
+        For Sprint 2.12, this collector demonstrates the API integration and data collection,
+        with storage deferred to when the full Glass Ledger schema is implemented.
+        
         Args:
             data: Validated data to store
             session: Database session
         
         Returns:
-            Number of records stored
+            Number of records that would be stored (currently logged only)
         """
         stored_count = 0
         
         for item in data:
             try:
-                # Note: SmartMoneyFlow model needs to be defined in models.py
-                # For now, we'll use a placeholder approach
-                # In production, you'd create the proper model
-                
-                # Since SmartMoneyFlow model may not exist yet, we'll log what would be stored
-                logger.info(
-                    f"{self.name}: Would store: {item['token']} - "
-                    f"Net Flow: ${item['net_flow_usd']}, "
-                    f"Buyers: {item['buying_wallet_count']}, "
-                    f"Sellers: {item['selling_wallet_count']}"
-                )
-                
-                # Placeholder for actual storage when model is ready:
+                # TODO Sprint 2.13: Once SmartMoneyFlow model is added to models.py, uncomment:
                 # smart_money_flow = SmartMoneyFlow(
                 #     token=item["token"],
                 #     net_flow_usd=item["net_flow_usd"],
@@ -216,21 +210,30 @@ class NansenCollector(APICollector):
                 # )
                 # session.add(smart_money_flow)
                 
+                # For now, log the data to demonstrate collection works
+                logger.info(
+                    f"{self.name}: Collected smart money flow: {item['token']} - "
+                    f"Net Flow: ${item['net_flow_usd']}, "
+                    f"Buyers: {item['buying_wallet_count']}, "
+                    f"Sellers: {item['selling_wallet_count']}"
+                )
+                
                 stored_count += 1
                 
             except Exception as e:
                 logger.error(
-                    f"{self.name}: Failed to store flow data for '{item.get('token', 'unknown')}': {str(e)}"
+                    f"{self.name}: Failed to log flow data for '{item.get('token', 'unknown')}': {str(e)}"
                 )
                 continue
         
-        # Commit all records at once
-        try:
-            # session.commit()  # Uncomment when model is ready
-            logger.info(f"{self.name}: Would store {stored_count} smart money flow records")
-        except Exception as e:
-            logger.error(f"{self.name}: Failed to commit records: {str(e)}")
-            # session.rollback()  # Uncomment when model is ready
-            stored_count = 0
+        # TODO Sprint 2.13: Uncomment when SmartMoneyFlow model exists
+        # try:
+        #     session.commit()
+        #     logger.info(f"{self.name}: Stored {stored_count} smart money flow records")
+        # except Exception as e:
+        #     logger.error(f"{self.name}: Failed to commit records: {str(e)}")
+        #     session.rollback()
+        #     stored_count = 0
         
+        logger.info(f"{self.name}: Validated and logged {stored_count} smart money flow records (storage pending model creation)")
         return stored_count
