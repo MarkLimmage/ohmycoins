@@ -1631,7 +1631,202 @@ aws ecs list-tasks \
 
 ---
 
-**Last Updated:** 2026-01-10  
+**Last Updated:** 2026-01-18  
 **Maintained By:** Developer C (Infrastructure & DevOps)  
-**Version:** 2.0 - Sprint 2.6 Enhanced Edition
-**Next Review:** After production deployment validation
+**Version:** 2.1 - Sprint 2.12 Production Deployment Edition
+**Next Review:** After first production workload deployment
+
+---
+
+## Production Deployment Procedures
+
+### Production Environment Setup (Sprint 2.12)
+
+**Infrastructure Deployed:**
+- **Region:** ap-southeast-2 (Sydney)
+- **VPC:** 10.0.0.0/16
+- **Database:** RDS PostgreSQL db.t3.small (Multi-AZ)
+- **Cache:** ElastiCache Redis cache.t3.small (Multi-AZ, 1 primary + 1 replica)
+- **Compute:** ECS Fargate (2 backend + 2 frontend tasks, scaled to 0)
+- **Load Balancer:** ALB with HTTP (port 80)
+- **Monitoring:** 9 CloudWatch alarms configured
+
+**Production Deployment Command:**
+```bash
+cd /home/mark/omc/ohmycoins/infrastructure/terraform/environments/production
+terraform init -reconfigure
+terraform workspace select production
+terraform plan -out=production.tfplan
+terraform apply production.tfplan
+```
+
+**Deployed Resources:** 101 resources created
+
+**Deployment Outputs:**
+```
+alb_dns_name = "ohmycoins-prod-alb-1133770157.ap-southeast-2.elb.amazonaws.com"
+backend_service_name = "ohmycoins-prod-backend"
+frontend_service_name = "ohmycoins-prod-frontend"
+db_endpoint = "ohmycoins-prod-postgres.cnuko2w8idh1.ap-southeast-2.rds.amazonaws.com:5432"
+redis_endpoint = "master.ohmycoins-prod-redis.faxg1m.apse2.cache.amazonaws.com"
+redis_reader_endpoint = "replica.ohmycoins-prod-redis.faxg1m.apse2.cache.amazonaws.com"
+```
+
+---
+
+## Resource Scaling and Cost Management
+
+### Scale Down Production Resources (Minimize Costs)
+
+When production is not actively serving traffic, scale down to minimize AWS costs:
+
+**Step 1: Scale ECS Services to Zero**
+```bash
+# Scale backend to 0
+aws ecs update-service \
+    --cluster ohmycoins-prod-cluster \
+    --service ohmycoins-prod-backend \
+    --desired-count 0 \
+    --region ap-southeast-2
+
+# Scale frontend to 0
+aws ecs update-service \
+    --cluster ohmycoins-prod-cluster \
+    --service ohmycoins-prod-frontend \
+    --desired-count 0 \
+    --region ap-southeast-2
+
+# Verify
+aws ecs describe-services \
+    --cluster ohmycoins-prod-cluster \
+    --services ohmycoins-prod-backend ohmycoins-prod-frontend \
+    --region ap-southeast-2 \
+    --query 'services[*].{Name:serviceName,Desired:desiredCount,Running:runningCount}'
+```
+
+**Expected Output:**
+```
+| Desired | Name                     | Running |
+|---------|--------------------------|---------|
+| 0       | ohmycoins-prod-backend   | 0       |
+| 0       | ohmycoins-prod-frontend  | 0       |
+```
+
+**Step 2: Stop RDS Instance**
+```bash
+# Stop RDS (will auto-restart after 7 days)
+aws rds stop-db-instance \
+    --db-instance-identifier ohmycoins-prod-postgres \
+    --region ap-southeast-2
+
+# Verify status
+aws rds describe-db-instances \
+    --db-instance-identifier ohmycoins-prod-postgres \
+    --region ap-southeast-2 \
+    --query 'DBInstances[0].DBInstanceStatus'
+```
+
+**Expected:** `"stopping"` or `"stopped"`
+
+**Step 3: ElastiCache Redis - Note on Limitations**
+
+⚠️ **Important:** ElastiCache does not support stopping clusters like RDS. Options:
+- **Keep running** (recommended for demo/dev): ~$0.034/hour = ~$25/month
+- **Delete cluster** (not recommended): Requires Terraform destroy/apply cycle to recreate
+
+Current production Redis remains running for infrastructure preservation.
+
+### Scale Up Production Resources
+
+When ready to serve traffic, scale resources back up:
+
+**Step 1: Start RDS Instance**
+```bash
+aws rds start-db-instance \
+    --db-instance-identifier ohmycoins-prod-postgres \
+    --region ap-southeast-2
+
+# Wait for availability (5-10 minutes)
+aws rds wait db-instance-available \
+    --db-instance-identifier ohmycoins-prod-postgres \
+    --region ap-southeast-2
+```
+
+**Step 2: Scale ECS Services**
+```bash
+# Scale backend to 2 tasks
+aws ecs update-service \
+    --cluster ohmycoins-prod-cluster \
+    --service ohmycoins-prod-backend \
+    --desired-count 2 \
+    --region ap-southeast-2
+
+# Scale frontend to 2 tasks
+aws ecs update-service \
+    --cluster ohmycoins-prod-cluster \
+    --service ohmycoins-prod-frontend \
+    --desired-count 2 \
+    --region ap-southeast-2
+
+# Wait for services to stabilize
+aws ecs wait services-stable \
+    --cluster ohmycoins-prod-cluster \
+    --services ohmycoins-prod-backend ohmycoins-prod-frontend \
+    --region ap-southeast-2
+```
+
+**Step 3: Validate Production Health**
+```bash
+# Check services
+aws ecs describe-services \
+    --cluster ohmycoins-prod-cluster \
+    --services ohmycoins-prod-backend ohmycoins-prod-frontend \
+    --region ap-southeast-2 \
+    --query 'services[*].{Name:serviceName,Running:runningCount,Desired:desiredCount}'
+
+# Test backend health
+ALB_DNS="ohmycoins-prod-alb-1133770157.ap-southeast-2.elb.amazonaws.com"
+curl -H "Host: api.ohmycoins.com" http://$ALB_DNS/api/v1/utils/health-check/
+
+# Test frontend
+curl -H "Host: dashboard.ohmycoins.com" http://$ALB_DNS/
+```
+
+---
+
+## CloudWatch Monitoring Configuration
+
+### Production Alarms (9 Configured)
+
+**RDS Alarms:**
+1. **CPU Utilization** - Threshold: 80%
+2. **Database Connections** - Threshold: 80 connections
+3. **Free Storage Space** - Threshold: 10 GB
+
+**ElastiCache Redis Alarms:**
+4. **CPU Utilization** - Threshold: 75%
+5. **Memory Utilization** - Threshold: 80%
+6. **Evictions** - Threshold: 1000 evictions/period
+
+**ALB Alarms:**
+7. **5XX Errors** - Threshold: 10 errors/period
+8. **Target Response Time** - Threshold: 2 seconds
+9. **Unhealthy Target Count** - Threshold: 0 (alert on any unhealthy target)
+
+### View Alarms
+```bash
+aws cloudwatch describe-alarms \
+    --region ap-southeast-2 \
+    --alarm-name-prefix "ohmycoins-prod" \
+    --query 'MetricAlarms[*].{Name:AlarmName,Metric:MetricName,Threshold:Threshold,State:StateValue}'
+```
+
+### CloudWatch Dashboard (Future Enhancement)
+A production dashboard should be created with:
+- ECS service metrics (CPU, memory, task count)
+- RDS performance metrics
+- Redis cache performance
+- ALB request rates and latencies
+- Error rates and 5XX counts
+
+---
