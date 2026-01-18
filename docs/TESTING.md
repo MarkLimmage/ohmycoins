@@ -173,6 +173,45 @@ positions = session.exec(select(Position).where(Position.user_id == user.id)).al
 
 ---
 
+## Load Testing Patterns (Sprint 2.12)
+
+### Rate Limiting Load Tests
+
+Performance testing for rate limiting middleware using k6:
+
+```bash
+# Quick smoke test
+cd backend/tests/performance
+k6 run --duration 2m --vus 10 load_test_rate_limiting.js
+
+# Full test suite (all scenarios)
+k6 run load_test_rate_limiting.js
+
+# High concurrency test
+k6 run --vus 200 --duration 5m load_test_rate_limiting.js
+
+# Test against staging
+BASE_URL=https://staging.example.com k6 run load_test_rate_limiting.js
+```
+
+**Test Scenarios:**
+1. **Per-Minute Limit**: 60 req/min for normal users
+2. **Per-Hour Limit**: 1000 req/hour for normal users  
+3. **Admin Multiplier**: 5x limits (300 req/min, 10000 req/hour)
+4. **Concurrent Users**: 100 concurrent users
+5. **Redis Performance**: Target <10ms latency under 1000 req/min
+
+**Success Criteria:**
+- Response time p(95) < 500ms
+- Response time p(99) < 1000ms
+- Redis latency p(95) < 100ms
+- Rate limit headers present on all responses
+- 429 responses include Retry-After header
+
+See [Performance Tests README](../backend/tests/performance/README.md) for detailed documentation.
+
+---
+
 ## Historical Test Reports
 
 Detailed sprint test reports archived in `docs/archive/history/`:
