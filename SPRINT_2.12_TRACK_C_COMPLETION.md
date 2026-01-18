@@ -154,11 +154,11 @@ aws cloudwatch describe-alarms \
 
 ### 3. Cost Optimization - Resources Scaled to 0 ✅
 
-Per user requirement: "Ensure production resources are spun down to 0 if any are deployed during this sprint."
+Per user requirement: "Reduce resources to 0 for production and staging environments."
 
 **Actions Taken:**
 
-#### ECS Services - Scaled to 0 ✅
+#### Production ECS Services - Scaled to 0 ✅
 ```bash
 # Backend scaled to 0
 aws ecs update-service \
@@ -175,7 +175,7 @@ aws ecs update-service \
     --region ap-southeast-2
 ```
 
-**Verification:**
+**Production Verification:**
 ```
 | Desired | Name                     | Running | Pending |
 |---------|--------------------------|---------|---------|
@@ -183,9 +183,34 @@ aws ecs update-service \
 | 0       | ohmycoins-prod-frontend  | 0       | 0       |
 ```
 
-**Cost Impact:** $0/hour for ECS (no running tasks)
+#### Staging ECS Services - Scaled to 0 ✅
+```bash
+# Backend scaled to 0
+aws ecs update-service \
+    --cluster ohmycoins-staging-cluster \
+    --service ohmycoins-staging-backend \
+    --desired-count 0 \
+    --region ap-southeast-2
 
-#### RDS - Stopped ✅
+# Frontend scaled to 0
+aws ecs update-service \
+    --cluster ohmycoins-staging-cluster \
+    --service ohmycoins-staging-frontend \
+    --desired-count 0 \
+    --region ap-southeast-2
+```
+
+**Staging Verification:**
+```
+| Desired | Name                       | Running | Pending |
+|---------|----------------------------|---------|---------|
+| 0       | ohmycoins-staging-backend  | 0       | 0       |
+| 0       | ohmycoins-staging-frontend | 0       | 0       |
+```
+
+**Cost Impact:** $0/hour for ECS (no running tasks in both environments)
+
+#### Production RDS - Stopped ✅
 ```bash
 aws rds stop-db-instance \
     --db-instance-identifier ohmycoins-prod-postgres \
@@ -194,12 +219,24 @@ aws rds stop-db-instance \
 
 **Status:** `stopping` → `stopped`
 
-**Cost Impact:** $0/hour while stopped (storage still incurs charges: ~$10/month for 100 GB gp3)
+**Cost Impact:** $0/hour while stopped (storage: ~$10/month for 100 GB gp3)
 
-**Auto-restart:** RDS automatically restarts after 7 days - manual stop required weekly
+#### Staging RDS - Stopped ✅
+```bash
+aws rds stop-db-instance \
+    --db-instance-identifier ohmycoins-staging-postgres \
+    --region ap-southeast-2
+```
+
+**Status:** `stopping` → `stopped`
+
+**Cost Impact:** $0/hour while stopped (storage: ~$5/month for 20 GB gp3)
+
+**Auto-restart:** RDS instances automatically restart after 7 days - manual stop required weekly
 
 #### ElastiCache Redis - Running ⚠️
-**Status:** `available` (cannot be stopped without deletion)
+**Production Status:** `available` (cannot be stopped without deletion)
+**Staging Status:** `available` (cannot be stopped without deletion)
 
 **Reasoning:**
 - ElastiCache does not support "stop" operation like RDS
@@ -207,25 +244,41 @@ aws rds stop-db-instance \
 - Deletion would require full Terraform destroy/apply cycle to recreate
 - Preserved infrastructure for demo/dev purposes
 
-**Cost Impact:** ~$0.034/hour = ~$25/month (cache.t3.small)
+**Cost Impact (both environments):**
+- Production: ~$0.034/hour = ~$25/month (cache.t3.small)
+- Staging: ~$0.017/hour = ~$12/month (cache.t3.micro)
+- **Total ElastiCache:** ~$37/month
 
 **Future Cost Optimization:**
 - Consider using Terraform `count` parameter to enable/disable Redis creation
-- Alternative: Switch to smaller node type (cache.t3.micro) for $12/month
+- Alternative: Temporarily delete Redis clusters when not in active use (requires Terraform workflow)
 
-#### Other Resources
-- **ALB:** Remains active (~$0.0225/hour = ~$16/month) - required for routing
+#### Other Resources (Both Environments)
+- **ALB (Production):** Remains active (~$0.0225/hour = ~$16/month) - required for routing
+- **ALB (Staging):** Remains active (~$0.0225/hour = ~$16/month) - required for routing
 - **VPC/Subnets/Security Groups:** No hourly cost (free tier or included)
-- **NAT Gateways:** 3 NAT Gateways (~$0.045/hour each = ~$97/month total) - **SIGNIFICANT COST**
+- **NAT Gateways (Production):** 3 NAT Gateways (~$0.045/hour each = ~$97/month total)
+- **NAT Gateways (Staging):** 3 NAT Gateways (~$0.045/hour each = ~$97/month total)
 
-**Total Estimated Monthly Cost (Production at 0 tasks):**
+**Total Estimated Monthly Cost (Both Environments at 0 tasks):**
+
+**Production:**
 - ElastiCache Redis: ~$25
 - RDS Storage: ~$10
 - ALB: ~$16
 - NAT Gateways: ~$97
-- **Total: ~$148/month**
+- **Production Subtotal: ~$148/month**
 
-**Recommendation:** Consider Terraform-managed resource toggling for NAT Gateways in dev/staging
+**Staging:**
+- ElastiCache Redis: ~$12
+- RDS Storage: ~$5
+- ALB: ~$16
+- NAT Gateways: ~$97
+- **Staging Subtotal: ~$130/month**
+
+**TOTAL BOTH ENVIRONMENTS: ~$278/month**
+
+**Recommendation:** Consider Terraform-managed resource toggling for NAT Gateways in both environments - this represents the largest cost component (~$194/month combined)
 
 ---
 
