@@ -31,7 +31,7 @@ const PER_PAGE = 5
 function getItemsQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
-      ItemsService.readItems({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+      ItemsService.readItems(),
     queryKey: ["items", { page }],
   }
 }

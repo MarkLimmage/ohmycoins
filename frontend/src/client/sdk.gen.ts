@@ -3,15 +3,1164 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { GetLlmCredentialsApiV1UsersMeLlmCredentialsGetResponse, CreateLlmCredentialApiV1UsersMeLlmCredentialsPostData, CreateLlmCredentialApiV1UsersMeLlmCredentialsPostResponse, DeleteLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDeleteData, DeleteLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDeleteResponse, SetDefaultLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDefaultPutData, SetDefaultLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDefaultPutResponse, ValidateLlmCredentialsApiV1UsersMeLlmCredentialsValidatePostData, ValidateLlmCredentialsApiV1UsersMeLlmCredentialsValidatePostResponse } from './types.gen';
+import type { AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class AgentService {
+    /**
+     * Create Agent Session
+     * Create a new agent session.
+     *
+     * This initiates a new agentic data science workflow with a user-defined goal.
+     *
+     * Args:
+     * session_in: Session creation data with user goal
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Created agent session
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AgentSessionPublic Successful Response
+     * @throws ApiError
+     */
+    public static createAgentSession(data: AgentCreateAgentSessionData): CancelablePromise<AgentCreateAgentSessionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Agent Sessions
+     * List all agent sessions for the current user.
+     *
+     * Args:
+     * db: Database session
+     * current_user: Currently authenticated user
+     * skip: Number of sessions to skip
+     * limit: Maximum number of sessions to return
+     *
+     * Returns:
+     * List of agent sessions
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns AgentSessionsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listAgentSessions(data: AgentListAgentSessionsData = {}): CancelablePromise<AgentListAgentSessionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Agent Session
+     * Get details of a specific agent session.
+     *
+     * Args:
+     * session_id: ID of the session to retrieve
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Agent session details
+     *
+     * Raises:
+     * HTTPException: If session not found or user doesn't have access
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns AgentSessionPublic Successful Response
+     * @throws ApiError
+     */
+    public static getAgentSession(data: AgentGetAgentSessionData): CancelablePromise<AgentGetAgentSessionResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Agent Session
+     * Delete an agent session.
+     *
+     * This cancels the session if running and deletes all associated data.
+     *
+     * Args:
+     * session_id: ID of the session to delete
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Deletion confirmation
+     *
+     * Raises:
+     * HTTPException: If session not found or user doesn't have access
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static deleteAgentSession(data: AgentDeleteAgentSessionData): CancelablePromise<AgentDeleteAgentSessionResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/lab/agent/sessions/{session_id}',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Session Messages
+     * Get all messages for an agent session.
+     *
+     * Args:
+     * session_id: ID of the session
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * List of session messages
+     *
+     * Raises:
+     * HTTPException: If session not found or user doesn't have access
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns AgentSessionMessagePublic Successful Response
+     * @throws ApiError
+     */
+    public static getSessionMessages(data: AgentGetSessionMessagesData): CancelablePromise<AgentGetSessionMessagesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/messages',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Session Artifacts
+     * Get all artifacts for an agent session.
+     *
+     * Args:
+     * session_id: ID of the session
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * List of session artifacts
+     *
+     * Raises:
+     * HTTPException: If session not found or user doesn't have access
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns AgentArtifactPublic Successful Response
+     * @throws ApiError
+     */
+    public static getSessionArtifacts(data: AgentGetSessionArtifactsData): CancelablePromise<AgentGetSessionArtifactsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/artifacts',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Cancel Agent Session
+     * Cancel a running agent session.
+     *
+     * Args:
+     * session_id: ID of the session to cancel
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Cancellation confirmation
+     *
+     * Raises:
+     * HTTPException: If session not found or user doesn't have access
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static cancelAgentSession(data: AgentCancelAgentSessionData): CancelablePromise<AgentCancelAgentSessionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/cancel',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Clarifications
+     * Get pending clarification questions for a session.
+     *
+     * Returns clarification questions that need user response
+     * before the workflow can proceed.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getClarifications(data: AgentGetClarificationsData): CancelablePromise<AgentGetClarificationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/clarifications',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Provide Clarifications
+     * Provide responses to clarification questions.
+     *
+     * This resumes the workflow with the provided clarifications.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static provideClarifications(data: AgentProvideClarificationsData): CancelablePromise<AgentProvideClarificationsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/clarifications',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Choices
+     * Get available choices for user selection.
+     *
+     * Returns model choices with pros/cons and recommendation.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getChoices(data: AgentGetChoicesData): CancelablePromise<AgentGetChoicesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/choices',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Select Choice
+     * Select a choice from available options.
+     *
+     * This resumes the workflow with the selected model.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static selectChoice(data: AgentSelectChoiceData): CancelablePromise<AgentSelectChoiceResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/choices',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Pending Approvals
+     * Get pending approval requests for a session.
+     *
+     * Returns approval requests that need user decision.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getPendingApprovals(data: AgentGetPendingApprovalsData): CancelablePromise<AgentGetPendingApprovalsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/pending-approvals',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Approve Request
+     * Approve or reject a pending approval request.
+     *
+     * This resumes the workflow if approved, or stops it if rejected.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static approveRequest(data: AgentApproveRequestData): CancelablePromise<AgentApproveRequestResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/approve',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Override Points Endpoint
+     * Get available override points for a session.
+     *
+     * Returns which overrides are currently available based on workflow state.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getOverridePointsEndpoint(data: AgentGetOverridePointsEndpointData): CancelablePromise<AgentGetOverridePointsEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/override-points',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Apply Override
+     * Apply a user override to the workflow.
+     *
+     * Allows users to override agent decisions and modify workflow behavior.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static applyOverride(data: AgentApplyOverrideData): CancelablePromise<AgentApplyOverrideResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/override',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Download Artifact
+     * Download an artifact file.
+     *
+     * Args:
+     * artifact_id: Artifact ID
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * File response with artifact content
+     *
+     * Raises:
+     * HTTPException: If artifact not found, user doesn't have access, or file not found
+     * @param data The data for the request.
+     * @param data.artifactId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static downloadArtifact(data: AgentDownloadArtifactData): CancelablePromise<AgentDownloadArtifactResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/artifacts/{artifact_id}/download',
+            path: {
+                artifact_id: data.artifactId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Artifact
+     * Delete an artifact.
+     *
+     * Args:
+     * artifact_id: Artifact ID
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Success message
+     *
+     * Raises:
+     * HTTPException: If artifact not found or user doesn't have access
+     * @param data The data for the request.
+     * @param data.artifactId
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static deleteArtifact(data: AgentDeleteArtifactData): CancelablePromise<AgentDeleteArtifactResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/lab/agent/artifacts/{artifact_id}',
+            path: {
+                artifact_id: data.artifactId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Artifact Stats
+     * Get artifact storage statistics.
+     *
+     * Args:
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Storage statistics
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getArtifactStats(): CancelablePromise<AgentGetArtifactStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/artifacts/stats'
+        });
+    }
+}
+
+export class CredentialsService {
+    /**
+     * Get Credentials
+     * Get Coinspot API credentials for the current user.
+     *
+     * Returns masked credentials for security.
+     * @returns CoinspotCredentialsPublic Successful Response
+     * @throws ApiError
+     */
+    public static getCredentials(): CancelablePromise<CredentialsGetCredentialsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/credentials/coinspot/'
+        });
+    }
+    
+    /**
+     * Update Credentials
+     * Update Coinspot API credentials for the current user.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns CoinspotCredentialsPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateCredentials(data: CredentialsUpdateCredentialsData): CancelablePromise<CredentialsUpdateCredentialsResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/credentials/coinspot/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Credentials
+     * Create new Coinspot API credentials for the current user.
+     *
+     * Credentials are encrypted before storage.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns CoinspotCredentialsPublic Successful Response
+     * @throws ApiError
+     */
+    public static createCredentials(data: CredentialsCreateCredentialsData): CancelablePromise<CredentialsCreateCredentialsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/credentials/coinspot/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Credentials
+     * Delete Coinspot API credentials for the current user.
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteCredentials(): CancelablePromise<CredentialsDeleteCredentialsResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/credentials/coinspot/'
+        });
+    }
+    
+    /**
+     * Validate Credentials
+     * Validate Coinspot API credentials by testing them against the Coinspot API.
+     *
+     * Tests credentials by calling the Coinspot read-only balance endpoint.
+     * Updates the validation status in the database if successful.
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static validateCredentials(): CancelablePromise<CredentialsValidateCredentialsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/credentials/coinspot/validate'
+        });
+    }
+}
+
+export class LoginService {
+    /**
+     * Login Access Token
+     * OAuth2 compatible token login, get an access token for future requests
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns Token Successful Response
+     * @throws ApiError
+     */
+    public static loginAccessToken(data: LoginLoginAccessTokenData): CancelablePromise<LoginLoginAccessTokenResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/login/access-token',
+            formData: data.formData,
+            mediaType: 'application/x-www-form-urlencoded',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Test Token
+     * Test access token
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static testToken(): CancelablePromise<LoginTestTokenResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/login/test-token'
+        });
+    }
+    
+    /**
+     * Recover Password
+     * Password Recovery
+     * @param data The data for the request.
+     * @param data.email
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static recoverPassword(data: LoginRecoverPasswordData): CancelablePromise<LoginRecoverPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/password-recovery/{email}',
+            path: {
+                email: data.email
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Reset Password
+     * Reset password
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static resetPassword(data: LoginResetPasswordData): CancelablePromise<LoginResetPasswordResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/reset-password/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Recover Password Html Content
+     * HTML Content for Password Recovery
+     * @param data The data for the request.
+     * @param data.email
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static recoverPasswordHtmlContent(data: LoginRecoverPasswordHtmlContentData): CancelablePromise<LoginRecoverPasswordHtmlContentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/password-recovery-html-content/{email}',
+            path: {
+                email: data.email
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class PnlService {
+    /**
+     * Get Pnl Summary
+     * Get comprehensive P&L summary with performance metrics
+     *
+     * Returns realized and unrealized P&L along with detailed performance statistics
+     * including win rate, profit factor, largest trades, and total volume.
+     *
+     * Query Parameters:
+     * - start_date: Optional start date for filtering trades (ISO 8601 format)
+     * - end_date: Optional end date for filtering trades (ISO 8601 format)
+     *
+     * Returns:
+     * - PnLSummaryResponse with all P&L metrics and statistics
+     * @param data The data for the request.
+     * @param data.startDate Start date for P&L calculation (ISO format)
+     * @param data.endDate End date for P&L calculation (ISO format)
+     * @returns PnLSummaryResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPnlSummary(data: PnlGetPnlSummaryData = {}): CancelablePromise<PnlGetPnlSummaryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/pnl/summary',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Pnl By Algorithm
+     * Get P&L metrics grouped by trading algorithm
+     *
+     * Shows which algorithms are performing well and which need improvement.
+     *
+     * Query Parameters:
+     * - start_date: Optional start date for filtering trades
+     * - end_date: Optional end date for filtering trades
+     *
+     * Returns:
+     * - List of P&L metrics per algorithm
+     * @param data The data for the request.
+     * @param data.startDate Start date for P&L calculation
+     * @param data.endDate End date for P&L calculation
+     * @returns PnLByAlgorithmResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPnlByAlgorithm(data: PnlGetPnlByAlgorithmData = {}): CancelablePromise<PnlGetPnlByAlgorithmResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/pnl/by-algorithm',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Pnl By Coin
+     * Get P&L metrics grouped by cryptocurrency
+     *
+     * Shows which cryptocurrencies are generating the most profit/loss.
+     *
+     * Query Parameters:
+     * - start_date: Optional start date for filtering trades
+     * - end_date: Optional end date for filtering trades
+     *
+     * Returns:
+     * - List of P&L metrics per cryptocurrency
+     * @param data The data for the request.
+     * @param data.startDate Start date for P&L calculation
+     * @param data.endDate End date for P&L calculation
+     * @returns PnLByCoinResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPnlByCoin(data: PnlGetPnlByCoinData = {}): CancelablePromise<PnlGetPnlByCoinResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/pnl/by-coin',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Historical Pnl
+     * Get historical P&L data aggregated by time interval
+     *
+     * Provides time-series P&L data for charting and trend analysis.
+     *
+     * Query Parameters:
+     * - start_date: Start date for historical data (required, ISO 8601 format)
+     * - end_date: End date for historical data (required, ISO 8601 format)
+     * - interval: Aggregation interval - 'hour', 'day', 'week', or 'month' (default: 'day')
+     *
+     * Returns:
+     * - List of historical P&L data points with timestamps
+     * @param data The data for the request.
+     * @param data.startDate Start date for historical data (required)
+     * @param data.endDate End date for historical data (required)
+     * @param data.interval Time interval (hour, day, week, month)
+     * @returns HistoricalPnLEntry Successful Response
+     * @throws ApiError
+     */
+    public static getHistoricalPnl(data: PnlGetHistoricalPnlData): CancelablePromise<PnlGetHistoricalPnlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/pnl/history',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate,
+                interval: data.interval
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Realized Pnl
+     * Get realized P&L from completed trades
+     *
+     * Realized P&L is calculated from the difference between sell price and
+     * matching buy prices using FIFO accounting method.
+     *
+     * Query Parameters:
+     * - start_date: Optional start date for filtering trades
+     * - end_date: Optional end date for filtering trades
+     * - algorithm_id: Optional filter by algorithm UUID
+     * - coin_type: Optional filter by cryptocurrency symbol
+     *
+     * Returns:
+     * - RealizedPnLResponse with realized_pnl value
+     * @param data The data for the request.
+     * @param data.startDate Start date for P&L calculation
+     * @param data.endDate End date for P&L calculation
+     * @param data.algorithmId Filter by algorithm ID
+     * @param data.coinType Filter by cryptocurrency (e.g., 'BTC')
+     * @returns RealizedPnLResponse Successful Response
+     * @throws ApiError
+     */
+    public static getRealizedPnl(data: PnlGetRealizedPnlData = {}): CancelablePromise<PnlGetRealizedPnlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/pnl/realized',
+            query: {
+                start_date: data.startDate,
+                end_date: data.endDate,
+                algorithm_id: data.algorithmId,
+                coin_type: data.coinType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Unrealized Pnl
+     * Get unrealized P&L from current open positions
+     *
+     * Unrealized P&L is the difference between current market value
+     * and the total cost of current positions.
+     *
+     * Query Parameters:
+     * - coin_type: Optional filter by cryptocurrency symbol
+     *
+     * Returns:
+     * - UnrealizedPnLResponse with unrealized_pnl value
+     * @param data The data for the request.
+     * @param data.coinType Filter by cryptocurrency (e.g., 'BTC')
+     * @returns UnrealizedPnLResponse Successful Response
+     * @throws ApiError
+     */
+    public static getUnrealizedPnl(data: PnlGetUnrealizedPnlData = {}): CancelablePromise<PnlGetUnrealizedPnlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/pnl/unrealized',
+            query: {
+                coin_type: data.coinType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class PrivateService {
+    /**
+     * Create User
+     * Create a new user.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static createUser(data: PrivateCreateUserData): CancelablePromise<PrivateCreateUserResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/private/users/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class UsersService {
     /**
-     * Get Llm Credentials
-     * @returns UserLLMCredentialPublic Successful Response
+     * Read Users
+     * Retrieve users.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns UsersPublic Successful Response
      * @throws ApiError
      */
-    public static getLlmCredentialsApiV1UsersMeLlmCredentialsGet(): CancelablePromise<GetLlmCredentialsApiV1UsersMeLlmCredentialsGetResponse> {
+    public static readUsers(data: UsersReadUsersData = {}): CancelablePromise<UsersReadUsersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create User
+     * Create new user.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static createUser(data: UsersCreateUserData): CancelablePromise<UsersCreateUserResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/users/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read User Me
+     * Get current user.
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static readUserMe(): CancelablePromise<UsersReadUserMeResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/me'
+        });
+    }
+    
+    /**
+     * Delete User Me
+     * Delete own user.
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteUserMe(): CancelablePromise<UsersDeleteUserMeResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/users/me'
+        });
+    }
+    
+    /**
+     * Update User Me
+     * Update own user.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateUserMe(data: UsersUpdateUserMeData): CancelablePromise<UsersUpdateUserMeResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/users/me',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Password Me
+     * Update own password.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static updatePasswordMe(data: UsersUpdatePasswordMeData): CancelablePromise<UsersUpdatePasswordMeResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/users/me/password',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read User Profile
+     * Get current user's full profile including OMC-specific fields.
+     * @returns UserProfilePublic Successful Response
+     * @throws ApiError
+     */
+    public static readUserProfile(): CancelablePromise<UsersReadUserProfileResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/me/profile'
+        });
+    }
+    
+    /**
+     * Update User Profile
+     * Update current user's profile with OMC-specific fields.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserProfilePublic Successful Response
+     * @throws ApiError
+     */
+    public static updateUserProfile(data: UsersUpdateUserProfileData): CancelablePromise<UsersUpdateUserProfileResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/users/me/profile',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Register User
+     * Create new user without the need to be logged in.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static registerUser(data: UsersRegisterUserData): CancelablePromise<UsersRegisterUserResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/users/signup',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read User By Id
+     * Get a specific user by id.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static readUserById(data: UsersReadUserByIdData): CancelablePromise<UsersReadUserByIdResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/users/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update User
+     * Update a user.
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.requestBody
+     * @returns UserPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateUser(data: UsersUpdateUserData): CancelablePromise<UsersUpdateUserResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/users/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete User
+     * Delete a user.
+     * @param data The data for the request.
+     * @param data.userId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteUser(data: UsersDeleteUserData): CancelablePromise<UsersDeleteUserResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/users/{user_id}',
+            path: {
+                user_id: data.userId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Llm Credentials
+     * List all LLM API credentials for the current user (BYOM feature).
+     *
+     * Returns masked credentials for security.
+     * Only returns active credentials by default.
+     * @returns UserLLMCredentialsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listLlmCredentials(): CancelablePromise<UsersListLlmCredentialsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/users/me/llm-credentials'
@@ -19,13 +1168,17 @@ export class UsersService {
     }
     
     /**
-     * Create Llm Credential
+     * Create Llm Credentials
+     * Create new LLM API credentials for the current user (BYOM feature).
+     *
+     * Credentials are encrypted before storage using AES-256.
+     * Multiple credentials can be stored (one per provider).
      * @param data The data for the request.
      * @param data.requestBody
-     * @returns UserLLMCredentialPublic Successful Response
+     * @returns UserLLMCredentialsPublic Successful Response
      * @throws ApiError
      */
-    public static createLlmCredentialApiV1UsersMeLlmCredentialsPost(data: CreateLlmCredentialApiV1UsersMeLlmCredentialsPostData): CancelablePromise<CreateLlmCredentialApiV1UsersMeLlmCredentialsPostResponse> {
+    public static createLlmCredentials(data: UsersCreateLlmCredentialsData): CancelablePromise<UsersCreateLlmCredentialsResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/users/me/llm-credentials',
@@ -38,33 +1191,16 @@ export class UsersService {
     }
     
     /**
-     * Delete Llm Credential
-     * @param data The data for the request.
-     * @param data.credentialId
-     * @returns Message Successful Response
-     * @throws ApiError
-     */
-    public static deleteLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDelete(data: DeleteLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDeleteData): CancelablePromise<DeleteLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDeleteResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/users/me/llm-credentials/{credential_id}',
-            path: {
-                credential_id: data.credentialId
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
      * Set Default Llm Credential
+     * Set a specific LLM credential as the default for the user.
+     *
+     * Unsets any existing default credentials.
      * @param data The data for the request.
      * @param data.credentialId
-     * @returns UserLLMCredentialPublic Successful Response
+     * @returns UserLLMCredentialsPublic Successful Response
      * @throws ApiError
      */
-    public static setDefaultLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDefaultPut(data: SetDefaultLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDefaultPutData): CancelablePromise<SetDefaultLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDefaultPutResponse> {
+    public static setDefaultLlmCredential(data: UsersSetDefaultLlmCredentialData): CancelablePromise<UsersSetDefaultLlmCredentialResponse> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/v1/users/me/llm-credentials/{credential_id}/default',
@@ -78,13 +1214,40 @@ export class UsersService {
     }
     
     /**
-     * Validate Llm Credentials
+     * Delete Llm Credential
+     * Delete (soft delete) an LLM credential.
+     *
+     * Sets is_active=False instead of actually deleting for audit purposes.
      * @param data The data for the request.
-     * @param data.requestBody
-     * @returns LLMCredentialValidationResponse Successful Response
+     * @param data.credentialId
+     * @returns Message Successful Response
      * @throws ApiError
      */
-    public static validateLlmCredentialsApiV1UsersMeLlmCredentialsValidatePost(data: ValidateLlmCredentialsApiV1UsersMeLlmCredentialsValidatePostData): CancelablePromise<ValidateLlmCredentialsApiV1UsersMeLlmCredentialsValidatePostResponse> {
+    public static deleteLlmCredential(data: UsersDeleteLlmCredentialData): CancelablePromise<UsersDeleteLlmCredentialResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/users/me/llm-credentials/{credential_id}',
+            path: {
+                credential_id: data.credentialId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Validate Llm Credential
+     * Validate an LLM API key before saving it.
+     *
+     * Tests the API key by making a simple request to the provider.
+     * Does NOT save the credential - use POST /me/llm-credentials to save.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UserLLMCredentialsValidationResult Successful Response
+     * @throws ApiError
+     */
+    public static validateLlmCredential(data: UsersValidateLlmCredentialData): CancelablePromise<UsersValidateLlmCredentialResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/users/me/llm-credentials/validate',
@@ -93,6 +1256,41 @@ export class UsersService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+}
+
+export class UtilsService {
+    /**
+     * Test Email
+     * Test emails.
+     * @param data The data for the request.
+     * @param data.emailTo
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static testEmail(data: UtilsTestEmailData): CancelablePromise<UtilsTestEmailResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/utils/test-email/',
+            query: {
+                email_to: data.emailTo
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Health Check
+     * @returns boolean Successful Response
+     * @throws ApiError
+     */
+    public static healthCheck(): CancelablePromise<UtilsHealthCheckResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/utils/health-check/'
         });
     }
 }

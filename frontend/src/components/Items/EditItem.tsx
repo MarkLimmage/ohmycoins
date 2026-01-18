@@ -55,7 +55,7 @@ const EditItem = ({ item }: EditItemProps) => {
 
   const mutation = useMutation({
     mutationFn: (data: ItemUpdateForm) =>
-      ItemsService.updateItem({ id: item.id, requestBody: data }),
+      ItemsService.updateItem(item.id, data),
     onSuccess: () => {
       showSuccessToast("Item updated successfully.")
       reset()

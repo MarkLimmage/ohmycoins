@@ -18,7 +18,7 @@ import { FiAlertCircle, FiCheck, FiEye, FiEyeOff, FiKey } from "react-icons/fi"
 
 import {
   type ApiError,
-  type UserLLMCredentialCreate,
+  type UserLLMCredentialsCreate,
   UsersService,
 } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -39,8 +39,8 @@ interface LLMCredentialFormProps {
 }
 
 interface FormData {
-  provider_name: string
-  api_key_encrypted: string
+  provider: string
+  api_key: string
   model_name?: string
   is_default: boolean
 }
@@ -58,8 +58,9 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [showApiKey, setShowApiKey] = useState(false)
   const [validationResult, setValidationResult] = useState<{
-    valid: boolean
-    message?: string | null
+    is_valid: boolean
+    provider: string
+    error_message?: string | null
   } | null>(null)
   const [isValidating, setIsValidating] = useState(false)
 
@@ -76,12 +77,12 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
     },
   })
 
-  const selectedProvider = watch("provider_name")
-  const apiKey = watch("api_key_encrypted")
+  const selectedProvider = watch("provider")
+  const apiKey = watch("api_key")
 
   const createMutation = useMutation({
-    mutationFn: (data: UserLLMCredentialCreate) =>
-      UsersService.createLlmCredentialApiV1UsersMeLlmCredentialsPost({
+    mutationFn: (data: UserLLMCredentialsCreate) =>
+      UsersService.createLlmCredentials({
         requestBody: data,
       }),
     onSuccess: () => {
@@ -108,34 +109,34 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
 
     try {
       const result =
-        await UsersService.validateLlmCredentialsApiV1UsersMeLlmCredentialsValidatePost(
+        await UsersService.validateLlmCredential(
           {
             requestBody: {
-              provider_name: provider,
-              api_key_encrypted: key,
+              provider: provider,
+              api_key: key,
             },
           },
         )
 
       setValidationResult(result)
 
-      if (result.valid) {
+      if (result.is_valid) {
         showSuccessToast("Credential validated successfully!")
       } else {
-        showErrorToast(result.message || "Validation failed")
+        showErrorToast(result.error_message || "Validation failed")
       }
     } catch (err) {
       handleError(err as ApiError)
-      setValidationResult({ valid: false, message: "Validation failed" })
+      setValidationResult({ is_valid: false, provider: provider, error_message: "Validation failed" })
     } finally {
       setIsValidating(false)
     }
   }
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    const payload: UserLLMCredentialCreate = {
-      provider_name: data.provider_name,
-      api_key_encrypted: data.api_key_encrypted,
+    const payload: UserLLMCredentialsCreate = {
+      provider: data.provider,
+      api_key: data.api_key,
       model_name: data.model_name || undefined,
       is_default: data.is_default,
     }
@@ -166,8 +167,8 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
             <Field
               label="Provider"
               required
-              invalid={!!errors.provider_name}
-              errorText={errors.provider_name?.message}
+              invalid={!!errors.provider}
+              errorText={errors.provider?.message}
             >
               <SelectRoot
                 collection={providers}
@@ -178,7 +179,7 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
                     value: string
                   }>,
                 ) => {
-                  setValue("provider_name", details.value[0])
+                  setValue("provider", details.value[0])
                   setValidationResult(null)
                 }}
               >
@@ -198,8 +199,8 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
             <Field
               label="API Key"
               required
-              invalid={!!errors.api_key_encrypted}
-              errorText={errors.api_key_encrypted?.message}
+              invalid={!!errors.api_key}
+              errorText={errors.api_key?.message}
             >
               <InputGroup
                 startElement={<FiKey />}
@@ -215,7 +216,7 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
                 }
               >
                 <Input
-                  {...register("api_key_encrypted", {
+                  {...register("api_key", {
                     required: "API key is required",
                     minLength: {
                       value: 10,
@@ -252,19 +253,19 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
               <Box
                 p={3}
                 borderRadius="md"
-                bg={validationResult.valid ? "green.50" : "red.50"}
+                bg={validationResult.is_valid ? "green.50" : "red.50"}
               >
                 <HStack>
-                  {validationResult.valid ? (
+                  {validationResult.is_valid ? (
                     <FiCheck color="green" />
                   ) : (
                     <FiAlertCircle color="red" />
                   )}
                   <Text
                     fontSize="sm"
-                    color={validationResult.valid ? "green.700" : "red.700"}
+                    color={validationResult.is_valid ? "green.700" : "red.700"}
                   >
-                    {validationResult.message || "Validation complete"}
+                    {validationResult.error_message || "Validation complete"}
                   </Text>
                 </HStack>
               </Box>

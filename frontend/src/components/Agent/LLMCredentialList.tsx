@@ -16,7 +16,6 @@ import { SiAnthropic, SiGoogle, SiOpenai } from "react-icons/si"
 
 import {
   type ApiError,
-  type UserLLMCredentialPublic,
   UsersService,
 } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -52,12 +51,12 @@ const LLMCredentialList = () => {
     error,
   } = useQuery({
     queryKey: ["llmCredentials"],
-    queryFn: () => UsersService.getLlmCredentialsApiV1UsersMeLlmCredentialsGet(),
+    queryFn: () => UsersService.listLlmCredentials(),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (credentialId: string) =>
-      UsersService.deleteLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDelete(
+      UsersService.deleteLlmCredential(
         { credentialId },
       ),
     onSuccess: () => {
@@ -71,7 +70,7 @@ const LLMCredentialList = () => {
 
   const setDefaultMutation = useMutation({
     mutationFn: (credentialId: string) =>
-      UsersService.setDefaultLlmCredentialApiV1UsersMeLlmCredentialsCredentialIdDefaultPut(
+      UsersService.setDefaultLlmCredential(
         { credentialId },
       ),
     onSuccess: () => {
@@ -112,9 +111,9 @@ const LLMCredentialList = () => {
   return (
     <VStack gap={4} align="stretch" mt={4}>
       <Heading size="sm">Your Credentials</Heading>
-      {credentials.map((credential: UserLLMCredentialPublic) => {
-        const ProviderIcon = getProviderIcon(credential.provider_name)
-        const providerColor = getProviderColor(credential.provider_name)
+      {credentials.map((credential) => {
+        const ProviderIcon = getProviderIcon(credential.provider)
+        const providerColor = getProviderColor(credential.provider)
 
         return (
           <Card.Root key={credential.id} variant="outline">
@@ -131,7 +130,7 @@ const LLMCredentialList = () => {
                   <VStack align="start" gap={1} flex={1}>
                     <HStack>
                       <Text fontWeight="semibold" fontSize="lg">
-                        {credential.provider_name}
+                        {credential.provider}
                       </Text>
                       {credential.is_default && (
                         <Badge colorPalette="blue" variant="solid">

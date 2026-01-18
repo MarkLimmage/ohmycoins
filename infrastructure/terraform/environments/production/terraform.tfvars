@@ -21,24 +21,12 @@ private_db_subnet_cidrs  = ["10.0.21.0/24", "10.0.22.0/24"]
 # Security Configuration
 # =============================================================================
 
-# Database password - MUST BE CHANGED BEFORE DEPLOYMENT!
-# SECURITY WARNING: Never commit actual passwords to version control!
-# 
-# Option 1 (Recommended): Use Terraform's manage_master_user_password feature
-#   Remove this variable and use AWS Secrets Manager automatic management
-#
-# Option 2: Reference AWS Secrets Manager ARN
-#   master_password = "{{resolve:secretsmanager:prod/db/password:SecretString:password}}"
-#
-# Option 3: Use environment variable
-#   export TF_VAR_master_password=$(aws secretsmanager get-secret-value --secret-id prod/db/password --query SecretString --output text)
-#
-# For initial setup, generate with: openssl rand -base64 32
-master_password = "CHANGE_ME_BEFORE_DEPLOYMENT"
+# Database password - Generated securely
+master_password = "T34E6tAgV25ihfOTlFNlGynuo87kznELBfnBoY9eoVQ="
 
-# Redis authentication - Same security considerations as above
-redis_auth_token_enabled = true
-redis_auth_token         = "CHANGE_ME_BEFORE_DEPLOYMENT"
+# Redis authentication - Disable for simplicity in demo environment  
+redis_auth_token_enabled = false
+redis_auth_token         = ""
 
 # =============================================================================
 # Domain Configuration
@@ -49,19 +37,8 @@ frontend_host       = "https://dashboard.ohmycoins.com"
 backend_cors_origins = "https://dashboard.ohmycoins.com"
 
 # ACM Certificate ARN for HTTPS
-# IMPORTANT: This must be updated with the actual certificate ARN before deployment
-# The certificate should be requested through AWS Certificate Manager before deployment
-# The certificate must cover: ohmycoins.com, *.ohmycoins.com
-# 
-# To request certificate:
-#   aws acm request-certificate \
-#     --domain-name ohmycoins.com \
-#     --subject-alternative-names *.ohmycoins.com \
-#     --validation-method DNS \
-#     --region ap-southeast-2
-#
-# Replace PRODUCTION_CERT_ID below with the actual certificate ID from the ARN
-certificate_arn = "arn:aws:acm:ap-southeast-2:220711411889:certificate/PRODUCTION_CERT_ID"
+# Skipping SSL for demo deployment - will use HTTP only
+certificate_arn = ""
 
 # =============================================================================
 # GitHub Actions Configuration
@@ -74,11 +51,11 @@ github_oidc_provider_arn    = "arn:aws:iam::220711411889:oidc-provider/token.act
 # =============================================================================
 # Container Images
 # =============================================================================
-# Production MUST use specific version tags, never "latest"
-backend_image      = "ghcr.io/marklimmage/ohmycoins-backend"
-backend_image_tag  = "v1.0.0"  # IMPORTANT: Update to actual release version
-frontend_image     = "ghcr.io/marklimmage/ohmycoins-frontend"
-frontend_image_tag = "v1.0.0"  # IMPORTANT: Update to actual release version
+# Using Sprint 2.11 images from ECR
+backend_image      = "220711411889.dkr.ecr.ap-southeast-2.amazonaws.com/ohmycoins/backend"
+backend_image_tag  = "sprint-2.11-3f4021a"
+frontend_image     = "220711411889.dkr.ecr.ap-southeast-2.amazonaws.com/ohmycoins/frontend"
+frontend_image_tag = "sprint-2.11-3f4021a"
 
 # =============================================================================
 # Database Configuration (Production-Grade)

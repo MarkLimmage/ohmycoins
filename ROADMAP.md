@@ -1,9 +1,9 @@
 # Oh My Coins (OMC) - Project Roadmap
 
-**Status**: Active Development (Production Deployment)  
-**Last Updated**: 2026-01-17  
-**Current Sprint**: Sprint 2.11 (Ready to Start - Rate Limiting & Production Deployment)  
-**Previous Sprint**: Sprint 2.10 Complete ✅ (BYOM UI + Security Framework + 98.9% Test Pass Rate)
+**Status**: Active Development (Production Deployment & Monitoring)  
+**Last Updated**: 2026-01-18  
+**Current Sprint**: Sprint 2.12 (Production Deployment & Monitoring)  
+**Previous Sprint**: Sprint 2.11 Complete ✅ (Rate Limiting + Security Hardening + Staging Deployment)
 
 ## 1. Project Overview
 This roadmap tracks the development of the OMC platform across its three parallel tracks:
@@ -68,6 +68,20 @@ This roadmap tracks the development of the OMC platform across its three paralle
     - 📊 Track B: 100% complete - All test infrastructure stable
 
 ### Recent Sprints
+- **Sprint 2.11** (2026-01-18): Rate Limiting + Security Hardening + Staging Deployment ✅
+  - Final: All tracks complete (100%)
+  - Track A: 3 test failures fixed (10 lines changed)
+  - Track B: Rate limiting middleware complete (19/19 tests passing)
+  - Track C: Staging deployment operational, production Terraform ready
+  - Rate Limiting: Redis-based, per-user limits (60 req/min, 1000 req/hr)
+  - Security: OWASP A04, A05, A07 alignment, proper 401 responses
+  - [Sprint 2.11 Archive](docs/archive/history/sprints/sprint-2.11/)
+- **Sprint 2.10** (2026-01-17): BYOM UI + Security Framework + 98.9% Test Pass Rate ✅
+  - Final: 694/702 tests passing (98.9%), Track C infrastructure complete
+  - Track A: 100% test pass rate (213/213 tests)
+  - Track B: BYOM UI complete, OpenAI/Anthropic/Local LLM support
+  - Track C: Terraform staging environment deployed
+  - [Sprint 2.10 Archive](docs/archive/history/sprints/sprint-2.10/)
 - **Sprint 2.9** (2026-01-17): P&L Test Fixes + BYOM Agent Integration ✅
   - Final: Both Track A and Track B complete (100%)
   - Track A: 33/33 tests passing (P&L + seed data fixes)
