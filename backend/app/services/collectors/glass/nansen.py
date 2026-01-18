@@ -17,7 +17,7 @@ from typing import Any
 
 from sqlmodel import Session
 
-# Note: SmartMoneyFlow model will be added in future sprint
+# Note: SmartMoneyFlow model will be added in Sprint 2.13
 # For now, collector logs data without storing to demonstrate functionality
 # from app.models import SmartMoneyFlow
 from app.services.collectors.api_collector import APICollector
