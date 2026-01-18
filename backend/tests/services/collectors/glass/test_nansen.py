@@ -90,10 +90,8 @@ class TestNansenCollectorIntegration:
         
         data = await nansen_collector.collect()
         
-        # Should have one entry with zero flows
-        assert len(data) == 1
-        assert data[0]["token"] == "ETH"
-        assert data[0]["net_flow_usd"] == Decimal("0")
+        # Empty response is skipped (logged as warning)
+        assert len(data) == 0
     
     @pytest.mark.asyncio
     async def test_collect_handles_api_error_for_single_token(self, nansen_collector):

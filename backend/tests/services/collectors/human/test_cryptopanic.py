@@ -150,5 +150,8 @@ class TestCryptoPanicCollectorIntegration:
         
         validated = await cryptopanic_collector.validate_data(invalid_data)
         
-        assert len(validated) == 1  # Only first one should pass
+        # First and last records should pass (last has invalid score set to None)
+        assert len(validated) == 2
         assert validated[0]["title"] == "Valid Article"
+        assert validated[1]["title"] == "Invalid Score"
+        assert validated[1]["sentiment_score"] is None  # Invalid score set to None
