@@ -1,274 +1,303 @@
 # Current Sprint - Sprint 2.12 (Production Deployment & Monitoring)
 
-**Status:** 🟢 READY TO START  
+**Status:** 🟢 IN PROGRESS  
 **Date Started:** TBD  
+**Expected Duration:** 2-3 days  
 **Previous Sprint:** Sprint 2.11 - Complete ✅  
-**Focus:** Production deployment, monitoring setup, data collection validation
-
-**Sprint 2.12 Objectives:**
-- Deploy Sprint 2.11 code to production environment
-- Set up CloudWatch monitoring and alerting
-- Validate data collection API integrations (CryptoPanic, Newscatcher, Nansen)
-- Performance test rate limiting middleware
-- Address remaining security test failures
+**Focus:** Production deployment, CloudWatch monitoring, data collection API validation, rate limiting performance testing
 
 ---
 
-**📋 Previous Sprint:** [Sprint 2.11 Archive](docs/archive/history/sprints/sprint-2.11/)
+## 🎯 Sprint 2.12 Objectives
+
+### Primary Goal
+Deploy Sprint 2.11 code to production environment with comprehensive monitoring, validate all data collection APIs, and performance test the rate limiting middleware.
+
+### Success Criteria
+- [ ] Production deployment successful (all services healthy)
+- [ ] CloudWatch monitoring operational (8 alarms configured)
+- [ ] Data collection APIs validated (CryptoPanic, Newscatcher, Nansen)
+- [ ] Rate limiting middleware performance tested (load tests passing)
+- [ ] Security test coverage improved (target: 64/64 tests passing)
+
+### Sprint Metrics
+| Category | Current | Target | Status |
+|----------|---------|--------|--------|
+| Data Collection Tests | 0/15 | 15/15 | 🔲 Not Started |
+| Rate Limiting Tests | 19/19 | 19/19 | ✅ Stable |
+| Security Tests | 60/64 | 64/64 | 🔲 4 to fix |
+| PnL Tests | 19/21 | 21/21 | 🔲 2 to fix |
+| Production Deployed | No | Yes | 🔲 Not Started |
+| CloudWatch Alarms | 0/8 | 8/8 | 🔲 Not Started |
 
 ---
 
-## 📊 Sprint 2.11 Final Report - COMPLETE ✅
+**📋 Previous Sprint:** [Sprint 2.11 Archive](docs/archive/history/sprints/sprint-2.11/)  
+**📋 Sprint 2.12 Plan:** [Sprint 2.12 Initialization](SPRINT_2.12_INITIALIZATION.md)
+
+---
+
+---
+
+## 🎯 Track A: Data Collection Validation
+
+**Status:** 🔲 NOT STARTED  
+**Owner:** Developer A (OMC-Data-Specialist)  
+**Time Estimate:** 8-11 hours  
+**Start Date:** TBD  
+**Target Completion:** TBD
+
+### Objectives
+1. Validate CryptoPanic API integration (2-3 hours)
+2. Validate Newscatcher API integration (2-3 hours)
+3. Validate Nansen API integration (2-3 hours)
+4. Fix remaining 2 PnL test failures (1-2 hours)
+
+### Deliverables
+- [ ] **CryptoPanic API Validation**
+  - [ ] API key validated in production
+  - [ ] News feed endpoints tested
+  - [ ] Rate limits and error handling verified
+  - [ ] 5 integration tests created and passing
+
+- [ ] **Newscatcher API Validation**
+  - [ ] API key validated in production
+  - [ ] News search endpoints tested
+  - [ ] Pagination and filtering verified
+  - [ ] 5 integration tests created and passing
+
+- [ ] **Nansen API Validation**
+  - [ ] API key validated in production
+  - [ ] Wallet tracking endpoints tested
+  - [ ] Data quality and freshness verified
+  - [ ] 5 integration tests created and passing
+
+- [ ] **PnL Test Stabilization**
+  - [ ] 2 remaining PnL test failures fixed
+  - [ ] All 21/21 PnL tests passing (100%)
+  - [ ] Transaction ledger isolation validated
+
+### Success Criteria
+- [ ] All 3 data collection APIs operational (100%)
+- [ ] 15 new integration tests created and passing
+- [ ] PnL tests: 21/21 passing (100%)
+- [ ] No API key or authentication errors
+- [ ] Data quality metrics documented
+
+### Progress Updates
+_Developer A: Update this section as work progresses_
+
+---
+
+## 🎯 Track B: Security & Performance Testing
+
+**Status:** 🔲 NOT STARTED  
+**Owner:** Developer B (OMC-ML-Scientist)  
+**Time Estimate:** 7-10 hours  
+**Start Date:** TBD  
+**Target Completion:** TBD
+
+### Objectives
+1. Create rate limiting load tests (3-4 hours)
+2. Fix remaining 4 security test failures (3-4 hours)
+3. Document rate limiting behavior (1-2 hours)
+
+### Deliverables
+- [ ] **Rate Limiting Load Tests**
+  - [ ] locust/k6 load testing script created
+  - [ ] 60 req/min per-user limit tested
+  - [ ] 1000 req/hour per-user limit tested
+  - [ ] Admin multiplier (5x) tested
+  - [ ] Redis performance under load verified
+
+- [ ] **Security Test Fixes**
+  - [ ] 4 remaining security test failures fixed
+  - [ ] OWASP A08 (Software and Data Integrity) addressed
+  - [ ] Input validation coverage improved
+  - [ ] Error handling in auth flows enhanced
+
+- [ ] **Rate Limiting Documentation**
+  - [ ] Rate limit headers (X-RateLimit-*) documented
+  - [ ] API usage guidelines created
+  - [ ] Retry-After behavior documented
+  - [ ] TESTING.md updated with load test patterns
+
+### Success Criteria
+- [ ] Load tests created and documented
+- [ ] Rate limiting handles 100 concurrent users
+- [ ] Redis latency <10ms at 1000 req/min
+- [ ] Security tests: 64/64 passing (100%)
+- [ ] Rate limiting documentation complete
+
+### Progress Updates
+_Developer B: Update this section as work progresses_
+
+---
+
+## 🎯 Track C: Production Deployment & Monitoring
+
+**Status:** 🔲 NOT STARTED  
+**Owner:** Developer C (OMC-DevOps-Engineer)  
+**Time Estimate:** 11-15 hours  
+**Start Date:** TBD  
+**Target Completion:** TBD
+
+### Objectives
+1. Deploy to production environment (4-5 hours)
+2. Configure CloudWatch monitoring (3-4 hours)
+3. Update operations runbook (2-3 hours)
+4. Validate production deployment (2-3 hours)
+
+### Deliverables
+- [ ] **Production Deployment**
+  - [ ] Sprint 2.11 Terraform deployed to production
+  - [ ] Production ECS services configured
+  - [ ] RDS and ElastiCache connectivity verified
+  - [ ] SSL/TLS certificates set up
+  - [ ] ALB and target groups configured
+
+- [ ] **CloudWatch Monitoring Setup**
+  - [ ] 8 CloudWatch alarms configured:
+    - [ ] Backend CPU alarm
+    - [ ] Backend Memory alarm
+    - [ ] Frontend CPU alarm
+    - [ ] Frontend Memory alarm
+    - [ ] RDS CPU alarm
+    - [ ] RDS Storage alarm
+    - [ ] Redis CPU alarm
+    - [ ] Redis Memory alarm
+  - [ ] SNS notifications set up
+  - [ ] CloudWatch dashboard created
+  - [ ] Log groups and retention configured
+
+- [ ] **Operations Runbook**
+  - [ ] Operations runbook updated for production
+  - [ ] Deployment procedures documented
+  - [ ] Incident response playbook created
+  - [ ] Backup/restore procedures established
+  - [ ] Rollback procedures documented
+
+- [ ] **Production Validation**
+  - [ ] Health check endpoints (all green)
+  - [ ] Database migrations validated
+  - [ ] Secrets Manager access verified
+  - [ ] DNS and SSL/TLS verified
+  - [ ] End-to-end smoke tests passed
+
+### Success Criteria
+- [ ] Production environment deployed (all services healthy)
+- [ ] 8 CloudWatch alarms configured and tested
+- [ ] CloudWatch dashboard operational
+- [ ] SNS notifications working
+- [ ] Operations runbook updated for production
+- [ ] Zero-downtime deployment validated
+
+### Progress Updates
+_Developer C: Update this section as work progresses_
+
+---
+
+## 📊 Sprint 2.12 Progress Summary
+
+**Overall Status:** 🔲 NOT STARTED  
+**Test Coverage:** TBD  
+**Completion:** 0% (0/3 tracks complete)
+
+| Track | Status | Progress | Est. Hours | Actual Hours | Completion |
+|-------|--------|----------|------------|--------------|------------|
+| A - Data Collection | 🔲 Not Started | 0% | 8-11 | TBD | 0/4 deliverables |
+| B - Performance/Security | 🔲 Not Started | 0% | 7-10 | TBD | 0/3 deliverables |
+| C - Production Deploy | 🔲 Not Started | 0% | 11-15 | TBD | 0/4 deliverables |
+
+### Blockers & Risks
+_Update as blockers are identified_
+
+### Notes
+_Add sprint notes, decisions, and important observations here_
+
+---
+
+## 📋 Previous Sprint Summary - Sprint 2.11 ✅
 
 **Status:** ✅ COMPLETE  
 **Date:** January 18, 2026  
 **Duration:** 1 day  
 **Overall Success:** All tracks complete, staging deployed, production ready
 
-**Status:** ✅ COMPLETE  
-**Date:** January 18, 2026  
-**Developer:** Developer A (OMC-Data-Specialist)  
-**Duration:** ~1 hour  
-**Test Results:** 3/3 test failures fixed
+### Key Achievements
+### Key Achievements
+- **Track A:** 3 test failures fixed (surgical precision, 10 lines changed)
+- **Track B:** Rate limiting middleware complete (19/19 tests passing)
+- **Track C:** Staging deployed successfully, production Terraform ready
+- **Security:** OWASP A04, A05, A07 alignment
+- **Production Ready:** All services healthy, zero blockers
 
-### Deliverables ✅
-- ✅ **Documentation Test**: Fixed `test_documentation_exists` - Removed outdated DEVELOPMENT.md check
-- ✅ **Database Mock #1**: Fixed `test_init_successful_connection` (backend_pre_start) - Added context manager support
-- ✅ **Database Mock #2**: Fixed `test_init_successful_connection` (test_pre_start) - Added context manager support
-- ✅ **Surgical Precision**: Only 10 lines changed across 3 test files
-- ✅ **Zero Production Changes**: Test-only modifications
-- ✅ **Zero Regressions**: All existing tests remain passing
-
-### Test Results
-- ✅ All 3 targeted tests fixed
-- ✅ No new failures introduced
-- ✅ Maintained test suite integrity
+**Full Details:** [Sprint 2.11 Archive](docs/archive/history/sprints/sprint-2.11/)
 
 ---
 
-## 🎯 Sprint 2.11 Track C - COMPLETE ✅
+## 📚 Documentation & References
 
-**Status:** ✅ COMPLETE  
-**Date:** January 18, 2026  
-**Developer:** Developer C (OMC-DevOps-Engineer)  
-**Duration:** ~4 hours  
-**Deployment Results:** Staging deployed successfully, production ready
+### Sprint 2.12 Documentation
+- [Sprint 2.12 Initialization](SPRINT_2.12_INITIALIZATION.md) - Detailed objectives and deliverables
+- [Project Roadmap](ROADMAP.md) - Overall project timeline
+- [Architecture Documentation](docs/ARCHITECTURE.md) - System architecture
+- [Testing Guide](docs/TESTING.md) - Testing standards and patterns
+- [Deployment Status](docs/DEPLOYMENT_STATUS.md) - Current deployment state
+- [Secrets Management](docs/SECRETS_MANAGEMENT.md) - API keys and secrets
 
-### Deliverables ✅
-- ✅ **Docker Images Built**: Backend + Frontend with Sprint 2.11 code (rate limiting, security fixes, BYOM UI)
-- ✅ **Images Pushed to ECR**: Tagged as `sprint-2.11-3f4021a` and `latest`
-- ✅ **Staging Deployment**: Scaled up ECS services, forced new deployment
-- ✅ **Health Checks Passing**: Backend (HTTP 200), Frontend (HTTP 200)
-- ✅ **Frontend Fixes**: Resolved 80+ TypeScript errors, regenerated OpenAPI client
-- ✅ **Production Ready**: Updated terraform.tfvars with secure credentials and ECR image tags
+### Infrastructure Resources
+- [AWS Deployment Requirements](infrastructure/terraform/AWS_DEPLOYMENT_REQUIREMENTS.md)
+- [Step-by-Step Deployment Guide](infrastructure/terraform/STEP_BY_STEP_DEPLOYMENT_GUIDE.md)
+- [Staging Deployment Status](infrastructure/terraform/STAGING_DEPLOYMENT_READINESS.md)
 
-### Infrastructure Status
-- ✅ Staging environment: 2 backend tasks + 1 frontend task running healthy
-- ✅ ALB routing configured: Host-based for HTTPS, path-based for HTTP
-- ✅ Target groups: All targets healthy
-- ✅ Production Terraform: Ready for deployment (20-30 minute apply time)
+### API Documentation
+- CryptoPanic API: https://cryptopanic.com/developers/api/
+- Newscatcher API: https://www.newscatcherapi.com/docs
+- Nansen API: https://docs.nansen.ai/
 
-### Technical Challenges Resolved
-- Fixed OpenAPI client generation after backend API changes
-- Updated property names (`provider_name` → `provider`, `api_key_encrypted` → `api_key`)
-- Created Items feature stubs for removed backend functionality
-- Validated ALB routing with both host-based and path-based rules
+### Recent Sprint Archives
+- [Sprint 2.11 Complete](docs/archive/history/sprints/sprint-2.11/)
+- [Sprint 2.10 Complete](docs/archive/history/sprints/sprint-2.10/)
+- [Sprint 2.9 Complete](docs/archive/history/sprints/sprint-2.9/)
 
 ---
 
-## 🎯 Sprint 2.11 Track B - COMPLETE ✅
+## 🚨 Important Notes
 
-**Status:** ✅ COMPLETE  
-**Date:** January 18, 2026  
-**Developer:** Developer B (OMC-ML-Scientist)  
-**Duration:** ~3 hours  
-**Test Results:** 19/19 rate limiting tests passing (100%)
+### Prerequisites for Sprint 2.12
+- ✅ Sprint 2.11 merged to main
+- ✅ Staging environment operational
+- ✅ Rate limiting middleware tested (19/19 tests)
+- ✅ API keys configured in AWS Secrets Manager
+- ⚠️ Production AWS account access required (Developer C)
+- ⚠️ Data collection API keys must be valid (Developer A)
 
-### Deliverables ✅
-- ✅ **Rate Limiting Middleware**: Implemented with Redis backend (201 lines)
-- ✅ **Per-User Limits**: 60 req/min, 1000 req/hour for normal users
-- ✅ **Admin Limits**: 300 req/min, 10000 req/hour (5x multiplier)
-- ✅ **Rate Limit Headers**: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
-- ✅ **429 Responses**: Proper error handling with Retry-After header
-- ✅ **Bypass Prevention**: Rate limits by user_id, not IP or token
-- ✅ **Authentication Fix**: Proper 401 status for invalid/expired tokens (was 403)
-- ✅ **Configuration**: Rate limit settings in config.py
-- ✅ **Bug Fix**: JWT import compatibility (pyjwt vs python-jose)
+### Communication
+- **Daily Standup:** Update progress in this document
+- **Blockers:** Document in "Blockers & Risks" section above
+- **Questions:** Use GitHub Issues or team chat
+- **Code Reviews:** Required before merging to main
 
-### Security Features Implemented ✅
-- OWASP A04:2021 – Insecure Design (abuse prevention)
-- OWASP A05:2021 – Security Misconfiguration (proper rate limiting)
-- OWASP A07:2021 – Authentication Failures (proper token handling)
-
-### Test Results
-- ✅ Rate limiting tests: 19/19 passing (100%)
-- ✅ Overall security suite: 53/64 passing (82.8%)
-- ✅ Zero new vulnerabilities introduced
+### Success Metrics
+- **Target Test Coverage:** 119/119 tests passing (100%)
+- **Production Uptime:** 99.9%+
+- **CloudWatch Alarms:** 8/8 configured and tested
+- **API Response Time:** <200ms (p95)
+- **Sprint Duration:** 2-3 days (parallel track execution)
 
 ---
 
-## � Sprint 2.10 Final Report - COMPLETE ✅
-
-**Status:** ✅ COMPLETE  
-**Date:** January 17, 2026  
-**Duration:** 1 day  
-**Overall Success:** Core BYOM features complete, 98.9% test pass rate achieved
-
-### Track A Achievements ✅ (Developer A - 2 hours)
-- ✅ **Fixed 2 Critical Tests**: Track A test failures resolved
-  - `test_user_profiles_diversity` - Randomized defaults
-  - `test_algorithm_exposure_limit_within_limit` - Timestamp fix
-- ✅ **Test Pass Rate**: 716/716 tests (100% of existing tests)
-- ✅ **Code Changes**: 6 lines (surgical precision)
-- ✅ **Zero Regressions**: All existing tests remain passing
-
-### Track B Achievements ✅ (Developer B - 12 hours)
-- ✅ **BYOM UI Complete**: 5 production-ready components (646 lines)
-- ✅ **Security Framework**: 54 new tests (3,200+ lines)
-- ✅ **API Integration**: 12/12 tests passing (fixed 5 failures)
-- ✅ **Test Coverage**: 716 → 777 tests (+61 tests)
-- ✅ **Documentation**: 2,000+ lines across 8 files
-
-### Track C Achievements ✅ (Automated - 1 hour)
-- ✅ **AWS Staging**: Sprint 2.9 code deployed
-- ✅ **Services Healthy**: 1/1 tasks running (backend + frontend)
-- ✅ **DNS Verified**: staging.ohmycoins.com, api.staging.ohmycoins.com
-- ✅ **Database**: Migrations current
-
-### Combined Results
-- ✅ **Test Pass Rate**: 98.9% (777/785 tests)
-- ✅ **Production Ready**: YES - BYOM feature complete
-- ✅ **Zero Blockers**: All critical issues resolved
-- ✅ **Total Tests Added**: +61 (716 → 777)
-
-### Archive
-- [Sprint 2.10 Complete Archive](docs/archive/history/sprints/sprint-2.10/)
-- [Sprint 2.10 Final Report](docs/archive/history/sprints/sprint-2.10/SPRINT_2.10_FINAL_REPORT.md)
-- [PR #93 Validation](docs/archive/history/sprints/sprint-2.10/TRACK_A_SPRINT_2.10.md)
-- [PR #94 Validation](docs/archive/history/sprints/sprint-2.10/TRACK_B_PHASE_3_COMPLETION.md)
+**Last Updated:** TBD  
+**Next Review:** Daily standup  
+**Sprint End Date:** TBD
 
 ---
 
-## 📊 Sprint 2.9 Final Report - COMPLETE ✅
+## 📝 Change Log
 
-**Status:** ✅ COMPLETE  
-**Date:** January 17, 2026  
-**Duration:** 1 day  
-**Overall Success:** Both Track A and Track B delivered successfully
-
-### Track A Achievements ✅ (Developer A - 6 hours)
-- ✅ **Fixed 3 Critical PnL Tests**: Test data isolation issue resolved
-- ✅ **Fixed Seed Data Test**: Superuser reuse logic corrected
-- ✅ **Test Pass Rate**: 33/33 tests (100%)
-- ✅ **Code Changes**: 24 lines (surgical precision)
-- ✅ **Documentation**: 1,479 lines across 7 documents
-
-### Track B Achievements ✅ (Developer B - 8 hours)
-- ✅ **Anthropic Claude Support**: Third LLM provider added
-- ✅ **BYOM Agent Integration**: LangGraphWorkflow accepts user credentials
-- ✅ **Session Tracking**: Automatic LLM metadata capture
-- ✅ **Test Coverage**: 342/344 agent tests passing (99.4%)
-- ✅ **Code Changes**: 891 lines
-- ✅ **Documentation**: 491 lines
-
-### Combined Results
-- ✅ **Production Impact**: P&L feature unblocked, BYOM enabled
-- ✅ **Test Results**: 375/377 targeted tests passing (99.5%)
-- ✅ **Zero Regressions**: Pre-existing failures unchanged
-- ✅ **Total Documentation**: 1,970 lines
-
-### Archive
-- [Sprint 2.9 Complete Archive](docs/archive/history/sprints/sprint-2.9/)
-- [Track A Report](docs/archive/history/sprints/sprint-2.9/TRACK_A_SPRINT_2.9_REPORT.md)
-- [Track B Report](docs/archive/history/sprints/sprint-2.9/TRACK_B_SPRINT_2.9_REPORT.md)
-- [PR #91 Validation](docs/archive/history/sprints/sprint-2.9/SPRINT_2.9_PR_91_VALIDATION.md)
-- [PR #92 Validation](docs/archive/history/sprints/sprint-2.9/SPRINT_2.9_PR_92_VALIDATION.md)
-
----
-
-## 📊 Sprint 2.8 Summary
-
-**Sprint 2.8 successfully delivered the BYOM Foundation with excellent code quality.**
-
-### Achievements ✅
-- **BYOM Foundation Complete**: Database schema, encryption, LLM Factory, 5 API endpoints
-- **43 New BYOM Tests**: All passing (100% coverage)
-- **10/11 Seed Data Tests Fixed**: UUID pattern successfully applied
-- **Test Count Increased**: 661 → 704 tests (+43 BYOM tests)
-- **Security Validated**: AES-256 encryption, API key masking, authorization
-
-### Outstanding Issues (Resolved in Sprint 2.9) ✅
-- ~~1 Seed Data Test~~ - **FIXED** in Sprint 2.9 Track A
-- ~~3 PnL Calculation Tests~~ - **FIXED** in Sprint 2.9 Track A
-- 1 Safety Manager Test - Deferred to Sprint 2.10
-- 23 Integration Tests - Review in Sprint 2.10
-
-**Archive:** [Sprint 2.8 Final Report](docs/archive/history/sprints/sprint-2.8/SPRINT_2.8_FINAL_REPORT.md)
-
----
-
-## 📝 Recent Sprint History
-
-| Sprint | Date | Status | Key Deliverables |
-|--------|------|--------|------------------|
-| **2.11** | TBD | 🟢 Ready | Rate limiting, security, production deployment |
-| **2.10** | 2026-01-17 | ✅ Complete | BYOM UI (100%), API tests (100%), 777/785 tests (98.9%) |
-| **2.9** | 2026-01-17 | ✅ Complete | P&L fixes (100%), BYOM integration (99.4%) |
-| **2.8** | 2026-01-17 | 🟡 Partial | BYOM foundation (100%), 646/704 tests (91.8%) |
-| **2.7** | 2026-01-10 | ✅ Complete | PostgreSQL migration, 645/661 tests (97.6%) |
-
----
-
-## 🎯 Next Sprint Objectives (Sprint 2.11)
-
-**Primary Goal:** Complete production deployment with 100% test pass rate and full security implementation
-
-### Success Criteria
-- 🔲 Overall test pass rate: 100% (785/785 tests)
-- 🔲 Rate limiting middleware implemented and operational
-- 🔲 All security tests passing (50/50)
-- 🔲 Production environment deployed and validated
-- 🔲 Live API key integration tested (all 3 providers)
-- 🔲 Production monitoring and alerting active
-
-### Priority Tasks
-
-**Track A - Final Test Fixes (4-6 hours)**
-- Fix remaining 8 test failures (documentation, database, security)
-- Achieve 100% test pass rate
-- Production data validation
-
-**Track B - Rate Limiting & Security (6-8 hours)**
-- Implement rate limiting middleware (2-3 hours)
-- Security hardening - fix 5 security test failures (2-3 hours)
-- Live API key testing with OpenAI, Google, Anthropic (30 min)
-- Validate all 50 security tests passing
-
-**Track C - Production Deployment (8-10 hours)**
-- Deploy Sprint 2.10 to staging (1 hour)
-- Production environment setup and deployment (4-6 hours)
-- Production monitoring and alerting (2-3 hours)
-- Production validation testing
-
----
-
-## 📚 Documentation Links
-
-### Active Documentation
-- [Project README](README.md)
-- [Roadmap](ROADMAP.md)
-- [Sprint 2.10 Planning](SPRINT_2.10_PLANNING.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Testing Guide](docs/TESTING.md)
-- [Deployment Status](docs/DEPLOYMENT_STATUS.md)
-
-### Sprint Archives
-- [Sprint 2.9](docs/archive/history/sprints/sprint-2.9/)
-- [Sprint 2.8](docs/archive/history/sprints/sprint-2.8/)
-- [Sprint 2.7](docs/archive/history/sprints/sprint-2.7/)
-- [Sprint 2.6](docs/archive/history/sprints/sprint-2.6/)
-
----
-
-**Last Updated:** January 17, 2026  
-**Next Review:** Sprint 2.10 start
+### January 18, 2026
+- Sprint 2.12 initialized
+- CURRENT_SPRINT.md restructured for active development
+- All three tracks set up for developer updates
+- Success criteria and metrics defined
