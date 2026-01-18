@@ -6,8 +6,8 @@ This module demonstrates how to register and start all collectors with the orche
 
 import logging
 from app.services.collectors.orchestrator import get_orchestrator
-from app.services.collectors.glass import DeFiLlamaCollector
-from app.services.collectors.human import CryptoPanicCollector, RedditCollector
+from app.services.collectors.glass import DeFiLlamaCollector, NansenCollector
+from app.services.collectors.human import CryptoPanicCollector, NewscatcherCollector, RedditCollector
 from app.services.collectors.catalyst import SECAPICollector, CoinSpotAnnouncementsCollector
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,36 @@ def setup_collectors() -> None:
         logger.error(f"✗ Failed to register CryptoPanic collector: {str(e)}")
         logger.info("  Get a free API key at: https://cryptopanic.com/developers/api/")
     
+    # Human Ledger: Newscatcher News Aggregation
+    # Collects every 5 minutes
+    try:
+        # Note: Requires NEWSCATCHER_API_KEY environment variable (Tier 2 optional)
+        newscatcher = NewscatcherCollector()
+        orchestrator.register_collector(
+            newscatcher,
+            schedule_type="interval",
+            minutes=5,
+        )
+        logger.info("✓ Registered Newscatcher collector (Human Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register Newscatcher collector: {str(e)}")
+        logger.info("  Get an API key at: https://www.newscatcherapi.com/ ($10/month - Tier 2)")
+    
+    # Glass Ledger: Nansen Smart Money Tracking
+    # Collects every 15 minutes
+    try:
+        # Note: Requires NANSEN_API_KEY environment variable (Tier 2 optional)
+        nansen = NansenCollector()
+        orchestrator.register_collector(
+            nansen,
+            schedule_type="interval",
+            minutes=15,
+        )
+        logger.info("✓ Registered Nansen collector (Glass Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register Nansen collector: {str(e)}")
+        logger.info("  Get an API key at: https://nansen.ai/ ($49/month - Tier 2)")
+    
     # Catalyst Ledger: SEC API
     # Collects daily at 9 AM UTC (after market open)
     try:
@@ -95,6 +125,11 @@ def setup_collectors() -> None:
     
     # TODO: Add more collectors as they are implemented
     # - Enhanced CoinSpot Client (Exchange Ledger)
+    #
+    # Sprint 2.12 Status:
+    # ✓ CryptoPanic - Implemented and registered
+    # ✓ Newscatcher - Implemented and registered (Tier 2)
+    # ✓ Nansen - Implemented and registered (Tier 2)
     
     logger.info("Phase 2.5 collectors setup complete")
 
