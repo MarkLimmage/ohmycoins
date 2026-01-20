@@ -146,8 +146,8 @@ module "alb" {
   subnet_ids          = module.vpc.public_subnet_ids
   security_group_ids  = [module.security.alb_security_group_id]
 
-  certificate_arn             = var.certificate_arn
-  backend_domain              = var.backend_domain
+  certificate_arn             = "arn:aws:acm:ap-southeast-2:220711411889:certificate/af9f7589-5413-4789-bb63-01c1a331ab90"
+  backend_domain              = "api.ohmycoins.com"
   enable_deletion_protection  = true # Enable for production
 
   tags = local.tags

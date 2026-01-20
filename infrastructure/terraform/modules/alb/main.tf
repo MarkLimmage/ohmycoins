@@ -78,15 +78,34 @@ resource "aws_lb_target_group" "frontend" {
   )
 }
 
-# HTTP Listener
+# HTTP Listener - Redirects to HTTPS if certificate is configured
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    type = var.certificate_arn != "" ? "redirect" : "forward"
+
+    # Redirect to HTTPS if certificate is configured
+    dynamic "redirect" {
+      for_each = var.certificate_arn != "" ? [1] : []
+      content {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+
+    # Forward to frontend if no certificate (HTTP only)
+    dynamic "forward" {
+      for_each = var.certificate_arn == "" ? [1] : []
+      content {
+        target_group {
+          arn = aws_lb_target_group.frontend.arn
+        }
+      }
+    }
   }
 }
 
