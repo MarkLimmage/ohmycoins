@@ -17,9 +17,7 @@ from typing import Any
 
 from sqlmodel import Session
 
-# Note: SmartMoneyFlow model will be added in Sprint 2.13
-# For now, collector logs data without storing to demonstrate functionality
-# from app.models import SmartMoneyFlow
+from app.models import SmartMoneyFlow
 from app.services.collectors.api_collector import APICollector
 
 logger = logging.getLogger(__name__)
@@ -183,36 +181,30 @@ class NansenCollector(APICollector):
         """
         Store validated smart money flow data in the database.
         
-        Note: SmartMoneyFlow model needs to be added to models.py in a future sprint.
-        For Sprint 2.12, this collector demonstrates the API integration and data collection,
-        with storage deferred to when the full Glass Ledger schema is implemented.
-        
         Args:
             data: Validated data to store
             session: Database session
         
         Returns:
-            Number of records that would be stored (currently logged only)
+            Number of records stored
         """
         stored_count = 0
         
         for item in data:
             try:
-                # TODO Sprint 2.13: Once SmartMoneyFlow model is added to models.py, uncomment:
-                # smart_money_flow = SmartMoneyFlow(
-                #     token=item["token"],
-                #     net_flow_usd=item["net_flow_usd"],
-                #     buying_wallet_count=item["buying_wallet_count"],
-                #     selling_wallet_count=item["selling_wallet_count"],
-                #     buying_wallets=item.get("buying_wallets"),
-                #     selling_wallets=item.get("selling_wallets"),
-                #     collected_at=item["collected_at"],
-                # )
-                # session.add(smart_money_flow)
+                smart_money_flow = SmartMoneyFlow(
+                    token=item["token"],
+                    net_flow_usd=item["net_flow_usd"],
+                    buying_wallet_count=item["buying_wallet_count"],
+                    selling_wallet_count=item["selling_wallet_count"],
+                    buying_wallets=item.get("buying_wallets"),
+                    selling_wallets=item.get("selling_wallets"),
+                    collected_at=item["collected_at"],
+                )
+                session.add(smart_money_flow)
                 
-                # For now, log the data to demonstrate collection works
                 logger.info(
-                    f"{self.name}: Collected smart money flow: {item['token']} - "
+                    f"{self.name}: Storing smart money flow: {item['token']} - "
                     f"Net Flow: ${item['net_flow_usd']}, "
                     f"Buyers: {item['buying_wallet_count']}, "
                     f"Sellers: {item['selling_wallet_count']}"
@@ -222,18 +214,16 @@ class NansenCollector(APICollector):
                 
             except Exception as e:
                 logger.error(
-                    f"{self.name}: Failed to log flow data for '{item.get('token', 'unknown')}': {str(e)}"
+                    f"{self.name}: Failed to store flow data for '{item.get('token', 'unknown')}': {str(e)}"
                 )
                 continue
         
-        # TODO Sprint 2.13: Uncomment when SmartMoneyFlow model exists
-        # try:
-        #     session.commit()
-        #     logger.info(f"{self.name}: Stored {stored_count} smart money flow records")
-        # except Exception as e:
-        #     logger.error(f"{self.name}: Failed to commit records: {str(e)}")
-        #     session.rollback()
-        #     stored_count = 0
+        try:
+            session.commit()
+            logger.info(f"{self.name}: Stored {stored_count} smart money flow records")
+        except Exception as e:
+            logger.error(f"{self.name}: Failed to commit records: {str(e)}")
+            session.rollback()
+            stored_count = 0
         
-        logger.info(f"{self.name}: Validated and logged {stored_count} smart money flow records (storage pending model creation)")
         return stored_count
