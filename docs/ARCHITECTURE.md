@@ -109,6 +109,8 @@ graph TD
 
 #### 4 Ledgers Data
 *   `protocol_fundamentals` (Glass)
+*   `on_chain_metrics` (Glass)
+*   `smart_money_flow` (Glass - Nansen smart wallet tracking)
 *   `news_sentiment`, `social_sentiment` (Human)
 *   `catalyst_events` (Catalyst)
 *   `orders`, `trades` (Exchange)
@@ -304,6 +306,59 @@ coins = await get_available_coins(session)
 Provides coverage statistics for data quality monitoring.
 
 **Returns:** Dictionary with counts and date ranges for all ledgers
+
+##### `fetch_smart_money_flows(session, token, start_date, end_date=None)`
+Retrieves smart money wallet tracking data from Nansen API showing what successful wallets are buying and selling.
+
+**Parameters:**
+- `session`: SQLModel database session
+- `token`: Cryptocurrency symbol (e.g., 'ETH', 'BTC')
+- `start_date`: Beginning of time range (datetime)
+- `end_date`: End of time range (defaults to now)
+
+**Returns:** List of dictionaries with smart money flow data
+
+**Example Query:**
+```python
+from datetime import datetime, timedelta
+
+# Get last 7 days of Ethereum smart money flows
+flows = await fetch_smart_money_flows(
+    session, 
+    "ETH", 
+    start_date=datetime.now() - timedelta(days=7)
+)
+
+# Result structure:
+# [
+#   {
+#     "token": "ETH",
+#     "net_flow_usd": 2500000.75,
+#     "buying_wallet_count": 15,
+#     "selling_wallet_count": 3,
+#     "buying_wallets": ["0x1111...", "0x2222..."],
+#     "selling_wallets": ["0x3333..."],
+#     "collected_at": "2026-01-20T10:00:00+00:00"
+#   },
+#   ...
+# ]
+```
+
+**Database Model:**
+The `smart_money_flow` table stores Nansen smart wallet tracking data:
+- `token`: Cryptocurrency symbol (indexed)
+- `net_flow_usd`: Net smart money flow in USD (positive = buying, negative = selling)
+- `buying_wallet_count`: Number of smart wallets buying
+- `selling_wallet_count`: Number of smart wallets selling
+- `buying_wallets`: Array of top smart wallet addresses buying
+- `selling_wallets`: Array of top smart wallet addresses selling
+- `collected_at`: UTC timestamp when data was collected (indexed)
+
+**Use Cases:**
+- Identify when smart money is accumulating or distributing specific tokens
+- Track wallet addresses of successful traders
+- Detect early trends before they become mainstream
+- Generate trading signals based on smart money movements
 
 ---
 

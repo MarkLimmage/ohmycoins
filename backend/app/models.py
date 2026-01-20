@@ -468,6 +468,52 @@ class OnChainMetrics(SQLModel, table=True):
     )
 
 
+# Glass Ledger: Smart Money Flows
+class SmartMoneyFlow(SQLModel, table=True):
+    """
+    Stores smart money wallet tracking data from Nansen API.
+    Tracks what successful/smart wallets are buying and selling.
+    Data source: Nansen API (https://docs.nansen.ai/)
+    """
+    __tablename__ = "smart_money_flow"
+    
+    id: int | None = Field(default=None, primary_key=True)
+    token: str = Field(max_length=20, nullable=False, index=True)
+    net_flow_usd: Decimal = Field(
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
+        description="Net smart money flow in USD (positive = buying, negative = selling)"
+    )
+    buying_wallet_count: int = Field(
+        default=0,
+        sa_column=Column(sa.Integer, nullable=False),
+        description="Number of smart wallets buying this token"
+    )
+    selling_wallet_count: int = Field(
+        default=0,
+        sa_column=Column(sa.Integer, nullable=False),
+        description="Number of smart wallets selling this token"
+    )
+    buying_wallets: list[str] | None = Field(
+        default=None,
+        sa_column=Column(postgresql.ARRAY(sa.String())),
+        description="Top smart wallet addresses that are buying"
+    )
+    selling_wallets: list[str] | None = Field(
+        default=None,
+        sa_column=Column(postgresql.ARRAY(sa.String())),
+        description="Top smart wallet addresses that are selling"
+    )
+    collected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
+        description="UTC timestamp when data was collected"
+    )
+    
+    __table_args__ = (
+        Index('ix_smart_money_flow_token_time', 'token', 'collected_at'),
+    )
+
+
 # Human Ledger: News Sentiment
 class NewsSentiment(SQLModel, table=True):
     """
