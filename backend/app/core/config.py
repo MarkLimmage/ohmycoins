@@ -144,6 +144,11 @@ class Settings(BaseSettings):
     AGENT_TIMEOUT_SECONDS: int = 300
     AGENT_CODE_EXECUTION_TIMEOUT: int = 60
 
+    # Coinspot API configuration (for price data collector)
+    COINSPOT_API_KEY: str | None = None
+    COINSPOT_API_SECRET: str | None = None
+    COINSPOT_USE_AUTHENTICATED_API: bool = False  # If True, uses authenticated endpoints for full coin list
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
