@@ -147,7 +147,7 @@ class Settings(BaseSettings):
     # Coinspot API configuration (for price data collector)
     COINSPOT_API_KEY: str | None = None
     COINSPOT_API_SECRET: str | None = None
-    COINSPOT_USE_AUTHENTICATED_API: bool = False  # If True, uses authenticated endpoints for full coin list
+    COINSPOT_USE_WEB_SCRAPING: bool = False  # If True, uses web scraping for 538+ coins; if False, uses public API for 17 coins
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

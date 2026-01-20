@@ -8,7 +8,7 @@ The collector supports two modes:
 1. Public API: Returns 17 actively traded coins (no authentication required)
 2. Web Scraping: Scrapes the tradecoins page to fetch all 500+ available coins
 
-To enable web scraping mode, set COINSPOT_USE_AUTHENTICATED_API=true in environment variables.
+To enable web scraping mode, set COINSPOT_USE_WEB_SCRAPING=true in environment variables.
 Note: The authenticated API endpoints don't provide all coin prices, so we scrape the public
 tradecoins page which displays buy/sell prices for all 538+ coins available on the exchange.
 """
@@ -55,7 +55,7 @@ class CoinspotCollector:
     """
 
     def __init__(self):
-        self.use_web_scraping = settings.COINSPOT_USE_AUTHENTICATED_API  # Reusing this flag for web scraping mode
+        self.use_web_scraping = settings.COINSPOT_USE_WEB_SCRAPING
         
         if self.use_web_scraping:
             logger.info("Using web scraping mode to fetch all 538+ Coinspot coins")

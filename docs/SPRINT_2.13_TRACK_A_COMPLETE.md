@@ -86,8 +86,8 @@
 
 **Environment Variable (Web Scraping Mode):**
 ```bash
-COINSPOT_USE_AUTHENTICATED_API=true  # Enable web scraping (538 coins)
-COINSPOT_USE_AUTHENTICATED_API=false # Use public API (17 coins)
+COINSPOT_USE_WEB_SCRAPING=true  # Enable web scraping (538 coins)
+COINSPOT_USE_WEB_SCRAPING=false # Use public API (17 coins)
 ```
 
 **Note**: The API key/secret variables are no longer required but retained in `.env` for potential future use.
@@ -142,7 +142,7 @@ feat(coinspot): Implement web scraping for 538 coin coverage
 - Extracts prices from data-value attributes in HTML table
 - Based on github.com/kochie/coinspot-async-api implementation
 - Maintains compatibility with existing database schema
-- Uses existing COINSPOT_USE_AUTHENTICATED_API flag for mode selection
+- Uses COINSPOT_USE_WEB_SCRAPING flag for mode selection
 ```
 
 ### Commit 2: Documentation
@@ -150,7 +150,7 @@ feat(coinspot): Implement web scraping for 538 coin coverage
 docs: Add Coinspot configuration to .env.template
 241a9d0
 
-- Document COINSPOT_USE_AUTHENTICATED_API flag (web scraping mode)
+- Document COINSPOT_USE_WEB_SCRAPING flag (web scraping mode)
 - Add commented-out API key/secret fields for reference
 - Explain that web scraping mode fetches 538 coins vs 17 from public API
 ```
@@ -189,7 +189,7 @@ docs: Add Coinspot configuration to .env.template
 ## Recommendations
 
 ### Immediate Actions
-1. ✅ Deploy to production with `COINSPOT_USE_AUTHENTICATED_API=true`
+1. ✅ Deploy to production with `COINSPOT_USE_WEB_SCRAPING=true`
 2. ✅ Monitor logs for scraping errors or HTML structure changes
 3. ⏳ Add automated tests to detect page structure changes
 

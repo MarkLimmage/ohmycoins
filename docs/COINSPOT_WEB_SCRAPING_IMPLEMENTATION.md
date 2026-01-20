@@ -42,9 +42,9 @@ The tradecoins page contains all coin prices in HTML table rows:
   - Calculates average as "last" price
 
 #### 3. Configuration
-The existing `COINSPOT_USE_AUTHENTICATED_API` flag now enables web scraping mode:
-- `COINSPOT_USE_AUTHENTICATED_API=true` → Scrape 538 coins
-- `COINSPOT_USE_AUTHENTICATED_API=false` → Use public API (17 coins)
+The `COINSPOT_USE_WEB_SCRAPING` flag controls the data collection mode:
+- `COINSPOT_USE_WEB_SCRAPING=true` → Scrape 538 coins
+- `COINSPOT_USE_WEB_SCRAPING=false` → Use public API (17 coins)
 
 Note: `COINSPOT_API_KEY` and `COINSPOT_API_SECRET` are no longer needed but can remain in `.env` for potential future use.
 
@@ -127,10 +127,10 @@ asyncio.run(test())
 ### Environment Variables
 ```bash
 # Enable web scraping mode (538 coins)
-COINSPOT_USE_AUTHENTICATED_API=true
+COINSPOT_USE_WEB_SCRAPING=true
 
 # Or disable for public API only (17 coins)
-COINSPOT_USE_AUTHENTICATED_API=false
+COINSPOT_USE_WEB_SCRAPING=false
 ```
 
 ### Database Impact

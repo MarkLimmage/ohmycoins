@@ -119,10 +119,10 @@ POST-DEPLOYMENT VALIDATION - LOCAL ENVIRONMENT
 ### Environment Variables
 ```bash
 # Enable web scraping mode (538 coins)
-COINSPOT_USE_AUTHENTICATED_API=true
+COINSPOT_USE_WEB_SCRAPING=true
 
 # Or use public API mode (17 coins)
-COINSPOT_USE_AUTHENTICATED_API=false
+COINSPOT_USE_WEB_SCRAPING=false
 ```
 
 ### No Breaking Changes
