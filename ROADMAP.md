@@ -1,9 +1,9 @@
 # Oh My Coins (OMC) - Project Roadmap
 
-**Status**: Active Development (Production Deployment & Monitoring)  
-**Last Updated**: 2026-01-18  
-**Current Sprint**: Sprint 2.12 (Production Deployment & Monitoring)  
-**Previous Sprint**: Sprint 2.11 Complete ✅ (Rate Limiting + Security Hardening + Staging Deployment)
+**Status**: Active Development (Data Collection Enhancement & Monitoring)  
+**Last Updated**: 2026-01-20  
+**Current Sprint**: Sprint 2.13 (Coinspot Coverage Expansion & Nansen Storage)  
+**Previous Sprint**: Sprint 2.12 Complete ✅ (Production Deployment & Monitoring)
 
 ## 1. Project Overview
 This roadmap tracks the development of the OMC platform across its three parallel tracks:
@@ -68,6 +68,14 @@ This roadmap tracks the development of the OMC platform across its three paralle
     - 📊 Track B: 100% complete - All test infrastructure stable
 
 ### Recent Sprints
+- **Sprint 2.12** (2026-01-20): Production Deployment & Monitoring ✅
+  - Final: All tracks complete (100%), production deployed
+  - Track A: 20 data collection integration tests (CryptoPanic, Newscatcher, Nansen)
+  - Track B: Rate limiting load tests (5/5 scenarios, k6-based)
+  - Track C: 101 AWS resources deployed, DNS/SSL configured, cost optimization
+  - Production: 9 CloudWatch alarms, HTTPS enabled, resources scaled to 0
+  - Issue Identified: Only 17 coins collected from Coinspot (500+ available)
+  - [Sprint 2.12 Archive](docs/archive/history/sprints/sprint-2.12/)
 - **Sprint 2.11** (2026-01-18): Rate Limiting + Security Hardening + Staging Deployment ✅
   - Final: All tracks complete (100%)
   - Track A: 3 test failures fixed (10 lines changed)
@@ -108,6 +116,27 @@ This roadmap tracks the development of the OMC platform across its three paralle
   - [Sprint 2.6 Archive](docs/archive/history/sprints/sprint-2.6/README.md)
 
 ## 4. Future Roadmap
+
+### Sprint 2.13: Coinspot Coverage Expansion & Nansen Storage (In Progress)
+*   **Current Sprint**: Sprint 2.13 (January 20-22, 2026)
+*   **Owner**: All Developers (3 parallel tracks)
+*   **Scope**: Expand Coinspot price collection from 17 to 500+ coins, implement Nansen data storage
+*   **Status**: 
+    *   [ ] Track A (Data Collection - 4-6 hours): Coinspot API exploration and full coin coverage
+        - Explore Coinspot public API for complete coin list endpoint
+        - Update CoinspotCollector to fetch all available coins
+        - Implement coin filtering/selection configuration
+        - Performance validation with 500+ coins
+    *   [ ] Track B (Data Storage - 6-8 hours): Nansen SmartMoneyFlow model implementation
+        - Design SmartMoneyFlow database schema
+        - Create Nansen data persistence layer
+        - Implement wallet tracking features
+        - 10+ integration tests
+    *   [ ] Track C (Monitoring - 4-6 hours): CloudWatch enhancements
+        - Create CloudWatch dashboard for production
+        - Configure SNS notifications for alarms
+        - Add custom metrics for data collection (coins collected, API calls)
+*   **Priority Issue**: Only 17 of 500+ available coins being collected from Coinspot (production gap)
 
 ### Bring Your Own Model (BYOM) Feature (Sprints 2.8-2.9) ✅
 *   **Completed**: Sprint 2.9 (Agent Integration Complete)
