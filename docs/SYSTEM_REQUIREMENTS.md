@@ -42,7 +42,7 @@ Requirements are specified using the Easy Approach to Requirements Syntax (EARS)
 | **Glass Ledger** | | | | |
 | FR-GL-001 | Ubiquitous | The System shall integrate with the DeFiLlama REST API to collect TVL, fees, and revenue data daily for configured protocols. | High | 1 |
 | FR-GL-002 | Event-driven | When the daily collection schedule triggers, the System shall scrape free metrics (Active Addresses, Transaction Count, MVRV) from Glassnode and Santiment using Playwright. | Medium | 1 |
-| FR-GL-003 | State-driven | While operating in Tier 2 mode, the System shall update "Smart Money" wallet flows from Nansen Pro API every 15 minutes. | Medium | 2 |
+| FR-GL-003 ✅ | State-driven | While operating in Tier 2 mode, the System shall update "Smart Money" wallet flows from Nansen Pro API every 15 minutes. | Medium | 2 |
 | **Human Ledger** | | | | |
 | FR-HL-001 | Ubiquitous | The System shall query the CryptoPanic API every 5 minutes to collect news items tagged with sentiment (bullish/bearish/neutral). | High | 1 |
 | FR-HL-002 | Ubiquitous | The System shall retrieve top 50 "hot" posts from configured subreddits via the Reddit API every 15 minutes. | Medium | 1 |
