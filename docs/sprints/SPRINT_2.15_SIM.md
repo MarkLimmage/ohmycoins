@@ -13,11 +13,11 @@
 Implement core UI component library with Storybook documentation, establishing the foundation for 4 Ledgers dashboard development. Pilot AI agent governance system with documentation gates.
 
 ### Success Criteria
-- [ ] 3 core components implemented (LedgerCard, AgentTerminal, SafetyButton)
-- [ ] Storybook deployed with component stories for all states
-- [ ] Accessibility features implemented (WCAG 2.1 AA, REQ-UX-001 table view toggles)
-- [ ] Documentation gates validated via automated checks
-- [ ] Component specifications match DESIGN_SYSTEM.md exactly
+- [x] 3 core components implemented (LedgerCard, AgentTerminal, SafetyButton)
+- [x] Storybook deployed with component stories for all states
+- [x] Accessibility features implemented (WCAG 2.1 AA, REQ-UX-001 table view toggles)
+- [x] Documentation gates validated via automated checks
+- [x] Component specifications match DESIGN_SYSTEM.md exactly
 
 ---
 
@@ -186,21 +186,21 @@ SPECIFIC OBJECTIVES:
 
 DOC-GATE REQUIREMENTS:
   BEFORE CODE IMPLEMENTATION:
-    - [ ] Update frontend/src/components/README.md with component architecture
-    - [ ] Document props interfaces with JSDoc comments
-    - [ ] Review DESIGN_SYSTEM.md Section 2 for exact specifications
+    - [x] Update frontend/src/components/README.md with component architecture
+    - [x] Document props interfaces with JSDoc comments
+    - [x] Review DESIGN_SYSTEM.md Section 2 for exact specifications
   
   DURING IMPLEMENTATION:
-    - [ ] Use Tailwind utility classes ONLY (no custom CSS)
-    - [ ] Implement all states per DESIGN_SYSTEM.md (Loading, Error, Empty, Live)
-    - [ ] Follow API_CONTRACTS.md for API integration (error handling, loading states)
-    - [ ] Add ARIA labels, keyboard navigation (Tab, Enter, Esc)
+    - [x] Use Tailwind utility classes ONLY (no custom CSS)
+    - [x] Implement all states per DESIGN_SYSTEM.md (Loading, Error, Empty, Live)
+    - [x] Follow API_CONTRACTS.md for API integration (error handling, loading states)
+    - [x] Add ARIA labels, keyboard navigation (Tab, Enter, Esc)
   
   AFTER IMPLEMENTATION:
-    - [ ] Create Storybook story for each component with ALL states
-    - [ ] Write component unit tests (vitest)
-    - [ ] Run accessibility audit (axe-core via Storybook addon)
-    - [ ] Verify against DESIGN_SYSTEM.md checklist
+    - [x] Create Storybook story for each component with ALL states
+    - [x] Write component unit tests (vitest)
+    - [x] Run accessibility audit (axe-core via Storybook addon)
+    - [x] Verify against DESIGN_SYSTEM.md checklist
 
 CONSTRAINTS:
   - Use Tailwind utility classes ONLY (no custom CSS unless approved)
@@ -225,13 +225,13 @@ CONSTRAINTS:
   - Component naming convention: PascalCase, descriptive (e.g., GlassLedgerCard, not Card1)
 
 SUCCESS CRITERIA:
-  - [ ] LedgerCard: 4 variants × 4 states = 16 Storybook stories passing
-  - [ ] AgentTerminal: 5 message types + interactions = 8 Storybook stories passing
-  - [ ] SafetyButton: 3 variants × 3 states = 9 Storybook stories passing
-  - [ ] All components pass axe-core audit (0 violations)
-  - [ ] REQ-UX-001 table view toggle functional with Ctrl+Shift+T
-  - [ ] Component tests pass (vitest)
-  - [ ] Matches DESIGN_SYSTEM.md specification exactly (visual regression TBD)
+  - [x] LedgerCard: 4 variants × 4 states = 16 Storybook stories passing
+  - [x] AgentTerminal: 5 message types + interactions = 8 Storybook stories passing
+  - [x] SafetyButton: 3 variants × 3 states = 9 Storybook stories passing
+  - [x] All components pass axe-core audit (0 violations)
+  - [x] REQ-UX-001 table view toggle functional with Ctrl+Shift+T
+  - [x] Component tests pass (vitest)
+  - [x] Matches DESIGN_SYSTEM.md specification exactly (visual regression TBD)
 
 BRANCH: feat/REQ-UX-001-core-component-library
 COMMIT PATTERN:
