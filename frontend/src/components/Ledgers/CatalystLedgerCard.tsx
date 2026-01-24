@@ -205,8 +205,8 @@ function CatalystTableView({ data }: { data?: CatalystLedgerData }) {
           </tr>
         </thead>
         <tbody>
-          {data.events.slice(0, 10).map((event) => (
-            <tr key={event.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+          {data.events.slice(0, 10).map((event, index, array) => (
+            <tr key={event.id} style={{ borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6" }}>
               <td style={{ padding: "12px", fontSize: "14px", fontWeight: 500 }}>
                 {event.title}
               </td>

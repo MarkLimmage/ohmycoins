@@ -200,8 +200,8 @@ function ExchangeTableView({ data }: { data?: ExchangeLedgerData }) {
               Portfolio Value: ${(data.portfolioValue / 1e3).toFixed(2)}K
             </td>
           </tr>
-          {data.sparklines.slice(0, 10).map((asset) => (
-            <tr key={asset.symbol} style={{ borderBottom: "1px solid #f3f4f6" }}>
+          {data.sparklines.slice(0, 10).map((asset, index, array) => (
+            <tr key={asset.symbol} style={{ borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6" }}>
               <td style={{ padding: "12px", fontSize: "14px", fontWeight: 500 }}>
                 {asset.symbol}
               </td>

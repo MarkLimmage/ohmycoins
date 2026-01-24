@@ -13,7 +13,8 @@ This document describes the component architecture for the Oh My Coins platform,
 1. **Accessibility First (WCAG 2.1 AA)**
    - All components keyboard-accessible (Tab, Shift+Tab, Enter, Esc)
    - ARIA labels on all interactive elements
-   - Focus indicators with 2px outline, 4px offset, 3:1 contrast ratio
+   - Focus indicators: 2px solid blue (#3b82f6) outline with 4px offset
+   - Focus indicators meet 3:1 contrast ratio requirement
    - Color never the sole indicator of state
 
 2. **Data Visualization Accessibility (REQ-UX-001)**
