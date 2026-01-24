@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.build.json && vite build",
     "lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
     "preview": "vite preview",
-    "generate-client": "openapi-ts"
+    "generate-client": "openapi-ts",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.27.0",
@@ -37,6 +39,17 @@
     "@vitejs/plugin-react-swc": "^4.2.1",
     "dotenv": "^17.2.2",
     "typescript": "^5.2.2",
-    "vite": "^7.1.11"
+    "vite": "^7.1.11",
+    "storybook": "^10.2.0",
+    "@storybook/react-vite": "^10.2.0",
+    "@chromatic-com/storybook": "^5.0.0",
+    "@storybook/addon-vitest": "^10.2.0",
+    "@storybook/addon-a11y": "^10.2.0",
+    "@storybook/addon-docs": "^10.2.0",
+    "@storybook/addon-onboarding": "^10.2.0",
+    "vitest": "^4.0.18",
+    "playwright": "^1.58.0",
+    "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/coverage-v8": "^4.0.18"
   }
 }
