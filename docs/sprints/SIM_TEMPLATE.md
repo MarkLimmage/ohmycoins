@@ -347,6 +347,64 @@ Track these metrics for continuous improvement:
 
 ---
 
+## Next Sprint Planning
+
+**Complete during sprint retrospective (1-2 days before sprint end)**
+
+### Sprint X.XX+1 Preparation
+
+#### 1. Review Current Sprint Outcomes
+- [ ] All success criteria met?
+- [ ] Any carryover work? (Document in "Sprint X.XX+1 Objectives" below)
+- [ ] Learnings that impact next sprint scope?
+
+#### 2. Validate Phase Roadmap Alignment
+- [ ] Current phase timeline still accurate? (See [ROADMAP.md](../../ROADMAP.md))
+- [ ] Dependencies from current sprint resolved?
+- [ ] Any blockers identified for next sprint?
+
+#### 3. Define Next Sprint Scope
+
+**Proposed Sprint X.XX+1 Focus**: [1-sentence description]
+
+**Requirements to Implement**:
+- [ ] REQ-XX-YYY: [Requirement name] - [Priority: High/Medium/Low]
+- [ ] REQ-XX-YYY: [Requirement name] - [Priority: High/Medium/Low]
+- [ ] REQ-XX-YYY: [Requirement name] - [Priority: High/Medium/Low]
+
+**Track Assignments** (preliminary):
+- **Track A**: [Feature/Module] - Agent: [Persona]
+- **Track B**: [Feature/Module] - Agent: [Persona]
+- **Track C**: [Integration/Infrastructure] - Agent: [Persona]
+
+**Estimated Duration**: [X days]
+
+#### 4. Create Next Sprint SIM
+- [ ] Copy this template to `SPRINT_X.XX+1_SIM.md`
+- [ ] Fill in objectives, requirements, and agent assignments
+- [ ] Define context injection prompts for each track
+- [ ] Set documentation gate requirements
+- [ ] Update CURRENT_SPRINT.md to point to new sprint
+
+#### 5. Risk Assessment
+Identify risks for next sprint:
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| [Risk description] | Low/Med/High | Low/Med/High | [Mitigation strategy] |
+| [Risk description] | Low/Med/High | Low/Med/High | [Mitigation strategy] |
+
+#### 6. Planning Notes
+[Free-form notes about next sprint planning, technical decisions, or scope adjustments]
+
+---
+
+**Next Sprint Status**: 🟡 PLANNING / 🟢 READY TO START  
+**Planning Completed By**: [Agent Persona/Tech Lead]  
+**Planning Date**: [Date]
+
+---
+
 **Sprint Status**: 🟡 IN PROGRESS / 🟢 COMPLETE / 🔴 BLOCKED  
 **Created By**: [Agent Persona]  
 **Approved By**: Tech Lead  
