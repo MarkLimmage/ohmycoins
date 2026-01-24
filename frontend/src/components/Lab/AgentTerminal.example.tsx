@@ -1,6 +1,6 @@
 /**
  * Example usage of AgentTerminal component
- * 
+ *
  * This file demonstrates how to integrate the AgentTerminal component
  * into your application for real-time agent monitoring.
  */
@@ -96,7 +96,8 @@ export function createMockWebSocketServer() {
     {
       id: "3",
       type: "result",
-      content: "Found 3 files matching the search criteria:\n- AgentTerminal.tsx\n- AgentMessage.tsx\n- types.ts",
+      content:
+        "Found 3 files matching the search criteria:\n- AgentTerminal.tsx\n- AgentMessage.tsx\n- types.ts",
       timestamp: new Date().toISOString(),
       metadata: {
         tool_name: "search_files",
@@ -115,7 +116,8 @@ export function createMockWebSocketServer() {
     {
       id: "5",
       type: "result",
-      content: "```typescript\nexport interface AgentTerminalProps {\n  sessionId: string\n  streamUrl: string\n}\n```",
+      content:
+        "```typescript\nexport interface AgentTerminalProps {\n  sessionId: string\n  streamUrl: string\n}\n```",
       timestamp: new Date().toISOString(),
       metadata: {
         tool_name: "read_file",
@@ -131,14 +133,16 @@ export function createMockWebSocketServer() {
     {
       id: "7",
       type: "output",
-      content: "The AgentTerminal component is a streaming console for agent logs with full accessibility support. It features WebSocket streaming, search functionality, and export capabilities.",
+      content:
+        "The AgentTerminal component is a streaming console for agent logs with full accessibility support. It features WebSocket streaming, search functionality, and export capabilities.",
       timestamp: new Date().toISOString(),
     },
   ]
 
   return {
     mockMessages,
-    description: "Send these messages through WebSocket one by one to simulate agent execution",
+    description:
+      "Send these messages through WebSocket one by one to simulate agent execution",
   }
 }
 
