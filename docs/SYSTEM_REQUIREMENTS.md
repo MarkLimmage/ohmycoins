@@ -177,3 +177,34 @@ Requirements are specified using the Easy Approach to Requirements Syntax (EARS)
 *   **TR-BYOM-004**: The system shall validate that all 318 agent tests pass when using OpenAI, Google Gemini, and Anthropic Claude.
 
 ---
+## 8. Trading Execution (The Floor)
+
+### 8.1 Functional Requirements - The Floor
+
+| ID | EARS Pattern | Requirement Statement | Priority |
+| --- | --- | --- | --- |
+| **Algorithm Deployment** |  |  |  |
+| FR-FL-001 | Event-driven | When a User promotes an approved model from the Lab, the System shall instantiate a dedicated Execution Worker for that algorithm. | High |
+| FR-FL-002 | Ubiquitous | The System shall map the algorithm’s abstract "Trade" signals to specific CoinSpot API endpoints (`/my/buy` or `/my/sell`). | Critical |
+| **Order Management** |  |  |  |
+| FR-FL-003 | Event-driven | When an order is placed, the System shall poll the `/my/orders` endpoint every 2 seconds until the status is 'Complete' or 'Cancelled'. | High |
+| FR-FL-004 | Ubiquitous | The System shall calculate Realized and Unrealized P&L in real-time by comparing current `Exchange Ledger` prices against the `last_price` in `/my/balances`. | High |
+| **Risk & Safety** |  |  |  |
+| FR-FL-005 | State-driven | While an algorithm is active, the System shall prevent any single trade from exceeding the User-defined "Max Position Size" (Position Limit). | Critical |
+| FR-FL-006 | Event-driven | When an account’s total daily drawdown exceeds the User-defined "Loss Limit," the System shall trigger the Emergency Stop. | Critical |
+| FR-FL-007 | Event-driven | When the Emergency Stop is triggered, the System shall cancel all open orders and liquidate all active positions to AUD/USDT. | Critical |
+| FR-FL-008 | Ubiquitous | The System shall provide a manual "Kill Switch" in the UI to allow the User to instantly terminate all Floor execution. | Critical |
+
+### 8.2 Non-Functional Requirements - The Floor
+
+* **NFR-FL-P-001**: Signal-to-Execution latency (the time from an algorithm generating a signal to the API call being sent) shall be **< 500ms**.
+* **NFR-FL-R-001**: The Execution Worker shall implement an exponential backoff retry logic for CoinSpot API `5xx` errors.
+* **NFR-FL-S-001**: Trading operations shall require a dedicated "Trading API Key" with restricted permissions (No Withdrawal access).
+* **NFR-FL-I-001**: The System shall maintain an immutable audit log of every signal generated, order sent, and response received.
+
+---
+
+### 8.3 Data Model Requirements - The Floor
+
+* **DM-FL-001**: The system shall implement a `deployed_algorithms` table to track active models, their versions, and their current "Heartbeat" status.
+* **DM-FL-002**: The system shall implement a `trade_ledger` table to store all execution history, linking `order_id` from CoinSpot to the internal `algorithm_id`.
