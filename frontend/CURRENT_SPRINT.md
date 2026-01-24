@@ -57,13 +57,13 @@ Implement core UI component library with Storybook documentation, establishing t
 **Requirements**: NFR-DOC-001, NFR-DOC-002
 
 #### Deliverables
-- ✅ \`.storybook/main.ts\` - Storybook 10.2.0 configuration with accessibility addon
-- ✅ \`.storybook/preview.ts\` - Global config, theme, WCAG 2.1 AA rules
-- ✅ \`.storybook/theme.ts\` - Custom theme matching DESIGN_SYSTEM.md
-- ✅ \`.storybook/README.md\` - 251-line configuration documentation
-- ✅ \`frontend/README.md\` - Storybook section (lines 54-143)
-- ✅ \`docs/DOCUMENTATION_STRATEGY.md\` - Tier 4 updated (line 719)
-- ✅ \`frontend/src/Welcome.stories.tsx\` - Demo story with color palette
+- ✅ `.storybook/main.ts` - Storybook 10.2.0 configuration with accessibility addon
+- ✅ `.storybook/preview.ts` - Global config, theme, WCAG 2.1 AA rules
+- ✅ `.storybook/theme.ts` - Custom theme matching DESIGN_SYSTEM.md
+- ✅ `.storybook/README.md` - 251-line configuration documentation
+- ✅ `frontend/README.md` - Storybook section (lines 54-143)
+- ✅ `docs/DOCUMENTATION_STRATEGY.md` - Tier 4 updated (line 719)
+- ✅ `frontend/src/Welcome.stories.tsx` - Demo story with color palette
 
 #### Success Criteria Validation
 - ✅ All 6 SIM success criteria met
@@ -134,7 +134,7 @@ Implement core UI component library with Storybook documentation, establishing t
 **Architect Decision**: ❌ CANNOT APPROVE - Fails 2 of 5 mandatory documentation gates (Gate 3: Auto-docs, Gate 4: Tests). Sprint 2.15 is **AI Agent Governance Pilot** - documentation gates are non-negotiable.
 
 #### Governance Notes
-- **Branch Naming Violation**: Used \`copilot/\` prefix instead of required \`feat/REQ-UX-001\` prefix
+- **Branch Naming Violation**: Used `copilot/` prefix instead of required `feat/REQ-UX-001` prefix
 - **Resolution**: Conditional approval granted (AI agent operational constraint - cannot rename branches)
 - **Documentation Required**: Governance Exception #001 in Sprint 2.15 retrospective
 - **Post-Merge Action**: Update DOCS_GOVERNANCE.md with AI-generated branch exception clause
@@ -151,8 +151,8 @@ Implement core UI component library with Storybook documentation, establishing t
 #### Planned Deliverables
 - Enhanced API error responses with user-facing messages
 - Loading state metadata in API responses
-- Mock data endpoints: \`/api/v1/mock/ledgers/*\` (dev only)
-- Unit tests: \`tests/unit/api/test_ui_support.py\`
+- Mock data endpoints: `/api/v1/mock/ledgers/*` (dev only)
+- Unit tests: `tests/unit/api/test_ui_support.py`
 - OpenAPI Field descriptions for all response models
 
 ---
@@ -273,15 +273,15 @@ Implement core UI component library with Storybook documentation, establishing t
 - ✅ **Proactive Additions**: vitest addon, onboarding, Chromatic prep
 
 ### Files Created (5)
-1. \`frontend/.storybook/main.ts\` - Storybook configuration
-2. \`frontend/.storybook/preview.ts\` - Global config (106 lines)
-3. \`frontend/.storybook/theme.ts\` - Custom theme (100 lines)
-4. \`frontend/.storybook/README.md\` - Configuration docs (251 lines)
-5. \`frontend/src/Welcome.stories.tsx\` - Demo story (88 lines)
+1. `frontend/.storybook/main.ts` - Storybook configuration
+2. `frontend/.storybook/preview.ts` - Global config (106 lines)
+3. `frontend/.storybook/theme.ts` - Custom theme (100 lines)
+4. `frontend/.storybook/README.md` - Configuration docs (251 lines)
+5. `frontend/src/Welcome.stories.tsx` - Demo story (88 lines)
 
 ### Files Enhanced (2)
-1. \`frontend/README.md\` - Added Storybook section (lines 54-143)
-2. \`docs/DOCUMENTATION_STRATEGY.md\` - Updated Tier 4 (line 719)
+1. `frontend/README.md` - Added Storybook section (lines 54-143)
+2. `docs/DOCUMENTATION_STRATEGY.md` - Updated Tier 4 (line 719)
 
 ---
 

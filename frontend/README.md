@@ -51,6 +51,97 @@ Notice that this live server is not running inside Docker, it's for local develo
 
 Check the file `package.json` to see other available options.
 
+## Storybook - Component Library Documentation
+
+Storybook provides an isolated environment for developing, documenting, and testing UI components. It includes automated accessibility testing and visual documentation generation.
+
+### Running Storybook
+
+* Start the Storybook development server:
+
+```bash
+npm run storybook
+```
+
+* Open your browser at http://localhost:6006/
+
+* To build a static version of Storybook:
+
+```bash
+npm run build-storybook
+```
+
+### Features
+
+**Component Documentation**
+- Auto-generated docs from JSDoc comments
+- Interactive component playground
+- Props documentation with TypeScript types
+- Usage examples for all component states
+
+**Accessibility Testing**
+- Automated WCAG 2.1 AA audits via axe-core
+- Color contrast validation
+- Keyboard navigation testing
+- Screen reader compatibility checks
+
+**Visual Testing**
+- Test components across different viewports (Mobile, Tablet, Desktop)
+- Multiple background options for contrast testing
+- Responsive layout validation
+
+### Writing Stories
+
+Create a `.stories.tsx` file alongside your component:
+
+```typescript
+// src/components/LedgerCard/LedgerCard.stories.tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { LedgerCard } from './LedgerCard';
+
+const meta: Meta<typeof LedgerCard> = {
+  title: 'Components/Ledgers/LedgerCard',
+  component: LedgerCard,
+  tags: ['autodocs'], // Enable auto-generated docs
+};
+
+export default meta;
+type Story = StoryObj<typeof LedgerCard>;
+
+export const Default: Story = {
+  args: {
+    ledgerType: 'glass',
+    data: { /* ... */ },
+  },
+};
+
+export const Loading: Story = {
+  args: {
+    isLoading: true,
+  },
+};
+```
+
+### Accessibility Testing Workflow
+
+1. **View Accessibility Results**
+   - Open a story in Storybook
+   - Click the "Accessibility" tab in the addons panel
+   - Review axe-core audit results
+   - Fix any violations before submitting PR
+
+2. **Keyboard Navigation Testing**
+   - Tab through interactive elements
+   - Verify focus indicators are visible (2px outline)
+   - Test keyboard shortcuts (e.g., Ctrl+Shift+T for table view toggle)
+
+3. **Color Contrast Testing**
+   - Use the "Backgrounds" toolbar to test on different backgrounds
+   - Verify text meets 4.5:1 contrast ratio
+   - Verify UI elements meet 3:1 contrast ratio
+
+For detailed Storybook configuration and troubleshooting, see [.storybook/README.md](.storybook/README.md).
+
 ### Removing the frontend
 
 If you are developing an API-only app and want to remove the frontend, you can do it easily:
