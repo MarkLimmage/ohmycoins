@@ -1,6 +1,6 @@
-import { Box, Text, Flex, Grid } from "@chakra-ui/react";
-import { LedgerCard } from "./LedgerCard";
-import { type LedgerCardProps, type GlassLedgerData } from "./types";
+import { Box, Flex, Grid, Text } from "@chakra-ui/react"
+import { LedgerCard } from "./LedgerCard"
+import type { GlassLedgerData, LedgerCardProps } from "./types"
 
 /**
  * GlassLedgerCard - TVL and Fee display
@@ -8,7 +8,7 @@ import { type LedgerCardProps, type GlassLedgerData } from "./types";
  * REQ-UX-001, REQ-UX-004
  */
 export function GlassLedgerCard(props: LedgerCardProps) {
-  const data = props.data as GlassLedgerData | undefined;
+  const data = props.data as GlassLedgerData | undefined
 
   return (
     <LedgerCard {...props}>
@@ -18,29 +18,29 @@ export function GlassLedgerCard(props: LedgerCardProps) {
         <GlassChartView data={data} onDrillDown={props.onDrillDown} />
       )}
     </LedgerCard>
-  );
+  )
 }
 
 function GlassChartView({
   data,
   onDrillDown,
 }: {
-  data?: GlassLedgerData;
-  onDrillDown?: (id: string) => void;
+  data?: GlassLedgerData
+  onDrillDown?: (id: string) => void
 }) {
-  if (!data) return null;
+  if (!data) return null
 
   const formatCurrency = (value: number) => {
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
-    return `$${value.toFixed(2)}`;
-  };
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`
+    return `$${value.toFixed(2)}`
+  }
 
   const formatPercentage = (value: number) => {
-    const sign = value >= 0 ? "+" : "";
-    return `${sign}${value.toFixed(2)}%`;
-  };
+    const sign = value >= 0 ? "+" : ""
+    return `${sign}${value.toFixed(2)}%`
+  }
 
   return (
     <Box>
@@ -87,11 +87,11 @@ function GlassChartView({
         />
       </Grid>
     </Box>
-  );
+  )
 }
 
 function GlassTableView({ data }: { data?: GlassLedgerData }) {
-  if (!data) return null;
+  if (!data) return null
 
   return (
     <Box
@@ -103,47 +103,114 @@ function GlassTableView({ data }: { data?: GlassLedgerData }) {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-            <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Metric
             </th>
-            <th style={{ padding: "12px", textAlign: "right", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Value
             </th>
-            <th style={{ padding: "12px", textAlign: "right", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               24h Change
             </th>
           </tr>
         </thead>
         <tbody>
           <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-            <td style={{ padding: "12px", fontSize: "14px" }}>Total Value Locked</td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500 }}>
+            <td style={{ padding: "12px", fontSize: "14px" }}>
+              Total Value Locked
+            </td>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
               ${(data.tvl / 1e9).toFixed(2)}B
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", color: data.tvlChange24h >= 0 ? "#22c55e" : "#ef4444" }}>
-              {data.tvlChange24h >= 0 ? "+" : ""}{data.tvlChange24h.toFixed(2)}%
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                color: data.tvlChange24h >= 0 ? "#22c55e" : "#ef4444",
+              }}
+            >
+              {data.tvlChange24h >= 0 ? "+" : ""}
+              {data.tvlChange24h.toFixed(2)}%
             </td>
           </tr>
           <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
             <td style={{ padding: "12px", fontSize: "14px" }}>Fees (24h)</td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500 }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
               ${(data.fees / 1e6).toFixed(2)}M
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", color: data.feesChange24h >= 0 ? "#22c55e" : "#ef4444" }}>
-              {data.feesChange24h >= 0 ? "+" : ""}{data.feesChange24h.toFixed(2)}%
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                color: data.feesChange24h >= 0 ? "#22c55e" : "#ef4444",
+              }}
+            >
+              {data.feesChange24h >= 0 ? "+" : ""}
+              {data.feesChange24h.toFixed(2)}%
             </td>
           </tr>
           <tr>
             <td style={{ padding: "12px", fontSize: "14px" }}>Revenue</td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500 }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
               ${(data.revenue / 1e6).toFixed(2)}M
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px" }}>-</td>
+            <td
+              style={{ padding: "12px", textAlign: "right", fontSize: "14px" }}
+            >
+              -
+            </td>
           </tr>
         </tbody>
       </table>
     </Box>
-  );
+  )
 }
 
 function MetricCard({
@@ -152,10 +219,10 @@ function MetricCard({
   change,
   color,
 }: {
-  label: string;
-  value: string;
-  change?: number;
-  color: string;
+  label: string
+  value: string
+  change?: number
+  color: string
 }) {
   return (
     <Box
@@ -185,5 +252,5 @@ function MetricCard({
         </Flex>
       )}
     </Box>
-  );
+  )
 }

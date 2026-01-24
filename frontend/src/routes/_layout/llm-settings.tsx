@@ -33,9 +33,7 @@ function LLMSettings() {
           </Button>
         )}
 
-        {showForm && (
-          <LLMCredentialForm onCancel={() => setShowForm(false)} />
-        )}
+        {showForm && <LLMCredentialForm onCancel={() => setShowForm(false)} />}
 
         <LLMCredentialList />
       </Box>

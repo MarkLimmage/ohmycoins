@@ -30,8 +30,7 @@ const PER_PAGE = 5
 
 function getItemsQueryOptions({ page }: { page: number }) {
   return {
-    queryFn: () =>
-      ItemsService.readItems(),
+    queryFn: () => ItemsService.readItems(),
     queryKey: ["items", { page }],
   }
 }

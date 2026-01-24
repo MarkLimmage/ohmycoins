@@ -1,11 +1,4 @@
-import {
-  Box,
-  Heading,
-  Link,
-  Table,
-  Text,
-  VStack,
-} from "@chakra-ui/react"
+import { Box, Heading, Link, Table, Text, VStack } from "@chakra-ui/react"
 
 const ProviderInfo = () => {
   return (

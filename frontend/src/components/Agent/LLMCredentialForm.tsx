@@ -2,14 +2,14 @@ import {
   Box,
   Button,
   Card,
+  createListCollection,
   Flex,
-  HStack,
   Heading,
+  HStack,
   Input,
-  Select,
+  type Select,
   Text,
   VStack,
-  createListCollection,
 } from "@chakra-ui/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
@@ -108,15 +108,12 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
     setValidationResult(null)
 
     try {
-      const result =
-        await UsersService.validateLlmCredential(
-          {
-            requestBody: {
-              provider: provider,
-              api_key: key,
-            },
-          },
-        )
+      const result = await UsersService.validateLlmCredential({
+        requestBody: {
+          provider: provider,
+          api_key: key,
+        },
+      })
 
       setValidationResult(result)
 
@@ -127,7 +124,11 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
       }
     } catch (err) {
       handleError(err as ApiError)
-      setValidationResult({ is_valid: false, provider: provider, error_message: "Validation failed" })
+      setValidationResult({
+        is_valid: false,
+        provider: provider,
+        error_message: "Validation failed",
+      })
     } finally {
       setIsValidating(false)
     }
@@ -242,10 +243,7 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
               />
             </Field>
 
-            <Checkbox
-              {...register("is_default")}
-              defaultChecked={false}
-            >
+            <Checkbox {...register("is_default")} defaultChecked={false}>
               Set as default credential
             </Checkbox>
 

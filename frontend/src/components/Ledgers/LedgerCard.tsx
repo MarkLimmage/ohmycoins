@@ -1,7 +1,11 @@
-import { Box, Card, Skeleton, Button, Text, Flex } from "@chakra-ui/react";
-import { type ComponentState, type LedgerCardProps, LEDGER_CONFIG } from "./types";
-import { formatDistanceToNow } from "date-fns";
-import "./ledger-styles.css";
+import { Box, Button, Card, Flex, Skeleton, Text } from "@chakra-ui/react"
+import { formatDistanceToNow } from "date-fns"
+import {
+  type ComponentState,
+  LEDGER_CONFIG,
+  type LedgerCardProps,
+} from "./types"
+import "./ledger-styles.css"
 
 /**
  * Base LedgerCard component
@@ -18,20 +22,21 @@ export function LedgerCard({
   onToggleTableView,
   children,
 }: LedgerCardProps & { children?: React.ReactNode }) {
-  const config = LEDGER_CONFIG[ledgerType];
+  const config = LEDGER_CONFIG[ledgerType]
   const state: ComponentState = isLoading
     ? "loading"
     : error
-    ? "error"
-    : !data
-    ? "empty"
-    : "live";
+      ? "error"
+      : !data
+        ? "empty"
+        : "live"
 
-  const borderColor = alertLevel === "critical"
-    ? "#ef4444"
-    : alertLevel === "warning"
-    ? "#f59e0b"
-    : config.color;
+  const borderColor =
+    alertLevel === "critical"
+      ? "#ef4444"
+      : alertLevel === "warning"
+        ? "#f59e0b"
+        : config.color
 
   return (
     <Card.Root
@@ -77,7 +82,9 @@ export function LedgerCard({
 
       <Card.Body padding="0">
         {state === "loading" && <LoadingState />}
-        {state === "error" && <ErrorState error={error!} onRetry={() => window.location.reload()} />}
+        {state === "error" && (
+          <ErrorState error={error!} onRetry={() => window.location.reload()} />
+        )}
         {state === "empty" && <EmptyState ledgerType={ledgerType} />}
         {state === "live" && (
           <>
@@ -98,7 +105,8 @@ export function LedgerCard({
                   aria-hidden="true"
                 />
                 <Text fontSize="12px" color="#6b7280">
-                  Updated {formatDistanceToNow(data.lastUpdated, { addSuffix: true })}
+                  Updated{" "}
+                  {formatDistanceToNow(data.lastUpdated, { addSuffix: true })}
                 </Text>
               </Flex>
             )}
@@ -106,7 +114,7 @@ export function LedgerCard({
         )}
       </Card.Body>
     </Card.Root>
-  );
+  )
 }
 
 function LoadingState() {
@@ -119,7 +127,7 @@ function LoadingState() {
         <Skeleton height="60px" borderRadius="4px" flex="1" />
       </Flex>
     </Box>
-  );
+  )
 }
 
 function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
@@ -150,7 +158,7 @@ function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
         Retry
       </Button>
     </Box>
-  );
+  )
 }
 
 function EmptyState({ ledgerType }: { ledgerType: string }) {
@@ -174,5 +182,5 @@ function EmptyState({ ledgerType }: { ledgerType: string }) {
         Try expanding date range to 90 days.
       </Text>
     </Box>
-  );
+  )
 }

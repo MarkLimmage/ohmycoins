@@ -1,7 +1,7 @@
-import { Box, Text, Flex, Badge } from "@chakra-ui/react";
-import { LedgerCard } from "./LedgerCard";
-import { type LedgerCardProps, type CatalystLedgerData } from "./types";
-import { formatDistanceToNow } from "date-fns";
+import { Badge, Box, Flex, Text } from "@chakra-ui/react"
+import { formatDistanceToNow } from "date-fns"
+import { LedgerCard } from "./LedgerCard"
+import type { CatalystLedgerData, LedgerCardProps } from "./types"
 
 /**
  * CatalystLedgerCard - Event list
@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
  * REQ-UX-001, REQ-UX-004
  */
 export function CatalystLedgerCard(props: LedgerCardProps) {
-  const data = props.data as CatalystLedgerData | undefined;
+  const data = props.data as CatalystLedgerData | undefined
 
   return (
     <LedgerCard {...props}>
@@ -19,56 +19,56 @@ export function CatalystLedgerCard(props: LedgerCardProps) {
         <CatalystListView data={data} onDrillDown={props.onDrillDown} />
       )}
     </LedgerCard>
-  );
+  )
 }
 
 function CatalystListView({
   data,
   onDrillDown,
 }: {
-  data?: CatalystLedgerData;
-  onDrillDown?: (id: string) => void;
+  data?: CatalystLedgerData
+  onDrillDown?: (id: string) => void
 }) {
-  if (!data) return null;
+  if (!data) return null
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "critical":
-        return "#ef4444";
+        return "#ef4444"
       case "high":
-        return "#f59e0b";
+        return "#f59e0b"
       case "medium":
-        return "#3b82f6";
+        return "#3b82f6"
       default:
-        return "#6b7280";
+        return "#6b7280"
     }
-  };
+  }
 
   const getPriorityBgColor = (priority: string) => {
     switch (priority) {
       case "critical":
-        return "#fef2f2";
+        return "#fef2f2"
       case "high":
-        return "#fffbeb";
+        return "#fffbeb"
       case "medium":
-        return "#eff6ff";
+        return "#eff6ff"
       default:
-        return "#f9fafb";
+        return "#f9fafb"
     }
-  };
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "listing":
-        return "🎉";
+        return "🎉"
       case "regulation":
-        return "⚖️";
+        return "⚖️"
       case "upgrade":
-        return "🔧";
+        return "🔧"
       default:
-        return "📌";
+        return "📌"
     }
-  };
+  }
 
   return (
     <Box>
@@ -111,12 +111,16 @@ function CatalystListView({
                 aria-label={`${event.priority} priority ${event.type} event: ${event.title}`}
                 onKeyDown={(e) => {
                   if ((e.key === "Enter" || e.key === " ") && onDrillDown) {
-                    e.preventDefault();
-                    onDrillDown(event.id);
+                    e.preventDefault()
+                    onDrillDown(event.id)
                   }
                 }}
               >
-                <Flex justifyContent="space-between" alignItems="flex-start" marginBottom="8px">
+                <Flex
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  marginBottom="8px"
+                >
                   <Flex alignItems="center" gap="8px" flex="1">
                     <Text fontSize="20px" role="img" aria-label={event.type}>
                       {getTypeIcon(event.type)}
@@ -165,11 +169,11 @@ function CatalystListView({
         </Box>
       )}
     </Box>
-  );
+  )
 }
 
 function CatalystTableView({ data }: { data?: CatalystLedgerData }) {
-  if (!data) return null;
+  if (!data) return null
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -177,8 +181,8 @@ function CatalystTableView({ data }: { data?: CatalystLedgerData }) {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }).format(date);
-  };
+    }).format(date)
+  }
 
   return (
     <Box
@@ -190,39 +194,106 @@ function CatalystTableView({ data }: { data?: CatalystLedgerData }) {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-            <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Event
             </th>
-            <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Type
             </th>
-            <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Priority
             </th>
-            <th style={{ padding: "12px", textAlign: "right", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Time
             </th>
           </tr>
         </thead>
         <tbody>
           {data.events.slice(0, 10).map((event, index, array) => (
-            <tr key={event.id} style={{ borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6" }}>
-              <td style={{ padding: "12px", fontSize: "14px", fontWeight: 500 }}>
+            <tr
+              key={event.id}
+              style={{
+                borderBottom:
+                  index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+              }}
+            >
+              <td
+                style={{ padding: "12px", fontSize: "14px", fontWeight: 500 }}
+              >
                 {event.title}
               </td>
-              <td style={{ padding: "12px", fontSize: "14px", textTransform: "capitalize" }}>
+              <td
+                style={{
+                  padding: "12px",
+                  fontSize: "14px",
+                  textTransform: "capitalize",
+                }}
+              >
                 {event.type}
               </td>
-              <td style={{ padding: "12px", fontSize: "14px", fontWeight: 500, textTransform: "uppercase" }}>
-                <span style={{
-                  color: event.priority === "critical" ? "#ef4444" :
-                        event.priority === "high" ? "#f59e0b" :
-                        event.priority === "medium" ? "#3b82f6" : "#6b7280"
-                }}>
+              <td
+                style={{
+                  padding: "12px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                }}
+              >
+                <span
+                  style={{
+                    color:
+                      event.priority === "critical"
+                        ? "#ef4444"
+                        : event.priority === "high"
+                          ? "#f59e0b"
+                          : event.priority === "medium"
+                            ? "#3b82f6"
+                            : "#6b7280",
+                  }}
+                >
                   {event.priority}
                 </span>
               </td>
-              <td style={{ padding: "12px", textAlign: "right", fontSize: "13px", color: "#6b7280" }}>
+              <td
+                style={{
+                  padding: "12px",
+                  textAlign: "right",
+                  fontSize: "13px",
+                  color: "#6b7280",
+                }}
+              >
                 {formatDate(event.timestamp)}
               </td>
             </tr>
@@ -230,5 +301,5 @@ function CatalystTableView({ data }: { data?: CatalystLedgerData }) {
         </tbody>
       </table>
     </Box>
-  );
+  )
 }

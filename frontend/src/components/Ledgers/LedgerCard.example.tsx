@@ -3,22 +3,22 @@
  * This file demonstrates how to use the different ledger card variants
  */
 
-import React from 'react';
-import { Box, Grid } from '@chakra-ui/react';
+import { Box, Grid } from "@chakra-ui/react"
+import React from "react"
 import {
-  GlassLedgerCard,
-  HumanLedgerCard,
   CatalystLedgerCard,
-  ExchangeLedgerCard,
-  type GlassLedgerData,
-  type HumanLedgerData,
   type CatalystLedgerData,
+  ExchangeLedgerCard,
   type ExchangeLedgerData,
-} from './index';
+  GlassLedgerCard,
+  type GlassLedgerData,
+  HumanLedgerCard,
+  type HumanLedgerData,
+} from "./index"
 
 // Mock data for Glass Ledger
 const mockGlassData: GlassLedgerData = {
-  id: 'glass-1',
+  id: "glass-1",
   timestamp: new Date(),
   lastUpdated: new Date(),
   tvl: 42500000000, // $42.5B
@@ -26,113 +26,114 @@ const mockGlassData: GlassLedgerData = {
   revenue: 8500000, // $8.5M
   tvlChange24h: 5.23,
   feesChange24h: -2.15,
-};
+}
 
 // Mock data for Human Ledger
 const mockHumanData: HumanLedgerData = {
-  id: 'human-1',
+  id: "human-1",
   timestamp: new Date(),
   lastUpdated: new Date(),
-  sentiment: 'bullish',
+  sentiment: "bullish",
   sentimentScore: 0.73,
-  trendingCoins: ['BTC', 'ETH', 'SOL', 'AVAX', 'MATIC'],
+  trendingCoins: ["BTC", "ETH", "SOL", "AVAX", "MATIC"],
   newsVolume: 1247,
-};
+}
 
 // Mock data for Catalyst Ledger
 const mockCatalystData: CatalystLedgerData = {
-  id: 'catalyst-1',
+  id: "catalyst-1",
   timestamp: new Date(),
   lastUpdated: new Date(),
   events: [
     {
-      id: 'event-1',
-      title: 'SEC Approves Bitcoin ETF',
-      type: 'regulation',
-      priority: 'critical',
+      id: "event-1",
+      title: "SEC Approves Bitcoin ETF",
+      type: "regulation",
+      priority: "critical",
       timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-      description: 'The SEC has approved the first spot Bitcoin ETF for trading.',
+      description:
+        "The SEC has approved the first spot Bitcoin ETF for trading.",
     },
     {
-      id: 'event-2',
-      title: 'Ethereum Shanghai Upgrade Complete',
-      type: 'upgrade',
-      priority: 'high',
+      id: "event-2",
+      title: "Ethereum Shanghai Upgrade Complete",
+      type: "upgrade",
+      priority: "high",
       timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      description: 'The Shanghai upgrade has been successfully deployed.',
+      description: "The Shanghai upgrade has been successfully deployed.",
     },
     {
-      id: 'event-3',
-      title: 'New Token Listing: ARB on Coinbase',
-      type: 'listing',
-      priority: 'medium',
+      id: "event-3",
+      title: "New Token Listing: ARB on Coinbase",
+      type: "listing",
+      priority: "medium",
       timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
     },
   ],
-};
+}
 
 // Mock data for Exchange Ledger
 const mockExchangeData: ExchangeLedgerData = {
-  id: 'exchange-1',
+  id: "exchange-1",
   timestamp: new Date(),
   lastUpdated: new Date(),
   portfolioValue: 125000,
   topGainer: {
-    symbol: 'SOL',
+    symbol: "SOL",
     change: 15.32,
   },
   topLoser: {
-    symbol: 'ADA',
+    symbol: "ADA",
     change: -8.45,
   },
   sparklines: [
     {
-      symbol: 'BTC',
+      symbol: "BTC",
       prices: [45000, 45200, 45100, 45500, 45800, 46000, 45900],
       currentPrice: 45900,
       change24h: 2.15,
     },
     {
-      symbol: 'ETH',
+      symbol: "ETH",
       prices: [2400, 2420, 2390, 2450, 2480, 2500, 2490],
       currentPrice: 2490,
       change24h: 3.75,
     },
     {
-      symbol: 'SOL',
+      symbol: "SOL",
       prices: [95, 98, 102, 105, 108, 110, 115],
       currentPrice: 115,
       change24h: 15.32,
     },
     {
-      symbol: 'ADA',
-      prices: [0.65, 0.64, 0.62, 0.60, 0.59, 0.58, 0.57],
+      symbol: "ADA",
+      prices: [0.65, 0.64, 0.62, 0.6, 0.59, 0.58, 0.57],
       currentPrice: 0.57,
       change24h: -8.45,
     },
   ],
-};
+}
 
 /**
  * Example: 4 Ledgers Dashboard Grid
  */
 export function LedgersDashboardExample() {
   const [showTableView, setShowTableView] = React.useState<{
-    glass: boolean;
-    human: boolean;
-    catalyst: boolean;
-    exchange: boolean;
+    glass: boolean
+    human: boolean
+    catalyst: boolean
+    exchange: boolean
   }>({
     glass: false,
     human: false,
     catalyst: false,
     exchange: false,
-  });
+  })
 
   const handleDrillDown = (id: string) => {
-    console.log('Drill down into:', id);
+    console.log("Drill down into:", id)
     // Navigate to detail view or open modal
-  };
+  }
 
   return (
     <Box padding="24px">
@@ -184,7 +185,7 @@ export function LedgersDashboardExample() {
         />
       </Grid>
     </Box>
-  );
+  )
 }
 
 /**
@@ -200,14 +201,14 @@ export function LoadingStateExample() {
         <ExchangeLedgerCard ledgerType="exchange" isLoading={true} />
       </Grid>
     </Box>
-  );
+  )
 }
 
 /**
  * Example: Error State
  */
 export function ErrorStateExample() {
-  const error = new Error('Failed to fetch ledger data');
+  const error = new Error("Failed to fetch ledger data")
 
   return (
     <Box padding="24px">
@@ -218,7 +219,7 @@ export function ErrorStateExample() {
         <ExchangeLedgerCard ledgerType="exchange" error={error} />
       </Grid>
     </Box>
-  );
+  )
 }
 
 /**
@@ -234,5 +235,5 @@ export function EmptyStateExample() {
         <ExchangeLedgerCard ledgerType="exchange" data={undefined} />
       </Grid>
     </Box>
-  );
+  )
 }

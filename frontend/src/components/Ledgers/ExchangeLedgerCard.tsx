@@ -1,6 +1,6 @@
-import { Box, Text, Flex, Grid } from "@chakra-ui/react";
-import { LedgerCard } from "./LedgerCard";
-import { type LedgerCardProps, type ExchangeLedgerData } from "./types";
+import { Box, Flex, Grid, Text } from "@chakra-ui/react"
+import { LedgerCard } from "./LedgerCard"
+import type { ExchangeLedgerData, LedgerCardProps } from "./types"
 
 /**
  * ExchangeLedgerCard - Price list
@@ -8,7 +8,7 @@ import { type LedgerCardProps, type ExchangeLedgerData } from "./types";
  * REQ-UX-001, REQ-UX-004
  */
 export function ExchangeLedgerCard(props: LedgerCardProps) {
-  const data = props.data as ExchangeLedgerData | undefined;
+  const data = props.data as ExchangeLedgerData | undefined
 
   return (
     <LedgerCard {...props}>
@@ -18,28 +18,28 @@ export function ExchangeLedgerCard(props: LedgerCardProps) {
         <ExchangeChartView data={data} onDrillDown={props.onDrillDown} />
       )}
     </LedgerCard>
-  );
+  )
 }
 
 function ExchangeChartView({
   data,
   onDrillDown,
 }: {
-  data?: ExchangeLedgerData;
-  onDrillDown?: (id: string) => void;
+  data?: ExchangeLedgerData
+  onDrillDown?: (id: string) => void
 }) {
-  if (!data) return null;
+  if (!data) return null
 
   const formatCurrency = (value: number) => {
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
-    return `$${value.toFixed(2)}`;
-  };
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`
+    return `$${value.toFixed(2)}`
+  }
 
   const formatPercentage = (value: number) => {
-    const sign = value >= 0 ? "+" : "";
-    return `${sign}${value.toFixed(2)}%`;
-  };
+    const sign = value >= 0 ? "+" : ""
+    return `${sign}${value.toFixed(2)}%`
+  }
 
   return (
     <Box>
@@ -97,12 +97,13 @@ function ExchangeChartView({
       </Grid>
 
       {/* Sparklines */}
-      <Box
-        role="region"
-        aria-label="Price sparklines"
-        tabIndex={0}
-      >
-        <Text fontSize="12px" color="#6b7280" marginBottom="12px" fontWeight="600">
+      <Box role="region" aria-label="Price sparklines" tabIndex={0}>
+        <Text
+          fontSize="12px"
+          color="#6b7280"
+          marginBottom="12px"
+          fontWeight="600"
+        >
           Asset Performance
         </Text>
         <Flex flexDirection="column" gap="12px">
@@ -121,14 +122,19 @@ function ExchangeChartView({
               aria-label={`${asset.symbol} at ${formatCurrency(asset.currentPrice)} with ${formatPercentage(asset.change24h)} change`}
               onKeyDown={(e) => {
                 if ((e.key === "Enter" || e.key === " ") && onDrillDown) {
-                  e.preventDefault();
-                  onDrillDown(data.id);
+                  e.preventDefault()
+                  onDrillDown(data.id)
                 }
               }}
             >
               <Flex justifyContent="space-between" alignItems="center">
                 <Flex alignItems="center" gap="12px" flex="1">
-                  <Text fontSize="14px" fontWeight="600" color="#111827" minWidth="60px">
+                  <Text
+                    fontSize="14px"
+                    fontWeight="600"
+                    color="#111827"
+                    minWidth="60px"
+                  >
                     {asset.symbol}
                   </Text>
                   <Box flex="1" height="32px" position="relative">
@@ -149,7 +155,11 @@ function ExchangeChartView({
                     </svg>
                   </Box>
                 </Flex>
-                <Flex flexDirection="column" alignItems="flex-end" minWidth="100px">
+                <Flex
+                  flexDirection="column"
+                  alignItems="flex-end"
+                  minWidth="100px"
+                >
                   <Text fontSize="14px" fontWeight="600" color="#111827">
                     {formatCurrency(asset.currentPrice)}
                   </Text>
@@ -167,11 +177,11 @@ function ExchangeChartView({
         </Flex>
       </Box>
     </Box>
-  );
+  )
 }
 
 function ExchangeTableView({ data }: { data?: ExchangeLedgerData }) {
-  if (!data) return null;
+  if (!data) return null
 
   return (
     <Box
@@ -183,60 +193,115 @@ function ExchangeTableView({ data }: { data?: ExchangeLedgerData }) {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-            <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "left",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Asset
             </th>
-            <th style={{ padding: "12px", textAlign: "right", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               Price
             </th>
-            <th style={{ padding: "12px", textAlign: "right", fontSize: "12px", fontWeight: 600, color: "#6b7280" }}>
+            <th
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#6b7280",
+              }}
+            >
               24h Change
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr style={{ borderBottom: "1px solid #f3f4f6", backgroundColor: "#faf5ff" }}>
-            <td colSpan={3} style={{ padding: "12px", fontSize: "14px", fontWeight: 600, textAlign: "center" }}>
+          <tr
+            style={{
+              borderBottom: "1px solid #f3f4f6",
+              backgroundColor: "#faf5ff",
+            }}
+          >
+            <td
+              colSpan={3}
+              style={{
+                padding: "12px",
+                fontSize: "14px",
+                fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
               Portfolio Value: ${(data.portfolioValue / 1e3).toFixed(2)}K
             </td>
           </tr>
           {data.sparklines.slice(0, 10).map((asset, index, array) => (
-            <tr key={asset.symbol} style={{ borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6" }}>
-              <td style={{ padding: "12px", fontSize: "14px", fontWeight: 500 }}>
+            <tr
+              key={asset.symbol}
+              style={{
+                borderBottom:
+                  index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+              }}
+            >
+              <td
+                style={{ padding: "12px", fontSize: "14px", fontWeight: 500 }}
+              >
                 {asset.symbol}
               </td>
-              <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500 }}>
+              <td
+                style={{
+                  padding: "12px",
+                  textAlign: "right",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                }}
+              >
                 ${asset.currentPrice.toFixed(2)}
               </td>
-              <td style={{
-                padding: "12px",
-                textAlign: "right",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: asset.change24h >= 0 ? "#22c55e" : "#ef4444"
-              }}>
-                {asset.change24h >= 0 ? "+" : ""}{asset.change24h.toFixed(2)}%
+              <td
+                style={{
+                  padding: "12px",
+                  textAlign: "right",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: asset.change24h >= 0 ? "#22c55e" : "#ef4444",
+                }}
+              >
+                {asset.change24h >= 0 ? "+" : ""}
+                {asset.change24h.toFixed(2)}%
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </Box>
-  );
+  )
 }
 
 function generateSparklinePoints(prices: number[]): string {
-  if (prices.length === 0) return "";
+  if (prices.length === 0) return ""
 
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const range = max - min || 1;
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min || 1
 
   return prices
     .map((price, index) => {
-      const x = (index / (prices.length - 1)) * 100;
-      const y = 32 - ((price - min) / range) * 32;
-      return `${x},${y}`;
+      const x = (index / (prices.length - 1)) * 100
+      const y = 32 - ((price - min) / range) * 32
+      return `${x},${y}`
     })
-    .join(" ");
+    .join(" ")
 }

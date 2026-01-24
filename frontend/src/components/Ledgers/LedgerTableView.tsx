@@ -1,5 +1,5 @@
-import { Box, Text, Button, Flex } from "@chakra-ui/react";
-import { type LedgerData, type LedgerType } from "./types";
+import { Box, Button, Flex, Text } from "@chakra-ui/react"
+import type { LedgerData, LedgerType } from "./types"
 
 /**
  * LedgerTableView - Accessible table view for ledger data
@@ -7,10 +7,10 @@ import { type LedgerData, type LedgerType } from "./types";
  * REQ-UX-001: Table view toggle for screen readers
  */
 export interface LedgerTableViewProps {
-  ledgerType: LedgerType;
-  data: LedgerData | undefined;
-  showTableView: boolean;
-  onToggleTableView: () => void;
+  ledgerType: LedgerType
+  data: LedgerData | undefined
+  showTableView: boolean
+  onToggleTableView: () => void
 }
 
 export function LedgerTableView({
@@ -32,12 +32,16 @@ export function LedgerTableView({
           No data available
         </Text>
       </Box>
-    );
+    )
   }
 
   return (
     <Box>
-      <Flex justifyContent="space-between" alignItems="center" marginBottom="16px">
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        marginBottom="16px"
+      >
         <Text fontSize="16px" fontWeight="600" color="#111827">
           {showTableView ? "Table View" : "Chart View"}
         </Text>
@@ -55,21 +59,21 @@ export function LedgerTableView({
 
       {showTableView && renderTableForLedgerType(ledgerType, data)}
     </Box>
-  );
+  )
 }
 
 function renderTableForLedgerType(ledgerType: LedgerType, data: LedgerData) {
   switch (ledgerType) {
     case "glass":
-      return <GlassTable data={data as any} />;
+      return <GlassTable data={data as any} />
     case "human":
-      return <HumanTable data={data as any} />;
+      return <HumanTable data={data as any} />
     case "catalyst":
-      return <CatalystTable data={data as any} />;
+      return <CatalystTable data={data as any} />
     case "exchange":
-      return <ExchangeTable data={data as any} />;
+      return <ExchangeTable data={data as any} />
     default:
-      return null;
+      return null
   }
 }
 
@@ -130,10 +134,24 @@ function GlassTable({ data }: { data: any }) {
         </thead>
         <tbody>
           <tr>
-            <td style={{ padding: "12px", fontSize: "14px", borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                fontSize: "14px",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               Total Value Locked
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500, borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               ${(data.tvl / 1e9).toFixed(2)}B
             </td>
             <td
@@ -151,10 +169,24 @@ function GlassTable({ data }: { data: any }) {
             </td>
           </tr>
           <tr>
-            <td style={{ padding: "12px", fontSize: "14px", borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                fontSize: "14px",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               Fees (24h)
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500, borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               ${(data.fees / 1e6).toFixed(2)}M
             </td>
             <td
@@ -173,15 +205,26 @@ function GlassTable({ data }: { data: any }) {
           </tr>
           <tr>
             <td style={{ padding: "12px", fontSize: "14px" }}>Revenue</td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500 }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
               ${(data.revenue / 1e6).toFixed(2)}M
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px" }}>-</td>
+            <td
+              style={{ padding: "12px", textAlign: "right", fontSize: "14px" }}
+            >
+              -
+            </td>
           </tr>
         </tbody>
       </table>
     </Box>
-  );
+  )
 }
 
 function HumanTable({ data }: { data: any }) {
@@ -229,39 +272,92 @@ function HumanTable({ data }: { data: any }) {
         </thead>
         <tbody>
           <tr>
-            <td style={{ padding: "12px", fontSize: "14px", borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                fontSize: "14px",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               Overall Sentiment
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500, borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               {data.sentiment.charAt(0).toUpperCase() + data.sentiment.slice(1)}
             </td>
           </tr>
           <tr>
-            <td style={{ padding: "12px", fontSize: "14px", borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                fontSize: "14px",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               Sentiment Score
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500, borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               {(data.sentimentScore * 100).toFixed(0)}
             </td>
           </tr>
           <tr>
-            <td style={{ padding: "12px", fontSize: "14px", borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                fontSize: "14px",
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               News Volume
             </td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500, borderBottom: "1px solid #f3f4f6" }}>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderBottom: "1px solid #f3f4f6",
+              }}
+            >
               {data.newsVolume.toLocaleString()} articles
             </td>
           </tr>
           <tr>
-            <td style={{ padding: "12px", fontSize: "14px" }}>Trending Coins</td>
-            <td style={{ padding: "12px", textAlign: "right", fontSize: "14px", fontWeight: 500 }}>
-              {data.trendingCoins.length > 0 ? data.trendingCoins.join(", ") : "None"}
+            <td style={{ padding: "12px", fontSize: "14px" }}>
+              Trending Coins
+            </td>
+            <td
+              style={{
+                padding: "12px",
+                textAlign: "right",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
+              {data.trendingCoins.length > 0
+                ? data.trendingCoins.join(", ")
+                : "None"}
             </td>
           </tr>
         </tbody>
       </table>
     </Box>
-  );
+  )
 }
 
 function CatalystTable({ data }: { data: any }) {
@@ -271,8 +367,8 @@ function CatalystTable({ data }: { data: any }) {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }).format(date);
-  };
+    }).format(date)
+  }
 
   return (
     <Box
@@ -341,64 +437,70 @@ function CatalystTable({ data }: { data: any }) {
           </tr>
         </thead>
         <tbody>
-          {data.events.slice(0, 10).map((event: any, index: number, array: any[]) => (
-            <tr key={event.id}>
-              <td
-                style={{
-                  padding: "12px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                {event.title}
-              </td>
-              <td
-                style={{
-                  padding: "12px",
-                  fontSize: "14px",
-                  textTransform: "capitalize",
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                {event.type}
-              </td>
-              <td
-                style={{
-                  padding: "12px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  color:
-                    event.priority === "critical"
-                      ? "#ef4444"
-                      : event.priority === "high"
-                      ? "#f59e0b"
-                      : event.priority === "medium"
-                      ? "#3b82f6"
-                      : "#6b7280",
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                {event.priority}
-              </td>
-              <td
-                style={{
-                  padding: "12px",
-                  textAlign: "right",
-                  fontSize: "13px",
-                  color: "#6b7280",
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                {formatDate(event.timestamp)}
-              </td>
-            </tr>
-          ))}
+          {data.events
+            .slice(0, 10)
+            .map((event: any, index: number, array: any[]) => (
+              <tr key={event.id}>
+                <td
+                  style={{
+                    padding: "12px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  {event.title}
+                </td>
+                <td
+                  style={{
+                    padding: "12px",
+                    fontSize: "14px",
+                    textTransform: "capitalize",
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  {event.type}
+                </td>
+                <td
+                  style={{
+                    padding: "12px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    color:
+                      event.priority === "critical"
+                        ? "#ef4444"
+                        : event.priority === "high"
+                          ? "#f59e0b"
+                          : event.priority === "medium"
+                            ? "#3b82f6"
+                            : "#6b7280",
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  {event.priority}
+                </td>
+                <td
+                  style={{
+                    padding: "12px",
+                    textAlign: "right",
+                    fontSize: "13px",
+                    color: "#6b7280",
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  {formatDate(event.timestamp)}
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
     </Box>
-  );
+  )
 }
 
 function ExchangeTable({ data }: { data: any }) {
@@ -471,46 +573,51 @@ function ExchangeTable({ data }: { data: any }) {
               Portfolio Value: ${(data.portfolioValue / 1e3).toFixed(2)}K
             </td>
           </tr>
-          {data.sparklines.slice(0, 10).map((asset: any, index: number, array: any[]) => (
-            <tr key={asset.symbol}>
-              <td
-                style={{
-                  padding: "12px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                {asset.symbol}
-              </td>
-              <td
-                style={{
-                  padding: "12px",
-                  textAlign: "right",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                ${asset.currentPrice.toFixed(2)}
-              </td>
-              <td
-                style={{
-                  padding: "12px",
-                  textAlign: "right",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: asset.change24h >= 0 ? "#22c55e" : "#ef4444",
-                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
-                }}
-              >
-                {asset.change24h >= 0 ? "+" : ""}
-                {asset.change24h.toFixed(2)}%
-              </td>
-            </tr>
-          ))}
+          {data.sparklines
+            .slice(0, 10)
+            .map((asset: any, index: number, array: any[]) => (
+              <tr key={asset.symbol}>
+                <td
+                  style={{
+                    padding: "12px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  {asset.symbol}
+                </td>
+                <td
+                  style={{
+                    padding: "12px",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  ${asset.currentPrice.toFixed(2)}
+                </td>
+                <td
+                  style={{
+                    padding: "12px",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: asset.change24h >= 0 ? "#22c55e" : "#ef4444",
+                    borderBottom:
+                      index === array.length - 1 ? "none" : "1px solid #f3f4f6",
+                  }}
+                >
+                  {asset.change24h >= 0 ? "+" : ""}
+                  {asset.change24h.toFixed(2)}%
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
     </Box>
-  );
+  )
 }

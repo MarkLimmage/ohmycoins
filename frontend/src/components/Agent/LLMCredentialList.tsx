@@ -4,8 +4,8 @@ import {
   Button,
   Card,
   Flex,
-  HStack,
   Heading,
+  HStack,
   Icon,
   Spinner,
   Text,
@@ -14,10 +14,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { SiAnthropic, SiGoogle, SiOpenai } from "react-icons/si"
 
-import {
-  type ApiError,
-  UsersService,
-} from "@/client"
+import { type ApiError, UsersService } from "@/client"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -56,9 +53,7 @@ const LLMCredentialList = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (credentialId: string) =>
-      UsersService.deleteLlmCredential(
-        { credentialId },
-      ),
+      UsersService.deleteLlmCredential({ credentialId }),
     onSuccess: () => {
       showSuccessToast("Credential deleted successfully.")
       queryClient.invalidateQueries({ queryKey: ["llmCredentials"] })
@@ -70,9 +65,7 @@ const LLMCredentialList = () => {
 
   const setDefaultMutation = useMutation({
     mutationFn: (credentialId: string) =>
-      UsersService.setDefaultLlmCredential(
-        { credentialId },
-      ),
+      UsersService.setDefaultLlmCredential({ credentialId }),
     onSuccess: () => {
       showSuccessToast("Default credential updated.")
       queryClient.invalidateQueries({ queryKey: ["llmCredentials"] })
