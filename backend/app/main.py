@@ -10,6 +10,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.api.middleware import RateLimitMiddleware
+from app.api.routes import websockets
 from app.core.config import settings
 from app.services.scheduler import start_scheduler, stop_scheduler
 
@@ -113,3 +114,4 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(websockets.router, prefix="/ws", tags=["websockets"])
