@@ -1,4 +1,5 @@
 import { Box, Flex, Grid, Text } from "@chakra-ui/react"
+import { HumanSentimentHeatmap } from "./charts/HumanSentimentHeatmap"
 import { LedgerCard } from "./LedgerCard"
 import type { HumanLedgerData, LedgerCardProps } from "./types"
 
@@ -58,41 +59,33 @@ function HumanChartView({
 
   return (
     <Box>
-      {/* Simplified sentiment heatmap placeholder */}
-      <Box
-        height="200px"
-        backgroundColor="#f0fdf4"
-        borderRadius="4px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        flexDirection="column"
-        marginBottom="16px"
-        position="relative"
-        role="img"
-        aria-label={`Human Ledger showing ${getSentimentLabel(data.sentiment)} sentiment with score ${(data.sentimentScore * 100).toFixed(0)}`}
-        tabIndex={0}
-        _focus={{ outline: "2px solid #10b981", outlineOffset: "4px" }}
-        cursor={onDrillDown ? "pointer" : "default"}
-        onClick={() => onDrillDown?.(data.id)}
-        _hover={onDrillDown ? { backgroundColor: "#dcfce7" } : {}}
-      >
-        <Text fontSize="64px" marginBottom="8px">
-          {getSentimentEmoji(data.sentiment)}
-        </Text>
-        <Text
-          fontSize="24px"
-          fontWeight="600"
-          color={getSentimentColor(data.sentiment)}
-        >
-          {getSentimentLabel(data.sentiment)}
-        </Text>
-        <Text fontSize="14px" color="#6b7280" marginTop="4px">
-          Score: {(data.sentimentScore * 100).toFixed(0)}
-        </Text>
-      </Box>
+      <HumanSentimentHeatmap data={data} onDrillDown={onDrillDown} />
 
-      <Grid templateColumns="repeat(2, 1fr)" gap="12px">
+      <Grid templateColumns="repeat(3, 1fr)" gap="12px">
+        <Box
+          padding="12px"
+          backgroundColor="#f0fdf4"
+          borderRadius="4px"
+          borderLeft="4px solid"
+          borderLeftColor={getSentimentColor(data.sentiment)}
+        >
+          <Text fontSize="12px" color="#6b7280" marginBottom="4px">
+            Current Sentiment
+          </Text>
+          <Flex alignItems="center" gap="8px">
+            <Text fontSize="24px">{getSentimentEmoji(data.sentiment)}</Text>
+            <Box>
+              <Text fontSize="14px" fontWeight="600" color="#111827">
+                {getSentimentLabel(data.sentiment)}
+              </Text>
+              <Text fontSize="12px" color="#6b7280">
+                {/* Assuming data.sentimentScore exists in data */}
+                Score: {data.sentimentScore?.toFixed(2)}
+              </Text>
+            </Box>
+          </Flex>
+        </Box>
+
         <Box
           padding="12px"
           backgroundColor="#f9fafb"

@@ -1,4 +1,5 @@
 import { Box, Flex, Grid, Text } from "@chakra-ui/react"
+import { GlassTVLChart } from "./charts/GlassTVLChart"
 import { LedgerCard } from "./LedgerCard"
 import type { GlassLedgerData, LedgerCardProps } from "./types"
 
@@ -37,35 +38,14 @@ function GlassChartView({
     return `$${value.toFixed(2)}`
   }
 
-  const formatPercentage = (value: number) => {
+  const _formatPercentage = (value: number) => {
     const sign = value >= 0 ? "+" : ""
     return `${sign}${value.toFixed(2)}%`
   }
 
   return (
     <Box>
-      {/* Simplified chart placeholder - no complex charts for MVP */}
-      <Box
-        height="200px"
-        backgroundColor="#eff6ff"
-        borderRadius="4px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        marginBottom="16px"
-        position="relative"
-        role="img"
-        aria-label={`Glass Ledger showing TVL of ${formatCurrency(data.tvl)} with ${formatPercentage(data.tvlChange24h)} change in 24 hours`}
-        tabIndex={0}
-        _focus={{ outline: "2px solid #3b82f6", outlineOffset: "4px" }}
-        cursor={onDrillDown ? "pointer" : "default"}
-        onClick={() => onDrillDown?.(data.id)}
-        _hover={onDrillDown ? { backgroundColor: "#dbeafe" } : {}}
-      >
-        <Text fontSize="14px" color="#6b7280">
-          Chart visualization
-        </Text>
-      </Box>
+      <GlassTVLChart data={data} onDrillDown={onDrillDown} />
 
       <Grid templateColumns="repeat(3, 1fr)" gap="12px">
         <MetricCard

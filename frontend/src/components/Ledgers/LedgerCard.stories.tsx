@@ -67,26 +67,28 @@ const mockHumanData: HumanLedgerData = {
 const mockCatalystData: CatalystLedgerData = {
   id: "catalyst-1",
   timestamp: new Date(),
-  activeEvents: [
+  events: [
     {
       id: "e1",
       title: "Waitlist Spike",
       priority: "high",
-      timestamp: new Date().toISOString(),
+      type: "other",
+      timestamp: new Date(),
+      description: "Sudden increase in signups",
     },
     {
       id: "e2",
       title: "New Governance Proposal",
       priority: "medium",
-      timestamp: new Date().toISOString(),
+      type: "upgrade",
+      timestamp: new Date(),
     },
-  ],
-  upcomingEvents: [
     {
       id: "e3",
       title: "Protocol Upgrade",
       priority: "critical",
-      timestamp: new Date().toISOString(),
+      type: "upgrade",
+      timestamp: new Date(),
     },
   ],
 }
@@ -97,16 +99,38 @@ const mockExchangeData: ExchangeLedgerData = {
   portfolioValue: 54321,
   topGainer: { symbol: "BTC", change: 5.4 },
   topLoser: { symbol: "DOGE", change: -2.1 },
-  sparklineData: {
-    BTC: Array.from({ length: 20 }, (_, i) => ({
-      time: i,
-      value: 50000 + Math.random() * 1000,
-    })),
-    ETH: Array.from({ length: 20 }, (_, i) => ({
-      time: i,
-      value: 3000 + Math.random() * 100,
-    })),
-  },
+  sparklines: [
+    {
+      symbol: "BTC",
+      currentPrice: 50123,
+      change24h: 5.4,
+      prices: Array.from({ length: 20 }, () => 50000 + Math.random() * 1000),
+    },
+    {
+      symbol: "ETH",
+      currentPrice: 3012,
+      change24h: 2.1,
+      prices: Array.from({ length: 20 }, () => 3000 + Math.random() * 100),
+    },
+    {
+      symbol: "SOL",
+      currentPrice: 145,
+      change24h: -1.2,
+      prices: Array.from({ length: 20 }, () => 145 + Math.random() * 5),
+    },
+    {
+      symbol: "DOGE",
+      currentPrice: 0.12,
+      change24h: -2.1,
+      prices: Array.from({ length: 20 }, () => 0.12 + Math.random() * 0.01),
+    },
+    {
+      symbol: "ADA",
+      currentPrice: 0.45,
+      change24h: 0.5,
+      prices: Array.from({ length: 20 }, () => 0.45 + Math.random() * 0.02),
+    },
+  ],
 }
 
 /**

@@ -1,4 +1,5 @@
 import { Box, Flex, Grid, Text } from "@chakra-ui/react"
+import { ExchangeSparkline } from "./charts/ExchangeSparkline"
 import { LedgerCard } from "./LedgerCard"
 import type { ExchangeLedgerData, LedgerCardProps } from "./types"
 
@@ -138,21 +139,10 @@ function ExchangeChartView({
                     {asset.symbol}
                   </Text>
                   <Box flex="1" height="32px" position="relative">
-                    {/* Simplified sparkline visualization */}
-                    <svg
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 100 32"
-                      preserveAspectRatio="none"
-                      aria-hidden="true"
-                    >
-                      <polyline
-                        points={generateSparklinePoints(asset.prices)}
-                        fill="none"
-                        stroke={asset.change24h >= 0 ? "#22c55e" : "#ef4444"}
-                        strokeWidth="2"
-                      />
-                    </svg>
+                    <ExchangeSparkline
+                      data={asset.prices}
+                      color={asset.change24h >= 0 ? "#22c55e" : "#ef4444"}
+                    />
                   </Box>
                 </Flex>
                 <Flex
@@ -290,18 +280,4 @@ function ExchangeTableView({ data }: { data?: ExchangeLedgerData }) {
   )
 }
 
-function generateSparklinePoints(prices: number[]): string {
-  if (prices.length === 0) return ""
-
-  const min = Math.min(...prices)
-  const max = Math.max(...prices)
-  const range = max - min || 1
-
-  return prices
-    .map((price, index) => {
-      const x = (index / (prices.length - 1)) * 100
-      const y = 32 - ((price - min) / range) * 32
-      return `${x},${y}`
-    })
-    .join(" ")
-}
+// Helper function removed as we use ExchangeSparkline component now
