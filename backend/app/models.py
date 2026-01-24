@@ -808,43 +808,99 @@ class AgentSessionCreate(SQLModel):
 
 class AgentSessionPublic(AgentSessionBase):
     """Schema for returning agent session via API"""
-    id: uuid.UUID
-    user_id: uuid.UUID
-    status: str
-    error_message: str | None
-    result_summary: str | None
-    created_at: datetime
-    updated_at: datetime
-    completed_at: datetime | None
+    id: uuid.UUID = Field(description="Unique session identifier")
+    user_id: uuid.UUID = Field(description="ID of the user who owns this session")
+    status: str = Field(description="Current status (pending, running, completed, failed, cancelled)")
+    error_message: str | None = Field(default=None, description="Error message if failed")
+    result_summary: str | None = Field(default=None, description="Summary of the session results")
+    created_at: datetime = Field(description="Session creation timestamp")
+    updated_at: datetime = Field(description="Last update timestamp")
+    completed_at: datetime | None = Field(default=None, description="Completion timestamp")
+    
+    # UI Loading State Support
+    is_loading: bool = Field(
+        default=False, 
+        description="Indicates if the data is currently being refreshed or computed."
+    )
+    last_updated: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the data was last updated."
+    )
+    data_staleness_seconds: float = Field(
+        default=0.0,
+        description="Number of seconds since the data was last updated."
+    )
 
 
 class AgentSessionsPublic(SQLModel):
     """Schema for returning multiple agent sessions"""
-    data: list[AgentSessionPublic]
-    count: int
+    data: list[AgentSessionPublic] = Field(description="List of agent sessions")
+    count: int = Field(description="Total count of sessions")
+    
+    # UI Loading State Support
+    is_loading: bool = Field(
+        default=False, 
+        description="Indicates if the data is currently being refreshed or computed."
+    )
+    last_updated: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the data was last updated."
+    )
+    data_staleness_seconds: float = Field(
+        default=0.0,
+        description="Number of seconds since the data was last updated."
+    )
 
 
 class AgentSessionMessagePublic(SQLModel):
     """Schema for returning agent session message via API"""
-    id: uuid.UUID
-    session_id: uuid.UUID
-    role: str
-    content: str
-    agent_name: str | None
-    created_at: datetime
+    id: uuid.UUID = Field(description="Unique message identifier")
+    session_id: uuid.UUID = Field(description="ID of the session this message belongs to")
+    role: str = Field(description="Role of the sender (user, assistant, system, function)")
+    content: str = Field(description="Content of the message")
+    agent_name: str | None = Field(default=None, description="Name of the specific agent")
+    created_at: datetime = Field(description="Message creation timestamp")
+    
+    # UI Loading State Support
+    is_loading: bool = Field(
+        default=False, 
+        description="Indicates if the data is currently being refreshed or computed."
+    )
+    last_updated: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the data was last updated."
+    )
+    data_staleness_seconds: float = Field(
+        default=0.0,
+        description="Number of seconds since the data was last updated."
+    )
 
 
 class AgentArtifactPublic(SQLModel):
     """Schema for returning agent artifact via API"""
-    id: uuid.UUID
-    session_id: uuid.UUID
-    artifact_type: str
-    name: str
-    description: str | None
-    file_path: str | None
-    mime_type: str | None
-    size_bytes: int | None
-    created_at: datetime
+    id: uuid.UUID = Field(description="Unique artifact identifier")
+    session_id: uuid.UUID = Field(description="ID of the session this artifact belongs to")
+    artifact_type: str = Field(description="Type of artifact (model, plot, report, code, data)")
+    name: str = Field(description="Name of the artifact")
+    description: str | None = Field(default=None, description="Description of the artifact")
+    file_path: str | None = Field(default=None, description="Storage path")
+    mime_type: str | None = Field(default=None, description="MIME type")
+    size_bytes: int | None = Field(default=None, description="Size in bytes")
+    created_at: datetime = Field(description="Artifact creation timestamp")
+    
+    # UI Loading State Support
+    is_loading: bool = Field(
+        default=False, 
+        description="Indicates if the data is currently being refreshed or computed."
+    )
+    last_updated: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the data was last updated."
+    )
+    data_staleness_seconds: float = Field(
+        default=0.0,
+        description="Number of seconds since the data was last updated."
+    )
 
 
 # =============================================================================

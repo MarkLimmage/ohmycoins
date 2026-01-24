@@ -9,10 +9,11 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from app.api.deps import CurrentUser, get_db
+from app.api.response_base import APIResponseBase
 from app.services.trading.pnl import get_pnl_engine, PnLEngine, PnLMetrics
 
 
@@ -24,26 +25,26 @@ router = APIRouter()
 # ============================================================================
 
 
-class PnLSummaryResponse(BaseModel):
+class PnLSummaryResponse(APIResponseBase):
     """Response model for P&L summary"""
-    realized_pnl: float
-    unrealized_pnl: float
-    total_pnl: float
-    total_trades: int
-    winning_trades: int
-    losing_trades: int
-    win_rate: float
-    profit_factor: float
-    total_profit: float
-    total_loss: float
-    average_win: float
-    average_loss: float
-    largest_win: float
-    largest_loss: float
-    max_drawdown: float
-    sharpe_ratio: float
-    total_volume: float
-    total_fees: float
+    realized_pnl: float = Field(description="Total realized profit/loss from closed trades")
+    unrealized_pnl: float = Field(description="Total unrealized profit/loss from open positions")
+    total_pnl: float = Field(description="Sum of realized and unrealized P&L")
+    total_trades: int = Field(description="Total number of trades executed")
+    winning_trades: int = Field(description="Number of profitable trades")
+    losing_trades: int = Field(description="Number of unprofitable trades")
+    win_rate: float = Field(description="Percentage of winning trades (0-1.0)")
+    profit_factor: float = Field(description="Ratio of gross profit to gross loss")
+    total_profit: float = Field(description="Total gross profit")
+    total_loss: float = Field(description="Total gross loss")
+    average_win: float = Field(description="Average profit per winning trade")
+    average_loss: float = Field(description="Average loss per losing trade")
+    largest_win: float = Field(description="Largest single profit")
+    largest_loss: float = Field(description="Largest single loss")
+    max_drawdown: float = Field(description="Maximum peak-to-trough decline")
+    sharpe_ratio: float = Field(description="Risk-adjusted return metric")
+    total_volume: float = Field(description="Total trading volume")
+    total_fees: float = Field(description="Total trading fees paid")
     
     @classmethod
     def from_metrics(cls, metrics: PnLMetrics) -> "PnLSummaryResponse":
@@ -70,12 +71,12 @@ class PnLSummaryResponse(BaseModel):
         )
 
 
-class PnLByAlgorithmResponse(BaseModel):
+class PnLByAlgorithmResponse(APIResponseBase):
     """Response model for P&L grouped by algorithm"""
-    algorithm_id: str
-    realized_pnl: float
-    unrealized_pnl: float
-    total_pnl: float
+    algorithm_id: str = Field(description="Unique identifier of the trading algorithm")
+    realized_pnl: float = Field(description="Realized P&L for this algorithm")
+    unrealized_pnl: float = Field(description="Unrealized P&L for this algorithm")
+    total_pnl: float = Field(description="Total P&L for this algorithm")
     
     @classmethod
     def from_algorithm_metrics(cls, algorithm_id: UUID, metrics: PnLMetrics) -> "PnLByAlgorithmResponse":
@@ -88,12 +89,12 @@ class PnLByAlgorithmResponse(BaseModel):
         )
 
 
-class PnLByCoinResponse(BaseModel):
+class PnLByCoinResponse(APIResponseBase):
     """Response model for P&L grouped by coin"""
-    coin_type: str
-    realized_pnl: float
-    unrealized_pnl: float
-    total_pnl: float
+    coin_type: str = Field(description="Cryptocurrency symbol (e.g., BTC)")
+    realized_pnl: float = Field(description="Realized P&L for this coin")
+    unrealized_pnl: float = Field(description="Unrealized P&L for this coin")
+    total_pnl: float = Field(description="Total P&L for this coin")
     
     @classmethod
     def from_coin_metrics(cls, coin_type: str, metrics: PnLMetrics) -> "PnLByCoinResponse":
@@ -106,21 +107,21 @@ class PnLByCoinResponse(BaseModel):
         )
 
 
-class HistoricalPnLEntry(BaseModel):
+class HistoricalPnLEntry(APIResponseBase):
     """Single entry in historical P&L data"""
-    timestamp: str
-    realized_pnl: float
-    interval: str
+    timestamp: str = Field(description="ISO 8601 timestamp of the entry")
+    realized_pnl: float = Field(description="Realized P&L value for this interval")
+    interval: str = Field(description="Time interval (hour, day, week, month)")
 
 
-class RealizedPnLResponse(BaseModel):
+class RealizedPnLResponse(APIResponseBase):
     """Response model for realized P&L"""
-    realized_pnl: float
+    realized_pnl: float = Field(description="Total realized profit/loss")
 
 
-class UnrealizedPnLResponse(BaseModel):
+class UnrealizedPnLResponse(APIResponseBase):
     """Response model for unrealized P&L"""
-    unrealized_pnl: float
+    unrealized_pnl: float = Field(description="Total unrealized profit/loss")
 
 
 # ============================================================================

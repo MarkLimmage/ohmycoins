@@ -1,8 +1,12 @@
 import sentry_sdk
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
+
 
 from app.api.main import api_router
 from app.api.middleware import RateLimitMiddleware
@@ -47,5 +51,65 @@ if settings.all_cors_origins:
 # Add rate limiting middleware
 if settings.RATE_LIMIT_ENABLED:
     app.add_middleware(RateLimitMiddleware)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """
+    Global exception handler to ensure standard error response format.
+    Returns: { "message": "User-facing", "detail": "Technical", "error_code": "CODE" }
+    """
+    # If detail is already a dict, assume it follows the structure
+    if isinstance(exc.detail, dict):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.detail,
+        )
+    
+    # Map common status codes to user messages per API_CONTRACTS.md
+    user_message = "An unexpected error occurred."
+    error_code = f"HTTP_{exc.status_code}"
+    
+    if exc.status_code == 400:
+        user_message = "Invalid request. Please check your input."
+        error_code = "BAD_REQUEST"
+    elif exc.status_code == 401:
+        user_message = "Session expired. Please log in again."
+        error_code = "UNAUTHORIZED"
+    elif exc.status_code == 403:
+        user_message = "You don't have permission for this action."
+        error_code = "FORBIDDEN"
+    elif exc.status_code == 404:
+        user_message = "The requested resource was not found."
+        error_code = "NOT_FOUND"
+    elif exc.status_code == 429:
+        user_message = "Too many requests. Please wait a moment."
+        error_code = "RATE_LIMITED"
+    elif exc.status_code >= 500:
+        user_message = "Something went wrong. Please try again later."
+        error_code = "SERVER_ERROR"
+        
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "message": user_message,
+            "detail": str(exc.detail),
+            "error_code": error_code
+        },
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Handle 422 Validation Errors
+    """
+    return JSONResponse(
+        status_code=422,
+        content={
+            "message": "Some fields have errors. Please check your input.",
+            "detail": exc.errors(),
+            "error_code": "VALIDATION_ERROR"
+        },
+    )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
