@@ -1,53 +1,245 @@
-# Current Sprint - Sprint 2.13 (Coinspot Coverage Expansion & Data Collection Enhancement)
+# Current Sprint - Sprint 2.14 (Documentation Uplift & AI Agent Governance)
 
-**Status:** 🟢 IN PROGRESS  
-**Date Started:** January 20, 2026  
-**Target Completion:** January 22, 2026  
-**Duration:** 2-3 days  
-**Previous Sprint:** Sprint 2.12 - Complete ✅  
-**Focus:** Expand Coinspot price collection from 17 to 500+ coins, implement Nansen data storage, enhance monitoring
+**Status:** ✅ COMPLETE  
+**Date Started:** January 24, 2026  
+**Date Completed:** January 24, 2026  
+**Duration:** 1 day  
+**Previous Sprint:** Sprint 2.13 - Complete ✅  
+**Focus:** Implement 4-tier documentation architecture, AI agent governance system, and UI/UX specifications
 
 ---
 
-## 🎯 Sprint 2.13 Objectives
+## 🎯 Sprint 2.14 Objectives
 
 ### Primary Goal
-Expand Coinspot price collection to capture all 500+ available coins, implement Nansen data storage with SmartMoneyFlow model, and enhance production monitoring capabilities.
+Implement comprehensive documentation uplift with 4-tier architecture, establish AI agent governance system with Sprint Initialization Manifests, and create UI/UX specifications for frontend development.
 
 ### Success Criteria
-- [x] Coinspot collection expanded from 17 to all available coins (investigation complete)
-- [x] All available coins identified via API exploration (17 confirmed)
-- [x] Nansen data storage implemented (SmartMoneyFlow model)
-- [ ] CloudWatch dashboard created for production monitoring
-- [ ] SNS notifications configured for critical alarms
+- [x] Phase 1: Create USER_JOURNEYS.md and API_CONTRACTS.md (Tier 1 documents)
+- [x] Phase 2: Create UI specifications (DESIGN_SYSTEM.md, DATA_VISUALIZATION_SPEC.md, TRADING_UI_SPEC.md)
+- [x] Phase 3: Archive 7 stale documentation files
+- [x] Phase 4: Enhance SYSTEM_REQUIREMENTS.md v2.1 with UI/UX and integration requirements
+- [x] AI Governance: Implement 4 agent personas with tiered access control
+- [x] Automation: Create GitHub Actions workflow, PR template, validation scripts
+- [x] Strategic Alignment: Update ROADMAP.md to reflect documentation-first approach
 
 ### Sprint Metrics
-| Category | Current | Target | Status |
-|----------|---------|--------|--------|
-| Coins Collected (Coinspot) | 17 | 17 (all) | ✅ Complete (investigation) |
-| Nansen Data Models | 1 | 1 | ✅ Complete |
-| CloudWatch Dashboard | 0 | 1 | 🔲 Not Started |
-| SNS Notifications | 0 | 1 | 🔲 Not Started |
-| Integration Tests | 15 | 10+ | ✅ Complete |
+| Category | Delivered | Target | Status |
+|----------|-----------|--------|--------|
+| Tier 1 Documents Created | 3 | 3 | ✅ Complete |
+| UI Specifications | 3 | 3 | ✅ Complete |
+| Governance Documents | 2 | 2 | ✅ Complete |
+| Automation Infrastructure | 3 | 3 | ✅ Complete |
+| Documentation Lines Created | ~7,000 | ~5,000 | ✅ Exceeded |
+| Files Archived | 7 | 5+ | ✅ Complete |
+| SYSTEM_REQUIREMENTS Enhancements | +149 lines | 3 sections | ✅ Complete |
 
 **Track Allocation:**
-- ✅ Track A (Developer A): Coinspot API expansion + coin filtering
-- ✅ Track B (Developer B): Nansen SmartMoneyFlow model + storage
-- 🔲 Track C (Developer C): CloudWatch dashboard + SNS notifications
+- ✅ Phase 1-4: Documentation Uplift (AI-driven development)
+- ✅ AI Governance: 4 personas, SIM template, Doc-Sync Check
+- ✅ Strategic Update: ROADMAP.md restructured
 
 ---
 
-**📋 Previous Sprint:** [Sprint 2.12 Archive](docs/archive/history/sprints/sprint-2.12/)  
-**📋 Sprint Roadmap:** [Project Roadmap](ROADMAP.md)
+**📋 Previous Sprint:** [Sprint 2.13 Archive](docs/archive/history/sprints/sprint-2.13/)  
+**📋 Sprint Roadmap:** [Project Roadmap](ROADMAP.md)  
+**📋 Documentation Strategy:** [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 
 ---
 
-## 🎯 Track A: Coinspot Coverage Expansion
+## 📦 Sprint 2.14 Deliverables
 
-**Status:** ✅ INVESTIGATION COMPLETE → ENHANCEMENTS IMPLEMENTED  
-**Owner:** Developer A (OMC-Data-Specialist)  
-**Time Estimate:** 4-6 hours (actual: ~2 hours)  
-**Start Date:** January 20, 2026  
+### Phase 1: Core Documentation (Tier 1)
+
+**Status:** ✅ COMPLETE  
+**Deliverables:** 3 master documents (~1,800 lines)
+
+#### USER_JOURNEYS.md
+- 5 comprehensive user journeys (~1,200 lines)
+- Journey 1: Discovery Flow (4 Ledgers → The Lab)
+- Journey 2: BYOM Setup Journey
+- Journey 3: The Lab Analysis Journey
+- Journey 4: Lab-to-Floor Promotion Journey
+- Journey 5: The Floor Risk Management Journey
+- E2E test linkage for all journeys
+- Component touchpoint mapping
+- Requirement traceability (REQ-XX-YYY)
+
+#### API_CONTRACTS.md
+- Pattern-based API documentation (~600 lines)
+- Global patterns: Auth, loading, errors, WebSocket
+- Feature patterns: BYOM, The Lab, The Floor
+- Error state specifications with user-facing messages
+- UI behavior contracts for API operations
+- Disconnected state fallback strategies
+
+#### SYSTEM_REQUIREMENTS.md v2.1
+- Enhanced with 3 new sections (+149 lines)
+- Section 8.4: Disconnected State Requirements (REQ-FL-DISC-001 to 007)
+- Section 9: UI/UX Non-Functional Requirements
+- Section 10: Cross-Module Integration Requirements
+
+---
+
+### Phase 2: UI/UX Specifications (Tier 3)
+
+**Status:** ✅ COMPLETE  
+**Deliverables:** 3 comprehensive specifications (~2,800 lines)
+
+#### DESIGN_SYSTEM.md
+- Component library specifications (~500 lines)
+- Core components: LedgerCard, AgentTerminal, SafetyButton
+- Layout templates: SplitView, CommandCenter
+- Interaction patterns: Real-time updates, error handling, loading states
+- Data visualization standards with chart types per ledger
+- Color palette and design tokens
+- Accessibility: WCAG 2.1 AA, REQ-UX-001 table view toggles
+- Mobile strategy: Desktop-first with progressive enhancement
+
+#### DATA_VISUALIZATION_SPEC.md
+- 4 Ledgers chart specifications (~1,200 lines)
+- Glass Ledger: TVL/Fee dual-axis line charts (recharts)
+- Human Ledger: Sentiment calendar heatmap (visx)
+- Catalyst Ledger: Real-time event ticker (WebSocket)
+- Exchange Ledger: Multi-coin sparklines (lightweight-charts)
+- Lab UI: Agent Terminal with streaming logs (react-window)
+- Performance targets: Initial load < 2s, update latency < 500ms
+
+#### TRADING_UI_SPEC.md
+- The Floor UI specifications (~1,100 lines)
+- Kill Switch component: 120px red button with typed confirmation
+- P&L Ticker: 60px bar with real-time updates (2s interval)
+- Disconnected state handling: REST API fallback, automatic pause
+- Safety mechanisms: 2-step confirmations, cooldown periods, audit logging
+- Responsiveness: Desktop-only for trading controls
+- Accessibility: Skip links, focus management, ARIA announcements
+
+---
+
+### Phase 3: Documentation Cleanup
+
+**Status:** ✅ COMPLETE  
+**Archived:** 7 stale files
+
+- Sprint 2.13 completion files (4 files) → `docs/archive/history/sprints/sprint-2.13/`
+- Sprint 2.12 security doc → `docs/archive/history/sprints/sprint-2.12/`
+- Implementation details (2 files) → `docs/archive/2026-01/implementation-details/`
+- Archive README.md updated with rationale
+
+---
+
+### Phase 4: AI Agent Governance
+
+**Status:** ✅ COMPLETE  
+**Deliverables:** Governance system with automation (~1,500 lines)
+
+#### DOCS_GOVERNANCE.md (~1,400 lines)
+- 4 agent personas with tiered access control:
+  - The Architect: READ all tiers, WRITE Tier 1-2
+  - The Feature Developer: READ Tier 1-2, WRITE Tier 2+4
+  - The UI/UX Agent: READ Tier 1+3, WRITE Tier 2-3
+  - The Quality Agent: READ all, WRITE tests
+- Context injection prompts (copy-paste ready)
+- Sprint Initialization Manifest (SIM) structure
+- Git-Flow for documentation (requirement-first branching)
+- Doc-Sync Check algorithm (8-step validation)
+- Implementation roadmap (4 weeks)
+
+#### SIM_TEMPLATE.md (~400 lines)
+- Sprint Initialization Manifest template
+- Track A/B/C structure with agent assignments
+- Context injection prompts per track
+- Documentation gate requirements (5 gates)
+- Sprint retrospective checklist
+- Metrics tracking table
+
+#### Automation Infrastructure
+- **GitHub Action**: `.github/workflows/doc-sync-check.yml` (~100 lines)
+  - Validates requirement IDs in PR title/body
+  - Checks backend service README.md updates
+  - Checks frontend feature README.md updates
+  - Runs requirement validation script
+- **PR Template**: `.github/pull_request_template.md` (~150 lines)
+  - 4-tier documentation checklist
+  - Testing requirements (unit, integration, E2E)
+  - Accessibility validation
+  - Agent persona section
+  - Security and deployment notes
+- **Validation Script**: `scripts/validate_requirement_ids.py` (~80 lines)
+  - Scans code for REQ-XX-YYY references
+  - Validates against SYSTEM_REQUIREMENTS.md
+  - Reports undefined requirements
+
+---
+
+### Strategic Alignment
+
+**Status:** ✅ COMPLETE
+
+#### ROADMAP.md v3.0
+- Restructured from sprint-tracking to strategic document
+- Added Phase 3: UI/UX Foundation (Sprints 2.14-2.16)
+- Documented Living Documentation System (4-tier architecture)
+- Added Documentation & Governance section
+- Added Risk Management section
+- Comprehensive references to new documentation
+
+---
+
+## 🎉 Sprint 2.14 Summary
+
+### Key Achievements
+- ✅ **7,000+ lines of living documentation** created across 11 new files
+- ✅ **4-tier documentation architecture** operational
+- ✅ **AI agent governance** system with 4 personas and automation
+- ✅ **UI/UX specifications** enable frontend development without backend consultation
+- ✅ **Documentation-first workflow** enforced via PR gates
+- ✅ **Strategic roadmap** updated to reflect documentation-driven approach
+
+### Impact
+- Frontend developers can now build components from specifications
+- AI agents have structured context injection via SIM templates
+- Automated gates prevent documentation drift
+- New developers can onboard with comprehensive user journeys
+- Requirement traceability automated via validation script
+
+### Files Created (11)
+1. `/docs/USER_JOURNEYS.md` (~1,200 lines)
+2. `/docs/API_CONTRACTS.md` (~600 lines)
+3. `/docs/ui/DESIGN_SYSTEM.md` (~500 lines)
+4. `/docs/ui/DATA_VISUALIZATION_SPEC.md` (~1,200 lines)
+5. `/docs/ui/TRADING_UI_SPEC.md` (~1,100 lines)
+6. `/docs/DOCS_GOVERNANCE.md` (~1,400 lines)
+7. `/docs/sprints/SIM_TEMPLATE.md` (~400 lines)
+8. `.github/pull_request_template.md` (~150 lines)
+9. `.github/workflows/doc-sync-check.yml` (~100 lines)
+10. `scripts/validate_requirement_ids.py` (~80 lines)
+11. `/docs/archive/2026-01/README.md` (enhanced)
+
+### Files Enhanced (2)
+1. `/docs/SYSTEM_REQUIREMENTS.md` v2.0 → v2.1 (+149 lines)
+2. `ROADMAP.md` v2.x → v3.0 (strategic restructure)
+
+### Files Archived (7)
+- Sprint completion documents moved to appropriate archive folders
+- Implementation details archived with rationale
+
+### Next Sprint Preview
+**Sprint 2.15**: Component Library Implementation
+- Pilot AI agent governance system
+- Implement core UI components (LedgerCard, AgentTerminal)
+- Set up Storybook for component documentation
+- Create E2E test skeletons for 5 user journeys
+- Validate Doc-Sync Check automation
+
+---
+
+**End of Sprint 2.14**
+
+**Branch:** `feature/documentation-uplift`  
+**Commits:** 8 total  
+**Status:** Ready for merge to main  
+**Archive Location:** `docs/archive/history/sprints/sprint-2.14/` (after merge)  
 **Completion Date:** January 20, 2026  
 **Branch:** sprint-2.13-track-a  
 **Pull Request:** TBD

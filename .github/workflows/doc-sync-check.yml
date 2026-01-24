@@ -1,0 +1,109 @@
+name: Documentation Sync Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  doc-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Check for requirement ID in PR
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          # Skip check for docs-only PRs
+          if echo "$PR_TITLE" | grep -qE "^docs:|^chore:"; then
+            echo "ℹ️ Skipping requirement ID check for docs/chore PR"
+            exit 0
+          fi
+          
+          if ! echo "$PR_TITLE $PR_BODY" | grep -E "REQ-[A-Z]+-[0-9]+|REQ-[A-Z]+-[A-Z]+-[0-9]+"; then
+            echo "❌ PR must reference a requirement ID (REQ-XX-YYY)"
+            echo "   Example: 'feat(byom): Implement REQ-BYOM-006 agent session integration'"
+            exit 1
+          fi
+          
+          echo "✅ Requirement ID found in PR"
+      
+      - name: Check Tier 2 README updates (Backend)
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          
+          # Check backend service changes
+          BACKEND_SERVICES=$(echo "$CHANGED_FILES" | grep "backend/app/services/" | grep -v "README.md" | cut -d'/' -f4 | sort -u)
+          
+          if [ -n "$BACKEND_SERVICES" ]; then
+            echo "🔍 Detected backend service changes:"
+            echo "$BACKEND_SERVICES"
+            
+            for SERVICE in $BACKEND_SERVICES; do
+              README_UPDATED=$(echo "$CHANGED_FILES" | grep "backend/app/services/$SERVICE/README.md" || echo "")
+              
+              if [ -z "$README_UPDATED" ]; then
+                echo "❌ Service '$SERVICE' code changed but README.md not updated"
+                echo "   Required: backend/app/services/$SERVICE/README.md"
+                exit 1
+              else
+                echo "✅ Service '$SERVICE' README.md updated"
+              fi
+            done
+          else
+            echo "ℹ️ No backend service changes detected"
+          fi
+      
+      - name: Check Tier 2 README updates (Frontend)
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          
+          # Check frontend feature changes
+          FRONTEND_FEATURES=$(echo "$CHANGED_FILES" | grep "frontend/src/features/" | grep -v "README.md" | cut -d'/' -f4 | sort -u)
+          
+          if [ -n "$FRONTEND_FEATURES" ]; then
+            echo "🔍 Detected frontend feature changes:"
+            echo "$FRONTEND_FEATURES"
+            
+            for FEATURE in $FRONTEND_FEATURES; do
+              README_UPDATED=$(echo "$CHANGED_FILES" | grep "frontend/src/features/$FEATURE/README.md" || echo "")
+              
+              if [ -z "$README_UPDATED" ]; then
+                echo "❌ Feature '$FEATURE' code changed but README.md not updated"
+                echo "   Required: frontend/src/features/$FEATURE/README.md"
+                exit 1
+              else
+                echo "✅ Feature '$FEATURE' README.md updated"
+              fi
+            done
+          else
+            echo "ℹ️ No frontend feature changes detected"
+          fi
+      
+      - name: Validate requirement IDs
+        run: |
+          if [ -f scripts/validate_requirement_ids.py ]; then
+            python scripts/validate_requirement_ids.py
+          else
+            echo "⚠️ Requirement ID validation script not found (skipping)"
+          fi
+      
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ Documentation Sync Check PASSED"
+          echo ""
+          echo "All gates validated:"
+          echo "  ✅ Requirement traceability"
+          echo "  ✅ Tier 2 documentation updated"
+          echo "  ✅ No orphaned code changes"

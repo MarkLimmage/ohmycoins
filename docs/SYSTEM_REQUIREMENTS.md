@@ -1,7 +1,7 @@
 # System Requirements Specification
 
-**Version**: 2.0
-**Last Updated**: 2026-01-09
+**Version**: 2.1
+**Last Updated**: 2026-01-24
 **Status**: Consolidated
 
 ## 1. Executive Summary
@@ -208,3 +208,150 @@ Requirements are specified using the Easy Approach to Requirements Syntax (EARS)
 
 * **DM-FL-001**: The system shall implement a `deployed_algorithms` table to track active models, their versions, and their current "Heartbeat" status.
 * **DM-FL-002**: The system shall implement a `trade_ledger` table to store all execution history, linking `order_id` from CoinSpot to the internal `algorithm_id`.
+
+### 8.4 Disconnected State Requirements - The Floor
+
+| ID | EARS Pattern | Requirement Statement | Priority |
+| --- | --- | --- | --- |
+| **WebSocket Lifecycle** |  |  |  |
+| REQ-FL-DISC-001 | Event-driven | When the WebSocket connection to The Floor is lost for > 10 seconds, the System shall display a "DISCONNECTED" banner and switch to REST API polling every 2 seconds. | Critical |
+| REQ-FL-DISC-002 | State-driven | While in disconnected mode for 60-300 seconds, the System shall increase polling interval to 5 seconds and display a "DEGRADED MODE" warning. | High |
+| REQ-FL-DISC-003 | Event-driven | When disconnected for > 300 seconds (5 minutes), the System shall display a critical alert recommending Emergency Stop and manual intervention. | Critical |
+| REQ-FL-DISC-004 | Event-driven | When the WebSocket reconnects successfully, the System shall fetch a full state sync (GET /api/v1/trading/floor/sync) to catch up on missed updates. | High |
+| **Fallback Mechanisms** |  |  |  |
+| REQ-FL-DISC-005 | Ubiquitous | The Kill Switch shall support 3-level fallback: WebSocket → REST API → Manual Intervention (contact support). | Critical |
+| REQ-FL-DISC-006 | State-driven | While in disconnected mode, the System shall display data staleness indicators ("Last updated: X seconds ago") on all real-time metrics. | Medium |
+| REQ-FL-DISC-007 | Event-driven | When reconnection attempts fail consecutively for 30 seconds, the System shall use exponential backoff (1s, 2s, 4s, 8s, 16s, max 30s). | Medium |
+
+---
+
+## 9. UI/UX Non-Functional Requirements
+
+### 9.1 Performance & Responsiveness
+
+| ID | Requirement Statement | Priority |
+| --- | --- | --- |
+| **Response Times** |  |  |
+| NFR-UX-P-001 | UI updates (chart re-renders, P&L ticker changes) shall complete in **< 500ms** from data received. | High |
+| NFR-UX-P-002 | Initial page load for The Lab or The Floor shall complete in **< 2 seconds** (excluding data fetching). | Medium |
+| NFR-UX-P-003 | Chart rendering (4 Ledgers dashboard) shall complete in **< 100ms** for initial render. | High |
+| NFR-UX-P-004 | WebSocket message processing (Catalyst events, P&L updates) shall update UI within **< 50ms** of message receipt. | Critical |
+| **Data Refresh Rates** |  |  |
+| NFR-UX-P-005 | Glass Ledger cards (TVL, fees) shall refresh via polling every **5 seconds**. | Medium |
+| NFR-UX-P-006 | Exchange Ledger sparklines (prices) shall update every **10 seconds**. | High |
+| NFR-UX-P-007 | The Floor P&L ticker shall update in real-time via WebSocket (every trade execution). | Critical |
+| NFR-UX-P-008 | Catalyst Ledger events shall appear within **30 seconds** of detection (end-to-end latency from source to UI). | Critical |
+
+### 9.2 Accessibility (WCAG 2.1 AA Compliance)
+
+| ID | Requirement Statement | Priority |
+| --- | --- | --- |
+| **Chart Accessibility** |  |  |
+| REQ-UX-001 | All charts (Glass TVL, Human heatmap, Exchange sparklines) shall provide a "View as Table" toggle for screen reader users. | High |
+| REQ-UX-002 | Chart table views shall support keyboard navigation (arrow keys), sorting (click headers), and CSV export. | High |
+| REQ-UX-003 | All charts shall have descriptive ARIA labels (e.g., "Glass Ledger TVL chart showing upward trend over 30 days, current value $42.5 billion"). | Medium |
+| **Keyboard Navigation** |  |  |
+| REQ-UX-004 | The System shall support global keyboard shortcuts: Ctrl+Shift+K (focus Kill Switch), Ctrl+Shift+T (toggle all table views). | High |
+| REQ-UX-005 | All interactive elements (buttons, links, form inputs) shall be keyboard-accessible (Tab/Shift+Tab navigation, Enter/Space activation). | Critical |
+| REQ-UX-006 | Focus indicators shall be visible (2px outline) and meet 3:1 contrast ratio per WCAG 2.1 AA. | Medium |
+| **Live Regions & Alerts** |  |  |
+| REQ-UX-007 | Critical alerts (Catalyst events, disconnection warnings, Emergency Stop confirmations) shall use ARIA live regions with `aria-live="assertive"`. | Critical |
+| REQ-UX-008 | P&L updates and non-critical notifications shall use `aria-live="polite"` to avoid interrupting screen readers. | Medium |
+| REQ-UX-009 | The Kill Switch shall have a detailed `aria-describedby` description: "Press to stop all active trading algorithms and close all open positions. This action requires confirmation." | Critical |
+
+### 9.3 Visual Design & Consistency
+
+| ID | Requirement Statement | Priority |
+| --- | --- | --- |
+| **Design Tokens** |  |  |
+| NFR-UX-V-001 | The System shall use a consistent color palette: Glass (blue #3b82f6), Human (green #10b981), Catalyst (amber #f59e0b), Exchange (purple #a855f7). | Medium |
+| NFR-UX-V-002 | The System shall use a 8px spacing scale (xs=4px, sm=8px, md=16px, lg=24px, xl=32px, xxl=48px) for all layout margins and padding. | Low |
+| NFR-UX-V-003 | Interactive elements (buttons, cards) shall have consistent hover states: brightness(1.1) or opacity(0.9) with 150ms transition. | Low |
+| **Responsive Design** |  |  |
+| NFR-UX-V-004 | The System shall support 3 breakpoints: Mobile (< 768px), Tablet (768-1279px), Desktop (≥ 1280px). | High |
+| NFR-UX-V-005 | The Floor (trading controls) shall be desktop-only in Phase 1 MVP (mobile shows read-only activity log). | High |
+| NFR-UX-V-006 | The 4 Ledgers dashboard shall adapt layout: 2x2 grid (desktop/tablet), vertical stack (mobile with priority order: Catalyst, Exchange, Human, Glass). | Medium |
+
+### 9.4 Error Handling & User Feedback
+
+| ID | Requirement Statement | Priority |
+| --- | --- | --- |
+| **Error Messages** |  |  |
+| NFR-UX-E-001 | HTTP error responses shall map to user-friendly messages (e.g., 429 → "Too many requests. Please wait [X] seconds." with countdown timer). | High |
+| NFR-UX-E-002 | The System shall display inline validation errors for form inputs (e.g., "API key format invalid. Expected: sk-..."). | Medium |
+| NFR-UX-E-003 | Fatal errors (Exchange API down, database connection lost) shall show a full-screen error modal with support contact information. | Critical |
+| **Loading States** |  |  |
+| NFR-UX-E-004 | Data fetching operations shall show skeleton screens for chart areas (gray rectangles approximating final layout). | Medium |
+| NFR-UX-E-005 | Button actions (Pause Algorithm, Stop, Emergency Stop) shall show inline spinners ("Pausing...", "Stopping...") and disable button during execution. | High |
+| NFR-UX-E-006 | Long-running operations (> 5 seconds) shall show progress bars with percentage and estimated time remaining. | Medium |
+
+---
+
+## 10. Cross-Module Integration Requirements
+
+### 10.1 Lab-to-Floor Promotion Workflow
+
+| ID | EARS Pattern | Requirement Statement | Priority |
+| --- | --- | --- | --- |
+| **Model Handoff** |  |  |  |
+| IR-LAB-FLOOR-001 | Event-driven | When the User approves a Lab model for promotion, the System shall serialize the trained model (pickle/joblib) and hyperparameters to persistent storage (S3 or PostgreSQL BYTEA). | High |
+| IR-LAB-FLOOR-002 | Event-driven | When the System deploys a promoted model to The Floor, it shall deserialize the model and instantiate an Execution Worker with identical parameters (no code rewrites). | Critical |
+| IR-LAB-FLOOR-003 | Ubiquitous | The System shall maintain a `model_version_registry` table linking Lab session IDs to deployed Floor algorithms for traceability. | High |
+| **Risk Validation** |  |  |  |
+| IR-LAB-FLOOR-004 | Event-driven | When a model is promoted, the System shall validate that User-defined risk limits (Max Position Size, Stop Loss %, Daily Loss Limit) are configured. | Critical |
+| IR-LAB-FLOOR-005 | If | If risk limits are not configured, the System shall block promotion and prompt the User to set limits via the UI. | High |
+
+### 10.2 Ledger-to-Lab Data Pipeline
+
+| ID | EARS Pattern | Requirement Statement | Priority |
+| --- | --- | --- | --- |
+| **Data Availability** |  |  |  |
+| IR-LEDGER-LAB-001 | Ubiquitous | The Lab Data Retrieval Agent shall have read-only access to all 4 Ledgers tables (via SQLAlchemy ORM with user-scoped queries). | High |
+| IR-LEDGER-LAB-002 | Event-driven | When the User requests historical data (e.g., "Get BTC prices for last 30 days"), the Agent shall query `price_data_5min` and aggregate to requested granularity (hourly, daily). | High |
+| IR-LEDGER-LAB-003 | Ubiquitous | The Lab shall support real-time data access: Agents can subscribe to Ledger WebSocket streams for live analysis (e.g., "Monitor BTC price in real-time for next 5 minutes"). | Medium |
+| **Feature Engineering** |  |  |  |
+| IR-LEDGER-LAB-004 | Ubiquitous | The Data Analyst Agent shall compute technical indicators (SMA, EMA, RSI, MACD) from Exchange Ledger price data using TA-Lib or pandas-ta. | High |
+| IR-LEDGER-LAB-005 | Ubiquitous | The Data Analyst Agent shall merge sentiment scores (Human Ledger) with price data (Exchange Ledger) for multi-modal feature sets. | Medium |
+
+### 10.3 BYOM Integration with Agent Orchestration
+
+| ID | EARS Pattern | Requirement Statement | Priority |
+| --- | --- | --- | --- |
+| **LLM Provider Routing** |  |  |  |
+| IR-BYOM-AGENT-001 | Event-driven | When an agent session starts, the LLMFactory shall retrieve the User's default LLM credentials from the `user_llm_credentials` table and instantiate the provider-specific client (ChatOpenAI, ChatGoogleGenerativeAI, ChatAnthropic). | High |
+| IR-BYOM-AGENT-002 | Event-driven | When an agent encounters a rate limit (HTTP 429), the System shall automatically fall back to the system default LLM and notify the User. | Medium |
+| IR-BYOM-AGENT-003 | Ubiquitous | All agent LLM calls (planning, analysis, training prompts) shall include the User's configured temperature, max_tokens, and model name in the request. | High |
+| **Cost Tracking** |  |  |  |
+| IR-BYOM-AGENT-004 | Event-driven | When an agent completes an LLM call, the System shall calculate cost (tokens × provider rate) and accumulate in the `agent_session.total_cost` field. | High |
+| IR-BYOM-AGENT-005 | Event-driven | When a session's total cost exceeds the User-defined "Cost Alert Threshold" (default $10), the System shall send an in-app notification and email alert. | Medium |
+
+### 10.4 WebSocket Architecture for Real-Time Features
+
+| ID | EARS Pattern | Requirement Statement | Priority |
+| --- | --- | --- | --- |
+| **Connection Management** |  |  |  |
+| IR-WS-001 | Ubiquitous | The System shall implement WebSocket endpoints at `/ws/ledgers/catalyst/live`, `/ws/floor/pnl`, and `/ws/lab/agent-stream` using FastAPI WebSockets. | High |
+| IR-WS-002 | Event-driven | When a WebSocket client connects, the System shall authenticate the JWT token passed via query parameter (`?token={jwt}`) and reject unauthorized connections. | Critical |
+| IR-WS-003 | State-driven | While a WebSocket connection is active, the System shall send heartbeat pings every 30 seconds and expect pong responses within 5 seconds. | High |
+| **Message Format** |  |  |  |
+| IR-WS-004 | Ubiquitous | All WebSocket messages shall follow a standard JSON schema: `{"type": "event_type", "data": {...}, "timestamp": "ISO 8601"}`. | High |
+| IR-WS-005 | Event-driven | When the backend publishes a Catalyst event, all connected clients subscribed to `/ws/ledgers/catalyst/live` shall receive the message within 100ms. | Critical |
+
+---
+
+## Document Governance
+
+**Version History**:
+- v2.0 (2026-01-24): Added Section 9 (UI/UX Non-Functional Requirements), Section 10 (Cross-Module Integration), and Section 8.4 (Disconnected State - REQ-FL-DISC-001)
+- v1.9 (2026-01-09): Added Section 8 (Trading Execution - The Floor) with functional, non-functional, and data model requirements
+- v1.0 (2025-12-15): Initial consolidated document with 4 Ledgers + Lab requirements
+
+**Review Schedule**: Quarterly (next review: 2026-04-24)  
+**Ownership**: Product Manager (system-level), Tech Lead (technical details)  
+**Related Documents**:
+- [DOCUMENTATION_STRATEGY.md](DOCUMENTATION_STRATEGY.md) - Documentation governance and maintenance policy
+- [USER_JOURNEYS.md](USER_JOURNEYS.md) - Persona-driven user interaction flows
+- [API_CONTRACTS.md](API_CONTRACTS.md) - API interaction patterns and UI behavior contracts
+- [docs/ui/DESIGN_SYSTEM.md](ui/DESIGN_SYSTEM.md) - Component library specifications
+- [docs/ui/DATA_VISUALIZATION_SPEC.md](ui/DATA_VISUALIZATION_SPEC.md) - Chart specifications for 4 Ledgers
+- [docs/ui/TRADING_UI_SPEC.md](ui/TRADING_UI_SPEC.md) - Floor controls and disconnected state handling
