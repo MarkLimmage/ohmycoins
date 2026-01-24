@@ -1,78 +1,70 @@
-# Current Sprint - Sprint 2.16 (4 Ledgers Dashboard Implementation)
+# Current Sprint - Sprint 2.17 (The Floor - Trading Execution & Risk Management)
 
-**Status:** ✅ COMPLETE
-**Date Started:** February 1, 2026
-**Date Completed:** February 5, 2026
-**Duration:** 5 days
-**Previous Sprint:** Sprint 2.15 - Complete ✅
-**Focus:** 4 Ledgers Data Visualization & Real-time Integration
+**Status:** 🟡 PLANNING / 🟢 READY TO START
+**Date Started:** February 8, 2026 (Planned)
+**Date Expected:** February 21, 2026
+**Duration:** 2 Weeks
+**Previous Sprint:** Sprint 2.16 - Complete ✅
+**Focus:** Trading Engine Core, Real-time Risk UI, and Parallel Development Implementation
 
 ---
 
-## 🎯 Sprint 2.16 Objectives
+## 🎯 Sprint 2.17 Objectives
 
 ### Primary Goal
-Implement rich data visualization components for the 4 Ledgers dashboard (Glass, Human, Catalyst, Exchange) using the core library from Sprint 2.15 and real-time WebSocket data.
+Implement the core Trading Engine with risk management (Stop-loss, Position Sizing) and the "Floor" UI for live execution control, utilizing parallel development worktrees managed by the Dockmaster.
 
 ### Success Criteria
-- [x] **Track A**: Visualization Components (Glass, Human, Exchange) - ✅ **COMPLETE**
-- [x] **Track B**: Real-Time Data Integration (WebSockets) - ✅ **COMPLETE**
-- [x] Validation against DATA_VISUALIZATION_SPEC.md - ✅ **PASSED**
+- [ ] **Track A**: Trading Engine Core implemented (Order execution, Position tracking)
+- [ ] **Track B**: The Floor UI implemented (Real-time P&L, Kill Switch)
+- [ ] **Track C**: Lab-to-Floor algorithm promotion workflow established
+- [ ] **Track D**: Parallel worktrees successfully provisioned and managed
 
-### Sprint Metrics (Final)
-| Category | Delivered | Target | Status |
-|----------|-----------|--------|--------|
-| Visualization Components | 3 | 3 | ✅ Complete |
-| WebSocket Endpoints | 1 | 1 | ✅ Complete |
-| Test Coverage | >85% | >80% | ✅ Passed |
-| Performance (FPS) | 60 | 60 | ✅ Passed |
-| Accessibility Violations | 0 | 0 | ✅ Zero Violations |
+### Sprint Metrics (Target)
+| Category | Target |
+|----------|--------|
+| Trading Engine Unit Tests | 100% Pass |
+| Floor UI Storybook Stories | 5 Stories |
+| Worktree Conflicts | 0 |
+| Accessibility Violations | 0 |
 
 **Track Status:**
-- ✅ **Track A** (Visualization): COMPLETE - Approved
-- ✅ **Track B** (Real-Time): COMPLETE - Approved
+- 🟡 **Track D** (Dockmaster): PENDING PROVISIONING
+- 🟡 **Track A** (Backend): READY TO START
+- 🟡 **Track B** (Frontend): READY TO START
+- 🟡 **Track C** (Integration): READY TO START
 
 ---
 
-## 📦 Sprint 2.16 Deliverables
+## 📦 Sprint 2.17 Deliverables
 
-### Track A: Visualization Components ✅ COMPLETE
+### Track D: Dockmaster Orchestration
+- Worktrees: , , 
+- VS Code Profiles: Backend-Heavy, Frontend-Standard, Architect-Core
 
-**Agent**: The UI/UX Agent
-**Status**: ✅ APPROVED
-**Branch**: feat/visualization-components
+### Track A: Trading Engine Core
+-  service implementation
+- Order and Position Pydantic models
+- Risk Management logic
 
-#### Deliverables
-- ✅ `GlassTVLChart.tsx` - Recharts implementation for Glass Ledger
-- ✅ `HumanSentimentHeatmap.tsx` - Visx implementation for Human Ledger
-- ✅ `ExchangeSparkline.tsx` - Lightweight-charts for Exchange Ledger
-- ✅ Storybook stories for all charts
+### Track B: The Floor UI
+-  component library
+- Integration with SafetyButton and WebSocketManager
 
-### Track B: Real-Time Data Integration ✅ COMPLETE
-
-**Agent**: The Feature Developer
-**Status**: ✅ APPROVED
-**Branch**: feat/real-time-data
-
-#### Deliverables
-- ✅ WebSocket Manager (`backend/app/services/websocket_manager.py`)
-- ✅ WebSocket Endpoints (`backend/app/api/routes/websockets.py`)
-- ✅ Integration tests for connection handling
+### Track C: Lab-to-Floor Promotion
+- Strategy Promotion JSON Schema
+- Approval Workflow API
 
 ---
 
 ## 🎯 Next Actions
 
 ### Immediate
-1. **Sprint Retrospective**: Document lessons learned from Phase 3.
-2. **Phase 4 Planning**: Prepare for "The Floor" (Trading Execution).
-
-### Sprint Continuation (Sprint 2.17)
-- **Focus**: The Floor - Trading Execution & Risk Management
-- **Key Objectives**: Trading Logic, Risk Controls, Floor UI
+1. **Dockmaster**: Execute provisioning script found in SPRINT_2.17_SIM.md
+2. **Agents**: Receive Workspace Anchor details and begin development
 
 ---
 
 **Last Updated:** February 5, 2026
-**Next Review:** Sprint 2.17 Kickoff
-**Sprint End Date:** February 7, 2026 (Finished early)
+**Next Review:** Sprint 2.17 Mid-Sprint Review
+**Sprint End Date:** February 21, 2026

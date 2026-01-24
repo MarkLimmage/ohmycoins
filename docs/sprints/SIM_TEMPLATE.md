@@ -20,6 +20,31 @@
 
 ## Agent Assignments
 
+### Track D: The Dockmaster (Orchestration)
+
+**Agent**: The Infrastructure/DevOps Agent
+**Responsibilities**:
+- [ ] Provisioning: Execute `git worktree` setup for Tracks A, B, and C.
+- [ ] Initialization: Launch VS Code instances with unique `--user-data-dir`.
+- [ ] Synchronization: Periodically rebase Track branches with `main` to prevent drift.
+- [ ] Teardown: Clean up worktrees and archive logs upon Track completion.
+
+## Workspace Orchestration (Dockmaster Only)
+
+The Dockmaster Agent must execute the following `git worktree` and environment setups before activating Track A, B, and C.
+
+| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port |
+| :--- | :--- | :--- | :--- | :--- |
+| **Track A** | `feat/REQ-XX-001` | `./worktrees/track-a` | `./.vscode/agent-a-data` | `8001` |
+| **Track B** | `feat/REQ-UX-XXX` | `./worktrees/track-b` | `./.vscode/agent-b-data` | `3001` |
+| **Track C** | `feat/IR-XX-YYY`  | `./worktrees/track-c` | `./.vscode/agent-c-data` | `8002` |
+
+**Provisioning Script Commands:**
+- [ ] `git worktree add ./worktrees/track-a feat/REQ-XX-001`
+- [ ] `code --user-data-dir ./.vscode/agent-a-data ./worktrees/track-a`
+- [ ] `git worktree add ./worktrees/track-b feat/REQ-UX-XXX`
+- [ ] `code --user-data-dir ./.vscode/agent-b-data ./worktrees/track-b`
+
 ### Track A: [Feature Name]
 
 **Agent**: The [Architect | Feature Developer | UI/UX Agent | Quality Agent]  
@@ -32,6 +57,11 @@
 CONTEXT: Sprint X.XX - Track A: [Feature Name]
 PROJECT: Oh My Coins - Autonomous Trading Platform
 ROLE: The [Agent Persona Name]
+
+WORKSPACE ANCHOR:
+  ROOT_PATH: ./worktrees/track-a
+  INSTANCE_PORT: 8001
+  STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path. All relative paths in documentation refer to this worktree root.
 
 TIERED ACCESS:
   READ ONLY:
@@ -131,6 +161,11 @@ COMMIT PATTERN:
 CONTEXT: Sprint X.XX - Track B: [UI Feature Name]
 PROJECT: Oh My Coins - Trading Platform Frontend
 ROLE: The UI/UX Agent (Frontend Specialist)
+
+WORKSPACE ANCHOR:
+  ROOT_PATH: ./worktrees/track-b
+  INSTANCE_PORT: 3001
+  STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path. All relative paths in documentation refer to this worktree root.
 
 TIERED ACCESS:
   READ ONLY:
@@ -286,6 +321,7 @@ All tracks MUST pass these gates before PR approval:
 - [ ] PR title or description references REQ-XX-YYY
 - [ ] Requirement exists in SYSTEM_REQUIREMENTS.md
 - [ ] Requirement linked to USER_JOURNEYS.md (if workflow-related)
+- [ ] Worktree Integrity: verified `git branch --show-current` matches assigned track branch within worktree folder
 
 ### Gate 2: Tier 2 Documentation ✅
 - [ ] Service/Feature README.md updated (if code changed in that folder)
@@ -329,6 +365,11 @@ At sprint end, The Architect validates:
 - [ ] Sprint completion docs moved to `/docs/archive/history/sprints/sprint-X.XX/`
 - [ ] Obsolete implementation details moved to `/docs/archive/YYYY-MM/`
 - [ ] Archive README.md updated with rationale
+
+### Environment Cleanup (Dockmaster) ✅
+- [ ] All worktrees merged into main
+- [ ] `git worktree remove` executed for all sprint tracks
+- [ ] user-data-dir caches cleared/archived
 
 ---
 
