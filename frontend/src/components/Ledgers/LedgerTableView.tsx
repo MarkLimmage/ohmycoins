@@ -341,14 +341,14 @@ function CatalystTable({ data }: { data: any }) {
           </tr>
         </thead>
         <tbody>
-          {data.events.slice(0, 10).map((event: any, index: number) => (
+          {data.events.slice(0, 10).map((event: any, index: number, array: any[]) => (
             <tr key={event.id}>
               <td
                 style={{
                   padding: "12px",
                   fontSize: "14px",
                   fontWeight: 500,
-                  borderBottom: index === data.events.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 {event.title}
@@ -358,7 +358,7 @@ function CatalystTable({ data }: { data: any }) {
                   padding: "12px",
                   fontSize: "14px",
                   textTransform: "capitalize",
-                  borderBottom: index === data.events.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 {event.type}
@@ -377,7 +377,7 @@ function CatalystTable({ data }: { data: any }) {
                       : event.priority === "medium"
                       ? "#3b82f6"
                       : "#6b7280",
-                  borderBottom: index === data.events.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 {event.priority}
@@ -388,7 +388,7 @@ function CatalystTable({ data }: { data: any }) {
                   textAlign: "right",
                   fontSize: "13px",
                   color: "#6b7280",
-                  borderBottom: index === data.events.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 {formatDate(event.timestamp)}
@@ -471,14 +471,14 @@ function ExchangeTable({ data }: { data: any }) {
               Portfolio Value: ${(data.portfolioValue / 1e3).toFixed(2)}K
             </td>
           </tr>
-          {data.sparklines.slice(0, 10).map((asset: any, index: number) => (
+          {data.sparklines.slice(0, 10).map((asset: any, index: number, array: any[]) => (
             <tr key={asset.symbol}>
               <td
                 style={{
                   padding: "12px",
                   fontSize: "14px",
                   fontWeight: 500,
-                  borderBottom: index === data.sparklines.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 {asset.symbol}
@@ -489,7 +489,7 @@ function ExchangeTable({ data }: { data: any }) {
                   textAlign: "right",
                   fontSize: "14px",
                   fontWeight: 500,
-                  borderBottom: index === data.sparklines.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 ${asset.currentPrice.toFixed(2)}
@@ -501,7 +501,7 @@ function ExchangeTable({ data }: { data: any }) {
                   fontSize: "14px",
                   fontWeight: 500,
                   color: asset.change24h >= 0 ? "#22c55e" : "#ef4444",
-                  borderBottom: index === data.sparklines.length - 1 ? "none" : "1px solid #f3f4f6",
+                  borderBottom: index === array.length - 1 ? "none" : "1px solid #f3f4f6",
                 }}
               >
                 {asset.change24h >= 0 ? "+" : ""}

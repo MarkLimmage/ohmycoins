@@ -15,14 +15,6 @@ export const system = createSystem(defaultConfig, {
       color: "ui.main",
       fontWeight: "bold",
     },
-    "@keyframes pulse": {
-      "0%, 100%": {
-        opacity: 1,
-      },
-      "50%": {
-        opacity: 0.5,
-      },
-    },
   },
   theme: {
     tokens: {

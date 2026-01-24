@@ -1,6 +1,7 @@
 import { Box, Card, Skeleton, Button, Text, Flex } from "@chakra-ui/react";
 import { type ComponentState, type LedgerCardProps, LEDGER_CONFIG } from "./types";
 import { formatDistanceToNow } from "date-fns";
+import "./ledger-styles.css";
 
 /**
  * Base LedgerCard component
