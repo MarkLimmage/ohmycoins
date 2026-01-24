@@ -14,3 +14,8 @@ api_router.include_router(pnl.router, prefix="/floor/pnl", tags=["pnl"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)
+    
+    # Mock endpoints for UI component development (Storybook)
+    from app.api.routes import mock_ui
+    api_router.include_router(mock_ui.router, prefix="/mock", tags=["mock"])
+
