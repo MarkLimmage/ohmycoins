@@ -16,6 +16,18 @@ The original BYOM user stories (595 lines) have been integrated into the compreh
 - UI component mappings
 - Backend requirement references (REQ-BYOM-001 through REQ-BYOM-004)
 
+### implementation-details/COINSPOT_WEB_SCRAPING_IMPLEMENTATION.md
+- **Archived Date**: 2026-01-24
+- **Reason**: Implementation-specific details belong in service README (`backend/app/services/collectors/`)
+- **Original Location**: `/docs/COINSPOT_WEB_SCRAPING_IMPLEMENTATION.md`
+- **Note**: Per Documentation Strategy Tier 2, feature-specific technical specs should be co-located with code
+
+### implementation-details/RATE_LIMITING.md
+- **Archived Date**: 2026-01-24
+- **Reason**: Rate limiting strategy should be documented in ARCHITECTURE.md or API service README
+- **Original Location**: `/docs/RATE_LIMITING.md`
+- **Note**: Too granular for top-level docs, should be in service documentation
+
 ## Archive Policy
 
 **When to Archive**:

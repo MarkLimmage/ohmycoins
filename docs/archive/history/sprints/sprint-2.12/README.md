@@ -40,6 +40,7 @@
 - ✅ Newscatcher API validation (7 integration tests)
 - ✅ Nansen API validation (7 integration tests)
 - ✅ PnL test stabilization (34/34 tests passing)
+- ✅ Security improvements and hardening (SECURITY_IMPROVEMENTS_SPRINT_2.12.md)
 
 **Key Achievements:**
 - PostgreSQL index fix: Changed `DATE(collected_at)` → `(collected_at::date)`
