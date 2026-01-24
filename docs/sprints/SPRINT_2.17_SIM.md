@@ -37,17 +37,18 @@ The Dockmaster Agent must execute the following `git worktree` and environment s
 
 | Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port |
 | :--- | :--- | :--- | :--- | :--- |
-| **Track A** | `feat/REQ-FL-001` | `./worktrees/track-a` | `./.vscode/agent-a-data` | `8001` |
-| **Track B** | `feat/REQ-FL-003` | `./worktrees/track-b` | `./.vscode/agent-b-data` | `3001` |
-| **Track C** | `feat/IR-FL-001`  | `./worktrees/track-c` | `./.vscode/agent-c-data` | `8002` |
+| **Track A** | `feat/REQ-FL-001` | `../sprint-2.17/track-a` | `../sprint-2.17/data/agent-a` | `8001` |
+| **Track B** | `feat/REQ-FL-003` | `../sprint-2.17/track-b` | `../sprint-2.17/data/agent-b` | `3001` |
+| **Track C** | `feat/IR-FL-001`  | `../sprint-2.17/track-c` | `../sprint-2.17/data/agent-c` | `8002` |
 
 **Provisioning Script Commands:**
-- [ ] `git worktree add ./worktrees/track-a feat/REQ-FL-001`
-- [ ] `code --user-data-dir ./.vscode/agent-a-data --new-window ./worktrees/track-a`
-- [ ] `git worktree add ./worktrees/track-b feat/REQ-FL-003`
-- [ ] `code --user-data-dir ./.vscode/agent-b-data --new-window ./worktrees/track-b`
-- [ ] `git worktree add ./worktrees/track-c feat/IR-FL-001`
-- [ ] `code --user-data-dir ./.vscode/agent-c-data --new-window ./worktrees/track-c`
+- [ ] `mkdir -p ../sprint-2.17/data`
+- [ ] `git worktree add ../sprint-2.17/track-a feat/REQ-FL-001`
+- [ ] `code --user-data-dir ../sprint-2.17/data/agent-a --new-window ../sprint-2.17/track-a`
+- [ ] `git worktree add ../sprint-2.17/track-b feat/REQ-FL-003`
+- [ ] `code --user-data-dir ../sprint-2.17/data/agent-b --new-window ../sprint-2.17/track-b`
+- [ ] `git worktree add ../sprint-2.17/track-c feat/IR-FL-001`
+- [ ] `code --user-data-dir ../sprint-2.17/data/agent-c --new-window ../sprint-2.17/track-c`
 
 ### Track A: Trading Engine Core (Frontend Agnostic)
 
@@ -63,7 +64,7 @@ PROJECT: Oh My Coins - Autonomous Trading Platform
 ROLE: The Feature Developer (Backend Specialist)
 
 WORKSPACE ANCHOR:
-  ROOT_PATH: ./worktrees/track-a
+  ROOT_PATH: ../sprint-2.17/track-a
   INSTANCE_PORT: 8001
   STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path. All relative paths in documentation refer to this worktree root.
 
@@ -117,7 +118,7 @@ PROJECT: Oh My Coins - Trading Platform Frontend
 ROLE: The UI/UX Agent (Frontend Specialist)
 
 WORKSPACE ANCHOR:
-  ROOT_PATH: ./worktrees/track-b
+  ROOT_PATH: ../sprint-2.17/track-b
   INSTANCE_PORT: 3001
   STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path. All relative paths in documentation refer to this worktree root.
 
@@ -172,7 +173,7 @@ PROJECT: Oh My Coins - System Integration
 ROLE: The Architect (Orchestrator)
 
 WORKSPACE ANCHOR:
-  ROOT_PATH: ./worktrees/track-c
+  ROOT_PATH: ../sprint-2.17/track-c
   INSTANCE_PORT: 8002
   STRICT_SCOPE: You are locked to this directory. Do not modify files outside this path.
 
