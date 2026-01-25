@@ -1,24 +1,24 @@
-# Current Sprint - Sprint 2.17 (The Floor - Trading Execution & Risk Management)
+# Current Sprint - Sprint 2.18 (Integration & Polish)
 
-**Status:** 🔵 COMPLETE
+**Status:** 🟢 IN PROGRESS
 **Date Started:** January 25, 2026
-**Date Completed:** January 25, 2026
-**Duration:** 1 Day (Accelerated)
-**Previous Sprint:** Sprint 2.16 - Complete ✅
-**Focus:** Trading Engine Core, Real-time Risk UI, and Parallel Development Implementation
+**Date Expected:** February 8, 2026
+**Duration:** 2 Weeks
+**Previous Sprint:** Sprint 2.17 - Complete ✅
+**Focus:** Integrated Trading Loop, WebSocket Feeds, and UI Polish
 
 ---
 
-## 🎯 Sprint 2.17 Objectives
+## 🎯 Sprint 2.18 Objectives
 
 ### Primary Goal
-Implement the core Trading Engine with risk management (Stop-loss, Position Sizing) and the "Floor" UI for live execution control, utilizing parallel development worktrees managed by the Dockmaster.
+Complete the end-to-end integration of "The Floor" (Trading UI) with the Trading Engine (Backend) and ensure a polished, production-ready user experience.
 
 ### Success Criteria
-- [x] **Track A**: Trading Engine Core implemented (Order execution, Position tracking)
-- [x] **Track B**: The Floor UI implemented (Real-time P&L, Kill Switch)
-- [x] **Track C**: Lab-to-Floor algorithm promotion workflow established
-- [ ] **Track D**: Parallel worktrees successfully provisioned and managed
+- [ ] **Track A**: WebSocket feeds for Order/Position updates, robust error handling
+- [ ] **Track B**: Frontend wiring of FloorLayout to real API, Optimistic UI patterns
+- [ ] End-to-End Trading Flow operational (UI -> API -> Execution -> WebSocket -> UI)
+- [x] **Track D**: Parallel worktrees successfully provisioned and managed
 
 ### Sprint Metrics (Target)
 | Category | Target |
@@ -29,10 +29,10 @@ Implement the core Trading Engine with risk management (Stop-loss, Position Sizi
 | Accessibility Violations | 0 |
 
 **Track Status:**
-- 🟡 **Track D** (Dockmaster): PENDING PROVISIONING
-- 🟡 **Track A** (Backend): READY TO START
-- 🟡 **Track B** (Frontend): READY TO START
-- � **Track C** (Integration): COMPLETED
+- 🟢 **Track D** (Dockmaster): COMPLETED (Provisioned)
+- 🔵 **Track A** (Backend): IN REVIEW (Feeds Implemented)
+- 🔵 **Track B** (Frontend): IN REVIEW (UI Wired)
+- ⚪ **Track C** (Integration): PENDING MERGE
 
 ---
 

@@ -223,6 +223,6 @@ All tracks MUST pass these gates before PR approval:
 At sprint end, The Architect validates:
 
 ### Environment Cleanup (Dockmaster) ✅
-- [ ] All worktrees merged into main
-- [ ] `git worktree remove` executed for all sprint tracks
-- [ ] user-data-dir caches cleared/archived
+- [x] All worktrees merged into main
+- [x] `git worktree remove` executed for all sprint tracks
+- [x] user-data-dir caches cleared/archived

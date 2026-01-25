@@ -77,27 +77,24 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 
 ---
 
-### 🔄 Phase 3: UI/UX Foundation & Living Documentation (Sprints 2.14-2.16)
+### 🔄 Phase 3: UI/UX Foundation & Living Documentation (Sprints 2.14-2.17)
 
-**Duration**: Weeks 19-24 (4-6 weeks)  
-**Status**: In Progress (Sprint 2.14)  
+**Duration**: Weeks 19-24  
+**Status**: Near Completion  
 **Objective**: Establish component library, implement 4 Ledgers dashboard, create Living Documentation System with AI agent governance.
 
-**Sprint 2.14: Documentation Uplift** (Current)
-- ✅ **4-Tier Documentation Architecture**: System Core → Feature Modules → UI/UX → Auto-Generated
-- ✅ **User Journey Mapping**: 5 comprehensive journeys (Discovery, BYOM Setup, Lab Analysis, Lab-to-Floor, Floor Risk Management)
-- ✅ **UI Specifications**: 3,350+ lines covering Design System, Data Visualization, Trading UI
-- ✅ **AI Agent Governance**: 4 personas (Architect, Feature Dev, UI/UX, Quality Agent) with Sprint Initialization Manifests
-- ✅ **Automation**: GitHub Actions for documentation sync validation, requirement ID traceability
-- 📋 **Phase 1 Complete**: Tier 1 documents established ([USER_JOURNEYS.md](docs/USER_JOURNEYS.md), [API_CONTRACTS.md](docs/API_CONTRACTS.md))
-- 📋 **Phase 2 Complete**: UI specifications created ([docs/ui/](docs/ui/))
-- 📋 **Phase 4 Complete**: Automation infrastructure ([DOCS_GOVERNANCE.md](docs/DOCS_GOVERNANCE.md), [SIM_TEMPLATE.md](docs/sprints/SIM_TEMPLATE.md))
+**Sprint 2.14-2.16**: Completed (Documentation & UI Foundation)
 
-**Sprint 2.15: Component Library Implementation** (Planned)
-- 📋 Implement core UI components (LedgerCard, AgentTerminal, SafetyButton)
-- 📋 Set up Storybook for component documentation
-- 📋 Implement accessibility features (WCAG 2.1 AA, table view toggles)
-- 📋 Create skeleton loading states and error boundaries
+**Sprint 2.17: The Floor & Risk Management** (Complete)
+- ✅ **Trading Engine Core**: Order execution, Position management, P&L calculation
+- ✅ **The Floor UI**: Real-time dashboard, Kill Switch, WebSocket integration
+- ✅ **Promotion Workflow**: Lab-to-Floor algorithm promotion API
+- ✅ **Parallel Development**: Successfully piloted worktree-based multi-agent development
+
+**Sprint 2.18: Integration & Polish** (Planned)
+- 📋 End-to-end integration of Trading UI and Engine
+- 📋 UI refinement and error handling patterns
+- 📋 Full system integration testing
 
 **Sprint 2.16: 4 Ledgers Dashboard** (Planned)
 - 📋 Implement Glass Ledger card (TVL/Fee line charts with recharts)
