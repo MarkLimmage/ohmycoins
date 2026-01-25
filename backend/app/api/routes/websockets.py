@@ -117,3 +117,20 @@ async def websocket_exchange_live(
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, channel_id)
+
+@router.websocket("/trading/live")
+async def websocket_trading_live(
+    websocket: WebSocket,
+    user: Annotated[User, Depends(get_websocket_user)],
+):
+    """
+    Real-time feed for Trading updates (Orders, Positions).
+    Channel ID is unique to the user: 'trading_{user_id}'
+    """
+    channel_id = f"trading_{user.id}"
+    await manager.connect(websocket, channel_id)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, channel_id)

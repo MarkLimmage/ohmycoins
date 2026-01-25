@@ -1,70 +1,34 @@
-# Current Sprint - Sprint 2.17 (The Floor - Trading Execution & Risk Management)
+# Current Sprint - Sprint 2.18 (System Integration)
 
-**Status:** 🔵 COMPLETE
+**Status:** 🟡 IN PROGRESS
 **Date Started:** January 25, 2026
-**Date Completed:** January 25, 2026
-**Duration:** 1 Day (Accelerated)
-**Previous Sprint:** Sprint 2.16 - Complete ✅
-**Focus:** Trading Engine Core, Real-time Risk UI, and Parallel Development Implementation
+**Focus:** Backend Integration, WebSocket Feeds, Robust Error Handling
 
 ---
 
-## 🎯 Sprint 2.17 Objectives
+## 🎯 Sprint 2.18 Objectives
 
 ### Primary Goal
-Implement the core Trading Engine with risk management (Stop-loss, Position Sizing) and the "Floor" UI for live execution control, utilizing parallel development worktrees managed by the Dockmaster.
+Implement WebSocket feeds for Order/Position updates and robust error handling for trading actions. Integration with the Frontend is the priority.
+
+### Specific Objectives (Track A)
+- [ ] Implement WebSocket endpoints for real-time Order and Position updates.
+- [ ] Ensure trading actions return appropriate error codes and messages as defined in API_CONTRACTS.md.
+- [ ] Conduct containerized integration tests for the full trading loop.
 
 ### Success Criteria
-- [x] **Track A**: Trading Engine Core implemented (Order execution, Position tracking)
-- [x] **Track B**: The Floor UI implemented (Real-time P&L, Kill Switch)
-- [x] **Track C**: Lab-to-Floor algorithm promotion workflow established
-- [ ] **Track D**: Parallel worktrees successfully provisioned and managed
-
-### Sprint Metrics (Target)
-| Category | Target |
-|----------|--------|
-| Trading Engine Unit Tests | 100% Pass |
-| Floor UI Storybook Stories | 5 Stories |
-| Worktree Conflicts | 0 |
-| Accessibility Violations | 0 |
-
-**Track Status:**
-- 🟡 **Track D** (Dockmaster): PENDING PROVISIONING
-- 🟡 **Track A** (Backend): READY TO START
-- 🟡 **Track B** (Frontend): READY TO START
-- � **Track C** (Integration): COMPLETED
+- [ ] WebSocket connection established and broadcasting updates.
+- [ ] Trading errors strictly follow API contracts.
+- [ ] Integration tests pass in Docker.
 
 ---
 
-## 📦 Sprint 2.17 Deliverables
+## 📦 Deliverables
 
-### Track D: Dockmaster Orchestration
-- Worktrees: , , 
-- VS Code Profiles: Backend-Heavy, Frontend-Standard, Architect-Core
-
-### Track A: Trading Engine Core
--  service implementation
-- Order and Position Pydantic models
-- Risk Management logic
-
-### Track B: The Floor UI
--  component library
-- Integration with SafetyButton and WebSocketManager
-
-### Track C: Lab-to-Floor Promotion
-- Strategy Promotion JSON Schema
-- Approval Workflow API
+- WebSocket Manager/Router
+- Updated Trading Service with Event Broadcasting
+- Integration Tests
 
 ---
 
-## 🎯 Next Actions
-
-### Immediate
-1. **Dockmaster**: Execute provisioning script found in SPRINT_2.17_SIM.md
-2. **Agents**: Receive Workspace Anchor details and begin development
-
----
-
-**Last Updated:** February 5, 2026
-**Next Review:** Sprint 2.17 Mid-Sprint Review
-**Sprint End Date:** February 21, 2026
+**Last Updated:** January 25, 2026
