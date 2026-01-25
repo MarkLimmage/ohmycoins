@@ -194,10 +194,14 @@ Requirements are specified using the Easy Approach to Requirements Syntax (EARS)
 | FR-FL-006 | Event-driven | When an account’s total daily drawdown exceeds the User-defined "Loss Limit," the System shall trigger the Emergency Stop. | Critical |
 | FR-FL-007 | Event-driven | When the Emergency Stop is triggered, the System shall cancel all open orders and liquidate all active positions to AUD/USDT. | Critical |
 | FR-FL-008 | Ubiquitous | The System shall provide a manual "Kill Switch" in the UI to allow the User to instantly terminate all Floor execution. | Critical |
+| **Execution Quality** | | | |
+| FR-FL-009 | Ubiquitous | The System shall calculate slippage for every executed parent order. | High |
+| FR-FL-010 | Event-driven | When slippage exceeds the defined tolerance (default 10 bps), the System shall flag the execution report for review. | Medium |
 
 ### 8.2 Non-Functional Requirements - The Floor
 
 * **NFR-FL-P-001**: Signal-to-Execution latency (the time from an algorithm generating a signal to the API call being sent) shall be **< 500ms**.
+* **NFR-FL-Q-001**: Execution Slippage shall not exceed **10 bps (0.10%)** for standard TWAP/VWAP orders in normal market conditions.
 * **NFR-FL-R-001**: The Execution Worker shall implement an exponential backoff retry logic for CoinSpot API `5xx` errors.
 * **NFR-FL-S-001**: Trading operations shall require a dedicated "Trading API Key" with restricted permissions (No Withdrawal access).
 * **NFR-FL-I-001**: The System shall maintain an immutable audit log of every signal generated, order sent, and response received.

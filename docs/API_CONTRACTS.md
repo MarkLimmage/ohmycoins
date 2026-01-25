@@ -689,6 +689,58 @@ Examples:
 
 ---
 
+### Feature: Execution Metrics & Governance
+
+#### Execution Report Retrieval
+
+**Endpoint**: `GET /api/v1/execution/reports/{id}`
+
+**Frontend Component**: `ExecutionReportViewer.tsx`
+
+**User Flow**:
+1. User clicks on a completed trade/session in History
+2. System fetches reports for that session
+3. UI visualizes slippage, implementation shortfall, and execution timeline
+
+**Success Response (200)**:
+```json
+{
+  "id": "rep-abc-123",
+  "trade_id": "trade-xyz-789",
+  "slippage_bps": 2.5,
+  "market_impact_bps": 1.2,
+  "arrival_mid_price": 45000.50,
+  "avg_fill_price": 45011.75,
+  "execution_timeline": [
+    { "timestamp": "...", "event": "order_placed", "price": 45000.50 }
+  ]
+}
+```
+
+**UI Behavior**:
+- Modal or Side-panel display
+- **Slippage Indicator**:
+  - Green if within tolerance (< 10 bps)
+  - Yellow if marginal (10-25 bps)
+  - Red if excessive (> 25 bps)
+- **Charts**:
+  - Price Execution vs Market Mid-Price
+
+**Error (404 - Report Not Found)**:
+```json
+{
+  "detail": "Execution report for trade trade-xyz-789 not generated yet"
+}
+```
+
+**UI Behavior**:
+- Message: "Analysis in progress..."
+- Auto-retry every 5 seconds for up to 1 minute
+
+**Requirements**: FR-FL-009, NFR-FL-Q-001
+
+---
+
 ## Testing Patterns
 
 ### Mock Data Strategy
