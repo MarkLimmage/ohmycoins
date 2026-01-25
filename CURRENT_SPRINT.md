@@ -1,8 +1,8 @@
 # Current Sprint - Sprint 2.17 (The Floor - Trading Execution & Risk Management)
 
-**Status:** 🟡 PLANNING / 🟢 READY TO START
-**Date Started:** February 8, 2026 (Planned)
-**Date Expected:** February 21, 2026
+**Status:** � IN PROGRESS
+**Date Started:** January 25, 2026
+**Date Expected:** February 8, 2026
 **Duration:** 2 Weeks
 **Previous Sprint:** Sprint 2.16 - Complete ✅
 **Focus:** Trading Engine Core, Real-time Risk UI, and Parallel Development Implementation

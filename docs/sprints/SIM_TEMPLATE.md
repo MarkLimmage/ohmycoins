@@ -33,19 +33,22 @@
 
 The Dockmaster Agent must execute the following `git worktree` and environment setups before activating Track A, B, and C.
 
-| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port |
-| :--- | :--- | :--- | :--- | :--- |
-| **Track A** | `feat/REQ-XX-001` | `../sprint-X.XX/track-a` | `../sprint-X.XX/data/agent-a` | `8001` |
-| **Track B** | `feat/REQ-UX-XXX` | `../sprint-X.XX/track-b` | `../sprint-X.XX/data/agent-b` | `3001` |
-| **Track C** | `feat/IR-XX-YYY`  | `../sprint-X.XX/track-c` | `../sprint-X.XX/data/agent-c` | `8002` |
+| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port | Color Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Track A** | `feat/REQ-XX-001` | `../sprint-X.XX/track-a` | `../sprint-X.XX/data/agent-a` | `8001` | `#3771c8` (Blue) |
+| **Track B** | `feat/REQ-UX-XXX` | `../sprint-X.XX/track-b` | `../sprint-X.XX/data/agent-b` | `3001` | `#2b9e3e` (Green) |
+| **Track C** | `feat/IR-XX-YYY`  | `../sprint-X.XX/track-c` | `../sprint-X.XX/data/agent-c` | `8002` | `#d15715` (Orange) |
 
 **Provisioning Script Commands:**
 - [ ] `mkdir -p ../sprint-X.XX/data`
 - [ ] `git worktree add ../sprint-X.XX/track-a feat/REQ-XX-001`
+- [ ] `mkdir -p ../sprint-X.XX/track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-a/.vscode/settings.json`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-a --new-window ../sprint-X.XX/track-a`
 - [ ] `git worktree add ../sprint-X.XX/track-b feat/REQ-UX-XXX`
+- [ ] `mkdir -p ../sprint-X.XX/track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#2b9e3e","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-b/.vscode/settings.json`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-b --new-window ../sprint-X.XX/track-b`
 - [ ] `git worktree add ../sprint-X.XX/track-c feat/IR-XX-YYY`
+- [ ] `mkdir -p ../sprint-X.XX/track-c/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#d15715","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-c/.vscode/settings.json`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-c --new-window ../sprint-X.XX/track-c`
 
 ### Track A: [Feature Name]

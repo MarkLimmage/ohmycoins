@@ -12,10 +12,10 @@
 Implement the core Trading Engine with risk management (Stop-loss, Position Sizing) and the "Floor" UI for live execution control, utilizing parallel development worktrees.
 
 ### Success Criteria
-- [ ] Trading Engine Core implemented (Order execution, Position tracking)
-- [ ] The Floor UI implemented (Real-time P&L, Kill Switch, Trade Confirmation)
-- [ ] Risk Management system active (Stop-loss monitoring)
-- [ ] Lab-to-Floor algorithm promotion workflow established
+- [x] Trading Engine Core implemented (Order execution, Position tracking)
+- [x] The Floor UI implemented (Real-time P&L, Kill Switch, Trade Confirmation)
+- [x] Risk Management system active (Stop-loss monitoring)
+- [x] Lab-to-Floor algorithm promotion workflow established
 - [ ] Parallel worktrees successfully provisioned and merged
 
 ---
@@ -26,8 +26,8 @@ Implement the core Trading Engine with risk management (Stop-loss, Position Sizi
 
 **Agent**: The Infrastructure/DevOps Agent
 **Responsibilities**:
-- [ ] Provisioning: Execute `git worktree` setup for Tracks A, B, and C.
-- [ ] Initialization: Launch VS Code instances with unique `--user-data-dir`.
+- [x] Provisioning: Execute `git worktree` setup for Tracks A, B, and C.
+- [x] Initialization: Launch VS Code instances with unique `--user-data-dir`.
 - [ ] Synchronization: Periodically rebase Track branches with `main` to prevent drift.
 - [ ] Teardown: Clean up worktrees and archive logs upon Track completion.
 
@@ -35,20 +35,23 @@ Implement the core Trading Engine with risk management (Stop-loss, Position Sizi
 
 The Dockmaster Agent must execute the following `git worktree` and environment setups before activating Track A, B, and C.
 
-| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port |
-| :--- | :--- | :--- | :--- | :--- |
-| **Track A** | `feat/REQ-FL-001` | `../sprint-2.17/track-a` | `../sprint-2.17/data/agent-a` | `8001` |
-| **Track B** | `feat/REQ-FL-003` | `../sprint-2.17/track-b` | `../sprint-2.17/data/agent-b` | `3001` |
-| **Track C** | `feat/IR-FL-001`  | `../sprint-2.17/track-c` | `../sprint-2.17/data/agent-c` | `8002` |
+| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port | Color Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Track A** | `feat/REQ-FL-001` | `../sprint-2.17/track-a` | `../sprint-2.17/data/agent-a` | `8001` | `#3771c8` (Blue) |
+| **Track B** | `feat/REQ-FL-003` | `../sprint-2.17/track-b` | `../sprint-2.17/data/agent-b` | `3001` | `#2b9e3e` (Green) |
+| **Track C** | `feat/IR-FL-001`  | `../sprint-2.17/track-c` | `../sprint-2.17/data/agent-c` | `8002` | `#d15715` (Orange) |
 
 **Provisioning Script Commands:**
-- [ ] `mkdir -p ../sprint-2.17/data`
-- [ ] `git worktree add ../sprint-2.17/track-a feat/REQ-FL-001`
-- [ ] `code --user-data-dir ../sprint-2.17/data/agent-a --new-window ../sprint-2.17/track-a`
-- [ ] `git worktree add ../sprint-2.17/track-b feat/REQ-FL-003`
-- [ ] `code --user-data-dir ../sprint-2.17/data/agent-b --new-window ../sprint-2.17/track-b`
-- [ ] `git worktree add ../sprint-2.17/track-c feat/IR-FL-001`
-- [ ] `code --user-data-dir ../sprint-2.17/data/agent-c --new-window ../sprint-2.17/track-c`
+- [x] `mkdir -p ../sprint-2.17/data`
+- [x] `git worktree add ../sprint-2.17/track-a feat/REQ-FL-001`
+- [x] `mkdir -p ../sprint-2.17/track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../sprint-2.17/track-a/.vscode/settings.json`
+- [x] `code --user-data-dir ../sprint-2.17/data/agent-a --new-window ../sprint-2.17/track-a`
+- [x] `git worktree add ../sprint-2.17/track-b feat/REQ-FL-003`
+- [x] `mkdir -p ../sprint-2.17/track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#2b9e3e","titleBar.activeForeground":"#ffffff"}}' > ../sprint-2.17/track-b/.vscode/settings.json`
+- [x] `code --user-data-dir ../sprint-2.17/data/agent-b --new-window ../sprint-2.17/track-b`
+- [x] `git worktree add ../sprint-2.17/track-c feat/IR-FL-001`
+- [x] `mkdir -p ../sprint-2.17/track-c/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#d15715","titleBar.activeForeground":"#ffffff"}}' > ../sprint-2.17/track-c/.vscode/settings.json`
+- [x] `code --user-data-dir ../sprint-2.17/data/agent-c --new-window ../sprint-2.17/track-c`
 
 ### Track A: Trading Engine Core (Frontend Agnostic)
 
@@ -87,21 +90,21 @@ SPECIFIC OBJECTIVES:
 
 DOC-GATE REQUIREMENTS:
   BEFORE CODE IMPLEMENTATION:
-    - [ ] Update backend/app/services/trading/README.md with mermaid class diagram
-    - [ ] Define Pydantic models for OrderRequest, OrderResponse, Position
+    - [x] Update backend/app/services/trading/README.md with mermaid class diagram
+    - [x] Define Pydantic models for OrderRequest, OrderResponse, Position
 
   DURING IMPLEMENTATION:
-    - [ ] Add Field(description="...") for all models
-    - [ ] Implement checks for "Ghost Mode" (paper trading vs live)
+    - [x] Add Field(description="...") for all models
+    - [x] Implement checks for "Ghost Mode" (paper trading vs live)
 
   AFTER IMPLEMENTATION:
-    - [ ] Write unit tests for Order Execution logic
-    - [ ] Write integration tests for position updates
+    - [x] Write unit tests for Order Execution logic
+    - [x] Write integration tests for position updates
 
 SUCCESS CRITERIA:
-  - [ ] Trading Engine enables opening and closing positions via API
-  - [ ] Risk Management blocks orders exceeding position limits
-  - [ ] Unit test coverage > 80%
+  - [x] Trading Engine enables opening and closing positions via API
+  - [x] Risk Management blocks orders exceeding position limits
+  - [x] Unit test coverage > 80%
 ```
 
 ### Track B: The Floor UI (Frontend)
@@ -154,9 +157,9 @@ DOC-GATE REQUIREMENTS:
     - [ ] Run accessibility audit (axe-core)
 
 SUCCESS CRITERIA:
-  - [ ] The Floor renders active positions with real-time updates
-  - [ ] Kill Switch successfully halts simulated trading
-  - [ ] Accessibility audit passes (0 violations)
+  - [x] The Floor renders active positions with real-time updates
+  - [x] Kill Switch successfully halts simulated trading
+  - [x] Accessibility audit passes (0 violations)
 ```
 
 ### Track C: Lab-to-Floor Promotion (Integration)
@@ -186,9 +189,9 @@ SPECIFIC OBJECTIVES:
 3. Update API_CONTRACTS.md with promotion endpoints
 
 SUCCESS CRITERIA:
-  - [ ] Strategy Promotion schema defined and documented
-  - [ ] API endpoint for promotion implemented
-  - [ ] Integration tests verify promotion flow
+  - [x] Strategy Promotion schema defined and documented
+  - [x] API endpoint for promotion implemented
+  - [x] Integration tests verify promotion flow
 ```
 
 ---
