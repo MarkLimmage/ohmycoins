@@ -149,6 +149,70 @@ class CoinspotTradingClient:
         
         logger.info(f"Sell order placed successfully: {response.get('id')}")
         return response
+
+    async def limit_buy(
+        self,
+        coin_type: str,
+        amount_aud: Decimal,
+        rate: Decimal
+    ) -> dict[str, Any]:
+        """
+        Execute a limit buy order
+        
+        Args:
+            coin_type: Cryptocurrency to buy (e.g., 'BTC', 'ETH')
+            amount_aud: Amount in AUD to spend
+            rate: Max price to pay per coin
+            
+        Returns:
+            Order response with id, market, rate, coin, amount, total
+            
+        Raises:
+            CoinspotAPIError: If API returns an error
+        """
+        data = {
+            'cointype': coin_type,
+            'amount': str(amount_aud),
+            'rate': str(rate)
+        }
+        
+        logger.info(f"Placing limit buy order: {amount_aud} AUD worth of {coin_type} @ {rate}")
+        response = await self._make_request('/my/buy', data)
+        
+        logger.info(f"Limit buy order placed successfully: {response.get('id')}")
+        return response
+
+    async def limit_sell(
+        self,
+        coin_type: str,
+        amount: Decimal,
+        rate: Decimal
+    ) -> dict[str, Any]:
+        """
+        Execute a limit sell order
+        
+        Args:
+            coin_type: Cryptocurrency to sell (e.g., 'BTC', 'ETH')
+            amount: Amount of cryptocurrency to sell
+            rate: Min price to sell per coin
+            
+        Returns:
+            Order response with id, market, rate, coin, amount, total
+            
+        Raises:
+            CoinspotAPIError: If API returns an error
+        """
+        data = {
+            'cointype': coin_type,
+            'amount': str(amount),
+            'rate': str(rate)
+        }
+        
+        logger.info(f"Placing limit sell order: {amount} {coin_type} @ {rate}")
+        response = await self._make_request('/my/sell', data)
+        
+        logger.info(f"Limit sell order placed successfully: {response.get('id')}")
+        return response
     
     async def get_orders(
         self,

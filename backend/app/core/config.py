@@ -144,6 +144,9 @@ class Settings(BaseSettings):
     AGENT_TIMEOUT_SECONDS: int = 300
     AGENT_CODE_EXECUTION_TIMEOUT: int = 60
 
+    # Trading System Configuration
+    TRADING_MODE: Literal["live", "paper"] = "paper"
+
     # Coinspot API configuration (for price data collector)
     COINSPOT_API_KEY: str | None = None
     COINSPOT_API_SECRET: str | None = None

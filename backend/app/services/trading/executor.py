@@ -14,8 +14,10 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from app.models import Order, Position
+from app.core.config import settings
 from app.services.trading.client import CoinspotTradingClient, CoinspotAPIError, CoinspotTradingError
 from app.services.trading.exceptions import OrderExecutionError
+from app.services.trading.safety import TradingSafetyManager, SafetyViolation
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,8 @@ class OrderExecutor:
     - Exponential backoff retry logic
     - Order status tracking
     - Position updates after execution
+    - Risk management checks
+    - Support for Ghost Mode (paper trading)
     """
     
     def __init__(
@@ -56,6 +60,7 @@ class OrderExecutor:
         self.retry_delay = retry_delay
         self._queue: asyncio.Queue[UUID] = asyncio.Queue()
         self._running = False
+        self.safety_manager = TradingSafetyManager(session)
     
     async def submit_order(self, order_id: UUID) -> None:
         """
@@ -128,6 +133,30 @@ class OrderExecutor:
         
         logger.info(f"Executing order {order_id}: {order.side} {order.quantity} {order.coin_type}")
         
+        # Safety Check
+        try:
+            # Determine estimated price for validation
+            # For market buy (amount is AUD), price is effectively 1 (as quantity is Value)
+            # For limit orders, use the limit price
+            estimated_price = order.price if order.price else Decimal('1.0') 
+            
+            await self.safety_manager.validate_trade(
+                user_id=order.user_id,
+                coin_type=order.coin_type,
+                side=order.side,
+                quantity=order.quantity,
+                estimated_price=estimated_price,
+                algorithm_id=order.algorithm_id
+            )
+        except SafetyViolation as e:
+            logger.error(f"Safety violation for order {order_id}: {e}")
+            order.status = 'failed'
+            order.error_message = f"Safety violation: {str(e)}"
+            order.updated_at = datetime.now(timezone.utc)
+            self.session.add(order)
+            self.session.commit()
+            return
+
         # Execute with retry logic
         for attempt in range(self.max_retries):
             try:
@@ -157,7 +186,7 @@ class OrderExecutor:
                 self.session.commit()
                 
                 # Update position
-                await self._update_position(order)
+                await self._update_position(order, result)
                 
                 logger.info(f"Order {order_id} executed successfully: {order.coinspot_order_id}")
                 return
@@ -205,24 +234,58 @@ class OrderExecutor:
         Raises:
             CoinspotAPIError: If API returns an error
         """
+        # Ghost Mode Check
+        if settings.TRADING_MODE == 'paper':
+            logger.info(f"Ghost Mode: Simulating execution for order {order.id}")
+            # Mock successful response
+            mock_price = order.price if order.price else Decimal('1000.0')
+            
+            # Helper to calculate expected coin amount for buy (AUD quantity) or sell (Coin quantity)
+            if order.side == 'buy':
+                # Quantity is AUD
+                mock_coins = order.quantity / mock_price
+            else:
+                # Quantity is Coins
+                mock_coins = order.quantity
+
+            return {
+                'status': 'ok',
+                'id': f'ghost-{order.id}',
+                'rate': str(mock_price),
+                'amount': str(mock_coins), # Coins amount
+                'total': str(order.quantity * mock_price) if order.side == 'sell' else str(order.quantity) # AUD total
+            }
+
         async with CoinspotTradingClient(self.api_key, self.api_secret) as client:
             if order.side == 'buy':
-                # For buy orders, quantity is in AUD
-                result = await client.market_buy(order.coin_type, order.quantity)
+                if order.order_type == 'limit':
+                    if not order.price:
+                        # Should have been caught by validation or set
+                        raise OrderExecutionError("Limit buy order requires price")
+                    result = await client.limit_buy(order.coin_type, order.quantity, order.price)
+                else:
+                    # Market buy: quantity is AUD amount
+                    result = await client.market_buy(order.coin_type, order.quantity)
             elif order.side == 'sell':
-                # For sell orders, quantity is in cryptocurrency
-                result = await client.market_sell(order.coin_type, order.quantity)
+                if order.order_type == 'limit':
+                    if not order.price:
+                        raise OrderExecutionError("Limit sell order requires price")
+                    result = await client.limit_sell(order.coin_type, order.quantity, order.price)
+                else:
+                    # Market sell: quantity is Coin amount
+                    result = await client.market_sell(order.coin_type, order.quantity)
             else:
                 raise OrderExecutionError(f"Invalid order side: {order.side}")
             
             return result
     
-    async def _update_position(self, order: Order) -> None:
+    async def _update_position(self, order: Order, result: dict[str, Any] | None = None) -> None:
         """
         Update user's position after order execution
         
         Args:
             order: Executed order
+            result: Execution result from API (optional)
         """
         # Get existing position
         statement = select(Position).where(
@@ -231,23 +294,53 @@ class OrderExecutor:
         )
         position = self.session.exec(statement).first()
         
+        # Determine coins bought/sold and cost
+        coins_delta = Decimal('0')
+        cost_delta = Decimal('0')
+        
+        if result and 'amount' in result:
+             # If result provides amount (coins), use it.
+             coins_delta = Decimal(str(result['amount']))
+
         if order.side == 'buy':
+            # Buy Order
+            # Determine cost delta (AUD spent)
+            if result and 'total' in result:
+                cost_delta = Decimal(str(result['total']))
+            else:
+                 # Fallback: For market buy, quantity is AUD. For limit buy, it might be AUD too in Coinspot if 'amount' param was used as funds.
+                 # But CoinSpot limit buy via client uses coins? No, wait. 
+                 # CoinSpot limit buy: client code I wrote used 'amount' (AUD) parameter.
+                 # So order.quantity is AUD for both Limit and Market Buy if relying on my client impl.
+                 cost_delta = order.filled_quantity 
+
+            if coins_delta == 0:
+                # Calculate from cost and price
+                if order.price and order.price > 0:
+                    coins_delta = cost_delta / order.price
+                else:
+                    logger.error(f"Cannot calculate coins bought for order {order.id}: no price")
+                    return
+
             if position:
-                # Update existing position (average price calculation)
-                total_quantity = position.quantity + order.filled_quantity
-                total_cost = position.total_cost + (order.filled_quantity * order.price)
+                # Update existing position
+                total_quantity = position.quantity + coins_delta
+                total_cost = position.total_cost + cost_delta
+                
                 position.quantity = total_quantity
                 position.total_cost = total_cost
-                position.average_price = total_cost / total_quantity
+                if total_quantity > 0:
+                    position.average_price = total_cost / total_quantity
                 position.updated_at = datetime.now(timezone.utc)
             else:
                 # Create new position
+                average_price = cost_delta / coins_delta if coins_delta > 0 else (order.price if order.price else Decimal('0'))
                 position = Position(
                     user_id=order.user_id,
                     coin_type=order.coin_type,
-                    quantity=order.filled_quantity,
-                    average_price=order.price,
-                    total_cost=order.filled_quantity * order.price,
+                    quantity=coins_delta,
+                    average_price=average_price,
+                    total_cost=cost_delta,
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )
@@ -255,11 +348,14 @@ class OrderExecutor:
             self.session.add(position)
             
         elif order.side == 'sell':
+            if coins_delta == 0:
+                coins_delta = order.filled_quantity
+
             if position:
                 # Reduce position
-                position.quantity -= order.filled_quantity
+                position.quantity -= coins_delta
                 
-                if position.quantity <= 0:
+                if position.quantity <= 0.00000001: # Epsilon check for near zero
                     # Position closed
                     self.session.delete(position)
                 else:
