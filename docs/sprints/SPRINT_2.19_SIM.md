@@ -13,7 +13,7 @@ Empower "The Lab" with autonomous strategy generation and backtesting capabiliti
 
 ### Success Criteria
 - [ ] **Strategy Generator**: LLM-driven generation of trading parameters based on "Catalyst" events.
-- [ ] **Backtesting Engine**: Fast, vectorised backtesting service (likely utilizing `vectorbt` or custom pandas logic).
+- [x] **Backtesting Engine**: Fast, vectorised backtesting service (likely utilizing `vectorbt` or custom pandas logic).
 - [ ] **Automated Report Card**: Generation of "Strategy Cards" with Sharpe Ratio, Max Drawdown, and Win Rate.
 - [ ] **Lab-to-Floor Pipeline**: Fully automated promotion of high-performing strategies to the "Pending Approval" queue.
 
@@ -28,8 +28,8 @@ Empower "The Lab" with autonomous strategy generation and backtesting capabiliti
 
 ### Track B: The Feature Developer (Engine)
 **Focus**: Backtesting Infrastructure
-- Implement `BacktestService` for historical simulation.
-- Ensure isolation of backtest data (separate from live pricing).
+- [x] Implement `BacktestService` for historical simulation.
+- [x] Ensure isolation of backtest data (separate from live pricing).
 
 ### Track C: The Architect (Governance)
 **Focus**: Safety & Validation

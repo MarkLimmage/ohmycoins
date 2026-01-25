@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"name": "OhMyCoins (Track B - Feature Dev)",
+			"path": "."
+		}
+	],
+	"settings": {
+		"workbench.colorCustomizations": {
+			"activityBar.background": "#2E8B57",
+			"titleBar.activeBackground": "#2E8B57",
+			"titleBar.activeForeground": "#FFFFFF"
+		},
+		"python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+		"python.analysis.typeCheckingMode": "basic",
+		"python.testing.pytestEnabled": true,
+		"python.testing.pytestArgs": [
+			"backend/tests"
+		]
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"tamasfe.even-better-toml",
+			"charliermarsh.ruff"
+		]
+	}
+}
