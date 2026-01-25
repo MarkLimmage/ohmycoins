@@ -83,7 +83,15 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 **Status**: Near Completion  
 **Objective**: Establish component library, implement 4 Ledgers dashboard, create Living Documentation System with AI agent governance.
 
-**Sprint 2.14-2.16**: Completed (Documentation & UI Foundation)
+**Sprint 2.14-2.15**: Completed (Documentation & UI Foundation)
+
+**Sprint 2.16: 4 Ledgers Dashboard** (Complete)
+- ✅ Implement Glass Ledger card (TVL/Fee line charts with recharts)
+- ✅ Implement Human Ledger card (Sentiment heatmap with visx)
+- ✅ Implement Catalyst Ledger card (Real-time event ticker with WebSocket)
+- ✅ Implement Exchange Ledger card (Multi-coin sparklines)
+- ✅ Responsive layout (2x2 grid desktop, single column mobile)
+- ✅ E2E tests for Discovery Flow user journey
 
 **Sprint 2.17: The Floor & Risk Management** (Complete)
 - ✅ **Trading Engine Core**: Order execution, Position management, P&L calculation
@@ -96,18 +104,23 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 - ✅ WebSocket feeds for P&L and Order updates
 - ✅ Robust error handling and Optimistic UI
 
-**Sprint 2.19: The Strategist - Automated Backtesting** (Planned)
-- 📋 Autonomous Strategy Generation (LLM-driven)
-- 📋 Vectorized Backtesting Engine
-- 📋 Automated Strategy Validation & Promotion Pipeline
+**Sprint 2.19: The Strategist - Automated Backtesting** (Complete)
+- ✅ **Strategy Generator**: LLM-driven generation of trading parameters
+- ✅ **Backtesting Engine**: Fast, vectorized pandas/numpy engine
+- ✅ **Automated Report Card**: Sharpe, Drawdown, Win Rate calculation
+- ✅ **Lab-to-Floor Pipeline**: Non-interactive promotion of qualified strategies
 
-**Sprint 2.16: 4 Ledgers Dashboard** (Planned)
-- 📋 Implement Glass Ledger card (TVL/Fee line charts with recharts)
-- 📋 Implement Human Ledger card (Sentiment heatmap with visx)
-- 📋 Implement Catalyst Ledger card (Real-time event ticker with WebSocket)
-- 📋 Implement Exchange Ledger card (Multi-coin sparklines)
-- 📋 Responsive layout (2x2 grid desktop, single column mobile)
-- 📋 E2E tests for Discovery Flow user journey
+**Sprint 2.20: The Tactician - Execution & Paper Trading** (Complete)
+- ✅ **Paper Trading Engine**: Simulation Mode with 0-risk execution
+- ✅ **Execution Algorithms**: TWAP and VWAP strategies implemented
+- ✅ **Performance Tracking**: Implementation Shortfall & Slippage metrics
+- ✅ **Handoff**: "The Strategist" successfully signals "The Tactician"
+
+**Sprint 2.21: The Optimizer - Performance Analytics** (Planned)
+- 📋 **Performance Dashboard**: Visualization of Sharpe, Drawdown, and Execution Slippage
+- 📋 **Hyperparameter Tuning**: Automated grid search for Strategy parameters
+- 📋 **Transaction Cost Analysis**: Including fees and slippage in backtests
+- 📋 **Mobile Monitoring**: Read-only view for "On the Go" P&L tracking
 
 **Key Documentation**:
 - [DESIGN_SYSTEM.md](docs/ui/DESIGN_SYSTEM.md) - Component library specifications

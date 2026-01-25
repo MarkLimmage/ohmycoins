@@ -115,6 +115,7 @@ DOC-GATE REQUIREMENTS:
     - [ ] Update OpenAPI docs (/docs endpoint)
 
 CONSTRAINTS:
+  - **Environment**: NO LOCAL VENVS. Testing must occur within the project's Docker containers (`docker compose run backend pytest`).
   - Use EARS syntax for any new requirements (Ubiquitous, Event-driven, State-driven, Optional, Unwanted)
   - Follow API_CONTRACTS.md patterns for:
     - Authentication (JWT token handling)
@@ -219,6 +220,7 @@ DOC-GATE REQUIREMENTS:
     - [ ] Run accessibility audit (axe-core)
 
 CONSTRAINTS:
+  - **Environment**: NO LOCAL INSTALLS. Testing/Building must occur within the project's Docker containers.
   - Use Tailwind utility classes ONLY (no custom CSS unless approved)
   - Implement REQ-UX-001: Chart table view toggle for accessibility
   - WCAG 2.1 AA compliance:
