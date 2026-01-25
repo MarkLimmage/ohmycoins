@@ -1,11 +1,12 @@
+import { useState } from "react"
 import { Box, Button, Flex, Text, Badge } from "@chakra-ui/react"
 import { SafetyButton } from "@/components/Floor"
 import type { AlgorithmData } from "../types"
 
 interface AlgorithmCardProps {
   algorithm: AlgorithmData
-  onPause: (id: string) => void
-  onResume: (id: string) => void
+  onPause: (id: string) => Promise<void>
+  onResume: (id: string) => Promise<void>
   onStop: (id: string) => Promise<void>
 }
 
@@ -15,6 +16,17 @@ export const AlgorithmCard = ({
   onResume,
   onStop,
 }: AlgorithmCardProps) => {
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+
+  const handleAction = async (action: 'pause' | 'resume', handler: (id: string) => Promise<void>) => {
+      setPendingAction(action)
+      try {
+          await handler(algorithm.id)
+      } finally {
+          setPendingAction(null)
+      }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -80,12 +92,24 @@ export const AlgorithmCard = ({
 
       <Flex gap={2} mt={4}>
         {algorithm.status === "active" && (
-          <Button size="sm" onClick={() => onPause(algorithm.id)} colorScheme="orange">
+          <Button 
+            size="sm" 
+            onClick={() => handleAction('pause', onPause)} 
+            colorScheme="orange"
+            isLoading={pendingAction === 'pause'}
+            isDisabled={pendingAction !== null}
+          >
             ⏸ Pause
           </Button>
         )}
         {algorithm.status === "paused" && (
-          <Button size="sm" onClick={() => onResume(algorithm.id)} colorScheme="green">
+          <Button 
+            size="sm" 
+            onClick={() => handleAction('resume', onResume)} 
+            colorScheme="green"
+            isLoading={pendingAction === 'resume'}
+            isDisabled={pendingAction !== null}
+          >
             ▶ Resume
           </Button>
         )}

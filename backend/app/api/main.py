@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import agent, credentials, login, pnl, private, users, utils, strategy_promotions, websockets, trading
+from app.api.routes import agent, credentials, login, pnl, private, users, utils, strategy_promotions, websockets, trading, floor
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -13,6 +13,7 @@ api_router.include_router(agent.router, prefix="/lab/agent", tags=["agent"])
 api_router.include_router(strategy_promotions.router, prefix="/promotions", tags=["promotions"])
 api_router.include_router(pnl.router, prefix="/floor/pnl", tags=["pnl"])
 api_router.include_router(trading.router, prefix="/floor/trading", tags=["trading"])
+api_router.include_router(floor.router, prefix="/floor", tags=["floor"])
 
 
 if settings.ENVIRONMENT == "local":
@@ -21,4 +22,3 @@ if settings.ENVIRONMENT == "local":
     # Mock endpoints for UI component development (Storybook)
     from app.api.routes import mock_ui
     api_router.include_router(mock_ui.router, prefix="/mock", tags=["mock"])
-
