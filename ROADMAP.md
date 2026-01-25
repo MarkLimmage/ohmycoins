@@ -91,10 +91,15 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 - ✅ **Promotion Workflow**: Lab-to-Floor algorithm promotion API
 - ✅ **Parallel Development**: Successfully piloted worktree-based multi-agent development
 
-**Sprint 2.18: Integration & Polish** (Planned)
-- 📋 End-to-end integration of Trading UI and Engine
-- 📋 UI refinement and error handling patterns
-- 📋 Full system integration testing
+**Sprint 2.18: Integration & Polish** (Complete)
+- ✅ End-to-end integration of Trading UI and Engine
+- ✅ WebSocket feeds for P&L and Order updates
+- ✅ Robust error handling and Optimistic UI
+
+**Sprint 2.19: The Strategist - Automated Backtesting** (Planned)
+- 📋 Autonomous Strategy Generation (LLM-driven)
+- 📋 Vectorized Backtesting Engine
+- 📋 Automated Strategy Validation & Promotion Pipeline
 
 **Sprint 2.16: 4 Ledgers Dashboard** (Planned)
 - 📋 Implement Glass Ledger card (TVL/Fee line charts with recharts)
