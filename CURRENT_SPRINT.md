@@ -1,47 +1,48 @@
-# Current Sprint - Sprint 2.19 (The Strategist)
+# Current Sprint - Sprint 2.20 (The Tactician)
 
 **Status:** 🟢 IN PROGRESS
-**Date Started:** March 8, 2026
-**Date Expected:** March 21, 2026
+**Date Started:** March 22, 2026
+**Date Expected:** April 4, 2026
 **Duration:** 2 Weeks
-**Previous Sprint:** Sprint 2.18 - Complete ✅
-**Focus:** Autonomous Strategy Generation & Backtesting ("The Strategist")
+**Previous Sprint:** Sprint 2.19 - Complete ✅
+**Focus:** Execution Algorithms & Paper Trading Simulation
 
 ---
 
-## 🎯 Sprint 2.19 Objectives
+## 🎯 Sprint 2.20 Objectives
 
 ### Primary Goal
-Empower "The Lab" with autonomous strategy generation and backtesting capabilities, allowing the system to propose, test, and promote trading strategies without human intervention.
+Build "The Tactician" - the execution arm of the system. Implement a realistic "Paper Trading" environment and standard execution algorithms (TWAP, VWAP) to optimize trade entry and exit without risking real capital.
 
 ### Success Criteria
-- [x] **Track A**: Strategy Generator (LLM-driven prompt templates)
-- [x] **Track B**: Backtesting Engine (Historical simulation infrastructure)
-- [ ] **Track C**: Governance Rules (Automated validation)
-- [x] **Track D**: Parallel worktrees successfully provisioned
+- [ ] **Paper Exchange**: Mock exchange adapter running in memory/Redis.
+- [ ] **TWAP/VWAP**: Functional execution algorithms (parent/child orders).
+- [ ] **Slippage Implementation**: Simulated latency/slippage.
+- [ ] **Execution Reports**: Post-trade analysis (Implementation Shortfall).
+- [x] **Track D**: Parallel worktrees successfully provisioned and managed.
 
 ### Sprint Metrics (Target)
 | Category | Target |
 |----------|--------|
-| New Strategies Generated | > 3 |
-| Backtest Execution Time | < 5s |
-| Test Coverage | 100% |
+| Simulated Trade Latency | < 50ms |
+| TWAP Execution Variance | < 5% |
+| Worktree Conflicts | 0 |
 
 **Track Status:**
 - 🟢 **Track D** (Dockmaster): COMPLETED (Provisioned)
-- 🟢 **Track A** (Strategy Gen): COMPLETED (Implemented & Tested)
-- 🟢 **Track B** (Backtesting): COMPLETED (Engine Implemented)
-- ⚪ **Track C** (Governance): PENDING ASSIGNMENT
+- 🟡 **Track A** (Paper Trading): READY TO START
+- 🟡 **Track B** (Algo Lab): READY TO START
+- 🟡 **Track C** (Metrics): READY TO START
 
 ---
 
 ## 📦 Deliverables
 
-- `StrategyGenerator` Service
-- `BacktestService` Engine
-- `vectorbt` Integration
-- Strategy "Golden Rules" Validator
+- `PaperExchange` Class
+- `TWAPStrategy` & `VWAPStrategy`
+- `SlippageCalculator`
+- `ExecutionReport` Schema
 
 ---
 
-**Last Updated:** March 18, 2026 (Simulated)
+**Last Updated:** March 22, 2026
