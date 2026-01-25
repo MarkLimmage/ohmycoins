@@ -910,16 +910,19 @@ class AgentArtifactPublic(SQLModel):
 
 class PositionBase(SQLModel):
     """Base model for trading positions"""
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    coin_type: str = Field(max_length=20, index=True)  # e.g., 'BTC', 'ETH'
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, description="The UUID of the user who owns this position.")
+    coin_type: str = Field(max_length=20, index=True, description="The type of coin (e.g., 'BTC', 'ETH').")
     quantity: Decimal = Field(
-        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False)
+        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False),
+        description="The quantity of the coin held."
     )
     average_price: Decimal = Field(
-        sa_column=Column(DECIMAL(precision=20, scale=8), nullable=False)
+        sa_column=Column(DECIMAL(precision=20, scale=8), nullable=False),
+        description="The average price at which the position was acquired."
     )
     total_cost: Decimal = Field(
-        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False)
+        sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
+        description="The total cost basis of the position."
     )
 
 
@@ -932,14 +935,16 @@ class Position(PositionBase, table=True):
     """
     __tablename__ = "positions"
     
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, description="The unique identifier for the position.")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+        description="The timestamp when the position was first created."
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
+        description="The timestamp when the position was last updated."
     )
     
     # Relationships
@@ -952,34 +957,37 @@ class Position(PositionBase, table=True):
 
 class PositionPublic(PositionBase):
     """Schema for returning position via API"""
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    current_value: Decimal | None = None  # Calculated field
-    unrealized_pnl: Decimal | None = None  # Calculated field
+    id: uuid.UUID = Field(description="The unique identifier for the position.")
+    created_at: datetime = Field(description="The timestamp when the position was first created.")
+    updated_at: datetime = Field(description="The timestamp when the position was last updated.")
+    current_value: Decimal | None = Field(default=None, description="The current market value of the position.")
+    unrealized_pnl: Decimal | None = Field(default=None, description="The unrealized profit or loss.")
 
 
 class OrderBase(SQLModel):
     """Base model for trading orders"""
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    algorithm_id: uuid.UUID | None = Field(default=None, index=True)  # NULL for manual orders
-    coin_type: str = Field(max_length=20, index=True)
-    side: str = Field(max_length=10)  # 'buy' or 'sell'
-    order_type: str = Field(max_length=20, default='market')  # 'market' or 'limit'
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, description="The UUID of the user placing the order.")
+    algorithm_id: uuid.UUID | None = Field(default=None, index=True, description="The UUID of the algorithm that placed this order, if any.")  # NULL for manual orders
+    coin_type: str = Field(max_length=20, index=True, description="The type of coin (e.g., 'BTC', 'ETH').")
+    side: str = Field(max_length=10, description="The side of the order ('buy' or 'sell').")
+    order_type: str = Field(max_length=20, default='market', description="The type of order ('market' or 'limit').")
     quantity: Decimal = Field(
-        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False)
+        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False),
+        description="The quantity to buy or sell."
     )
     price: Decimal | None = Field(
         default=None,
-        sa_column=Column(DECIMAL(precision=20, scale=8), nullable=True)
+        sa_column=Column(DECIMAL(precision=20, scale=8), nullable=True),
+        description="The price for limit orders. Optional for market orders."
     )
     filled_quantity: Decimal = Field(
         default=Decimal('0'),
-        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False)
+        sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False),
+        description="The quantity that has been filled so far."
     )
-    status: str = Field(max_length=20, default='pending', index=True)  # pending, submitted, filled, partial, cancelled, failed
-    error_message: str | None = Field(default=None, max_length=500)
-    coinspot_order_id: str | None = Field(default=None, max_length=100, index=True)
+    status: str = Field(max_length=20, default='pending', index=True, description="The status of the order (e.g., 'pending', 'filled', 'cancelled').")  # pending, submitted, filled, partial, cancelled, failed
+    error_message: str | None = Field(default=None, max_length=500, description="Error message if the order failed.")
+    coinspot_order_id: str | None = Field(default=None, max_length=100, index=True, description="The ID of the order on CoinSpot.")
 
 
 class Order(OrderBase, table=True):
@@ -991,22 +999,26 @@ class Order(OrderBase, table=True):
     """
     __tablename__ = "orders"
     
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, description="The unique identifier for the order.")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
+        description="The timestamp when the order was created."
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
+        description="The timestamp when the order was last updated."
     )
     submitted_at: datetime | None = Field(
         default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+        description="The timestamp when the order was submitted to the exchange."
     )
     filled_at: datetime | None = Field(
         default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+        description="The timestamp when the order was fully filled."
     )
     
     # Relationships
@@ -1020,21 +1032,31 @@ class Order(OrderBase, table=True):
 
 class OrderCreate(SQLModel):
     """Schema for creating an order"""
-    coin_type: str = Field(max_length=20)
-    side: str = Field(max_length=10)
-    order_type: str = Field(max_length=20, default='market')
-    quantity: Decimal
-    price: Decimal | None = None
-    algorithm_id: uuid.UUID | None = None
+    coin_type: str = Field(max_length=20, description="The type of coin (e.g., 'BTC', 'ETH').")
+    side: str = Field(max_length=10, description="The side of the order ('buy' or 'sell').")
+    order_type: str = Field(max_length=20, default='market', description="The type of order ('market' or 'limit').")
+    quantity: Decimal = Field(description="The quantity to buy or sell.")
+    price: Decimal | None = Field(default=None, description="The price for limit orders. Optional for market orders.")
+    algorithm_id: uuid.UUID | None = Field(default=None, description="The UUID of the algorithm placing the order.")
+
+
+class OrderRequest(OrderCreate):
+    """Request schema for placing a new order"""
+    pass
 
 
 class OrderPublic(OrderBase):
     """Schema for returning order via API"""
-    id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
-    submitted_at: datetime | None
-    filled_at: datetime | None
+    id: uuid.UUID = Field(description="The unique identifier for the order.")
+    created_at: datetime = Field(description="The timestamp when the order was created.")
+    updated_at: datetime = Field(description="The timestamp when the order was last updated.")
+    submitted_at: datetime | None = Field(description="The timestamp when the order was submitted.")
+    filled_at: datetime | None = Field(description="The timestamp when the order was filled.")
+
+
+class OrderResponse(OrderPublic):
+    """Response schema for an order"""
+    pass
 
 
 # =============================================================================
