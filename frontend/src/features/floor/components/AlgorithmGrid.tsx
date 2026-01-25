@@ -4,8 +4,8 @@ import type { AlgorithmData } from "../types"
 
 interface AlgorithmGridProps {
   algorithms: AlgorithmData[]
-  onPause: (id: string) => void
-  onResume: (id: string) => void
+  onPause: (id: string) => Promise<void>
+  onResume: (id: string) => Promise<void>
   onStop: (id: string) => Promise<void>
 }
 

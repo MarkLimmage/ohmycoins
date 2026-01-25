@@ -1,21 +1,20 @@
-CONTEXT: Sprint 2.17 - Track C: Lab-to-Floor Promotion
+CONTEXT: Sprint 2.18 - Track B: Frontend Integration
 PROJECT: Oh My Coins - System Integration
-ROLE: The Architect (Orchestrator)
+ROLE: The UI/UX Agent (Frontend Specialist)
 
 WORKSPACE ANCHOR:
-  ROOT_PATH: ../sprint-2.17/track-c
-  INSTANCE_PORT: 8002
-  STRICT_SCOPE: You are locked to this directory. Do not modify files outside this path.
+  ROOT_PATH: ../sprint-2.18/track-b
+  INSTANCE_PORT: 3001
+  STRICT_SCOPE: You are locked to this directory.
 
 MISSION:
-Define and implement the workflow for promoting a strategy from "The Lab" (Backtesting) to "The Floor" (Live Trading).
+Wire up "The Floor" layout to real API endpoints and implement "Optimistic UI" patterns for responsive trading experience.
 
 SPECIFIC OBJECTIVES:
-1. Define the "Strategy Promotion" JSON schema
-2. Implement the approval workflow API (requires Architect signature)
-3. Update API_CONTRACTS.md with promotion endpoints
+1. Connect `FloorLayout` and components to real REST and WebSocket APIs.
+2. Implement Optimistic UI updates for trading actions (instant feedback).
+3. Polish UI with animations, loading states, and error handling as per API_CONTRACTS.md.
 
-SUCCESS CRITERIA:
-  - [x] Strategy Promotion schema defined and documented
-  - [x] API endpoint for promotion implemented
-  - [x] Integration tests verify promotion flow
+OPERATIONAL CONSTRAINT:
+- EXECUTE TESTS IN DOCKER CONTAINER: `docker exec -it <container_name> npx playwright test ...`
+- DO NOT run tests on host machine to avoid port conflicts.
