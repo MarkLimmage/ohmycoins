@@ -1,3 +1,4 @@
+import asyncio
 import sentry_sdk
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -6,13 +7,15 @@ from fastapi.routing import APIRoute
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
-
+from sqlmodel import Session
 
 from app.api.main import api_router
 from app.api.middleware import RateLimitMiddleware
 from app.api.routes import websockets
 from app.core.config import settings
+from app.core.db import engine
 from app.services.scheduler import start_scheduler, stop_scheduler
+from app.services.trading.executor import get_order_queue
 
 
 @asynccontextmanager
@@ -20,9 +23,33 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
     # Startup: Start the data collection scheduler
     await start_scheduler()
+    
+    # Initialize and start Order Queue
+    executor_session = Session(engine)
+    queue = get_order_queue()
+    # Use system settings for keys. In a multi-user system, the executor should 
+    # resolve credentials per order, but for now we initialize with system/default keys.
+    queue.initialize(
+        session=executor_session,
+        api_key=settings.COINSPOT_API_KEY,
+        api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode"
+    )
+    queue_task = asyncio.create_task(queue.start())
+    
     yield
+    
     # Shutdown: Stop the scheduler gracefully
     await stop_scheduler()
+    
+    # Stop Order Queue
+    await queue.stop()
+    executor_session.close()
+    if not queue_task.done():
+        queue_task.cancel()
+        try:
+            await queue_task
+        except asyncio.CancelledError:
+            pass
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

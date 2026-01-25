@@ -15,7 +15,9 @@ from sqlmodel import Session, select
 
 from app.models import Order, Position
 from app.core.config import settings
+from app.services.websocket_manager import manager
 from app.services.trading.client import CoinspotTradingClient, CoinspotAPIError, CoinspotTradingError
+from fastapi.encoders import jsonable_encoder
 from app.services.trading.exceptions import OrderExecutionError
 from app.services.trading.safety import TradingSafetyManager, SafetyViolation
 
@@ -155,6 +157,13 @@ class OrderExecutor:
             order.updated_at = datetime.now(timezone.utc)
             self.session.add(order)
             self.session.commit()
+            self.session.refresh(order)
+
+            # Broadcast update
+            await manager.broadcast_json(
+                {"type": "order_update", "data": self._order_to_dict(order)},
+                f"trading_{order.user_id}"
+            )
             return
 
         # Execute with retry logic
@@ -167,6 +176,13 @@ class OrderExecutor:
                     order.updated_at = datetime.now(timezone.utc)
                     self.session.add(order)
                     self.session.commit()
+                    self.session.refresh(order)
+                    
+                    # Broadcast update
+                    await manager.broadcast_json(
+                        {"type": "order_update", "data": self._order_to_dict(order)},
+                        f"trading_{order.user_id}"
+                    )
                 
                 # Execute the trade
                 result = await self._execute_trade(order)
@@ -184,6 +200,13 @@ class OrderExecutor:
                 
                 self.session.add(order)
                 self.session.commit()
+                self.session.refresh(order)
+                
+                # Broadcast update
+                await manager.broadcast_json(
+                    {"type": "order_update", "data": self._order_to_dict(order)},
+                    f"trading_{order.user_id}"
+                )
                 
                 # Update position
                 await self._update_position(order, result)
@@ -210,15 +233,30 @@ class OrderExecutor:
                     order.status = 'failed'
                     self.session.add(order)
                     self.session.commit()
+                    self.session.refresh(order)
+                    
+                    # Broadcast update
+                    await manager.broadcast_json(
+                        {"type": "order_update", "data": self._order_to_dict(order)},
+                        f"trading_{order.user_id}"
+                    )
+                    
                     logger.error(f"Order {order_id} failed after {self.max_retries} attempts")
                     
             except Exception as e:
                 logger.error(f"Unexpected error executing order {order_id}: {e}", exc_info=True)
                 order.status = 'failed'
                 order.error_message = str(e)
+                self.session.refresh(order)
                 order.updated_at = datetime.now(timezone.utc)
                 self.session.add(order)
                 self.session.commit()
+
+                # Broadcast update
+                await manager.broadcast_json(
+                    {"type": "order_update", "data": self._order_to_dict(order)},
+                    f"trading_{order.user_id}"
+                )
                 return
     
     async def _execute_trade(self, order: Order) -> dict[str, Any]:
@@ -367,7 +405,35 @@ class OrderExecutor:
                 logger.warning(f"Sell order {order.id} executed but no position found for {order.coin_type}")
         
         self.session.commit()
+
+        # Broadcast position update
+        if position:
+            self.session.refresh(position)
+            await manager.broadcast_json(
+                {"type": "position_update", "data": jsonable_encoder(position)},
+                f"trading_{order.user_id}"
+            )
+        
         logger.info(f"Position updated for {order.user_id}, {order.coin_type}")
+
+    def _order_to_dict(self, order: Order) -> dict:
+        """Helper to serialize order to dict manually to avoid encoder issues"""
+        return {
+            "id": str(order.id),
+            "user_id": str(order.user_id),
+            "coin_type": order.coin_type,
+            "side": order.side,
+            "quantity": float(order.quantity),
+            "price": float(order.price) if order.price is not None else None,
+            "order_type": order.order_type,
+            "status": order.status,
+            "filled_quantity": float(order.filled_quantity) if order.filled_quantity is not None else 0.0,
+            "filled_at": order.filled_at.isoformat() if order.filled_at else None,
+            "created_at": order.created_at.isoformat() if order.created_at else None,
+            "updated_at": order.updated_at.isoformat() if order.updated_at else None,
+            "coinspot_order_id": order.coinspot_order_id,
+            "error_message": order.error_message
+        }
 
 
 class OrderQueue:

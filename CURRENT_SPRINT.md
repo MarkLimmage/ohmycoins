@@ -15,7 +15,7 @@
 Complete the end-to-end integration of "The Floor" (Trading UI) with the Trading Engine (Backend) and ensure a polished, production-ready user experience.
 
 ### Success Criteria
-- [ ] **Track A**: WebSocket feeds for Order/Position updates, robust error handling
+- [x] **Track A**: WebSocket feeds for Order/Position updates, robust error handling
 - [ ] **Track B**: Frontend wiring of FloorLayout to real API, Optimistic UI patterns
 - [ ] End-to-End Trading Flow operational (UI -> API -> Execution -> WebSocket -> UI)
 - [x] **Track D**: Parallel worktrees successfully provisioned and managed
@@ -36,35 +36,13 @@ Complete the end-to-end integration of "The Floor" (Trading UI) with the Trading
 
 ---
 
-## 📦 Sprint 2.17 Deliverables
+## 📦 Deliverables
 
-### Track D: Dockmaster Orchestration
-- Worktrees: , , 
-- VS Code Profiles: Backend-Heavy, Frontend-Standard, Architect-Core
-
-### Track A: Trading Engine Core
--  service implementation
-- Order and Position Pydantic models
-- Risk Management logic
-
-### Track B: The Floor UI
--  component library
-- Integration with SafetyButton and WebSocketManager
-
-### Track C: Lab-to-Floor Promotion
-- Strategy Promotion JSON Schema
-- Approval Workflow API
+- WebSocket Manager/Router
+- Updated Trading Service with Event Broadcasting
+- Integration Tests
+- Floor UI Integration
 
 ---
 
-## 🎯 Next Actions
-
-### Immediate
-1. **Dockmaster**: Execute provisioning script found in SPRINT_2.17_SIM.md
-2. **Agents**: Receive Workspace Anchor details and begin development
-
----
-
-**Last Updated:** February 5, 2026
-**Next Review:** Sprint 2.17 Mid-Sprint Review
-**Sprint End Date:** February 21, 2026
+**Last Updated:** January 25, 2026
