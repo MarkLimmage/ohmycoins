@@ -47,8 +47,8 @@ services:
 
   db:
     restart: "no"
-    ports:
-      - "5432:5432"
+#    ports:
+#      - "5432:5432"
 
   prestart:
     restart: "no"
