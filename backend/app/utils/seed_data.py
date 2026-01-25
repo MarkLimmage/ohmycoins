@@ -52,6 +52,8 @@ from app.models import (
     PriceData5Min,
     ProtocolFundamentals,
     SocialSentiment,
+    SmartMoneyFlow,
+    StrategyPromotion,
     User,
 )
 
@@ -548,12 +550,13 @@ def generate_deployed_algorithms(
     return deployed_count
 
 
-def clear_all_data(session: Session) -> None:
+def clear_all_data(session: Session, commit: bool = True) -> None:
     """Clear all data from the database (except superuser)."""
     logger.warning("Clearing all data from database...")
     
     tables = [
         DeployedAlgorithm,
+        StrategyPromotion,
         Order,
         Position,
         Algorithm,
@@ -568,6 +571,7 @@ def clear_all_data(session: Session) -> None:
         ProtocolFundamentals,
         PriceData5Min,
         CoinspotCredentials,
+        SmartMoneyFlow,
     ]
     
     for table in tables:
@@ -578,7 +582,10 @@ def clear_all_data(session: Session) -> None:
     session.exec(delete(User).where(User.email != settings.FIRST_SUPERUSER))
     logger.info("Cleared users (except superuser)")
     
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     logger.info("All data cleared")
 
 

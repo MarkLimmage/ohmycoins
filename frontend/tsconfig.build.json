@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["tests/**/*.ts"],
+  "exclude": ["tests/**/*.ts", "src/**/*.stories.tsx"],
   "compilerOptions": {
     "skipLibCheck": true,
     "noUnusedLocals": false,

@@ -26,6 +26,8 @@ from app.models import (
     CatalystEvents,
     NewsSentiment,
     DeployedAlgorithm,
+    StrategyPromotion,
+    SmartMoneyFlow,
 )
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
@@ -40,7 +42,7 @@ from app.utils.test_fixtures import (
 )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
@@ -57,6 +59,7 @@ def db() -> Generator[Session, None, None]:
             session.execute(delete(Order))
             session.execute(delete(Position))
             session.execute(delete(DeployedAlgorithm))
+            session.execute(delete(StrategyPromotion))
             
             # Delete algorithms
             session.execute(delete(Algorithm))
@@ -68,6 +71,7 @@ def db() -> Generator[Session, None, None]:
             # Delete ledger data
             session.execute(delete(CatalystEvents))
             session.execute(delete(NewsSentiment))
+            session.execute(delete(SmartMoneyFlow))
             
             # Finally delete users
             session.execute(delete(User))
@@ -119,12 +123,12 @@ def client() -> Generator[TestClient, None, None]:
         yield c
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def superuser_token_headers(client: TestClient) -> dict[str, str]:
     return get_superuser_token_headers(client)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]:
     return authentication_token_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db

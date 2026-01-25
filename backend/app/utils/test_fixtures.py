@@ -58,7 +58,7 @@ def create_test_user(
         updated_at=datetime.now(timezone.utc),
     )
     session.add(user)
-    session.commit()
+    session.flush()
     session.refresh(user)
     return user
 
@@ -94,7 +94,7 @@ def create_test_price_data(
         
         current_time += timedelta(minutes=5)
     
-    session.commit()
+    session.flush()
     for price in prices:
         session.refresh(price)
     
@@ -121,7 +121,7 @@ def create_test_algorithm(
         updated_at=datetime.now(timezone.utc),
     )
     session.add(algorithm)
-    session.commit()
+    session.flush()
     session.refresh(algorithm)
     return algorithm
 
@@ -146,7 +146,7 @@ def create_test_position(
         updated_at=datetime.now(timezone.utc),
     )
     session.add(position)
-    session.commit()
+    session.flush()
     session.refresh(position)
     return position
 
@@ -176,7 +176,7 @@ def create_test_order(
         updated_at=datetime.now(timezone.utc),
     )
     session.add(order)
-    session.commit()
+    session.flush()
     session.refresh(order)
     return order
 

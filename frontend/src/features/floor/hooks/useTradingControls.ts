@@ -4,7 +4,7 @@ import axios from "axios"
 
 export const useTradingControls = () => {
   const getHeaders = async () => {
-      const token = await OpenAPI.TOKEN()
+      const token = OpenAPI.TOKEN
       return { Authorization: `Bearer ${token}` }
   }
 

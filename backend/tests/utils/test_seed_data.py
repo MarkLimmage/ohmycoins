@@ -105,7 +105,7 @@ class TestSeedData:
         algo = create_test_algorithm(db, user)
         
         # Clear all data
-        clear_all_data(db)
+        clear_all_data(db, commit=False)
         
         # Verify data is cleared (excluding the configured superuser)
         from app.core.config import settings

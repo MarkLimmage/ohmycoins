@@ -1,41 +1,21 @@
-# Current Sprint - Sprint 2.20 (The Tactician)
+# Current Sprint - Sprint 2.21 (The Optimizer)
 
-**Status:** 🔵 COMPLETE
-**Date Started:** March 22, 2026
-**Date Completed:** April 4, 2026
+**Status:** 🟢 IN PROGRESS
+**Date Started:** April 5, 2026
+**Date Completed:** TBD
 **Duration:** 2 Weeks
-**Previous Sprint:** Sprint 2.19 - Complete ✅
-**Focus:** Execution Algorithms & Paper Trading ("The Tactician")
+**Previous Sprint:** Sprint 2.20 - Complete ✅
+**Focus:** Performance Analytics & Strategy Optimization
 
 ---
 
-## 🎯 Sprint 2.20 Objectives
+## 🎯 Sprint 2.21 Objectives
 
 ### Primary Goal
-Build "The Tactician" - the execution arm of the system. Implement a realistic "Paper Trading" environment and standard execution algorithms (TWAP, VWAP) to optimize trade entry and exit without risking real capital.
+Empower "The Optimizer" to refine strategies through hyperparameter tuning and advanced backtesting with transaction costs. Visualize these insights in a dedicated Performance Dashboard.
 
 ### Success Criteria
-- [x] **Paper Exchange**: A mock exchange adapter running in memory/Redis that duplicates the live exchange interface.
-- [x] **TWAP/VWAP**: Functional execution algorithms capable of splitting parent orders into child orders.
-- [x] **Slippage Implementation**: Simulated latency and slippage in the Paper Trading environment.
-- [x] **Execution Reports**: Post-trade analysis showing "Implementation Shortfall" (Decision Price vs. Avg Fill Price).
-
-**Track Status:**
-- 🟢 **Track S** (Architect): COMPLETE
-- 🟢 **Track D** (Dockmaster): COMPLETE
-- 🟢 **Track A** (Paper Trading): COMPLETE
-- 🟢 **Track B** (Algo Execution): COMPLETE
-- 🟢 **Track C** (Metrics): COMPLETE
-
----
-
-## 📦 Deliverables
-
-- `PaperExchange` Class
-- `TWAPStrategy` & `VWAPStrategy`
-- `ExecutionReport` Schema
-- `SlippageCalculator`
-
----
-
-**Last Updated:** April 4, 2026
+- [ ] **Optimization Engine**: A service capable of running grid/random search on strategy parameters to maximize Sharpe Ratio.
+- [ ] **Realistic Backtesting**: Backtests now account for Trading Fees (0.1%) and Estimated Slippage.
+- [ ] **Performance Dashboard**: A new UI view displaying equity curves, drawdown charts, and "Strategy Cards" with performance metrics.
+- [ ] **Mobile Monitor**: A responsive, read-only view of the P&L and active positions for mobile devices.

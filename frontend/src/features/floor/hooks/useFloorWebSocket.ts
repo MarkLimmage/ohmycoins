@@ -23,7 +23,7 @@ export const useFloorWebSocket = () => {
   const connect = useCallback(async () => {
     if (ws.current?.readyState === WebSocket.OPEN) return
 
-    const token = await OpenAPI.TOKEN()
+    const token = OpenAPI.TOKEN
     // Replace http/https with ws/wss
     const baseUrl = OpenAPI.BASE?.replace(/^http/, "ws") || "wss://api.ohmycoins.com"
     const wsUrl = `${baseUrl}/ws/floor/pnl?token=${token}`

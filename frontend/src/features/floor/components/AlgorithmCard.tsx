@@ -96,8 +96,8 @@ export const AlgorithmCard = ({
             size="sm" 
             onClick={() => handleAction('pause', onPause)} 
             colorScheme="orange"
-            isLoading={pendingAction === 'pause'}
-            isDisabled={pendingAction !== null}
+            loading={pendingAction === 'pause'}
+            disabled={pendingAction !== null}
           >
             ⏸ Pause
           </Button>
@@ -107,8 +107,8 @@ export const AlgorithmCard = ({
             size="sm" 
             onClick={() => handleAction('resume', onResume)} 
             colorScheme="green"
-            isLoading={pendingAction === 'resume'}
-            isDisabled={pendingAction !== null}
+            loading={pendingAction === 'resume'}
+            disabled={pendingAction !== null}
           >
             ▶ Resume
           </Button>
