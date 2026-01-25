@@ -1,4 +1,6 @@
-export interface SafetyButtonProps {
+import type { ButtonProps } from "@chakra-ui/react"
+
+export interface SafetyButtonProps extends Omit<ButtonProps, 'action'> {
   action: "kill" | "confirm" | "stop"
   onConfirm: () => Promise<void>
   requireConfirmation: boolean
@@ -8,8 +10,8 @@ export interface SafetyButtonProps {
   children?: React.ReactNode
   label?: string
   description?: string
-  buttonSize?: "sm" | "md" | "lg" | "xl" | "2xl" | "2xs" | "xs"
-  colorScheme?: string
+  // Map buttonSize to size for backward compatibility if needed, or rely on ButtonProps size
+  buttonSize?: ButtonProps["size"]
 }
 
 export interface AuditLogEntry {

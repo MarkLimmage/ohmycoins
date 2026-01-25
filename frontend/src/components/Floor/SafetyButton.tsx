@@ -29,6 +29,7 @@ export const SafetyButton = ({
   description,
   buttonSize = "md",
   colorScheme = "red",
+  ...props
 }: SafetyButtonProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -109,6 +110,7 @@ export const SafetyButton = ({
         disabled={isDisabled || isOnCooldown}
         size={buttonSize}
         colorScheme={colorScheme}
+        {...props}
         aria-label={label || `${action} action button`}
         aria-describedby={description ? `${action}-description` : undefined}
         _focus={{
