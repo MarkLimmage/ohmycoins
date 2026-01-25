@@ -1265,3 +1265,80 @@ class DeployedAlgorithmUpdate(SQLModel):
 # Update User model to include relationships
 User.model_rebuild()
 
+
+# =============================================================================
+# Strategy Promotion Models (Track C)
+# =============================================================================
+
+class StrategyPromotionBase(SQLModel):
+    """Base model for strategy promotion requests"""
+    algorithm_id: uuid.UUID = Field(foreign_key="algorithms.id", index=True)
+    from_environment: str = Field(default="lab", max_length=50) # lab, paper
+    to_environment: str = Field(default="floor", max_length=50) # floor, production
+    status: str = Field(default="pending", max_length=20, index=True) # pending, approved, rejected
+    promotion_notes: str | None = Field(default=None, max_length=1000)
+    
+    # Snapshot of the performance at the time of promotion request
+    performance_snapshot_json: str | None = Field(
+        default=None,
+        description="JSON snapshot of backtest performance metrics at time of promotion"
+    )
+
+class StrategyPromotion(StrategyPromotionBase, table=True):
+    """
+    Strategy Promotion Workflow
+    
+    Tracks the approval process for moving an algorithm from The Lab to The Floor.
+    """
+    __tablename__ = "strategy_promotions"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_by: uuid.UUID = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
+    
+    reviewed_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    reviewed_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    rejection_reason: str | None = Field(default=None, max_length=1000)
+
+
+class StrategyPromotionCreate(SQLModel):
+    """Schema for requesting a strategy promotion"""
+    algorithm_id: uuid.UUID
+    promotion_notes: str | None = None
+    performance_snapshot_json: str | None = None
+
+
+class StrategyPromotionUpdate(SQLModel):
+    """Schema for reviewing a strategy promotion (approve/reject)"""
+    status: str = Field(description="approved or rejected")
+    rejection_reason: str | None = None
+    
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        if v not in ["approved", "rejected"]:
+            raise ValueError("Status must be 'approved' or 'rejected'")
+        return v
+
+
+class StrategyPromotionPublic(StrategyPromotionBase):
+    """Schema for returning strategy promotion via API"""
+    id: uuid.UUID
+    created_by: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    reviewed_at: datetime | None
+    reviewed_by: uuid.UUID | None
+    rejection_reason: str | None
+
+

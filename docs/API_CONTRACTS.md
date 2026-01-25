@@ -433,6 +433,67 @@ Examples:
 
 ---
 
+### Feature: Strategy Promotion Workflow
+
+#### Request Promotion
+
+**Endpoint**: `POST /api/v1/promotions/`
+
+**Frontend Component**: `PromotionRequestModal.tsx`
+
+**Request Shape**:
+```json
+{
+  "algorithm_id": "algo-uuid-1234",
+  "promotion_notes": "Strategy performed well in backtest with 2.5 Sharpe Ratio.",
+  "performance_snapshot_json": "{ \"sharpe\": 2.5, \"return\": 15.0 }"
+}
+```
+
+**Success Response (200)**:
+```json
+{
+  "id": "promo-uuid-5678",
+  "algorithm_id": "algo-uuid-1234",
+  "status": "pending",
+  "created_at": "2026-01-25T10:00:00Z"
+}
+```
+
+**UI Behavior**:
+- Show success toast: "Promotion request submitted for approval"
+- Redirect to "My Strategies" dashboard or show updated status
+
+#### Review Promotion (Architect Only)
+
+**Endpoint**: `PATCH /api/v1/promotions/{id}`
+
+**Frontend Component**: `PromotionApprovalDashboard.tsx`
+
+**Request Shape**:
+```json
+{
+  "status": "approved", // or "rejected"
+  "rejection_reason": null // required if status is rejected
+}
+```
+
+**Success Response (200)**:
+```json
+{
+  "id": "promo-uuid-5678",
+  "status": "approved",
+  "reviewed_by": "user-uuid-architect",
+  "reviewed_at": "2026-01-25T14:00:00Z"
+}
+```
+
+**UI Behavior**:
+- If approved: Update UI to show strategy is ready for deployment (Active)
+- If rejected: Show rejection reason
+
+---
+
 ### Feature: The Floor (Trading Execution)
 
 #### Algorithm Deployment
