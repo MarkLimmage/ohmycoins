@@ -338,6 +338,8 @@ def test_calculate_realized_pnl_date_filter(
 ):
     """Test P&L calculation with date filters"""
     now = datetime.now(timezone.utc)
+    # Define start of today specifically to avoid time-of-day edge cases in tests
+    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     
     # Trade 1: Yesterday
     session.add(Order(
@@ -348,7 +350,7 @@ def test_calculate_realized_pnl_date_filter(
         price=Decimal('50000.00'),
         filled_quantity=Decimal('1.0'),
         status='filled',
-        filled_at=now - timedelta(days=2)
+        filled_at=start_of_today - timedelta(days=2)
     ))
     session.add(Order(
         user_id=test_user.id,
@@ -358,10 +360,10 @@ def test_calculate_realized_pnl_date_filter(
         price=Decimal('51000.00'),
         filled_quantity=Decimal('1.0'),
         status='filled',
-        filled_at=now - timedelta(days=1)
+        filled_at=start_of_today - timedelta(days=1)
     ))
     
-    # Trade 2: Today
+    # Trade 2: Today (start of day + 1h/2h ensuring it falls within the day)
     session.add(Order(
         user_id=test_user.id,
         coin_type='ETH',
@@ -370,7 +372,7 @@ def test_calculate_realized_pnl_date_filter(
         price=Decimal('3000.00'),
         filled_quantity=Decimal('1.0'),
         status='filled',
-        filled_at=now - timedelta(hours=2)
+        filled_at=start_of_today + timedelta(hours=1)
     ))
     session.add(Order(
         user_id=test_user.id,
@@ -380,12 +382,11 @@ def test_calculate_realized_pnl_date_filter(
         price=Decimal('3100.00'),
         filled_quantity=Decimal('1.0'),
         status='filled',
-        filled_at=now - timedelta(hours=1)
+        filled_at=start_of_today + timedelta(hours=2)
     ))
     session.commit()
     
     # Calculate P&L for today only
-    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     pnl = pnl_engine.calculate_realized_pnl(test_user.id, start_date=start_of_today)
     
     # Should only include ETH trade: 100

@@ -25,6 +25,7 @@ from app.models import User, UserLLMCredentials, AgentSession, AgentSessionStatu
 from app.services.encryption import encryption_service
 from app.services.agent.llm_factory import LLMFactory
 from app.core.security import get_password_hash
+from app.core.config import settings
 
 
 @pytest.mark.security
@@ -330,8 +331,9 @@ class TestAgentSessionIsolation:
             user_id=normal_user.id,
             session_name="Test Session",
             agent_type="financial_advisor",
-            status=AgentSessionStatus.ACTIVE,
-            llm_credential_id=credential.id
+            status=AgentSessionStatus.RUNNING,
+            llm_credential_id=credential.id,
+            user_goal="Make me rich"
         )
         session.add(agent_session)
         session.commit()
@@ -450,10 +452,13 @@ class TestSoftDeleteIsolation:
         Security Requirement: Deleted credentials should not be accessible.
         Expected: Only active credentials returned in API responses.
         """
+        # Get the user corresponding to the token
+        user = session.exec(select(User).where(User.email == settings.EMAIL_TEST_USER)).first()
+        
         # Create two credentials
         encrypted1 = encryption_service.encrypt_api_key("sk-active-key-12345")
         credential1 = UserLLMCredentials(
-            user_id=normal_user.id,
+            user_id=user.id,
             provider="openai",
             model_name="gpt-4",
             encrypted_api_key=encrypted1,
@@ -463,7 +468,7 @@ class TestSoftDeleteIsolation:
         
         encrypted2 = encryption_service.encrypt_api_key("sk-deleted-key-67890")
         credential2 = UserLLMCredentials(
-            user_id=normal_user.id,
+            user_id=user.id,
             provider="anthropic",
             model_name="claude-3-opus",
             encrypted_api_key=encrypted2,

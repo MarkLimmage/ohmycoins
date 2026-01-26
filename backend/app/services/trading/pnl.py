@@ -149,8 +149,9 @@ class PnLEngine:
         )
         
         # Apply filters
-        if start_date:
-            query = query.where(Order.filled_at >= start_date)
+        # Note: We don't filter by start_date in the query because we need 
+        # historical buy orders to correctly calculate cost basis (FIFO).
+        # Filtering by start_date happens in memory during accumulation.
         if end_date:
             query = query.where(Order.filled_at <= end_date)
         if algorithm_id:
@@ -197,7 +198,10 @@ class PnLEngine:
                     
                     # Calculate P&L for this match
                     trade_pnl = match_quantity * (sell_price - buy_price)
-                    realized_pnl += trade_pnl
+                    
+                    # Only calculate/add P&L if within the requested window
+                    if not start_date or order.filled_at >= start_date:
+                        realized_pnl += trade_pnl
                     
                     # Update quantities
                     sell_quantity -= match_quantity

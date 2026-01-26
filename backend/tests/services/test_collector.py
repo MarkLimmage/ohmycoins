@@ -25,6 +25,34 @@ MOCK_API_RESPONSE = {
     }
 }
 
+# Sample HTML response data for scraping
+MOCK_HTML_RESPONSE = """
+<html>
+<body>
+    <table>
+        <tr data-coin="BTC">
+            <td><img src="btc.png"/></td>
+            <td>Bitcoin</td>
+            <td data-value="45000.00">Buy: $45,000.00</td>
+            <td data-value="45100.00">Sell: $45,100.00</td>
+        </tr>
+        <tr data-coin="ETH">
+            <td><img src="eth.png"/></td>
+            <td>Ethereum</td>
+            <td data-value="3000.00">Buy: $3,000.00</td>
+            <td data-value="3010.00">Sell: $3,010.00</td>
+        </tr>
+        <tr data-coin="XRP">
+            <td><img src="xrp.png"/></td>
+            <td>Ripple</td>
+            <td data-value="0.50">Buy: $0.50</td>
+            <td data-value="0.51">Sell: $0.51</td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+
 
 class TestCoinspotCollector:
     """Unit tests for CoinspotCollector class"""
@@ -39,6 +67,7 @@ class TestCoinspotCollector:
         """Test successful API fetch"""
         mock_response = MagicMock()
         mock_response.json.return_value = MOCK_API_RESPONSE
+        mock_response.text = MOCK_HTML_RESPONSE
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -51,21 +80,33 @@ class TestCoinspotCollector:
             assert prices is not None
             assert len(prices) == 3
             assert "btc" in prices
-            assert prices["btc"]["last"] == "45050.00"
+            # Scraper uses (buy+sell)/2 which results in float, str() conversion might drop trailing zeros
+            assert float(prices["btc"]["last"]) == 45050.00
 
     @pytest.mark.asyncio
     async def test_fetch_latest_prices_api_error_status(self, collector):
         """Test API returns non-ok status"""
+        # Note: Scraper mode doesn't usually return standard error JSONs, 
+        # but if we were using API mode this test would be valid.
+        # For scraper mode, this test might need adjustment or we just
+        # ensure it handles HTTP 200 but bad content gracefully.
+        # However, for now, let's just make sure it doesn't crash if we provide HTML.
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "error", "message": "API error"}
+        mock_response.text = "<html>Error</html>"
         mock_response.raise_for_status = MagicMock()
 
+        # If web scraping is on, it ignores json() and parses text(). 
+        # "<html>Error</html>" will yield 0 coins, so fetch_latest_prices returns None (after retries).
+        
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response
             )
 
-            prices = await collector.fetch_latest_prices()
+            # Temporarily speed up sleep for retries
+            with patch("asyncio.sleep", new_callable=AsyncMock):
+                prices = await collector.fetch_latest_prices()
 
             assert prices is None
 
@@ -102,6 +143,7 @@ class TestCoinspotCollector:
         """Test retry logic on failure"""
         mock_response = MagicMock()
         mock_response.json.return_value = MOCK_API_RESPONSE
+        mock_response.text = MOCK_HTML_RESPONSE
         mock_response.raise_for_status = MagicMock()
 
         # First call fails, second succeeds
@@ -198,6 +240,7 @@ class TestCoinspotCollector:
         """Test full collection workflow"""
         mock_response = MagicMock()
         mock_response.json.return_value = MOCK_API_RESPONSE
+        mock_response.text = MOCK_HTML_RESPONSE
         mock_response.raise_for_status = MagicMock()
 
         with patch("httpx.AsyncClient") as mock_client:
@@ -226,8 +269,13 @@ class TestCoinspotCollector:
         """Test the run_collector convenience function"""
         mock_response = MagicMock()
         mock_response.json.return_value = MOCK_API_RESPONSE
+        mock_response.text = MOCK_HTML_RESPONSE
         mock_response.raise_for_status = MagicMock()
 
+        # Force API mode for this test - WAIT, per user request we should test scraping if default.
+        # But run_collector helper might just call the collector. 
+        # If we remove the patch, it will use default setting (scraped).
+        
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response

@@ -364,6 +364,10 @@ class TestRateLimitBypassPrevention:
         Security Requirement: Cannot bypass by creating multiple accounts.
         Expected: Rate limits enforced per user, not per token.
         """
+        # Ensure user is committed so login works
+        session.add(normal_user)
+        session.commit()
+        
         # Login to get first token
         login1 = client.post(
             "/api/v1/login/access-token",
@@ -431,6 +435,10 @@ class TestRateLimitBypassPrevention:
         Security Requirement: Cannot reset by logging out/in.
         Expected: Rate limit tracked in persistent store (Redis/database).
         """
+        # Ensure user is committed so login works
+        session.add(normal_user)
+        session.commit()
+        
         # Make requests in first session
         login1 = client.post(
             "/api/v1/login/access-token",
