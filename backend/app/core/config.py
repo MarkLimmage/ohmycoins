@@ -147,6 +147,12 @@ class Settings(BaseSettings):
     # Trading System Configuration
     TRADING_MODE: Literal["live", "paper"] = "paper"
 
+    # Access Control
+    EMAIL_WHITELIST_ENABLED: bool = False
+    EMAIL_WHITELIST: Annotated[
+        list[EmailStr] | str, BeforeValidator(parse_cors)
+    ] = []
+
     # Coinspot API configuration (for price data collector)
     COINSPOT_API_KEY: str | None = None
     COINSPOT_API_SECRET: str | None = None
