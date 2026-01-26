@@ -116,11 +116,23 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 - ✅ **Performance Tracking**: Implementation Shortfall & Slippage metrics
 - ✅ **Handoff**: "The Strategist" successfully signals "The Tactician"
 
-**Sprint 2.21: The Optimizer - Performance Analytics** (Planned)
-- 📋 **Performance Dashboard**: Visualization of Sharpe, Drawdown, and Execution Slippage
-- 📋 **Hyperparameter Tuning**: Automated grid search for Strategy parameters
-- 📋 **Transaction Cost Analysis**: Including fees and slippage in backtests
-- 📋 **Mobile Monitoring**: Read-only view for "On the Go" P&L tracking
+**Sprint 2.21: The Optimizer - Performance Analytics** (Complete)
+- ✅ **Performance Dashboard**: Visualization of Sharpe, Drawdown, and Execution Slippage
+- ✅ **Hyperparameter Tuning**: Refined strategy prompting (Scope Adjusted)
+- ✅ **Transaction Cost Analysis**: Including fees and slippage in backtests
+- ✅ **Mobile Monitoring**: Read-only view for "On the Go" P&L tracking
+
+**Sprint 2.22: Operation Green Light - Infrastructure & Deployment** (Complete)
+- ✅ **Infrastructure Validation**: Validate Staging Terraform and ECS/RDS stack
+- ✅ **CI/CD Pipeline**: Automated deployment to Staging on merge to main
+- ✅ **Access Control**: Whitelist mechanism for Closed Beta access
+- ✅ **DNS/SSL Verification**: Automated certificate provisioning
+
+**Sprint 2.23: The Guard - Safety First** (Active)
+- 📋 **RiskCheckService**: Hard-coded safety layer for all orders
+- 📋 **Circuit Breakers**: Daily loss limits and kill switches
+- 📋 **Audit Logging**: Immutable logs for all execution attempts
+- 📋 **Onboarding Wizard**: Secure API key handling for new users
 
 **Key Documentation**:
 - [DESIGN_SYSTEM.md](docs/ui/DESIGN_SYSTEM.md) - Component library specifications
@@ -181,6 +193,20 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 - AI-powered strategy generation (GPT-4 code generation for trading algorithms)
 - Multi-agent coordination (specialist agents for different market conditions)
 - Explainable AI (LIME/SHAP for algorithm decision transparency)
+
+---
+
+### 🛑 Phase 6: Operational Hardening (Sprints 2.22-2.23)
+
+**Duration**: Weeks 35-38 (4 weeks)
+**Status**: Active
+**Objective**: Critical infrastructure validation and safety implementation before Live MVP.
+
+**Planned Deliverables**:
+- **Validated Staging Environment**: Accessible via URL
+- **The Guard**: Pre-trade risk validation microservice
+- **Closed Beta Access**: Whitelist system
+- **CI/CD**: Fully automated deployment pipeline
 
 ---
 
