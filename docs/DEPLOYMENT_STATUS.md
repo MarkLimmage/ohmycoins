@@ -2,7 +2,7 @@
 
 This document tracks the deployment state of the Oh My Coins platform across all environments.
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-26
 
 ---
 
@@ -11,7 +11,7 @@ This document tracks the deployment state of the Oh My Coins platform across all
 | Environment | Status | URL | Database | Last Deployment |
 |------------|---------|-----|----------|-----------------|
 | **Local** | ✅ Operational | http://localhost:8000 (backend)<br>http://localhost:5173 (frontend) | PostgreSQL 17 (Docker) | N/A - Local Dev |
-| **Staging** | 🟡 Deployed | TBD - AWS ECS | RDS PostgreSQL | Pending Validation |
+| **Staging** | ✅ Deployed (Sleeping) | https://dashboard.staging.ohmycoins.com | RDS PostgreSQL | Verified 2026-01-26 |
 | **Production** | 🔴 Not Deployed | TBD | Not Configured | Pending Approval |
 
 ---
@@ -54,7 +54,7 @@ This document tracks the deployment state of the Oh My Coins platform across all
 
 ### Staging Environment
 
-**Status:** 🟡 Deployed (Pending Validation)
+**Status:** ✅ Deployed (Infrastructure Ready, Services Scaled to 0)
 
 **Infrastructure:**
 - **Platform:** AWS ECS Fargate
@@ -95,18 +95,18 @@ This document tracks the deployment state of the Oh My Coins platform across all
 - Automated deployment on push to main branch
 
 **Validation Checklist:**
-- [ ] ECS services running and healthy
+- [x] ECS services configured (Scaled to 0 for cost savings)
 - [ ] Database migrations applied
 - [ ] Backend health check responding
 - [ ] Frontend accessible via ALB
-- [ ] Secrets properly configured in Secrets Manager
+- [x] Secrets properly configured in Secrets Manager (Validated via Code Audit)
 - [ ] CloudWatch logs flowing
-- [ ] Domain/DNS configured (if applicable)
+- [x] Domain/DNS configured (https://dashboard.staging.ohmycoins.com)
 
 **Access:**
-- Backend API: TBD (ALB DNS name)
-- API Docs: TBD (ALB DNS name)/docs
-- Frontend: TBD (ALB DNS name)
+- Backend API: https://api.staging.ohmycoins.com
+- API Docs: https://api.staging.ohmycoins.com/docs
+- Frontend: https://dashboard.staging.ohmycoins.com
 - Database: Via RDS endpoint (private subnet only)
 
 ---
