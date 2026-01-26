@@ -63,7 +63,7 @@ class BacktestService:
         df.set_index("timestamp", inplace=True)
         return df
 
-    def run_backtest(self, config: BacktestConfig, strategy_fn: Callable[[pd.DataFrame, dict], pd.DataFrame] = None) -> BacktestResult:
+    def run_backtest(self, config: BacktestConfig, strategy_fn: Callable[[pd.DataFrame, dict], pd.DataFrame] = None, fee_rate: float = 0.001, slippage: float = 0.0005) -> BacktestResult:
         """
         Run a backtest for a given configuration.
         
@@ -72,6 +72,8 @@ class BacktestService:
             strategy_fn: Optional function to calculate signals. If None, uses a default simple strategy.
                          Signature: (df: pd.DataFrame, params: dict) -> pd.DataFrame with 'signal' column.
                          Signal: 1 (buy), -1 (sell), 0 (hold)
+            fee_rate: Trading fee as a decimal (e.g. 0.001 for 0.1%)
+            slippage: Slippage as a decimal (e.g. 0.0005 for 0.05%)
         """
         logger.info(f"Starting backtest for {config.strategy_name} on {config.coin_type}")
         
@@ -91,7 +93,7 @@ class BacktestService:
              df = self._default_strategy(df, config.parameters)
 
         # 3. Simulate Execution (Vectorized)
-        result = self._calculate_performance(df, config.initial_capital)
+        result = self._calculate_performance(df, config.initial_capital, fee_rate, slippage)
         
         result.strategy_name = config.strategy_name
         result.coin_type = config.coin_type
@@ -120,20 +122,35 @@ class BacktestService:
         
         return df
 
-    def _calculate_performance(self, df: pd.DataFrame, initial_capital: Decimal) -> BacktestResult:
+    def _calculate_performance(self, df: pd.DataFrame, initial_capital: Decimal, fee_rate: float, slippage: float) -> BacktestResult:
         """
         Calculate performance metrics from strategy signals.
         """
         # Calculate returns
         df["returns"] = df["close"].pct_change()
-        df["strategy_returns"] = df["position"] * df["returns"]
+        
+        # Handle NaN in position (start of series)
+        df["position"] = df["position"].fillna(0)
+        
+        # Gross Returns
+        df["strategy_returns_gross"] = df["position"] * df["returns"]
+        
+        # Transaction Costs
+        # Cost is incurred when position changes.
+        # Cost % = (Fee + Slippage) * |Change in Position|
+        # This approximates cost as a drag on returns.
+        df["position_change"] = df["position"].diff().fillna(0).abs()
+        df["transaction_costs"] = df["position_change"] * (fee_rate + slippage)
+        
+        # Net Returns
+        df["strategy_returns"] = df["strategy_returns_gross"] - df["transaction_costs"]
         
         # Cumulative Returns
+        # We fill NaN returns with 0 to safely cumprod
+        df["strategy_returns"] = df["strategy_returns"].fillna(0)
+        
         df["cumulative_returns"] = (1 + df["strategy_returns"]).cumprod()
         df["equity"] = float(initial_capital) * df["cumulative_returns"]
-        
-        # Fill NaN
-        df.fillna(0, inplace=True)
         
         # Metrics
         total_return_percent = (df["equity"].iloc[-1] / float(initial_capital)) - 1
@@ -157,7 +174,7 @@ class BacktestService:
         # A trade is defined by a change in position? Or per period?
         # Usually Win Rate is per Trade.
         # Need to reconstruct trades from position changes.
-        trades = self._extract_trades(df)
+        trades = self._extract_trades(df, fee_rate, slippage)
         winning_trades = [t for t in trades if t["pnl"] > 0]
         win_rate = len(winning_trades) / len(trades) if trades else 0.0
         
@@ -185,7 +202,7 @@ class BacktestService:
                                              # I'll return full list but be careful with large ranges.
         )
 
-    def _extract_trades(self, df: pd.DataFrame) -> list[dict[str, Any]]:
+    def _extract_trades(self, df: pd.DataFrame, fee_rate: float, slippage: float) -> list[dict[str, Any]]:
         """
         Reconstruct discrete trades from position series.
         """
@@ -194,6 +211,9 @@ class BacktestService:
         entry_price = 0.0
         entry_time = None
         current_position = 0
+        
+        # Cost factor per side (entry or exit)
+        cost_per_side = fee_rate + slippage
         
         for ts, row in df.iterrows():
             pos = row["position"]
@@ -205,7 +225,16 @@ class BacktestService:
                 # Close existing trade if any
                 if in_trade:
                     exit_price = price
-                    pnl = (exit_price - entry_price) / entry_price * (1 if current_position > 0 else -1)
+                    # Gross PnL
+                    gross_pnl = (exit_price - entry_price) / entry_price * (1 if current_position > 0 else -1)
+                    # Deduct costs for entry and exit
+                    # Note: This is an approximation. 
+                    # Exact: Entry Cost = EntryVal * cost. Exit Cost = ExitVal * cost.
+                    # But since we use pct returns, we sum the pct costs?
+                    # PnL% = (Val_exit - Cost_exit - (Val_entry + Cost_entry)) / (Val_entry + Cost_entry)?
+                    # Standard approx: Gross PnL - (2 * cost_per_side)
+                    pnl = gross_pnl - (2 * cost_per_side)
+                    
                     trades.append({
                         "entry_time": entry_time,
                         "exit_time": ts,
@@ -227,7 +256,9 @@ class BacktestService:
         # Close open trade at end
         if in_trade:
              exit_price = df["close"].iloc[-1]
-             pnl = (exit_price - entry_price) / entry_price * (1 if current_position > 0 else -1)
+             gross_pnl = (exit_price - entry_price) / entry_price * (1 if current_position > 0 else -1)
+             pnl = gross_pnl - (2 * cost_per_side)
+             
              trades.append({
                 "entry_time": entry_time,
                 "exit_time": df.index[-1],
