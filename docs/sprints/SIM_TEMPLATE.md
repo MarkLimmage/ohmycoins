@@ -28,6 +28,7 @@
 - [ ] **Roadmap Alignment**: Ensure sprint objectives align with `ROADMAP.md` Phase objectives.
 - [ ] **Sprint Review**: Conduct final review and update `CURRENT_SPRINT.md` upon completion.
 - [ ] **Test Alignment**: Run the full test suite (`bash scripts/test.sh`) at the end of the sprint to maintain alignment between the test suite and delivered work.
+- [ ] **Merge Safety**: Verify that all transient environment changes (e.g., port mappings in `docker-compose.override.yml`) have been reverted in PRs before merging.
 - [ ] **Next Sprint Planning**: Create the next SIM using `docs/sprints/SIM_TEMPLATE.md`, ensuring **zero drift** from the template structure.
 
 ### Track D: The Dockmaster (Orchestration)
@@ -78,6 +79,12 @@ WORKSPACE ANCHOR:
   ROOT_PATH: ../sprint-X.XX/track-a
   INSTANCE_PORT: 8001
   STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path. All relative paths in documentation refer to this worktree root.
+
+ENVIRONMENT SETUP (TRANSIENT):
+  To prevent port conflicts with other active agents:
+  1. Modify `docker-compose.override.yml` to map host ports to your INSTANCE_PORT (e.g., change "8092:80" to "8001:80").
+  2. If using multiple services, increment ports from your INSTANCE_PORT (e.g., 8001, 8002, 8003).
+  3. CRITICAL: Revert these `docker-compose.override.yml` changes before submitting your Pull Request. The CI/CD pipeline expects standard ports.
 
 TIERED ACCESS:
   READ ONLY:
