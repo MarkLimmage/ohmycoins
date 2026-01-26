@@ -43,6 +43,12 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
+    if settings.EMAIL_WHITELIST_ENABLED and user.email not in settings.EMAIL_WHITELIST:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Account is not whitelisted.",
+        )
     return user
 
 
