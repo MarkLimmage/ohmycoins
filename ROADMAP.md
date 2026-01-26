@@ -1,10 +1,10 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 3.0  
-**Last Updated**: 2026-01-24  
-**Current Phase**: Sprint 2.14 (Documentation Uplift & UI Foundation)  
-**Status**: Active Development  
-**Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)  
+**Version**: 3.1
+**Last Updated**: 2026-04-18
+**Current Phase**: Sprint 2.21 (Performance Analytics & Strategy Optimization)
+**Status**: Active Development
+**Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
 
 ---
@@ -166,8 +166,8 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 
 ### 📋 Phase 5: Advanced Analytics & Optimization (Sprints 2.21+)
 
-**Duration**: Weeks 33+ (Ongoing)  
-**Status**: Future  
+**Duration**: Weeks 33+ (Ongoing)
+**Status**: Active (Sprint 2.21 Complete)
 **Objective**: Advanced visualization, backtesting framework, performance analytics, and continuous optimization.
 
 **Planned Capabilities**:
