@@ -11,7 +11,7 @@ This document tracks the deployment state of the Oh My Coins platform across all
 | Environment | Status | URL | Database | Last Deployment |
 |------------|---------|-----|----------|-----------------|
 | **Local** | ✅ Operational | http://localhost:8000 (backend)<br>http://localhost:5173 (frontend) | PostgreSQL 17 (Docker) | N/A - Local Dev |
-| **Staging** | ✅ Deployed (Sleeping) | https://dashboard.staging.ohmycoins.com | RDS PostgreSQL | Verified 2026-01-26 |
+| **Staging** | 🔴 Decommissioned (Cost Saving) | https://dashboard.staging.ohmycoins.com | RDS PostgreSQL | Teardown: 2026-01-26 |
 | **Production** | 🔴 Not Deployed | TBD | Not Configured | Pending Approval |
 
 ---

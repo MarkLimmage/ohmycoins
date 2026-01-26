@@ -64,6 +64,8 @@ services:
 
   backend:
     restart: "no"
+    deploy:
+      replicas: 1
     ports:
       - "8003:8000"
     build:
@@ -153,6 +155,8 @@ services:
 
   frontend:
     restart: "no"
+    deploy:
+      replicas: 1
     ports:
       - "5174:80"
     build:

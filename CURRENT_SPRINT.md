@@ -1,22 +1,46 @@
-# Current Sprint - Sprint 2.22 (Operation Green Light)
+# Current Sprint - Sprint 2.23 (The Guard)
 
-**Status:** ✅ COMPLETE
-**Date Started:** April 19, 2026
-**Date Ends:** May 2, 2026
-**Focus:** Infrastructure & Deployment
-**Next Sprint:** Sprint 2.23 ("The Guard")
-
----
-
-## 🏁 Sprint 2.22 Conclusion
-
-"Operation Green Light" is complete. The Staging environment is infrastructure-ready, secured by a whitelist, and targeted by an automated CI/CD pipeline.
-
-### Achievements
-- ✅ **Staging Live**: Infrastructure validated and deployed.
-- ✅ **Pipeline Active**: `deploy-staging.yml` functioning.
-- ✅ **Secured**: Access restricted to whitelisted users.
+**Status:** 🛡️ ACTIVE
+**Date Started:** May 3, 2026
+**Date Ends:** May 16, 2026
+**Duration:** 2 Weeks
+**Previous Sprint:** Sprint 2.22 - Complete ✅
+**Focus:** Risk Management & Safety First
 
 ---
 
-See [SPRINT_2.22_COMPLETION_REPORT.md](docs/sprints/SPRINT_2.22_COMPLETION_REPORT.md) for details.
+## 🎯 Sprint 2.23 Objectives
+
+### Primary Goal
+Implement "The Guard," a hard-coded, non-AI safety layer that validates every order against strict risk parameters (Max Drawdown, Position Size, Daily Loss Limit) *before* execution. This is the final gate before real-money trading.
+
+### Success Criteria
+- [ ] **RiskCheckService**: Service active and intercepting all trade requests.
+- [ ] **Circuit Breakers**: "Kill Switch" functionality triggered automatically on drawdown > 5%.
+- [ ] **Audit Logging**: Immutable Ledger of all attempts (Accepted/Rejected).
+- [ ] **Onboarding Wizard**: Secure flow for users to set their API keys and Risk Limits.
+
+### Sprint Metrics
+| Category | Target | Result |
+|----------|--------|--------|
+| Latency Impact | < 50ms | TBD |
+| False Positives | 0% | TBD |
+| Test Coverage | 100% (Safety Critical) | TBD |
+
+**Track Status:**
+- ⚪ **Track D** (Dockmaster): Pending
+- ⚪ **Track A** (Risk Engine): Pending
+- ⚪ **Track B** (UI Control): Pending
+
+---
+
+## 📦 Deliverables
+
+- `RiskCheckService` (Middleware)
+- `AuditLog` table and service
+- `OnboardingWizard` (Frontend Component)
+- `KillSwitch` implementation
+
+---
+
+**Last Updated:** May 3, 2026

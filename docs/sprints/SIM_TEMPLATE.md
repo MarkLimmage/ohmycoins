@@ -39,16 +39,17 @@
 - [ ] Initialization: Launch VS Code instances with unique `--user-data-dir`.
 - [ ] Synchronization: Periodically rebase Track branches with `main` to prevent drift.
 - [ ] Teardown: Clean up worktrees and archive logs upon Track completion.
+- [ ] **Container Hygiene**: Ensure all track-specific containers (e.g., `track-a-db-1`) are stopped and removed before closing the sprint.
 
 ## Workspace Orchestration (Dockmaster Only)
 
 The Dockmaster Agent must execute the following `git worktree` and environment setups before activating Track A, B, and C.
 
-| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port | Color Code |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Track A** | `feat/REQ-XX-001` | `../sprint-X.XX/track-a` | `../sprint-X.XX/data/agent-a` | `8001` | `#3771c8` (Blue) |
-| **Track B** | `feat/REQ-UX-XXX` | `../sprint-X.XX/track-b` | `../sprint-X.XX/data/agent-b` | `3001` | `#2b9e3e` (Green) |
-| **Track C** | `feat/IR-XX-YYY`  | `../sprint-X.XX/track-c` | `../sprint-X.XX/data/agent-c` | `8002` | `#d15715` (Orange) |
+| Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port | Color Code | Container Prefix |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Track A** | `feat/REQ-XX-001` | `../sprint-X.XX/track-a` | `../sprint-X.XX/data/agent-a` | `8001` | `#3771c8` (Blue) | `track-a` |
+| **Track B** | `feat/REQ-UX-XXX` | `../sprint-X.XX/track-b` | `../sprint-X.XX/data/agent-b` | `3001` | `#2b9e3e` (Green) | `track-b` |
+| **Track C** | `feat/IR-XX-YYY`  | `../sprint-X.XX/track-c` | `../sprint-X.XX/data/agent-c` | `8002` | `#d15715` (Orange) | `track-c` |
 
 **Provisioning Script Commands:**
 - [ ] `mkdir -p ../sprint-X.XX/data`
@@ -61,6 +62,14 @@ The Dockmaster Agent must execute the following `git worktree` and environment s
 - [ ] `git worktree add ../sprint-X.XX/track-c feat/IR-XX-YYY`
 - [ ] `mkdir -p ../sprint-X.XX/track-c/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#d15715","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-c/.vscode/settings.json`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-c --new-window ../sprint-X.XX/track-c`
+
+**Teardown Protocol (CRITICAL):**
+At the end of the sprint (or when a track is complete), the Dockmaster MUST:
+1.  **Stop Containers**: `docker ps --filter name=track- -q | xargs -r docker stop`
+2.  **Remove Containers**: `docker ps -a --filter name=track- -q | xargs -r docker rm`
+3.  **Prune Networks**: `docker network prune -f`
+4.  **Remove Worktrees**: `git worktree remove ../sprint-X.XX/track-a --force` (Repeat for B/C)
+5.  **Verify Clean Slate**: Run `docker ps` to ensure only the main project containers remain.
 
 ### Track A: [Feature Name]
 
