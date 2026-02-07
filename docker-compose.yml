@@ -172,7 +172,7 @@ services:
 
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8000
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`) || Host(`api.localhost`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`) || Host(`api.localhost`) || Host(`192.168.0.241`) && PathPrefix(`/api`, `/docs`, `/openapi.json`)
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=http
 
       # HTTPS disabled for local server
