@@ -9,7 +9,7 @@ services:
       - --entrypoints.http.address=:80
       - --log.level=INFO
     ports:
-      - "80:80"
+      - "8090:80"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -210,16 +210,15 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http || Host(`dashboard.localhost`) || Host(`localhost`) || Host(`${DOMAIN?Variable not set}`)
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
-
-      # Enable redirection for HTTP and HTTPS
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
-volumes:
+      # HTTPS disabled for local server
+      # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
+      # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
+      # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
+      # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
+      #es:
   app-db-data:
   app-redis-data:
 
