@@ -2,8 +2,8 @@
 
 **Version**: 3.1
 **Last Updated**: 2026-04-18
-**Current Phase**: Sprint 2.21 (Performance Analytics & Strategy Optimization)
-**Status**: Active Development
+**Current Phase**: Sprint 2.23 (Risk Management & Infrastructure Pivot)
+**Status**: Active Development - Local Infrastructure Migration
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
 
@@ -19,6 +19,9 @@ Oh My Coins is transforming from a simple price-tracking application into an **a
 - **BYOM**: Bring Your Own Model for custom LLM provider integration
 
 **Key Differentiator**: AI-first architecture where documentation drives development through a tiered specification system and AI agent governance.
+
+**Infrastructure Pivot (Feb 2026)**: 
+The project has shifted focus from AWS cloud deployment to a **high-performance local linux server (192.168.0.241)** for the remainder of the development and initial production phases. This allows for lower cost, lower latency, and tighter control during the critical agent training and strategy optimization phases. AWS code is preserved for future scaling.
 
 ---
 

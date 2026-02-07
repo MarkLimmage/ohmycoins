@@ -7,6 +7,8 @@
 ## 1. Overview
 Oh My Coins is a microservices-based platform designed to provide a seamless "Lab-to-Floor" pipeline for algorithmic cryptocurrency trading. It integrates a comprehensive 4-Ledger data collection engine with an autonomous Agentic Data Science capability (The Lab) to enable predictive market intelligence and automated strategy execution.
 
+**Infrastructure Note:** As of Feb 2026, the architecture is deployed on a **dedicated local Linux server (192.168.0.241)** to facilitate rapid iteration and high-frequency data processing without cloud overhead.
+
 ---
 
 ## 2. Architecture Principles

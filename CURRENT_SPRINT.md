@@ -11,8 +11,12 @@
 
 ## 🎯 Sprint 2.23 Objectives
 
+**🚨 CRITICAL PIVOT**: Infrastructure migration to Local Server (192.168.0.241).
+See [Migration Plan](docs/sprints/PLAN_LOCAL_MIGRATION.md) for immediate tasks.
+
 ### Primary Goal
-Implement "The Guard," a hard-coded, non-AI safety layer that validates every order against strict risk parameters (Max Drawdown, Position Size, Daily Loss Limit) *before* execution. This is the final gate before real-money trading.
+Implement "The Guard," a hard-coded, non-AI safety layer that validates every order against strict risk parameters (Max Drawdown, Position Size, Daily Loss Limit) *before* execution.
+**Simultaneously**: Deploy this functionality to the new local server infrastructure.
 
 ### Success Criteria
 - [ ] **RiskCheckService**: Service active and intercepting all trade requests.

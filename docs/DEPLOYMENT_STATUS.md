@@ -10,13 +10,23 @@ This document tracks the deployment state of the Oh My Coins platform across all
 
 | Environment | Status | URL | Database | Last Deployment |
 |------------|---------|-----|----------|-----------------|
-| **Local** | ✅ Operational | http://localhost:8000 (backend)<br>http://localhost:5173 (frontend) | PostgreSQL 17 (Docker) | N/A - Local Dev |
-| **Staging** | 🔴 Decommissioned (Cost Saving) | https://dashboard.staging.ohmycoins.com | RDS PostgreSQL | Teardown: 2026-01-26 |
-| **Production** | 🔴 Not Deployed | TBD | Not Configured | Pending Approval |
+| **Local Dev** | ✅ Operational | http://localhost:8000 | PostgreSQL 17 (Docker) | N/A - Local |
+| **Local Server** | 🚧 Provisioning | http://192.168.0.241 | PostgreSQL 17 (Docker) | Pending Sprint 2.24 |
+| **AWS Prod** | ⏸️ On Hold | TBD | RDS PostgreSQL | Code retained, infra dormant |
 
 ---
 
 ## 📊 Environment Details
+
+### Local Server (192.168.0.241)
+
+**Status:** 🚧 In Progress (Targeting Sprint 2.24)
+
+**Infrastructure:**
+- **Host:** Linux Server (Ubuntu/Debian) @ 192.168.0.241
+- **Orchestration:** Docker Swarm or Compose (TBD via CI/CD)
+- **CI/CD:** GitHub Actions (Self-Hosted Runner recommended)
+- **Network:** Local LAN execution for low latency
 
 ### Local Development Environment
 

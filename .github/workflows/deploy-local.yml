@@ -1,0 +1,46 @@
+name: Deploy to Local Server
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # This requires a runner installed on 192.168.0.241
+    environment: local-server
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file from Secrets
+        run: |
+          echo "DOMAIN=${{ secrets.DOMAIN }}" >> .env
+          echo "DOCKER_IMAGE_BACKEND=${{ secrets.DOCKER_IMAGE_BACKEND }}" >> .env
+          echo "TAG=latest" >> .env
+          echo "FRONTEND_HOST=${{ secrets.FRONTEND_HOST }}" >> .env
+          echo "ENVIRONMENT=production" >> .env
+          echo "BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "FIRST_SUPERUSER=${{ secrets.FIRST_SUPERUSER }}" >> .env
+          echo "FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}" >> .env
+          echo "POSTGRES_SERVER=db" >> .env
+          echo "POSTGRES_PORT=5432" >> .env
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
+          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> .env
+          echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> .env
+          echo "EMAILS_FROM_EMAIL=${{ secrets.EMAILS_FROM_EMAIL }}" >> .env
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
+          
+      - name: Build and Start Containers
+        run: |
+          # Ensure we are using the local docker-compose
+          docker compose -f docker-compose.yml build
+          docker compose -f docker-compose.yml up -d --remove-orphans
+          
+      - name: Prune unused images
+        run: docker image prune -f
