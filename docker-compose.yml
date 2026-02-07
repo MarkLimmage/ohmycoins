@@ -209,8 +209,7 @@ services:
 
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http || Host(`dashboard.localhost`) || Host(`localhost`) || Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`) || Host(`dashboard.localhost`) || Host(`localhost`) || Host(`${DOMAIN?Variable not set}`)
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http
 
       # HTTPS disabled for local server
@@ -218,7 +217,8 @@ services:
       # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
       # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
       # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
-      #es:
+
+volumes:
   app-db-data:
   app-redis-data:
 
