@@ -1,50 +1,41 @@
-# Current Sprint - Sprint 2.23 (The Guard)
+# Current Sprint - Sprint 2.24 (Operational Consolidation)
 
-**Status:** 🛡️ ACTIVE
-**Date Started:** May 3, 2026
-**Date Ends:** May 16, 2026
-**Duration:** 2 Weeks
-**Previous Sprint:** Sprint 2.22 - Complete ✅
-**Focus:** Risk Management & Safety First
+**Status:** 🏗️ ACTIVE
+**Overall Goal:** Stabilize the new Local Server infrastructure, verify all core functionalities (Glass, Human, Catalyst, Exchange, Lab), and finalize the basic Risk Management layer ("The Guard") before allowing user access.
 
 ---
 
-## 🎯 Sprint 2.23 Objectives
+## 🎯 Sprint 2.24 Objectives
 
-**🚨 CRITICAL PIVOT**: Infrastructure migration to Local Server (192.168.0.241).
-See [Migration Plan](docs/sprints/PLAN_LOCAL_MIGRATION.md) for immediate tasks.
+### 1. Infrastructure Verification (The Architect)
+*   **Goal**: Ensure `192.168.0.241` is a robust production-like environment.
+*   **Tasks**:
+    *   Verify data persistence (PostgreSQL/Redis) across container restarts.
+    *   Confirm Traefik routing rules handle all API and WS traffic correctly.
+    *   Verify GitHub Actions Self-Hosted Runner auto-deployment reliability.
 
-### Primary Goal
-Implement "The Guard," a hard-coded, non-AI safety layer that validates every order against strict risk parameters (Max Drawdown, Position Size, Daily Loss Limit) *before* execution.
-**Simultaneously**: Deploy this functionality to the new local server infrastructure.
+### 2. Risk Management (The Developer Team)
+*   **Goal**: Complete "The Guard" safety layer.
+*   **Tasks**:
+    *   **RiskCheckService**: Finalize the middleware that checks every order against limits.
+    *   **Kill Switch**: Implement the API endpoint that immediately halts all trading.
+    *   **Audit Log**: Ensure every trade decision (approve/reject) is logged immutably.
 
-### Success Criteria
-- [ ] **RiskCheckService**: Service active and intercepting all trade requests.
-- [ ] **Circuit Breakers**: "Kill Switch" functionality triggered automatically on drawdown > 5%.
-- [ ] **Audit Logging**: Immutable Ledger of all attempts (Accepted/Rejected).
-- [ ] **Onboarding Wizard**: Secure flow for users to set their API keys and Risk Limits.
-
-### Sprint Metrics
-| Category | Target | Result |
-|----------|--------|--------|
-| Latency Impact | < 50ms | TBD |
-| False Positives | 0% | TBD |
-| Test Coverage | 100% (Safety Critical) | TBD |
-
-**Track Status:**
-- ⚪ **Track D** (Dockmaster): Pending
-- ⚪ **Track A** (Risk Engine): Pending
-- ⚪ **Track B** (UI Control): Pending
+### 3. Integrated Testing (The Tester)
+*   **Goal**: Run E2E tests against the Local Server environment.
+*   **Tasks**:
+    *   Update `pytest` configuration to target `http://192.168.0.241:8090` for integration tests.
+    *   Verify WebSocket connectivity for real-time tickers on the new host.
+    *   Run full regression suite (Data Collectors -> DB -> API).
 
 ---
 
 ## 📦 Deliverables
 
-- `RiskCheckService` (Middleware)
-- `AuditLog` table and service
-- `OnboardingWizard` (Frontend Component)
-- `KillSwitch` implementation
+1.  **Stable Local Deployment**: Reproducible `docker-compose up` with zero manual intervention (aside from .env).
+2.  **Safety Layer**: Active `RiskCheckService` rejecting invalid orders.
+3.  **Green Test Report**: Passing integration tests against the local server.
 
 ---
 
-**Last Updated:** May 3, 2026
+**Last Updated:** Feb 2026

@@ -132,13 +132,14 @@ graph TD
 ## 6. Infrastructure (Track C)
 
 ### 6.1 Deployment Stack
-*   **Containerization**: Docker (Dev), EKS (Prod).
+*   **Host**: Local Linux Server (192.168.0.241).
+*   **Orchestration**: Docker Compose with Traefik ingress.
 *   **CI/CD**: GitHub Actions with self-hosted runners.
-*   **Monitoring**: Prometheus + Grafana (Metrics), ELK Stack (Logs).
+*   **Monitoring**: Docker Logs, Status Checks.
 
 ### 6.2 Scalability
-*   **Horizontal**: Stateless collectors and API workers.
-*   **Vertical**: Database read replicas for historical data analysis.
+*   **Horizontal**: Stateless collectors and API workers (replica scaling via Compose).
+*   **Vertical**: Server resource upgrades.
 
 ---
 
@@ -153,7 +154,7 @@ graph TD
 *   **Backend**: FastAPI, SQLAlchemy, Pydantic.
 *   **AI/ML**: LangChain, LangGraph, OpenAI/Anthropic, Scikit-learn, Pandas.
 *   **Data**: PostgreSQL 15+, Redis 7+.
-*   **Infra**: AWS (ECS/Fargate, RDS, ElastiCache), Terraform.
+*   **Infra**: Local Linux Server, Docker Compose, Traefik.
 *   **ORM**: SQLModel (with known constraints - see Technical Constraints below).
 
 ---

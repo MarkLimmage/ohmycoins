@@ -2,7 +2,7 @@
 
 This document tracks the deployment state of the Oh My Coins platform across all environments.
 
-**Last Updated:** 2026-01-26
+**Last Updated:** 2026-02-14
 
 ---
 
@@ -11,8 +11,9 @@ This document tracks the deployment state of the Oh My Coins platform across all
 | Environment | Status | URL | Database | Last Deployment |
 |------------|---------|-----|----------|-----------------|
 | **Local Dev** | ✅ Operational | http://localhost:8000 | PostgreSQL 17 (Docker) | N/A - Local |
-| **Local Server** | 🚧 Provisioning | http://192.168.0.241 | PostgreSQL 17 (Docker) | Pending Sprint 2.24 |
-| **AWS Prod** | ⏸️ On Hold | TBD | RDS PostgreSQL | Code retained, infra dormant |
+| **Local Server** | ✅ Operational | http://192.168.0.241:8090 | PostgreSQL 17 (Docker) | Automated (GitHub Actions) |
+| **AWS Staging** | 📦 Archived | N/A | RDS PostgreSQL | Deprecated |
+| **AWS Prod** | ❌ Cancelled | N/A | N/A | Pivot to On-Prem |
 
 ---
 
@@ -20,13 +21,26 @@ This document tracks the deployment state of the Oh My Coins platform across all
 
 ### Local Server (192.168.0.241)
 
-**Status:** 🚧 In Progress (Targeting Sprint 2.24)
+**Status:** ✅ Operational
 
 **Infrastructure:**
 - **Host:** Linux Server (Ubuntu/Debian) @ 192.168.0.241
-- **Orchestration:** Docker Swarm or Compose (TBD via CI/CD)
-- **CI/CD:** GitHub Actions (Self-Hosted Runner recommended)
-- **Network:** Local LAN execution for low latency
+- **Ingress:** Traefik v3.6 (Docker)
+- **Orchestration:** Docker Compose
+- **CI/CD:** GitHub Actions (Self-Hosted Runner)
+- **Network:** Local LAN (Port 8090 for HTTP)
+
+**Components:**
+- **Reverse Proxy:** Traefik (Ports 80/8080/8090)
+- **Backend:** FastAPI (Replicas: 2)
+- **Frontend:** Nginx serving React/Vite build
+- **Database:** PostgreSQL 17 (Volume: `omc-db-data`)
+- **Cache:** Redis 7
+
+**Configuration:**
+- **Secrets:** `.env` file manually persisted at `~/omc/ohmycoins/.env`
+- **Routing:** PathPrefix `/api` -> Backend, PathPrefix `/docs` -> Backend, Default -> Frontend
+- **Logs:** `docker compose logs -f`
 
 ### Local Development Environment
 
@@ -39,266 +53,65 @@ This document tracks the deployment state of the Oh My Coins platform across all
 - **Cache:** Redis 7 running in Docker container
 - **Orchestration:** Docker Compose
 
-**Database Status:**
-- All 12 migrations applied successfully
-- Database seeding operational
-- Health checks passing
-
-**Test Status:**
-- ✅ Core functionality tests passing
-- ⚠️ Some integration tests require OPENAI_API_KEY configuration
-- All containers healthy with proper health checks
-
-**Configuration:**
-- Secrets: Loaded from `.env` file
-- API Keys: Configure in `.env` (see `.env.template`)
-- Docker Compose: `docker-compose.yml` + `docker-compose.override.yml`
-
-**Access:**
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- Frontend: http://localhost:5173
-- Database: localhost:5432
-
----
-
-### Staging Environment
-
-**Status:** ✅ Deployed (Infrastructure Ready, Services Scaled to 0)
-
-**Infrastructure:**
-- **Platform:** AWS ECS Fargate
-- **Region:** ap-southeast-2 (Sydney)
-- **Cluster:** ohmycoins-staging
-- **Database:** RDS PostgreSQL (Managed)
-- **Cache:** ElastiCache Redis (Managed)
-- **Load Balancer:** Application Load Balancer (ALB)
-- **Networking:** VPC with public/private subnets
-
-**Terraform Modules:**
-- ✅ VPC Module (networking, subnets, NAT gateway)
-- ✅ Security Groups (ALB, ECS, RDS, Redis)
-- ✅ IAM Roles (ECS task execution, task roles)
-- ✅ RDS PostgreSQL (managed database)
-- ✅ ElastiCache Redis (managed cache)
-- ✅ Application Load Balancer
-- ✅ ECS Cluster & Services
-- ✅ AWS Secrets Manager integration
-
-**Services:**
-- Backend: ECS Fargate service (1 task, 512 CPU, 1024 MB memory)
-- Frontend: ECS Fargate service (1 task, 256 CPU, 512 MB memory)
-
-**Secrets Management:**
-- AWS Secrets Manager: `ohmycoins-staging-app-secrets`
-- Secrets automatically injected into ECS tasks
-- Configuration includes: DB credentials, API keys, SMTP, JWT secret
-
-**Monitoring:**
-- CloudWatch Logs: 7-day retention
-- Container Insights: Disabled (cost optimization)
-- Health Checks: Configured on backend service
-
-**CI/CD:**
-- GitHub Actions workflows configured
-- ECR repositories for Docker images
-- Automated deployment on push to main branch
-
-**Validation Checklist:**
-- [x] ECS services configured (Scaled to 0 for cost savings)
-- [ ] Database migrations applied
-- [ ] Backend health check responding
-- [ ] Frontend accessible via ALB
-- [x] Secrets properly configured in Secrets Manager (Validated via Code Audit)
-- [ ] CloudWatch logs flowing
-- [x] Domain/DNS configured (https://dashboard.staging.ohmycoins.com)
-
-**Access:**
-- Backend API: https://api.staging.ohmycoins.com
-- API Docs: https://api.staging.ohmycoins.com/docs
-- Frontend: https://dashboard.staging.ohmycoins.com
-- Database: Via RDS endpoint (private subnet only)
-
----
-
-### Production Environment
-
-**Status:** 🔴 Not Deployed
-
-**Infrastructure:**
-- **Platform:** AWS ECS Fargate (configured but not deployed)
-- **Region:** ap-southeast-2 (Sydney)
-- **Cluster:** Not created yet
-- **Database:** Not configured
-- **Cache:** Not configured
-
-**Requirements:**
-- [ ] Terraform configuration reviewed and approved
-- [ ] Production secrets configured in AWS Secrets Manager
-- [ ] Domain and SSL certificates configured
-- [ ] Production database backup strategy defined
-- [ ] Monitoring and alerting configured
-- [ ] Load testing completed
-- [ ] Security audit completed
-- [ ] Deployment runbook created
-- [ ] Rollback procedures documented
-- [ ] Production approval from stakeholders
-
-**Target Timeline:**
-- Week 11-12 (pending Track A & B completion)
-
-**Deployment Approval:**
-- Requires sign-off from: Product Owner, Tech Lead, DevOps Lead
-- Go/No-Go meeting scheduled: TBD
-
 ---
 
 ## 🔧 Deployment Procedures
 
+### Local Server Deployment (Automated)
+
+The Local Server (192.168.0.241) uses a Self-Hosted GitHub Actions runner.
+
+1.  **Trigger:** Usage of `git push origin main` triggers the `deploy-local.yml` workflow.
+2.  **Process:**
+    *   Runner checks out code.
+    *   Runner copies `~/omc/ohmycoins/.env` to workspace.
+    *   Runner builds new Docker images.
+    *   Runner executes `docker compose up -d` (zero-downtime rolling update not guaranteed, but downtime is minimal).
+    *   Runner prunes old images.
+
+### Local Server Setup (Manual / First Time)
+
+1.  **SSH into Server:**
+    ```bash
+    ssh mark@192.168.0.241
+    ```
+2.  **Prepare Secrets:**
+    Ensure `~/omc/ohmycoins/.env` exists and has correct production values.
+3.  **Ensure Runner is Active:**
+    Check status of the GitHub Actions runner service.
+
 ### Local Development Setup
 
-1. **Clone Repository:**
-   ```bash
-   git clone https://github.com/MarkLimmage/ohmycoins.git
-   cd ohmycoins
-   ```
-
-2. **Configure Environment:**
-   ```bash
-   cp .env.template .env
-   # Edit .env and set required variables
-   # Minimum required: OPENAI_API_KEY, SECRET_KEY, POSTGRES_PASSWORD
-   ```
-
-3. **Start Services:**
-   ```bash
-   docker compose up -d
-   ```
-
-4. **Access Application:**
-   - Backend: http://localhost:8000
-   - Frontend: http://localhost:5173
-   - API Docs: http://localhost:8000/docs
-
-### Staging Deployment
-
-**Prerequisites:**
-- AWS credentials configured
-- Terraform installed
-- Required secrets available
-
-**Deployment Steps:**
-
-1. **Configure Secrets:**
-   ```bash
-   # Update secrets in AWS Secrets Manager
-   aws secretsmanager put-secret-value \
-     --secret-id ohmycoins-staging-app-secrets \
-     --secret-string file://secrets.json
-   ```
-
-2. **Deploy Infrastructure:**
-   ```bash
-   cd infrastructure/terraform/environments/staging
-   terraform init
-   terraform plan
-   terraform apply
-   ```
-
-3. **Build and Push Images:**
-   ```bash
-   # Triggered automatically by GitHub Actions on push to main
-   # Or manually trigger workflow_dispatch
-   ```
-
-4. **Verify Deployment:**
-   ```bash
-   # Check ECS service status
-   aws ecs describe-services \
-     --cluster ohmycoins-staging \
-     --services backend frontend
-   
-   # Check health endpoint
-   curl https://<alb-dns>/api/v1/utils/health-check/
-   ```
-
-### Production Deployment
-
-**Coming Soon** - Pending approval and completion of validation checklist.
+1.  **Clone Repository:**
+    ```bash
+    git clone https://github.com/MarkLimmage/ohmycoins.git
+    cd ohmycoins
+    ```
+2.  **Configure Environment:**
+    ```bash
+    cp .env.template .env
+    # Edit .env and set required variables
+    ```
+3.  **Start Services:**
+    ```bash
+    docker compose up -d
+    ```
 
 ---
 
-## 📈 Monitoring & Health Checks
+## 📦 Archived Cloud Infrastructure (AWS)
 
-### Local Development
-- Docker container health checks
-- Manual monitoring via logs: `docker compose logs -f`
+*Note: As of Feb 2026, the project has pivoted to on-prem deployment. The AWS infrastructure code (Terraform) is retained in `infrastructure/terraform` for reference but is not active.*
 
-### Staging
-- **CloudWatch Logs:**
-  - Backend: `/ecs/ohmycoins-staging/backend`
-  - Frontend: `/ecs/ohmycoins-staging/frontend`
-- **Health Endpoints:**
-  - Backend: `/api/v1/utils/health-check/`
-- **ECS Service Status:**
-  ```bash
-  aws ecs describe-services \
-    --cluster ohmycoins-staging \
-    --services backend
-  ```
-
-### Production
-- TBD - Will include CloudWatch dashboards, alarms, and PagerDuty integration
-
----
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-**Issue: ECS tasks not starting**
-- Check CloudWatch logs for error messages
-- Verify secrets are configured in Secrets Manager
-- Check security group rules allow traffic
-- Verify task execution role has permissions
-
-**Issue: Database connection failures**
-- Verify RDS instance is available
-- Check security group rules for database access
-- Verify database credentials in Secrets Manager
-- Check VPC subnet routing
-
-**Issue: Health check failures**
-- Check application logs in CloudWatch
-- Verify backend is binding to correct port (8000)
-- Check database connectivity from backend
-- Verify health check endpoint implementation
-
-**Issue: Missing OPENAI_API_KEY**
-- For local: Set in `.env` file
-- For staging/production: Configure in AWS Secrets Manager
-- Verify secrets are being injected into ECS tasks
-
----
-
-## 📝 Change Log
-
-| Date | Environment | Change | Author |
-|------|-------------|--------|--------|
-| 2026-01-09 | Documentation | Initial DEPLOYMENT_STATUS.md created | Track C Developer |
-| TBD | Staging | Initial deployment | TBD |
-| TBD | Production | Production deployment | TBD |
+### Staging (Legacy)
+- **Platform:** AWS ECS Fargate
+- **Database:** RDS PostgreSQL
+- **Secrets:** AWS Secrets Manager
+- **Status:** **Decommissioned**
 
 ---
 
 ## 🔗 Related Documentation
 
 - [Architecture Overview](./ARCHITECTURE.md)
-- [Terraform Deployment Guide](../infrastructure/terraform/DEPLOYMENT_GUIDE_TERRAFORM_ECS.md)
-- [Operations Runbook](../infrastructure/terraform/OPERATIONS_RUNBOOK.md)
-- [Troubleshooting Guide](../infrastructure/terraform/TROUBLESHOOTING.md)
-- [Current Sprint Plan](../CURRENT_SPRINT.md)
-
----
-
-**Note:** This document should be updated after each deployment or significant infrastructure change.
+- [Secrets Management](./SECRETS_MANAGEMENT.md)

@@ -1,5 +1,8 @@
 # Project Handoff & Status Report
 
+> **ℹ️ UPDATE (Feb 2026)**
+> *Infrastructure strategy has pivoted from AWS Cloud (ECS/EKS) to a Local Linux Server deployment. References to "Developer C" infrastructure tasks regarding AWS should be considered archived.*
+
 **Date**: 2026-01-09
 **Version**: 1.0
 **Status**: Consolidated Handoff

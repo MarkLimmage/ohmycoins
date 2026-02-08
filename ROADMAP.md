@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 3.1
-**Last Updated**: 2026-04-18
-**Current Phase**: Sprint 2.23 (Risk Management & Infrastructure Pivot)
+**Version**: 4.0
+**Last Updated**: Feb 2026
+**Current Phase**: Sprint 2.24 (Operational Consolidation)
 **Status**: Active Development - Local Infrastructure Migration
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -27,175 +27,83 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ## 2. Development Phases (Strategic View)
 
-### ✅ Phase 1: Foundation & Infrastructure (Sprints 2.1-2.7)
+### ✅ Phase 1: Foundation & Infrastructure
 
-**Duration**: Weeks 1-12  
 **Status**: Complete  
 **Objective**: Establish core data collection infrastructure, agent framework, and production deployment.
 
 **Key Achievements**:
 - ✅ **4 Ledgers Data Collection**: Glass, Human, Catalyst, Exchange collectors operational
 - ✅ **Agent Framework**: ReAct-based autonomous agents (The Lab) with 8 data retrieval tools
-- ✅ **AWS/ECS Infrastructure**: Production-ready deployment with Terraform, CloudWatch monitoring
+- ✅ **Local Infrastructure**: Production-ready deployment (Docker/Traefik) on Local Server
 - ✅ **Database Integration**: PostgreSQL with Alembic migrations, Redis for caching
-- ✅ **Test Infrastructure**: 645+ passing tests (97.6% pass rate by Sprint 2.7)
+- ✅ **Test Infrastructure**: High coverage (>97%)
 
 **Documentation**:
 - [SYSTEM_REQUIREMENTS.md](docs/SYSTEM_REQUIREMENTS.md) - Core functional requirements
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and microservices structure
 - [Sprint History](docs/archive/history/sprints/) - Detailed sprint retrospectives
 
-**Technical Foundation**:
-- Backend: FastAPI, LangChain, LangGraph
-- Infrastructure: AWS ECS, RDS, ElastiCache
-- Data: DeFiLlama, CryptoPanic, Reddit, SEC APIs
-
 ---
 
-### ✅ Phase 2: Production Hardening & BYOM (Sprints 2.8-2.13)
+### ✅ Phase 2: Production Hardening & BYOM
 
-**Duration**: Weeks 13-18  
 **Status**: Complete  
 **Objective**: Harden platform for production use, implement user-configurable LLM providers, expand data coverage.
 
 **Key Achievements**:
-- ✅ **BYOM Feature Complete** (Sprints 2.8-2.10): OpenAI, Google Gemini, Anthropic Claude support
-  - Database schema with AES-256 encryption
-  - LLM Factory pattern with provider abstraction
-  - Agent orchestrator integration with credential management
-  - 43/43 BYOM tests passing, 342/344 agent integration tests
-- ✅ **Rate Limiting & Security** (Sprint 2.11): Redis-based per-user limits (60 req/min), OWASP alignment
-- ✅ **Production Deployment** (Sprint 2.12): 101 AWS resources, DNS/SSL automation, 9 CloudWatch alarms
-- ✅ **Data Collection Enhancement** (Sprint 2.13): Nansen SmartMoneyFlow model, Coinspot coverage validated
+- ✅ **BYOM Feature Complete**: OpenAI, Google Gemini, Anthropic Claude support
+- ✅ **Rate Limiting & Security**: Redis-based per-user limits, OWASP alignment
+- ✅ **Data Collection Enhancement**: Nansen SmartMoneyFlow model, Coinspot coverage validated
 
 **Documentation**:
 - [BYOM Requirements](docs/requirements/BYOM_EARS_REQUIREMENTS.md) - BYOM functional specifications
 - [TESTING.md](docs/TESTING.md) - Comprehensive testing strategy
 - [DEPLOYMENT_STATUS.md](docs/DEPLOYMENT_STATUS.md) - Production deployment status
 
-**Production Metrics** (Sprint 2.12):
-- 694/702 tests passing (98.9%)
-- Zero-downtime deployment capability
-- Cost-optimized (resources scaled to 0 when idle)
-
 ---
 
-### 🔄 Phase 3: UI/UX Foundation & Living Documentation (Sprints 2.14-2.17)
+### 🔄 Phase 3: UI/UX Foundation & Living Documentation
 
-**Duration**: Weeks 19-24  
-**Status**: Near Completion  
+**Status**: Active / Refinement  
 **Objective**: Establish component library, implement 4 Ledgers dashboard, create Living Documentation System with AI agent governance.
 
-**Sprint 2.14-2.15**: Completed (Documentation & UI Foundation)
-
-**Sprint 2.16: 4 Ledgers Dashboard** (Complete)
-- ✅ Implement Glass Ledger card (TVL/Fee line charts with recharts)
-- ✅ Implement Human Ledger card (Sentiment heatmap with visx)
-- ✅ Implement Catalyst Ledger card (Real-time event ticker with WebSocket)
-- ✅ Implement Exchange Ledger card (Multi-coin sparklines)
-- ✅ Responsive layout (2x2 grid desktop, single column mobile)
-- ✅ E2E tests for Discovery Flow user journey
-
-**Sprint 2.17: The Floor & Risk Management** (Complete)
-- ✅ **Trading Engine Core**: Order execution, Position management, P&L calculation
+**Completed Targets**:
+- ✅ **4 Ledgers Dashboard**: Real-time ticker, Sentiment heatmap, Sparklines
 - ✅ **The Floor UI**: Real-time dashboard, Kill Switch, WebSocket integration
-- ✅ **Promotion Workflow**: Lab-to-Floor algorithm promotion API
-- ✅ **Parallel Development**: Successfully piloted worktree-based multi-agent development
+- ✅ **Parallel Development**: Piloted worktree-based multi-agent development
+- ✅ **The Strategist**: Strategy Generator and Backtesting Engine
+- ✅ **The Tactician**: Paper Trading Engine with Slippage metrics
+- ✅ **The Optimizer**: Performance Dashboard
 
-**Sprint 2.18: Integration & Polish** (Complete)
-- ✅ End-to-end integration of Trading UI and Engine
-- ✅ WebSocket feeds for P&L and Order updates
-- ✅ Robust error handling and Optimistic UI
-
-**Sprint 2.19: The Strategist - Automated Backtesting** (Complete)
-- ✅ **Strategy Generator**: LLM-driven generation of trading parameters
-- ✅ **Backtesting Engine**: Fast, vectorized pandas/numpy engine
-- ✅ **Automated Report Card**: Sharpe, Drawdown, Win Rate calculation
-- ✅ **Lab-to-Floor Pipeline**: Non-interactive promotion of qualified strategies
-
-**Sprint 2.20: The Tactician - Execution & Paper Trading** (Complete)
-- ✅ **Paper Trading Engine**: Simulation Mode with 0-risk execution
-- ✅ **Execution Algorithms**: TWAP and VWAP strategies implemented
-- ✅ **Performance Tracking**: Implementation Shortfall & Slippage metrics
-- ✅ **Handoff**: "The Strategist" successfully signals "The Tactician"
-
-**Sprint 2.21: The Optimizer - Performance Analytics** (Complete)
-- ✅ **Performance Dashboard**: Visualization of Sharpe, Drawdown, and Execution Slippage
-- ✅ **Hyperparameter Tuning**: Refined strategy prompting (Scope Adjusted)
-- ✅ **Transaction Cost Analysis**: Including fees and slippage in backtests
-- ✅ **Mobile Monitoring**: Read-only view for "On the Go" P&L tracking
-
-**Sprint 2.22: Operation Green Light - Infrastructure & Deployment** (Complete)
-- ✅ **Infrastructure Validation**: Validate Staging Terraform and ECS/RDS stack
-- ✅ **CI/CD Pipeline**: Automated deployment to Staging on merge to main
-- ✅ **Access Control**: Whitelist mechanism for Closed Beta access
-- ✅ **DNS/SSL Verification**: Automated certificate provisioning
-
-**Sprint 2.23: The Guard - Safety First** (Active)
-- 📋 **RiskCheckService**: Hard-coded safety layer for all orders
-- 📋 **Circuit Breakers**: Daily loss limits and kill switches
-- 📋 **Audit Logging**: Immutable logs for all execution attempts
-- 📋 **Onboarding Wizard**: Secure API key handling for new users
-
-**Key Documentation**:
-- [DESIGN_SYSTEM.md](docs/ui/DESIGN_SYSTEM.md) - Component library specifications
-- [DATA_VISUALIZATION_SPEC.md](docs/ui/DATA_VISUALIZATION_SPEC.md) - Chart specifications for 4 Ledgers
-- [USER_JOURNEYS.md](docs/USER_JOURNEYS.md) - Persona-driven interaction flows
-- [DOCS_GOVERNANCE.md](docs/DOCS_GOVERNANCE.md) - AI agent orchestration system
-
-**Success Criteria**:
-- Frontend developers can build components from specifications without backend consultation
-- All UI components have Storybook stories
-- 5 user journeys have corresponding E2E tests
-- Documentation-first workflow enforced via PR gates
+**Active Focus (Infrastructure Pivot)**:
+- 🔄 **Local Deployment Verification**: Ensure all Phase 3 features work seamlessly on 192.168.0.241.
+- 🔄 **Documentation Audit**: Aligning all docs with the new on-premise reality.
 
 ---
 
-### 📋 Phase 4: The Floor - Trading Execution (Sprints 2.17-2.20)
+### 📋 Phase 4: Risk & Reliability (The Guard)
 
-**Duration**: Weeks 25-32 (6-8 weeks)  
-**Status**: Planning  
-**Objective**: Implement live paper trading, risk management, and P&L monitoring with safety-critical UI.
+**Status**: Active Sprint Focus  
+**Objective**: Implement live risk management, P&L monitoring security, and operational stability.
 
-**Planned Deliverables**:
-- **Trading Engine**: Order execution, position management, portfolio tracking
-- **Risk Management**: Stop-loss, position sizing, drawdown monitoring
-- **The Floor UI**: Real-time P&L ticker, algorithm status dashboard, emergency kill switch
-- **Lab-to-Floor Promotion**: Workflow for promoting validated strategies from The Lab to live trading
-- **Disconnected State Handling**: WebSocket fallback, data staleness indicators, automatic algorithm pause
-
-**Technical Requirements**:
-- WebSocket for real-time updates (prices, P&L, algorithm status)
-- REST API fallback for critical operations (emergency stop)
-- Audit logging for all trading actions
-- Safety mechanisms: 2-step confirmation, typed confirmations ("STOP"), cooldown periods
-
-**Key Documentation** (Created in Sprint 2.14):
-- [TRADING_UI_SPEC.md](docs/ui/TRADING_UI_SPEC.md) - Floor UI with safety mechanisms
-- [SYSTEM_REQUIREMENTS.md Section 8.4](docs/SYSTEM_REQUIREMENTS.md) - Disconnected state requirements (REQ-FL-DISC-001 to 007)
-- [USER_JOURNEYS.md Journey 5](docs/USER_JOURNEYS.md) - Floor Risk Management workflow
-
-**Requirement IDs**: REQ-FL-001 to REQ-FL-020 (Trading Execution), REQ-FL-DISC-001 to 007 (Disconnected State)
+**Deliverables**:
+- **RiskCheckService**: Hard-coded safety layer for all orders (In Progress)
+- **Circuit Breakers**: "Kill Switch" functionality (In Progress)
+- **Audit Logging**: Immutable logs for all execution attempts
+- **Local Monitoring**: Docker-based health checks and alert system
 
 ---
 
-### 📋 Phase 5: Advanced Analytics & Optimization (Sprints 2.21+)
+### 📋 Phase 5: Advanced Analytics & Optimization
 
-**Duration**: Weeks 33+ (Ongoing)
-**Status**: Active (Sprint 2.21 Complete)
-**Objective**: Advanced visualization, backtesting framework, performance analytics, and continuous optimization.
+**Status**: Future  
+**Objective**: Advanced visualization, ensemble methods, and continuous optimization.
 
 **Planned Capabilities**:
-- **Advanced Visualization**: Multi-timeframe analysis, correlation matrices, custom indicators
-- **Backtesting Framework**: Historical strategy simulation with transaction cost modeling
-- **Performance Analytics**: Sharpe ratio, maximum drawdown, risk-adjusted returns
-- **Algorithm Optimization**: Hyperparameter tuning, ensemble methods, adaptive strategies
-- **Mobile App**: Read-only monitoring for 4 Ledgers and Floor P&L
-
-**Innovation Areas**:
-- AI-powered strategy generation (GPT-4 code generation for trading algorithms)
-- Multi-agent coordination (specialist agents for different market conditions)
-- Explainable AI (LIME/SHAP for algorithm decision transparency)
+- **Algorithm Optimization**: Hyperparameter tuning, ensemble methods
+- **Mobile App**: Read-only monitoring
+- **Explainable AI**: Transparency for algorithm decisions
 
 ---
 

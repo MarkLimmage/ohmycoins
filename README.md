@@ -19,7 +19,6 @@ The documentation has been consolidated to provide a Single Source of Truth:
 *   **[Deployment Status](/docs/DEPLOYMENT_STATUS.md)**: Current state of local/staging/production environments
 *   **[Secrets Management](/docs/SECRETS_MANAGEMENT.md)**: Guide to managing secrets across environments
 *   **[Testing Guide](/docs/TESTING.md)**: Test patterns, known issues, and coverage goals
-*   **[Terraform Infrastructure](/infrastructure/terraform/README.md)**: AWS ECS infrastructure documentation
 
 > **Note**: Historical planning documents and sprint reports have been archived in `/docs/archive/history/`.
 
@@ -29,7 +28,6 @@ The documentation has been consolidated to provide a Single Source of Truth:
 *   Docker & Docker Compose
 *   Python 3.11+
 *   Node.js 18+
-*   Terraform 1.5+
 
 ### 2. Configure Environment
 ```bash
@@ -73,7 +71,6 @@ pytest -m "not slow"         # Skip slow tests
 ## System Structure
 *   **`backend/`**: FastAPI services (Collectors, Agents, Trading Engine).
 *   **`frontend/`**: React/Vite admin dashboard.
-*   **`infrastructure/`**: Terraform modules for AWS ECS deployment.
 *   **`docs/`**: Centralized documentation.
 *   **`.env.template`**: Environment variable template (copy to `.env` for local development).
 *   **`backend/pytest.ini`**: Test configuration with markers.
@@ -89,15 +86,15 @@ The project uses pytest with custom markers for test categorization:
 See `backend/pytest.ini` for full configuration.
 
 ### Secrets Management
-- **Local:** Secrets in `.env` file (not committed to git)
-- **AWS:** Secrets in AWS Secrets Manager, injected by ECS
+- **Local Dev:** Secrets in `.env` file (not committed)
+- **Local Server:** Validated `.env` file manually persisted on host (`~/omc/ohmycoins/.env`)
 
 See [Secrets Management Guide](/docs/SECRETS_MANAGEMENT.md) for details.
 
 ### CI/CD Pipeline
-- **Build:** GitHub Actions builds and pushes Docker images to ECR
-- **Deploy:** Terraform manages infrastructure on AWS ECS Fargate
-- **Monitoring:** CloudWatch logs and Container Insights
+- **Build:** GitHub Actions builds Docker images
+- **Deploy:** Self-hosted runner on Local Server (192.168.0.241) executes `docker compose up`
+- **Orchestration:** Docker Compose with Traefik reverse proxy
 
 See [Deployment Status](/docs/DEPLOYMENT_STATUS.md) for current state.
 

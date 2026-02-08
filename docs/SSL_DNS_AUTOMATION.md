@@ -1,5 +1,8 @@
 # SSL & DNS Automation Setup Guide (Route 53)
 
+> **⚠️ DEPRECATED (AWS Infrastructure)**
+> *This document applies to the legacy AWS ECS infrastructure. The current deployment (as of Feb 2026) utilizes a Local Server without public DNS or Route53 integration.*
+
 This guide explains how to automate SSL certificate creation and DNS configuration for your OhMyCoins staging environment using AWS Route 53.
 
 ## Prerequisites
