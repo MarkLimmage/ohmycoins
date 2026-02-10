@@ -12,7 +12,8 @@ from uuid import UUID
 
 from sqlmodel import Session, func, select
 
-from app.models import Order, Position, User
+from app.models import Order, Position, User, RiskRule
+from app import crud_risk
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +28,17 @@ class TradingSafetyManager:
     Manages trading safety mechanisms and risk controls
     
     Features:
-    - Maximum position size limits
-    - Daily loss limits
-    - Per-algorithm exposure limits
-    - Emergency stop functionality
-    - Risk validation before trade execution
+    - Maximum position size limits (Dynamic via RiskRules)
+    - Kill Switch (SystemSetting)
+    - Audit Logging
     """
     
     def __init__(
         self,
         session: Session,
-        max_position_pct: Decimal = Decimal('0.20'),  # 20% of portfolio per position
-        max_daily_loss_pct: Decimal = Decimal('0.05'),  # 5% daily loss limit
-        max_algorithm_exposure_pct: Decimal = Decimal('0.30'),  # 30% per algorithm
+        max_position_pct: Decimal = Decimal('0.20'),  # 20% of portfolio per position (Fallback)
+        max_daily_loss_pct: Decimal = Decimal('0.05'),  # 5% daily loss limit (Fallback)
+        max_algorithm_exposure_pct: Decimal = Decimal('0.30'),  # 30% per algorithm (Fallback)
     ):
         """
         Initialize safety manager
@@ -59,20 +58,51 @@ class TradingSafetyManager:
     def activate_emergency_stop(self) -> None:
         """
         Activate emergency stop - prevents all new trades
-        
-        This should be called when critical issues are detected.
-        All trading will be halted until emergency stop is cleared.
         """
         self._emergency_stop = True
         logger.critical("EMERGENCY STOP ACTIVATED - All trading halted")
+        crud_risk.set_system_setting(
+            session=self.session, 
+            key="kill_switch", 
+            value={"active": True},
+            description="Emergency Stop Activated via SafetyManager"
+        )
+        crud_risk.create_audit_log(
+            session=self.session,
+            audit_log_create=crud_risk.AuditLogCreate(
+                event_type="kill_switch_activate",
+                severity="critical",
+                details={"source": "safety_manager"},
+                performed_by="system"
+            )
+        )
     
     def clear_emergency_stop(self) -> None:
         """Clear emergency stop and resume trading"""
         self._emergency_stop = False
         logger.warning("Emergency stop cleared - Trading resumed")
+        crud_risk.set_system_setting(
+            session=self.session, 
+            key="kill_switch", 
+            value={"active": False},
+            description="Emergency Stop Cleared via SafetyManager"
+        )
+        crud_risk.create_audit_log(
+            session=self.session,
+            audit_log_create=crud_risk.AuditLogCreate(
+                event_type="kill_switch_deactivate",
+                severity="warning",
+                details={"source": "safety_manager"},
+                performed_by="system"
+            )
+        )
     
     def is_emergency_stopped(self) -> bool:
         """Check if emergency stop is active"""
+        # Check caching or DB
+        setting = crud_risk.get_system_setting(session=self.session, key="kill_switch")
+        if setting and setting.value.get("active", False):
+            return True
         return self._emergency_stop
     
     async def validate_trade(
@@ -102,7 +132,16 @@ class TradingSafetyManager:
             SafetyViolation: If any safety check fails
         """
         # Check emergency stop
-        if self._emergency_stop:
+        if self.is_emergency_stopped():
+            crud_risk.create_audit_log(
+                session=self.session,
+                audit_log_create=crud_risk.AuditLogCreate(
+                    event_type="trade_rejected",
+                    severity="error",
+                    details={"reason": "kill_switch_active", "user_id": str(user_id)},
+                    performed_by="system"
+                )
+            )
             raise SafetyViolation("Emergency stop is active - trading is halted")
         
         # Get user
@@ -113,16 +152,35 @@ class TradingSafetyManager:
         # Calculate trade value
         trade_value = quantity * estimated_price
         
-        # Check position size limit (for buy orders)
-        if side == 'buy':
-            await self._check_position_size_limit(user_id, coin_type, trade_value)
-        
-        # Check daily loss limit
-        await self._check_daily_loss_limit(user_id)
-        
-        # Check algorithm exposure limit (if algorithmic trade)
-        if algorithm_id:
-            await self._check_algorithm_exposure_limit(user_id, algorithm_id, trade_value)
+        try:
+            # Check position size limit (for buy orders)
+            if side == 'buy':
+                await self._check_position_size_limit(user_id, coin_type, trade_value)
+            
+            # Check daily loss limit
+            await self._check_daily_loss_limit(user_id)
+            
+            # Check algorithm exposure limit (if algorithmic trade)
+            if algorithm_id:
+                await self._check_algorithm_exposure_limit(user_id, algorithm_id, trade_value)
+
+        except SafetyViolation as e:
+            crud_risk.create_audit_log(
+                session=self.session,
+                audit_log_create=crud_risk.AuditLogCreate(
+                    event_type="trade_rejected",
+                    severity="warning",
+                    details={
+                        "reason": str(e),
+                        "user_id": str(user_id), 
+                        "coin_type": coin_type, 
+                        "amount": float(quantity),
+                        "value": float(trade_value)
+                    },
+                    performed_by="system"
+                )
+            )
+            raise e
         
         # All checks passed
         logger.info(f"Trade validation passed for user {user_id}: {side} {quantity} {coin_type}")
@@ -158,12 +216,6 @@ class TradingSafetyManager:
         # Calculate total portfolio value
         portfolio_value = self._get_portfolio_value(user_id)
         
-        if portfolio_value == 0:
-            # No existing portfolio, allow first trade up to a reasonable amount
-            # This prevents division by zero and allows initial positions
-            logger.info(f"User {user_id} has no existing portfolio, allowing initial trade")
-            return
-        
         # Get current position value for this coin
         statement = select(Position).where(
             Position.user_id == user_id,
@@ -177,8 +229,43 @@ class TradingSafetyManager:
         
         # Calculate new position value after trade
         new_position_value = current_position_value + trade_value
+
+        # --- Dynamic Risk Rule Check ---
+        active_rules = self.session.exec(
+            select(RiskRule).where(
+                RiskRule.is_active == True, 
+                RiskRule.rule_type == "max_position_size"
+            )
+        ).all()
         
-        # Check if new position exceeds limit
+        for rule in active_rules:
+            # Check for hard value limit (e.g., max 5000 AUD per position)
+            rule_value = rule.value or {}
+            
+            # Check absolute value limit
+            if "max_value" in rule_value:
+                limit_val = Decimal(str(rule_value["max_value"]))
+                if new_position_value > limit_val:
+                    raise SafetyViolation(
+                        f"Dynamic Risk Rule '{rule.name}' violated. "
+                        f"Position {new_position_value:.2f} > Limit {limit_val:.2f}"
+                    )
+            
+            # Check percentage limit override
+            if "max_percentage" in rule_value and portfolio_value > 0:
+                limit_pct = Decimal(str(rule_value["max_percentage"]))
+                max_allowed = portfolio_value * limit_pct
+                if new_position_value > max_allowed:
+                     raise SafetyViolation(
+                        f"Dynamic Risk Rule '{rule.name}' violated. "
+                        f"Position {new_position_value:.2f} > {limit_pct*100}% Portfolio ({max_allowed:.2f})"
+                    )
+
+        if portfolio_value == 0:
+            # No existing portfolio, allow first trade up to a reasonable amount
+            # This prevents division by zero and allows initial positions
+            logger.info(f"User {user_id} has no existing portfolio, allowing initial trade (Dynamic absolute limits still apply)")
+            return
         max_position_value = portfolio_value * self.max_position_pct
         
         if new_position_value > max_position_value:
