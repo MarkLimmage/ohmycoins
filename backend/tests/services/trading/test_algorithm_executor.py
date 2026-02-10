@@ -121,38 +121,44 @@ class TestAlgorithmExecutor:
             session=session,
             max_position_pct=Decimal('0.01')  # Very strict: 1%
         )
-        safety_manager.activate_emergency_stop()  # Activate emergency stop
+        await safety_manager.activate_emergency_stop()  # Activate emergency stop
         
-        executor = AlgorithmExecutor(
-            session=session,
-            api_key="test_key",
-            api_secret="test_secret",
-            safety_manager=safety_manager
-        )
-        
-        algorithm = MockAlgorithm({
-            'action': 'buy',
-            'coin_type': 'BTC',
-            'quantity': 0.01,
-            'confidence': 0.9
-        })
-        
-        market_data = {
-            'prices': {
-                'BTC': {'last': 60000}
+        try:
+            executor = AlgorithmExecutor(
+                session=session,
+                api_key="test_key",
+                api_secret="test_secret",
+                safety_manager=safety_manager
+            )
+            
+            algorithm = MockAlgorithm({
+                'action': 'buy',
+                'coin_type': 'BTC',
+                'quantity': 0.01,
+                'confidence': 0.9
+            })
+            
+            market_data = {
+                'prices': {
+                    'BTC': {'last': 60000}
+                }
             }
-        }
-        
-        result = await executor.execute_algorithm(
-            user_id=test_user.id,
-            algorithm_id=uuid4(),
-            algorithm=algorithm,
-            market_data=market_data
-        )
-        
-        assert result['executed'] is False
-        assert result['reason'] == 'safety_violation'
-        assert 'Emergency stop' in result['error']
+            
+            result = await executor.execute_algorithm(
+                user_id=test_user.id,
+                algorithm_id=uuid4(),
+                algorithm=algorithm,
+                market_data=market_data
+            )
+            
+            assert result['executed'] is False
+            assert result['reason'] == 'safety_violation'
+            assert 'Emergency stop' in result['error']
+        finally:
+            # Cleanup Redis state
+            if safety_manager.redis_client:
+                await safety_manager.redis_client.delete("omc:emergency_stop")
+                await safety_manager.disconnect()
     
     def test_get_algorithm_performance_placeholder(
         self,

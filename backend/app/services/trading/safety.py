@@ -10,9 +10,11 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+import redis.asyncio as redis
 from sqlmodel import Session, func, select
 
-from app.models import Order, Position, User
+from app.models import Order, Position, User, AuditLog
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -55,25 +57,92 @@ class TradingSafetyManager:
         self.max_daily_loss_pct = max_daily_loss_pct
         self.max_algorithm_exposure_pct = max_algorithm_exposure_pct
         self._emergency_stop = False
+        self.redis_client: redis.Redis | None = None
     
-    def activate_emergency_stop(self) -> None:
+    async def connect(self) -> None:
+        """Connect to Redis"""
+        if self.redis_client is None:
+            self.redis_client = await redis.from_url(
+                settings.REDIS_URL,
+                encoding="utf-8",
+                decode_responses=True,
+            )
+
+    async def disconnect(self) -> None:
+        """Disconnect from Redis"""
+        if self.redis_client:
+            await self.redis_client.aclose()
+            self.redis_client = None
+
+    def _log_audit(
+        self,
+        action: str,
+        details: dict[str, Any],
+        severity: str = "INFO",
+        actor_id: UUID | None = None
+    ) -> None:
+        """
+        Create an immutable audit log entry (Risk Management Layer)
+        """
+        try:
+            log_entry = AuditLog(
+                action=action,
+                details=details,
+                severity=severity,
+                actor_id=actor_id
+            )
+            self.session.add(log_entry)
+            self.session.commit()
+            logger.info(f"Audit Log: {action} - {severity}")
+        except Exception as e:
+            logger.error(f"Failed to write audit log: {str(e)}")
+            # Do not raise, as we don't want to crash the application logic for logging failure
+            # unless it's strictly required by compliance (which it might be later).
+
+    async def activate_emergency_stop(self, actor_id: UUID | None = None) -> None:
         """
         Activate emergency stop - prevents all new trades
         
         This should be called when critical issues are detected.
         All trading will be halted until emergency stop is cleared.
         """
-        self._emergency_stop = True
+        if not self.redis_client:
+            await self.connect()
+        
+        await self.redis_client.set("omc:emergency_stop", "true")
+        self._emergency_stop = True # Keep local cache for sync contexts if needed, but primary is redis
+        
+        self._log_audit(
+            action="EMERGENCY_STOP_ACTIVATED",
+            details={"timestamp": str(datetime.now(timezone.utc))},
+            severity="CRITICAL",
+            actor_id=actor_id
+        )
         logger.critical("EMERGENCY STOP ACTIVATED - All trading halted")
     
-    def clear_emergency_stop(self) -> None:
+    async def clear_emergency_stop(self, actor_id: UUID | None = None) -> None:
         """Clear emergency stop and resume trading"""
+        if not self.redis_client:
+            await self.connect()
+            
+        await self.redis_client.delete("omc:emergency_stop")
         self._emergency_stop = False
+        
+        self._log_audit(
+            action="EMERGENCY_STOP_CLEARED",
+            details={"timestamp": str(datetime.now(timezone.utc))},
+            severity="WARNING",
+            actor_id=actor_id
+        )
         logger.warning("Emergency stop cleared - Trading resumed")
     
-    def is_emergency_stopped(self) -> bool:
+    async def is_emergency_stopped(self) -> bool:
         """Check if emergency stop is active"""
-        return self._emergency_stop
+        if not self.redis_client:
+            await self.connect()
+            
+        status = await self.redis_client.get("omc:emergency_stop")
+        return status == "true"
     
     async def validate_trade(
         self,
@@ -101,42 +170,72 @@ class TradingSafetyManager:
         Raises:
             SafetyViolation: If any safety check fails
         """
-        # Check emergency stop
-        if self._emergency_stop:
-            raise SafetyViolation("Emergency stop is active - trading is halted")
-        
-        # Get user
-        user = self.session.get(User, user_id)
-        if not user:
-            raise SafetyViolation(f"User {user_id} not found")
-        
-        # Calculate trade value
-        trade_value = quantity * estimated_price
-        
-        # Check position size limit (for buy orders)
-        if side == 'buy':
-            await self._check_position_size_limit(user_id, coin_type, trade_value)
-        
-        # Check daily loss limit
-        await self._check_daily_loss_limit(user_id)
-        
-        # Check algorithm exposure limit (if algorithmic trade)
-        if algorithm_id:
-            await self._check_algorithm_exposure_limit(user_id, algorithm_id, trade_value)
-        
-        # All checks passed
-        logger.info(f"Trade validation passed for user {user_id}: {side} {quantity} {coin_type}")
-        
-        return {
-            'valid': True,
-            'trade_value': trade_value,
-            'checks_passed': [
-                'emergency_stop',
-                'position_size',
-                'daily_loss',
-                'algorithm_exposure' if algorithm_id else 'manual_trade'
-            ]
-        }
+        try:
+            # Check emergency stop
+            if await self.is_emergency_stopped():
+                raise SafetyViolation("Emergency stop is active - trading is halted")
+            
+            # Get user
+            user = self.session.get(User, user_id)
+            if not user:
+                raise SafetyViolation(f"User {user_id} not found")
+            
+            # Calculate trade value
+            trade_value = quantity * estimated_price
+            
+            # Check position size limit (for buy orders)
+            if side == 'buy':
+                await self._check_position_size_limit(user_id, coin_type, trade_value)
+            
+            # Check daily loss limit
+            await self._check_daily_loss_limit(user_id)
+            
+            # Check algorithm exposure limit (if algorithmic trade)
+            if algorithm_id:
+                await self._check_algorithm_exposure_limit(user_id, algorithm_id, trade_value)
+            
+            # All checks passed
+            self._log_audit(
+                action="TRADE_APPROVED",
+                details={
+                    "user_id": str(user_id),
+                    "coin": coin_type,
+                    "side": side,
+                    "quantity": float(quantity),
+                    "estimated_price": float(estimated_price),
+                    "trade_value": float(trade_value),
+                    "algorithm_id": str(algorithm_id) if algorithm_id else None
+                },
+                severity="INFO",
+                actor_id=user_id
+            )
+            logger.info(f"Trade validation passed for user {user_id}: {side} {quantity} {coin_type}")
+            
+            return {
+                'valid': True,
+                'trade_value': trade_value,
+                'checks_passed': [
+                    'emergency_stop',
+                    'position_size',
+                    'daily_loss',
+                    'algorithm_exposure' if algorithm_id else 'manual_trade'
+                ]
+            }
+        except SafetyViolation as e:
+            self._log_audit(
+                action="TRADE_REJECTED",
+                details={
+                    "user_id": str(user_id),
+                    "coin": coin_type,
+                    "side": side,
+                    "quantity": float(quantity),
+                    "reason": str(e),
+                    "algorithm_id": str(algorithm_id) if algorithm_id else None
+                },
+                severity="WARNING",
+                actor_id=user_id
+            )
+            raise e
     
     async def _check_position_size_limit(
         self,

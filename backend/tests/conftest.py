@@ -15,6 +15,7 @@ from app.main import app
 from app.models import (
     User,
     Algorithm,
+    AuditLog,
     PriceData5Min,
     Order,
     Position,
@@ -72,6 +73,9 @@ def db() -> Generator[Session, None, None]:
             session.execute(delete(CatalystEvents))
             session.execute(delete(NewsSentiment))
             session.execute(delete(SmartMoneyFlow))
+
+            # Delete audit logs
+            session.execute(delete(AuditLog))
             
             # Finally delete users
             session.execute(delete(User))

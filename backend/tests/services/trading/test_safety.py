@@ -9,8 +9,10 @@ Tests cover:
 - Emergency stop functionality
 """
 import pytest
+import pytest_asyncio
 from decimal import Decimal
 from datetime import datetime, timedelta, timezone
+from typing import AsyncGenerator
 from uuid import uuid4
 
 from sqlmodel import Session, select
@@ -23,15 +25,26 @@ from app.services.trading.safety import (
 )
 
 
-@pytest.fixture
-def safety_manager(session: Session) -> TradingSafetyManager:
+@pytest_asyncio.fixture
+async def safety_manager(session: Session) -> AsyncGenerator[TradingSafetyManager, None]:
     """Create a safety manager instance for testing"""
-    return TradingSafetyManager(
+    manager = TradingSafetyManager(
         session=session,
         max_position_pct=Decimal('0.20'),  # 20%
         max_daily_loss_pct=Decimal('0.05'),  # 5%
         max_algorithm_exposure_pct=Decimal('0.30')  # 30%
     )
+    
+    # Ensure clean state start
+    await manager.connect()
+    await manager.redis_client.delete("omc:emergency_stop")
+    
+    yield manager
+    
+    # Teardown
+    if manager.redis_client:
+        await manager.redis_client.delete("omc:emergency_stop")
+        await manager.disconnect()
 
 
 @pytest.fixture
@@ -69,15 +82,16 @@ def test_user_with_portfolio(session: Session, test_user: User) -> User:
 class TestSafetyManager:
     """Tests for TradingSafetyManager"""
     
-    def test_emergency_stop(self, safety_manager: TradingSafetyManager):
+    @pytest.mark.asyncio
+    async def test_emergency_stop(self, safety_manager: TradingSafetyManager):
         """Test emergency stop activation and clearing"""
-        assert not safety_manager.is_emergency_stopped()
+        assert not await safety_manager.is_emergency_stopped()
         
-        safety_manager.activate_emergency_stop()
-        assert safety_manager.is_emergency_stopped()
+        await safety_manager.activate_emergency_stop()
+        assert await safety_manager.is_emergency_stopped()
         
-        safety_manager.clear_emergency_stop()
-        assert not safety_manager.is_emergency_stopped()
+        await safety_manager.clear_emergency_stop()
+        assert not await safety_manager.is_emergency_stopped()
     
     @pytest.mark.asyncio
     async def test_validate_trade_with_emergency_stop(
@@ -86,7 +100,7 @@ class TestSafetyManager:
         test_user: User
     ):
         """Test that trades are blocked when emergency stop is active"""
-        safety_manager.activate_emergency_stop()
+        await safety_manager.activate_emergency_stop()
         
         with pytest.raises(SafetyViolation, match="Emergency stop is active"):
             await safety_manager.validate_trade(
@@ -331,7 +345,8 @@ class TestSafetyManager:
         
         assert result['valid'] is True
     
-    def test_get_safety_status(
+    @pytest.mark.asyncio
+    async def test_get_safety_status(
         self,
         safety_manager: TradingSafetyManager,
         test_user_with_portfolio: User

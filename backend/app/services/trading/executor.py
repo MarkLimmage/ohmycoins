@@ -80,6 +80,9 @@ class OrderExecutor:
             logger.warning("Order executor is already running")
             return
         
+        # Initialize safety manager redis connection
+        await self.safety_manager.connect()
+        
         self._running = True
         logger.info("Starting order executor")
         
@@ -105,6 +108,7 @@ class OrderExecutor:
                     logger.error(f"Error in order executor main loop: {e}", exc_info=True)
         finally:
             self._running = False
+            await self.safety_manager.disconnect()
             logger.info("Order executor stopped")
     
     async def stop(self) -> None:

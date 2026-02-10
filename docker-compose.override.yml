@@ -12,8 +12,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "8092:80"
-      - "8093:8080"
+      - "8100:80"
+      - "8101:8080"
     # Duplicate the command from docker-compose.yml to add --api.insecure=true
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
@@ -62,14 +62,14 @@ services:
   adminer:
     restart: "no"
     ports:
-      - "8081:8080"
+      - "8102:8080"
 
   backend:
     restart: "no"
     deploy:
       replicas: 1
     ports:
-      - "8003:8000"
+      - "8103:8000"
     build:
       context: ./backend
     # command: sleep infinity  # Infinite loop to keep container alive doing nothing
@@ -103,8 +103,8 @@ services:
   mailcatcher:
     image: schickling/mailcatcher
     ports:
-      - "1081:1080"
-      - "1026:1025"
+      - "1082:1080"
+      - "1027:1025"
 
   db-init:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
@@ -160,7 +160,7 @@ services:
     deploy:
       replicas: 1
     ports:
-      - "5174:80"
+      - "3001:80"
     build:
       context: ./frontend
       args:

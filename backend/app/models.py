@@ -1342,3 +1342,25 @@ class StrategyPromotionPublic(StrategyPromotionBase):
     rejection_reason: str | None
 
 
+
+# ==========================================
+# Risk Management & Audit Logging
+# ==========================================
+
+class AuditLog(SQLModel, table=True):
+    """
+    Immutable log of all safety-critical actions and trade validations.
+    Part of "The Guard" risk management layer.
+    """
+    __tablename__ = "audit_log"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    action: str = Field(max_length=50, description="The action performed (e.g., TRADE_APPROVED, EMERGENCY_STOP)")
+    actor_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=True)
+    details: dict = Field(default={}, sa_column=Column(JSON))
+    severity: str = Field(default="INFO", max_length=20)   # INFO, WARNING, CRITICAL
+

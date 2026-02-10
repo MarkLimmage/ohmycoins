@@ -41,6 +41,7 @@ from app.models import (
     AgentSessionMessage,
     AgentSessionStatus,
     Algorithm,
+    AuditLog,
     CatalystEvents,
     CoinspotCredentials,
     CollectorRuns,
@@ -555,6 +556,7 @@ def clear_all_data(session: Session, commit: bool = True) -> None:
     logger.warning("Clearing all data from database...")
     
     tables = [
+        AuditLog,  # Clear first due to FK to User
         DeployedAlgorithm,
         StrategyPromotion,
         Order,
