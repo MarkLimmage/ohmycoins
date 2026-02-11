@@ -397,6 +397,9 @@ class TradingSafetyManager:
             'emergency_stop': self._emergency_stop,
             'portfolio_value': float(portfolio_value),
             'daily_pnl': float(daily_pnl),
+            'max_daily_loss': float(portfolio_value * self.max_daily_loss_pct),
+            'max_position_size': float(portfolio_value * self.max_position_pct),
+            'max_algorithm_exposure': float(portfolio_value * self.max_algorithm_exposure_pct),
             'limits': {
                 'max_position_pct': float(self.max_position_pct),
                 'max_daily_loss_pct': float(self.max_daily_loss_pct),

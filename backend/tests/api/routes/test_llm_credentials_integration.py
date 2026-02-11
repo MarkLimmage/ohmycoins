@@ -28,6 +28,9 @@ from app.services.agent.llm_factory import LLMFactory
 def cleanup_llm_credentials(session: Session):
     """Clean up LLM credentials before each test to ensure test isolation"""
     yield
+    # Clean up dependent records first
+    session.execute(delete(AgentSession))
+    session.commit()
     # Delete all UserLLMCredentials after each test
     session.execute(delete(UserLLMCredentials))
     session.commit()
