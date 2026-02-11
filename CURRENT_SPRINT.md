@@ -1,40 +1,47 @@
-# Current Sprint - Sprint 2.24 (Operational Consolidation)
+# Current Sprint - Sprint 2.25 (Reliability & Scalability Polish)
 
-**Status:** 🏗️ ACTIVE
-**Overall Goal:** Stabilize the new Local Server infrastructure, verify all core functionalities (Glass, Human, Catalyst, Exchange, Lab), and finalize the basic Risk Management layer ("The Guard") before allowing user access.
+**Status:** 🚀 PLANNED
+**Overall Goal:** Eliminate technical debt identified in the 2.24 retrospective, solidify the "Guard" layer, and prepare "The Strategist" for autonomous trading on the live local server.
 
 ---
 
-## 🎯 Sprint 2.24 Objectives
+## 🎯 Sprint 2.25 Objectives
 
-### 1. Infrastructure Verification (The Architect)
-*   **Goal**: Ensure `192.168.0.241` is a robust production-like environment.
+### 1. Robustness & Cleanup (The Architect & Tester)
+*   **Goal**: Smooth out the "Worktree + Docker" workflow friction.
 *   **Tasks**:
-    *   Verify data persistence (PostgreSQL/Redis) across container restarts.
-    *   Confirm Traefik routing rules handle all API and WS traffic correctly.
-    *   Verify GitHub Actions Self-Hosted Runner auto-deployment reliability.
+    *   Create `scripts/clean_worktree.sh` to handle the "root artifact" deletion automatically.
+    *   Implement a Github Action or Pre-commit hook to check for `alembic` branching conflicts.
+    *   Standardize `.env` templates to use docker service names by default.
 
-### 2. Risk Management (The Developer Team)
-*   **Goal**: Complete "The Guard" safety layer.
+### 2. The Guard - Phase 2 (Track A - Risk)
+*   **Goal**: Advanced Risk Logic & Circuit Breakers.
 *   **Tasks**:
-    *   **RiskCheckService**: Finalize the middleware that checks every order against limits.
-    *   **Kill Switch**: Implement the API endpoint that immediately halts all trading.
-    *   **Audit Log**: Ensure every trade decision (approve/reject) is logged immutably.
+    *   **Dynamic Limits**: Implement "Volatile Market" mode where limits tighten automatically if market volatility spikes (Glass Ledger integration).
+    *   **Slack/Discord Alerts**: When the Kill Switch is triggered, fire a webhook notification.
+    *   **Unit Test Coverage**: Increase coverage for `RiskCheckService` to >95%.
 
-### 3. Integrated Testing (The Tester)
-*   **Goal**: Run E2E tests against the Local Server environment.
+### 3. The Strategist - Live Paper Trading (Track B - AI)
+*   **Goal**: Let the Agents trade "on paper" in the stable environment.
 *   **Tasks**:
-    *   Update `pytest` configuration to target `http://192.168.0.241:8090` for integration tests.
-    *   Verify WebSocket connectivity for real-time tickers on the new host.
-    *   Run full regression suite (Data Collectors -> DB -> API).
+    *   **Paper Exchange**: verify `PaperExchange` class executes orders against local DB without touching CoinSpot API.
+    *   **Strategy Loop**: Run a simple "Moving Average Crossover" agent for 24h on the local server.
+    *   **Observation**: Ensure agents correctly log to `TradeAudit` (Track C's work).
+
+### 4. The Interface - Audit Visualization (Track C - Frontend)
+*   **Goal**: Visualize the decisions made by the Agents and The Guard.
+*   **Tasks**:
+    *   **Audit Log UI**: Table view of `TradeAudit` records (Who decided? Why? Outcome?).
+    *   **Kill Switch History**: Timeline of when/why the switch was thrown.
 
 ---
 
 ## 📦 Deliverables
 
-1.  **Stable Local Deployment**: Reproducible `docker-compose up` with zero manual intervention (aside from .env).
-2.  **Safety Layer**: Active `RiskCheckService` rejecting invalid orders.
-3.  **Green Test Report**: Passing integration tests against the local server.
+1.  **DevOps Scripts**: `clean_worktree.sh` functionality confirmed.
+2.  **Alerting System**: Webhook fired on Risk Event.
+3.  **Active Paper Trading**: Logs showing agents placing "paper" orders locally.
+4.  **Audit Dashboard**: UI visible on `http://192.168.0.241:3001/audit`.
 
 ---
 
