@@ -16,6 +16,9 @@ This document defines the roles and responsibilities for the AI Agent team worki
 *   Establish the Technical Design for assigned tasks before Developers write code.
 *   **Worktree Oversight**: ensure the directory structure remains clean.
 *   **Key Constraint**: Verify all designs align with the Local Server (Linux/Docker) environment (`192.168.0.241`).
+*   **Sprint Retrospectives**: Review team feedback at the end of every sprint and update these instructions.
+*   **Dependency Management**: Review any changes to `pyproject.toml` or `package.json` before approval.
+*   **Migration Coordination**: Act as the "Traffic Controller" for database changes to prevent Alembic conflicts.
 
 ---
 
@@ -26,12 +29,17 @@ This document defines the roles and responsibilities for the AI Agent team worki
 *   **Worktree Orchestration**:
     *   Create worktrees for developers: `git worktree add -b <feature-branch> ../<track-folder> origin/main`.
     *   Initialize each worktree with a `.env` file specific to that track (see "Worktree Configuration" below).
+    *   **Workspace Config**: Create `track-x.code-workspace` files with distinct color themes (Track A: Red, B: Green, C: Blue) to prevent developer context switching errors.
+    *   Let the `code` command loose: Initiate the VS Code sessions for the agents (`code ../omc-track-x/track-x.code-workspace`).
     *   Ensure no port conflicts exist in the worktree configurations.
 *   **Validation**:
     *   When a Developer finishes, go to their worktree/URL.
     *   Run verification tests.
+    *   **Migration Check**: Before merging, run `alembic heads` to ensure no multiple heads (Diamond Dependency).
     *   If passed, squash and merge their branch into `main`.
-    *   `git worktree remove` the directory after successful merge.
+    *   **Cleanup**:
+        *   Run `docker run --rm -v $(pwd):/mnt alpine chown -R $(id -u):$(id -g) /mnt` to remove root-owned artifacts.
+        *   `git worktree remove` the directory after successful merge.
 *   **Integration**: Maintain the master `pytest` suite and Playwright tests on the main branch.
 
 ---
@@ -43,9 +51,14 @@ This document defines the roles and responsibilities for the AI Agent team worki
 1.  **Isolation**: Work ONLY in your assigned worktree directory (e.g., `../omc-track-a/`). DO NOT modify the root `ohmycoins` folder directly unless instructed.
 2.  **Containerized Development**:
     *   ALL code execution/testing must happen inside containers.
+    *   ❌ **Ignore VS Code Warnings**: "Invalid Interpreter" or "Missing Imports" in the editor are false positives. Do not fix them by installing packages on the host.
     *   ❌ DO NOT run `poetry install` or `pytest` on the host machine.
     *   ✅ Run `docker exec -it <track-container-monitor> pytest`.
-3.  **Output Reporting**: When a task is complete, stop your containers, commit your changes to your feature branch, and notify The Tester.
+3.  **Strict Protocols**:
+    *   **Network**: NEVER use `localhost` in `.env` for container communication. Use service names (e.g., `db`, `redis`).
+    *   **Dependencies**: Check `pyproject.toml` BEFORE starting. If a library is missing, add it there, not just via `pip install`.
+    *   **Migrations**: Do not create migration files without Architect approval (to prevent conflicts). If you suspect a conflict, check with The Tester.
+4.  **Output Reporting**: When a task is complete, stop your containers, commit your changes to your feature branch, and notify The Tester.
 
 ### Specialization Tracks & Port Allocations
 Each track operates as an isolated Docker Compose project.
@@ -78,10 +91,13 @@ Each track operates as an isolated Docker Compose project.
 
 ## 📜 Workflow Rules
 
-1.  **Worktree Initialization**:
+1.  **Sprint Setup & Worktree Initialization**:
     *   **Tester**: Runs `git worktree add ...` and `cp .env.example .env`.
-    *   **Tester**: Edits `.env` to set `COMPOSE_PROJECT_NAME`, `POSTGRES_PORT`, and host-mapped API ports according to the Track specs above.
+    *   **Tester**: Edits `.env` to set `COMPOSE_PROJECT_NAME`, `POSTGRES_PORT`, and host-mapped API ports.
+    *   **Tester**: Generates `track-x.code-workspace` JSON with unique `workbench.colorCustomizations`.
+    *   **Tester**: Launches sessions: `code ../omc-track-x/track-x.code-workspace`.
 2.  **Development Cycle**:
+    *   **Developer**: Works ONLY in the launched VS Code, using the pre-configured terminal context.
     *   **Developer**: `cd ../omc-track-x`
     *   **Developer**: `docker compose up -d --build`
     *   **Developer**: `docker exec -it track-x-backend pytest tests/my_new_feature_test.py`
