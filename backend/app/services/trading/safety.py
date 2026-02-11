@@ -13,7 +13,8 @@ from uuid import UUID
 import redis.asyncio as redis
 from sqlmodel import Session, func, select
 
-from app.models import Order, Position, User, AuditLog
+from app.models import Order, Position, User, AuditLog, RiskRule
+from app import crud_risk
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -29,29 +30,18 @@ class TradingSafetyManager:
     Manages trading safety mechanisms and risk controls
     
     Features:
-    - Maximum position size limits
-    - Daily loss limits
-    - Per-algorithm exposure limits
-    - Emergency stop functionality
-    - Risk validation before trade execution
+    - Maximum position size limits (Dynamic via RiskRules)
+    - Kill Switch (Redis-backed for speed)
+    - Audit Logging
     """
     
     def __init__(
         self,
         session: Session,
-        max_position_pct: Decimal = Decimal('0.20'),  # 20% of portfolio per position
-        max_daily_loss_pct: Decimal = Decimal('0.05'),  # 5% daily loss limit
-        max_algorithm_exposure_pct: Decimal = Decimal('0.30'),  # 30% per algorithm
+        max_position_pct: Decimal = Decimal('0.20'),  # 20% of portfolio per position (Fallback)
+        max_daily_loss_pct: Decimal = Decimal('0.05'),  # 5% daily loss limit (Fallback)
+        max_algorithm_exposure_pct: Decimal = Decimal('0.30'),  # 30% per algorithm (Fallback)
     ):
-        """
-        Initialize safety manager
-        
-        Args:
-            session: Database session
-            max_position_pct: Maximum position size as percentage of portfolio (default: 20%)
-            max_daily_loss_pct: Maximum daily loss as percentage of portfolio (default: 5%)
-            max_algorithm_exposure_pct: Maximum exposure per algorithm (default: 30%)
-        """
         self.session = session
         self.max_position_pct = max_position_pct
         self.max_daily_loss_pct = max_daily_loss_pct
@@ -83,43 +73,50 @@ class TradingSafetyManager:
     ) -> None:
         """
         Create an immutable audit log entry (Risk Management Layer)
+        Adapts internal call to database model (AuditLog)
         """
         try:
             log_entry = AuditLog(
-                action=action,
+                event_type=action,
                 details=details,
-                severity=severity,
-                actor_id=actor_id
+                severity=severity.lower(),
+                user_id=actor_id
             )
             self.session.add(log_entry)
             self.session.commit()
             logger.info(f"Audit Log: {action} - {severity}")
         except Exception as e:
             logger.error(f"Failed to write audit log: {str(e)}")
-            # Do not raise, as we don't want to crash the application logic for logging failure
-            # unless it's strictly required by compliance (which it might be later).
-
+                                                                        
     async def activate_emergency_stop(self, actor_id: UUID | None = None) -> None:
         """
         Activate emergency stop - prevents all new trades
-        
-        This should be called when critical issues are detected.
-        All trading will be halted until emergency stop is cleared.
         """
         if not self.redis_client:
             await self.connect()
         
         await self.redis_client.set("omc:emergency_stop", "true")
-        self._emergency_stop = True # Keep local cache for sync contexts if needed, but primary is redis
+        self._emergency_stop = True 
         
         self._log_audit(
             action="EMERGENCY_STOP_ACTIVATED",
-            details={"timestamp": str(datetime.now(timezone.utc))},
+            details={"timestamp": str(datetime.now(timezone.utc)), "source": "redis"},
             severity="CRITICAL",
             actor_id=actor_id
         )
-        logger.critical("EMERGENCY STOP ACTIVATED - All trading halted")
-    
+        logger.critical("EMERGENCY STOP ACTIVATED (Redis) - All trading halted")
+        
+        # Also sync to DB SystemSetting for redundancy (Track A legacy)
+        try:
+            crud_risk.set_system_setting(
+                session=self.session, 
+                key="kill_switch", 
+                value={"active": True},
+                description="Emergency Stop Activated via SafetyManager (Synced from Redis)"
+            )
+        except Exception:
+            pass # Ignore DB sync errors if Redis works
+
     async def clear_emergency_stop(self, actor_id: UUID | None = None) -> None:
         """Clear emergency stop and resume trading"""
         if not self.redis_client:
@@ -130,14 +127,25 @@ class TradingSafetyManager:
         
         self._log_audit(
             action="EMERGENCY_STOP_CLEARED",
-            details={"timestamp": str(datetime.now(timezone.utc))},
+            details={"timestamp": str(datetime.now(timezone.utc)), "source": "redis"},
             severity="WARNING",
             actor_id=actor_id
         )
-        logger.warning("Emergency stop cleared - Trading resumed")
+        logger.warning("Emergency stop cleared (Redis) - Trading resumed")
+        
+        # Sync DB
+        try:
+            crud_risk.set_system_setting(
+                session=self.session, 
+                key="kill_switch", 
+                value={"active": False},
+                description="Emergency Stop Cleared via SafetyManager (Synced from Redis)"
+            )
+        except Exception:
+            pass
     
     async def is_emergency_stopped(self) -> bool:
-        """Check if emergency stop is active"""
+        """Check if emergency stop is active (Checks Redis)"""
         if not self.redis_client:
             await self.connect()
             
@@ -155,26 +163,19 @@ class TradingSafetyManager:
     ) -> dict[str, Any]:
         """
         Validate a trade against all safety mechanisms
-        
-        Args:
-            user_id: User executing the trade
-            coin_type: Cryptocurrency being traded
-            side: 'buy' or 'sell'
-            quantity: Trade quantity
-            estimated_price: Estimated execution price
-            algorithm_id: Algorithm ID if automated trade
-            
-        Returns:
-            Dictionary with validation results
-            
-        Raises:
-            SafetyViolation: If any safety check fails
         """
         try:
             # Check emergency stop
             if await self.is_emergency_stopped():
+                # Log rejection
+                self._log_audit(
+                    action="TRADE_REJECTED",
+                    details={"reason": "kill_switch_active", "user_id": str(user_id)},
+                    severity="ERROR",
+                    actor_id=user_id # system rejection
+                )
                 raise SafetyViolation("Emergency stop is active - trading is halted")
-            
+                                                                                    
             # Get user
             user = self.session.get(User, user_id)
             if not user:
@@ -245,23 +246,9 @@ class TradingSafetyManager:
     ) -> None:
         """
         Check that position size won't exceed limits
-        
-        Args:
-            user_id: User ID
-            coin_type: Coin being traded
-            trade_value: Value of the trade
-            
-        Raises:
-            SafetyViolation: If position size limit would be exceeded
         """
         # Calculate total portfolio value
         portfolio_value = self._get_portfolio_value(user_id)
-        
-        if portfolio_value == 0:
-            # No existing portfolio, allow first trade up to a reasonable amount
-            # This prevents division by zero and allows initial positions
-            logger.info(f"User {user_id} has no existing portfolio, allowing initial trade")
-            return
         
         # Get current position value for this coin
         statement = select(Position).where(
@@ -276,8 +263,41 @@ class TradingSafetyManager:
         
         # Calculate new position value after trade
         new_position_value = current_position_value + trade_value
+
+        # --- Dynamic Risk Rule Check (Merged from Track A) ---
+        active_rules = self.session.exec(
+            select(RiskRule).where(
+                RiskRule.is_active == True, 
+                RiskRule.rule_type == "max_position_size"
+            )
+        ).all()
         
-        # Check if new position exceeds limit
+        for rule in active_rules:
+            rule_value = rule.value or {}
+            
+            # Check absolute value limit
+            if "max_value" in rule_value:
+                limit_val = Decimal(str(rule_value["max_value"]))
+                if new_position_value > limit_val:
+                    raise SafetyViolation(
+                        f"Dynamic Risk Rule '{rule.name}' violated. "
+                        f"Position {new_position_value:.2f} > Limit {limit_val:.2f}"
+                    )
+            
+            # Check percentage limit override
+            if "max_percentage" in rule_value and portfolio_value > 0:
+                limit_pct = Decimal(str(rule_value["max_percentage"]))
+                max_allowed = portfolio_value * limit_pct
+                if new_position_value > max_allowed:
+                     raise SafetyViolation(
+                        f"Dynamic Risk Rule '{rule.name}' violated. "
+                        f"Position {new_position_value:.2f} > {limit_pct*100}% Portfolio ({max_allowed:.2f})"
+                    )
+
+        if portfolio_value == 0:
+            logger.info(f"User {user_id} has no existing portfolio, allowing initial trade (Dynamic absolute limits still apply)")
+            return
+            
         max_position_value = portfolio_value * self.max_position_pct
         
         if new_position_value > max_position_value:
@@ -294,20 +314,9 @@ class TradingSafetyManager:
         )
     
     async def _check_daily_loss_limit(self, user_id: UUID) -> None:
-        """
-        Check that daily losses haven't exceeded limit
-        
-        Args:
-            user_id: User ID
-            
-        Raises:
-            SafetyViolation: If daily loss limit exceeded
-        """
-        # Get portfolio value at start of day
+        """Check that daily losses haven't exceeded limit"""
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Calculate P&L for today
-        # Get all filled orders from today
         statement = select(Order).where(
             Order.user_id == user_id,
             Order.status == 'filled',
@@ -315,71 +324,33 @@ class TradingSafetyManager:
         )
         today_orders = self.session.exec(statement).all()
         
-        # Calculate realized P&L from today's trades
         daily_pnl = Decimal('0')
         for order in today_orders:
             if order.side == 'sell':
-                # For sell orders, calculate profit/loss
-                # This is simplified - full P&L calculation would track cost basis
                 daily_pnl += (order.filled_quantity * order.price)
             elif order.side == 'buy':
                 daily_pnl -= (order.filled_quantity * order.price)
         
-        # Get current portfolio value
         portfolio_value = self._get_portfolio_value(user_id)
         
         if portfolio_value == 0:
             logger.info(f"User {user_id} has no portfolio, skipping daily loss check")
             return
         
-        # Check if loss exceeds limit
         max_loss = portfolio_value * self.max_daily_loss_pct
         
         if daily_pnl < -max_loss:
             raise SafetyViolation(
-                f"Daily loss limit exceeded. "
-                f"Loss: {abs(daily_pnl):.2f} AUD, "
-                f"Limit: {max_loss:.2f} AUD "
-                f"({self.max_daily_loss_pct * 100:.0f}% of portfolio)"
+                f"Daily loss limit exceeded. Loss: {abs(daily_pnl):.2f} AUD, Limit: {max_loss:.2f} AUD"
             )
-        
-        logger.debug(
-            f"Daily loss check passed: "
-            f"P&L: {daily_pnl:.2f} AUD, "
-            f"Limit: {max_loss:.2f} AUD"
-        )
     
-    async def _check_algorithm_exposure_limit(
-        self,
-        user_id: UUID,
-        algorithm_id: UUID,
-        trade_value: Decimal
-    ) -> None:
-        """
-        Check that algorithm exposure won't exceed limits
-        
-        Args:
-            user_id: User ID
-            algorithm_id: Algorithm ID
-            trade_value: Value of the trade
-            
-        Raises:
-            SafetyViolation: If algorithm exposure limit would be exceeded
-        """
-        # Get portfolio value
+    async def _check_algorithm_exposure_limit(self, user_id: UUID, algorithm_id: UUID, trade_value: Decimal) -> None:
+        """Check that algorithm exposure won't exceed limits"""
         portfolio_value = self._get_portfolio_value(user_id)
         
         if portfolio_value == 0:
             logger.info(f"User {user_id} has no portfolio, allowing initial algorithmic trade")
             return
-        
-        # Get current exposure for this algorithm
-        # Sum up all open positions created by this algorithm
-        statement = select(func.sum(Position.total_cost)).where(
-            Position.user_id == user_id
-        )
-        # Note: This is simplified - ideally we'd track which algorithm created each position
-        # For now, we check total algorithm exposure from orders
         
         order_statement = select(func.sum(Order.filled_quantity * Order.price)).where(
             Order.user_id == user_id,
@@ -388,60 +359,25 @@ class TradingSafetyManager:
             Order.side == 'buy'
         )
         algorithm_exposure = self.session.exec(order_statement).first() or Decimal('0')
-        
-        # Calculate new exposure
         new_exposure = algorithm_exposure + trade_value
-        
-        # Check limit
         max_exposure = portfolio_value * self.max_algorithm_exposure_pct
         
         if new_exposure > max_exposure:
             raise SafetyViolation(
-                f"Algorithm exposure limit exceeded. "
-                f"New exposure: {new_exposure:.2f} AUD, "
-                f"Limit: {max_exposure:.2f} AUD "
-                f"({self.max_algorithm_exposure_pct * 100:.0f}% of portfolio)"
+                f"Algorithm exposure limit exceeded. New exposure: {new_exposure:.2f} AUD, Limit: {max_exposure:.2f} AUD"
             )
-        
-        logger.debug(
-            f"Algorithm exposure check passed: "
-            f"{new_exposure:.2f}/{max_exposure:.2f} AUD"
-        )
-    
+
     def _get_portfolio_value(self, user_id: UUID) -> Decimal:
-        """
-        Calculate total portfolio value for a user
-        
-        Args:
-            user_id: User ID
-            
-        Returns:
-            Total portfolio value in AUD
-        """
-        # Get all positions
+        """Calculate total portfolio value for a user"""
         statement = select(Position).where(Position.user_id == user_id)
         positions = self.session.exec(statement).all()
-        
-        # Sum up total cost (this is the invested amount)
-        # In a real system, we'd calculate current market value
-        total_value = sum(pos.total_cost for pos in positions)
-        
-        return total_value
+        return sum(pos.total_cost for pos in positions)
     
     def get_safety_status(self, user_id: UUID) -> dict[str, Any]:
-        """
-        Get current safety status for a user
-        
-        Args:
-            user_id: User ID
-            
-        Returns:
-            Dictionary with safety status information
-        """
-        # Get portfolio value
+        """Get current safety status for a user"""
         portfolio_value = self._get_portfolio_value(user_id)
         
-        # Get today's P&L
+        # Get today's P&L (simplified duplication of logic above)
         today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         statement = select(Order).where(
             Order.user_id == user_id,
@@ -461,9 +397,6 @@ class TradingSafetyManager:
             'emergency_stop': self._emergency_stop,
             'portfolio_value': float(portfolio_value),
             'daily_pnl': float(daily_pnl),
-            'max_daily_loss': float(portfolio_value * self.max_daily_loss_pct),
-            'max_position_size': float(portfolio_value * self.max_position_pct),
-            'max_algorithm_exposure': float(portfolio_value * self.max_algorithm_exposure_pct),
             'limits': {
                 'max_position_pct': float(self.max_position_pct),
                 'max_daily_loss_pct': float(self.max_daily_loss_pct),
@@ -475,17 +408,7 @@ class TradingSafetyManager:
 # Global instance
 _safety_manager: TradingSafetyManager | None = None
 
-
 def get_safety_manager(session: Session) -> TradingSafetyManager:
-    """
-    Get or create the global safety manager instance
-    
-    Args:
-        session: Database session
-        
-    Returns:
-        TradingSafetyManager instance
-    """
     global _safety_manager
     if _safety_manager is None:
         _safety_manager = TradingSafetyManager(session)

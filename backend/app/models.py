@@ -1342,25 +1342,104 @@ class StrategyPromotionPublic(StrategyPromotionBase):
     rejection_reason: str | None
 
 
+# ============================================================================
+# Risk Management & Kill Switch Models
+# ============================================================================
 
-# ==========================================
-# Risk Management & Audit Logging
-# ==========================================
+class RiskRuleBase(SQLModel):
+    name: str = Field(index=True, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    rule_type: str = Field(index=True, description="max_daily_loss, max_position_size, etc.")
+    value: dict = Field(sa_column=Column(JSON), default={})
+    is_active: bool = Field(default=True)
 
-class AuditLog(SQLModel, table=True):
-    """
-    Immutable log of all safety-critical actions and trade validations.
-    Part of "The Guard" risk management layer.
-    """
-    __tablename__ = "audit_log"
-    
+class RiskRule(RiskRuleBase, table=True):
+    __tablename__ = "risk_rule"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    timestamp: datetime = Field(
+    created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
-    action: str = Field(max_length=50, description="The action performed (e.g., TRADE_APPROVED, EMERGENCY_STOP)")
-    actor_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", nullable=True)
-    details: dict = Field(default={}, sa_column=Column(JSON))
-    severity: str = Field(default="INFO", max_length=20)   # INFO, WARNING, CRITICAL
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
 
+class AuditLogBase(SQLModel):
+    event_type: str = Field(index=True, max_length=100)
+    severity: str = Field(default="info", max_length=20)
+    details: dict = Field(sa_column=Column(JSON), default={})
+    user_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+
+class AuditLog(AuditLogBase, table=True):
+    __tablename__ = "audit_log"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+
+class SystemSettingBase(SQLModel):
+    key: str = Field(primary_key=True, max_length=100)
+    value: dict = Field(sa_column=Column(JSON), default={})
+    description: str | None = None
+
+class SystemSetting(SystemSettingBase, table=True):
+    __tablename__ = "system_setting"
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+    )
+
+class SystemSettingPublic(SystemSettingBase):
+    updated_at: datetime
+
+
+
+
+# Risk Rule Schemas
+class RiskRuleCreate(RiskRuleBase):
+    pass
+
+class RiskRuleUpdate(SQLModel):
+    name: str | None = None
+    description: str | None = None
+    rule_type: str | None = None
+    value: dict | None = None
+    is_active: bool | None = None
+
+class RiskRulePublic(RiskRuleBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+class RiskRules(SQLModel):
+    data: list[RiskRulePublic]
+    count: int
+
+# Audit Log Schemas
+class AuditLogCreate(AuditLogBase):
+    pass
+
+class AuditLogPublic(AuditLogBase):
+    id: uuid.UUID
+    timestamp: datetime
+
+class AuditLogs(SQLModel):
+    data: list[AuditLogPublic]
+    count: int
+
+# System Setting Schemas
+class SystemSettingCreate(SystemSettingBase):
+    pass
+
+class SystemSettingUpdate(SQLModel):
+    value: dict | None = None
+    description: str | None = None
+
+class SystemSettingPublic(SystemSettingBase):
+    updated_at: datetime
+
+class SystemSettings(SQLModel):
+    data: list[SystemSettingPublic]
+    count: int
