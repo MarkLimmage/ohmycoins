@@ -16,6 +16,7 @@ from sqlmodel import Session, func, select
 from app.models import Order, Position, User, AuditLog, RiskRule
 from app import crud_risk
 from app.core.config import settings
+from app.utils.notifications import send_slack_alert
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +97,18 @@ class TradingSafetyManager:
             await self.connect()
         
         await self.redis_client.set("omc:emergency_stop", "true")
-        self._emergency_stop = True 
-        
+        self._emergency_stop = True
+
+        # Send alert
+        alert_msg = f"🚨 KILL SWITCH ACTIVATED by {actor_id or 'System'} 🚨\nAll trading halted immediately."
+        await send_slack_alert(alert_msg)
+
+        self._log_audit(
+            "EMERGENCY_STOP_ACTIVATED",
+            {"status": "active", "triggered_by": str(actor_id) if actor_id else "system"},
+            severity="CRITICAL",
+            actor_id=actor_id
+        )
         self._log_audit(
             action="EMERGENCY_STOP_ACTIVATED",
             details={"timestamp": str(datetime.now(timezone.utc)), "source": "redis"},
@@ -151,6 +162,17 @@ class TradingSafetyManager:
             
         status = await self.redis_client.get("omc:emergency_stop")
         return status == "true"
+    
+    async def is_volatile_market(self) -> bool:
+        """
+        Check if market is in 'volatile' mode via Redis (e.g. set by Glass Ledger)
+        """
+        if not self.redis_client:
+            await self.connect()
+            
+        # Check for 'volatile' status in Redis
+        status = await self.redis_client.get("omc:market_status")
+        return status == "volatile"
     
     async def validate_trade(
         self,
@@ -298,15 +320,24 @@ class TradingSafetyManager:
             logger.info(f"User {user_id} has no existing portfolio, allowing initial trade (Dynamic absolute limits still apply)")
             return
             
-        max_position_value = portfolio_value * self.max_position_pct
+        # Volatility Check
+        is_volatile = await self.is_volatile_market()
+        limit_multiplier = Decimal('0.5') if is_volatile else Decimal('1.0')
+        
+        effective_max_pct = self.max_position_pct * limit_multiplier
+        max_position_value = portfolio_value * effective_max_pct
         
         if new_position_value > max_position_value:
-            raise SafetyViolation(
+            msg = (
                 f"Position size limit exceeded for {coin_type}. "
                 f"New position: {new_position_value:.2f} AUD, "
                 f"Limit: {max_position_value:.2f} AUD "
-                f"({self.max_position_pct * 100:.0f}% of portfolio)"
+                f"({effective_max_pct * 100:.1f}% of portfolio)"
             )
+            if is_volatile:
+                msg += " [VOLATILE MARKET MODE ACTIVE - LIMITS HALVED]"
+            
+            raise SafetyViolation(msg)
         
         logger.debug(
             f"Position size check passed for {coin_type}: "
@@ -337,12 +368,18 @@ class TradingSafetyManager:
             logger.info(f"User {user_id} has no portfolio, skipping daily loss check")
             return
         
-        max_loss = portfolio_value * self.max_daily_loss_pct
+        # Volatility Check
+        is_volatile = await self.is_volatile_market()
+        limit_multiplier = Decimal('0.5') if is_volatile else Decimal('1.0')
+
+        effective_max_loss_pct = self.max_daily_loss_pct * limit_multiplier
+        max_loss = portfolio_value * effective_max_loss_pct
         
         if daily_pnl < -max_loss:
-            raise SafetyViolation(
-                f"Daily loss limit exceeded. Loss: {abs(daily_pnl):.2f} AUD, Limit: {max_loss:.2f} AUD"
-            )
+            msg = f"Daily loss limit exceeded. Loss: {abs(daily_pnl):.2f} AUD, Limit: {max_loss:.2f} AUD"
+            if is_volatile:
+                msg += " [VOLATILE MARKET MODE ACTIVE]"
+            raise SafetyViolation(msg)
     
     async def _check_algorithm_exposure_limit(self, user_id: UUID, algorithm_id: UUID, trade_value: Decimal) -> None:
         """Check that algorithm exposure won't exceed limits"""

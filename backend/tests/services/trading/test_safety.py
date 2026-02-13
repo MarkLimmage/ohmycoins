@@ -14,10 +14,11 @@ from decimal import Decimal
 from datetime import datetime, timedelta, timezone
 from typing import AsyncGenerator
 from uuid import uuid4
+from unittest.mock import patch, AsyncMock
 
 from sqlmodel import Session, select
 
-from app.models import User, Position, Order
+from app.models import User, Position, Order, RiskRule
 from app.services.trading.safety import (
     TradingSafetyManager,
     SafetyViolation,
@@ -38,12 +39,14 @@ async def safety_manager(session: Session) -> AsyncGenerator[TradingSafetyManage
     # Ensure clean state start
     await manager.connect()
     await manager.redis_client.delete("omc:emergency_stop")
+    await manager.redis_client.delete("omc:market_status")
     
     yield manager
     
     # Teardown
     if manager.redis_client:
         await manager.redis_client.delete("omc:emergency_stop")
+        await manager.redis_client.delete("omc:market_status")
         await manager.disconnect()
 
 
@@ -423,3 +426,190 @@ class TestSafetyManagerEdgeCases:
         assert status['limits']['max_position_pct'] == 0.10
         assert status['limits']['max_daily_loss_pct'] == 0.02
         assert status['limits']['max_algorithm_exposure_pct'] == 0.15
+
+    @pytest.mark.asyncio
+    async def test_emergency_stop_slack_alert(self, safety_manager: TradingSafetyManager):
+        """Test that emergency stop sends a slack alert"""
+        # Patch the send_slack_alert function where it is active (safety module)
+        with patch('app.services.trading.safety.send_slack_alert', new_callable=AsyncMock) as mock_alert:
+            await safety_manager.activate_emergency_stop()
+            mock_alert.assert_called_once()
+            assert "KILL SWITCH ACTIVATED" in mock_alert.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_volatile_market_detection(self, safety_manager: TradingSafetyManager):
+        """Test detection of volatile market mode via Redis"""
+        # Default is non-volatile
+        assert not await safety_manager.is_volatile_market()
+        
+        # Set volatile
+        await safety_manager.redis_client.set("omc:market_status", "volatile")
+        assert await safety_manager.is_volatile_market()
+        
+        # Clear
+        await safety_manager.redis_client.delete("omc:market_status")
+        assert not await safety_manager.is_volatile_market()
+
+    @pytest.mark.asyncio
+    async def test_volatile_market_limits(
+        self, 
+        safety_manager: TradingSafetyManager, 
+        test_user_with_portfolio: User
+    ):
+        """Test that validation fails in volatile market with halved limits"""
+        # Portfolio: 10,000 AUD
+        # Normal Max Position (20%): 2,000 AUD
+        # Volatile Max Position (10%): 1,000 AUD
+        
+        # Trade: Buy 1,500 AUD of SOL (New Coin)
+        # Should PASS in Normal Market (1500 < 2000)
+        result = await safety_manager.validate_trade(
+            user_id=test_user_with_portfolio.id,
+            coin_type='SOL',
+            side='buy',
+            quantity=Decimal('15'),
+            estimated_price=Decimal('100')  # 15 * 100 = 1,500
+        )
+        assert result['valid'] is True
+        
+        # Set Volatile Mode
+        await safety_manager.redis_client.set("omc:market_status", "volatile")
+        
+        # Should FAIL in Volatile Market (1500 > 1000)
+        with pytest.raises(SafetyViolation) as excinfo:
+            await safety_manager.validate_trade(
+                user_id=test_user_with_portfolio.id,
+                coin_type='SOL',
+                side='buy',
+                quantity=Decimal('15'),
+                estimated_price=Decimal('100')
+            )
+        
+        assert "VOLATILE MARKET MODE ACTIVE" in str(excinfo.value)
+        
+        # Cleanup
+        await safety_manager.redis_client.delete("omc:market_status")
+
+    @pytest.mark.asyncio
+    async def test_daily_loss_limit_volatile(
+        self,
+        session: Session,
+        safety_manager: TradingSafetyManager,
+        test_user_with_portfolio: User
+    ):
+        """Test daily loss limit is halved in volatile market"""
+        # Portfolio: 10,000 AUD
+        # Normal Max Daily Loss (5%): 500 AUD
+        # Volatile Max Daily Loss (2.5%): 250 AUD
+        
+        # 1. Simulate a realized loss of 300 AUD (Sold low)
+        # Buy 1 ETH at 4000 (Cost)
+        buy_order = Order(
+            user_id=test_user_with_portfolio.id,
+            coin_type='ETH',
+            side='buy',
+            quantity=Decimal('1.0'),
+            price=Decimal('4000'),
+            filled_quantity=Decimal('1.0'),
+            status='filled',
+            filled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
+        session.add(buy_order)
+
+        # Sell 1 ETH at 3700 (Avg Cost 4000) -> -300 AUD Loss
+        sell_order = Order(
+            user_id=test_user_with_portfolio.id,
+            coin_type='ETH',
+            side='sell',
+            quantity=Decimal('1.0'),
+            price=Decimal('3700'),  # Loss of 300 vs 4000
+            filled_quantity=Decimal('1.0'),
+            status='filled',
+            filled_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
+        session.add(sell_order)
+        session.commit()
+
+        # 2. Check in Normal Market -> Should PASS (-300 > -500)
+        # Note: -300 is technically "greater" than -500 in magnitude terms check?
+        # The code checks: if daily_pnl < -max_loss:
+        # -300 < -500 is FALSE. So it passes.
+        await safety_manager.validate_trade(
+            user_id=test_user_with_portfolio.id,
+            coin_type='ADA',
+            side='buy',
+            quantity=Decimal('100'),
+            estimated_price=Decimal('0.50')
+        )
+
+        # 3. Set Volatile Mode
+        await safety_manager.redis_client.set("omc:market_status", "volatile")
+
+        # 4. Check in Volatile Market -> Should FAIL (-300 < -250)
+        # max_loss becomes 250. -max_loss is -250.
+        # -300 < -250 is TRUE. So it raises.
+        with pytest.raises(SafetyViolation) as excinfo:
+             await safety_manager.validate_trade(
+                user_id=test_user_with_portfolio.id,
+                coin_type='ADA',
+                side='buy',
+                quantity=Decimal('100'),
+                estimated_price=Decimal('0.50')
+            )
+        
+        assert "VOLATILE MARKET MODE ACTIVE" in str(excinfo.value)
+        assert "Daily loss limit exceeded" in str(excinfo.value)
+
+        # Cleanup
+        await safety_manager.redis_client.delete("omc:market_status")
+
+    @pytest.mark.asyncio
+    async def test_audit_log_failure_silent(
+        self,
+        safety_manager: TradingSafetyManager
+    ):
+        """Test that audit log failures do not crash the application"""
+        # Mock session.add to raise an exception
+        with patch.object(safety_manager.session, 'add', side_effect=Exception("DB Error")):
+             # This simple log call should not raise an exception
+             safety_manager._log_audit("TEST_ACTION", {})
+
+    @pytest.mark.asyncio
+    async def test_risk_rule_percentage_override(
+        self,
+        session: Session,
+        safety_manager: TradingSafetyManager,
+        test_user_with_portfolio: User
+    ):
+        """Test Dynamic Risk Rule percentage override"""
+        # Create a RiskRule that restricts position to 5% (Normal is 20%)
+        # Portfolio 10,000 -> 5% = 500 AUD
+        rule = RiskRule(
+            name="Conservative Strategy",
+            rule_type="max_position_size",
+            value={"max_percentage": "0.05"},
+            is_active=True
+        )
+        session.add(rule)
+        session.commit()
+
+        try:
+            # Try to buy 600 AUD (would pass normal 20% limit, but fails 5% rule)
+            with pytest.raises(SafetyViolation) as excinfo:
+                await safety_manager.validate_trade(
+                    user_id=test_user_with_portfolio.id,
+                    coin_type='DOGE',
+                    side='buy',
+                    quantity=Decimal('600'),
+                    estimated_price=Decimal('1.0')
+                )
+            
+            assert "Dynamic Risk Rule 'Conservative Strategy' violated" in str(excinfo.value)
+        finally:
+            session.delete(rule)
+            session.commit()
+

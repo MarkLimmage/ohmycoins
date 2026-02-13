@@ -153,6 +153,9 @@ class Settings(BaseSettings):
         list[EmailStr] | str, BeforeValidator(parse_cors)
     ] = []
 
+    # Notification Configuration
+    SLACK_WEBHOOK_URL: HttpUrl | None = None
+
     # Coinspot API configuration (for price data collector)
     COINSPOT_API_KEY: str | None = None
     COINSPOT_API_SECRET: str | None = None
