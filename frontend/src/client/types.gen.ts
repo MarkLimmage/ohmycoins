@@ -4,15 +4,54 @@
  * Schema for returning agent artifact via API
  */
 export type AgentArtifactPublic = {
+    /**
+     * Unique artifact identifier
+     */
     id: string;
+    /**
+     * ID of the session this artifact belongs to
+     */
     session_id: string;
+    /**
+     * Type of artifact (model, plot, report, code, data)
+     */
     artifact_type: string;
+    /**
+     * Name of the artifact
+     */
     name: string;
-    description: (string | null);
-    file_path: (string | null);
-    mime_type: (string | null);
-    size_bytes: (number | null);
+    /**
+     * Description of the artifact
+     */
+    description?: (string | null);
+    /**
+     * Storage path
+     */
+    file_path?: (string | null);
+    /**
+     * MIME type
+     */
+    mime_type?: (string | null);
+    /**
+     * Size in bytes
+     */
+    size_bytes?: (number | null);
+    /**
+     * Artifact creation timestamp
+     */
     created_at: string;
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
 };
 
 /**
@@ -29,12 +68,42 @@ export type AgentSessionCreate = {
  * Schema for returning agent session message via API
  */
 export type AgentSessionMessagePublic = {
+    /**
+     * Unique message identifier
+     */
     id: string;
+    /**
+     * ID of the session this message belongs to
+     */
     session_id: string;
+    /**
+     * Role of the sender (user, assistant, system, function)
+     */
     role: string;
+    /**
+     * Content of the message
+     */
     content: string;
-    agent_name: (string | null);
+    /**
+     * Name of the specific agent
+     */
+    agent_name?: (string | null);
+    /**
+     * Message creation timestamp
+     */
     created_at: string;
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
 };
 
 /**
@@ -45,22 +114,76 @@ export type AgentSessionPublic = {
      * Natural language trading goal from user
      */
     user_goal: string;
+    /**
+     * Current status (pending, running, completed, failed, cancelled)
+     */
     status: string;
+    /**
+     * Unique session identifier
+     */
     id: string;
+    /**
+     * ID of the user who owns this session
+     */
     user_id: string;
-    error_message: (string | null);
-    result_summary: (string | null);
+    /**
+     * Error message if failed
+     */
+    error_message?: (string | null);
+    /**
+     * Summary of the session results
+     */
+    result_summary?: (string | null);
+    /**
+     * Session creation timestamp
+     */
     created_at: string;
+    /**
+     * Last update timestamp
+     */
     updated_at: string;
-    completed_at: (string | null);
+    /**
+     * Completion timestamp
+     */
+    completed_at?: (string | null);
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
 };
 
 /**
  * Schema for returning multiple agent sessions
  */
 export type AgentSessionsPublic = {
+    /**
+     * List of agent sessions
+     */
     data: Array<AgentSessionPublic>;
+    /**
+     * Total count of sessions
+     */
     count: number;
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
 };
 
 /**
@@ -69,6 +192,22 @@ export type AgentSessionsPublic = {
 export type ApprovalDecision = {
     approved: boolean;
     reason?: (string | null);
+};
+
+export type AuditLogPublic = {
+    event_type: string;
+    severity?: string;
+    details?: {
+        [key: string]: unknown;
+    };
+    user_id?: (string | null);
+    id: string;
+    timestamp: string;
+};
+
+export type AuditLogs = {
+    data: Array<AuditLogPublic>;
+    count: number;
 };
 
 export type Body_login_login_access_token = {
@@ -128,12 +267,38 @@ export type CoinspotCredentialsUpdate = {
     api_secret?: (string | null);
 };
 
+export type ControlResponse = {
+    status: string;
+    message: string;
+};
+
 /**
  * Single entry in historical P&L data
  */
 export type HistoricalPnLEntry = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * ISO 8601 timestamp of the entry
+     */
     timestamp: string;
+    /**
+     * Realized P&L value for this interval
+     */
     realized_pnl: number;
+    /**
+     * Time interval (hour, day, week, month)
+     */
     interval: string;
 };
 
@@ -151,6 +316,176 @@ export type NewPassword = {
 };
 
 /**
+ * Schema for returning order via API
+ */
+export type OrderPublic = {
+    /**
+     * The UUID of the user placing the order.
+     */
+    user_id: string;
+    /**
+     * The UUID of the algorithm that placed this order, if any.
+     */
+    algorithm_id?: (string | null);
+    /**
+     * The type of coin (e.g., 'BTC', 'ETH').
+     */
+    coin_type: string;
+    /**
+     * The side of the order ('buy' or 'sell').
+     */
+    side: string;
+    /**
+     * The type of order ('market' or 'limit').
+     */
+    order_type?: string;
+    /**
+     * The quantity to buy or sell.
+     */
+    quantity: string;
+    /**
+     * The price for limit orders. Optional for market orders.
+     */
+    price?: (string | null);
+    /**
+     * The quantity that has been filled so far.
+     */
+    filled_quantity?: string;
+    /**
+     * The status of the order (e.g., 'pending', 'filled', 'cancelled').
+     */
+    status?: string;
+    /**
+     * Error message if the order failed.
+     */
+    error_message?: (string | null);
+    /**
+     * The ID of the order on CoinSpot.
+     */
+    coinspot_order_id?: (string | null);
+    /**
+     * The unique identifier for the order.
+     */
+    id: string;
+    /**
+     * The timestamp when the order was created.
+     */
+    created_at: string;
+    /**
+     * The timestamp when the order was last updated.
+     */
+    updated_at: string;
+    /**
+     * The timestamp when the order was submitted.
+     */
+    submitted_at: (string | null);
+    /**
+     * The timestamp when the order was filled.
+     */
+    filled_at: (string | null);
+};
+
+/**
+ * Request schema for placing a new order
+ */
+export type OrderRequest = {
+    /**
+     * The type of coin (e.g., 'BTC', 'ETH').
+     */
+    coin_type: string;
+    /**
+     * The side of the order ('buy' or 'sell').
+     */
+    side: string;
+    /**
+     * The type of order ('market' or 'limit').
+     */
+    order_type?: string;
+    /**
+     * The quantity to buy or sell.
+     */
+    quantity: (number | string);
+    /**
+     * The price for limit orders. Optional for market orders.
+     */
+    price?: (number | string | null);
+    /**
+     * The UUID of the algorithm placing the order.
+     */
+    algorithm_id?: (string | null);
+};
+
+/**
+ * Response schema for an order
+ */
+export type OrderResponse = {
+    /**
+     * The UUID of the user placing the order.
+     */
+    user_id: string;
+    /**
+     * The UUID of the algorithm that placed this order, if any.
+     */
+    algorithm_id?: (string | null);
+    /**
+     * The type of coin (e.g., 'BTC', 'ETH').
+     */
+    coin_type: string;
+    /**
+     * The side of the order ('buy' or 'sell').
+     */
+    side: string;
+    /**
+     * The type of order ('market' or 'limit').
+     */
+    order_type?: string;
+    /**
+     * The quantity to buy or sell.
+     */
+    quantity: string;
+    /**
+     * The price for limit orders. Optional for market orders.
+     */
+    price?: (string | null);
+    /**
+     * The quantity that has been filled so far.
+     */
+    filled_quantity?: string;
+    /**
+     * The status of the order (e.g., 'pending', 'filled', 'cancelled').
+     */
+    status?: string;
+    /**
+     * Error message if the order failed.
+     */
+    error_message?: (string | null);
+    /**
+     * The ID of the order on CoinSpot.
+     */
+    coinspot_order_id?: (string | null);
+    /**
+     * The unique identifier for the order.
+     */
+    id: string;
+    /**
+     * The timestamp when the order was created.
+     */
+    created_at: string;
+    /**
+     * The timestamp when the order was last updated.
+     */
+    updated_at: string;
+    /**
+     * The timestamp when the order was submitted.
+     */
+    submitted_at: (string | null);
+    /**
+     * The timestamp when the order was filled.
+     */
+    filled_at: (string | null);
+};
+
+/**
  * User override request.
  */
 export type OverrideRequest = {
@@ -164,9 +499,33 @@ export type OverrideRequest = {
  * Response model for P&L grouped by algorithm
  */
 export type PnLByAlgorithmResponse = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * Unique identifier of the trading algorithm
+     */
     algorithm_id: string;
+    /**
+     * Realized P&L for this algorithm
+     */
     realized_pnl: number;
+    /**
+     * Unrealized P&L for this algorithm
+     */
     unrealized_pnl: number;
+    /**
+     * Total P&L for this algorithm
+     */
     total_pnl: number;
 };
 
@@ -174,9 +533,33 @@ export type PnLByAlgorithmResponse = {
  * Response model for P&L grouped by coin
  */
 export type PnLByCoinResponse = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * Cryptocurrency symbol (e.g., BTC)
+     */
     coin_type: string;
+    /**
+     * Realized P&L for this coin
+     */
     realized_pnl: number;
+    /**
+     * Unrealized P&L for this coin
+     */
     unrealized_pnl: number;
+    /**
+     * Total P&L for this coin
+     */
     total_pnl: number;
 };
 
@@ -184,24 +567,136 @@ export type PnLByCoinResponse = {
  * Response model for P&L summary
  */
 export type PnLSummaryResponse = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * Total realized profit/loss from closed trades
+     */
     realized_pnl: number;
+    /**
+     * Total unrealized profit/loss from open positions
+     */
     unrealized_pnl: number;
+    /**
+     * Sum of realized and unrealized P&L
+     */
     total_pnl: number;
+    /**
+     * Total number of trades executed
+     */
     total_trades: number;
+    /**
+     * Number of profitable trades
+     */
     winning_trades: number;
+    /**
+     * Number of unprofitable trades
+     */
     losing_trades: number;
+    /**
+     * Percentage of winning trades (0-1.0)
+     */
     win_rate: number;
+    /**
+     * Ratio of gross profit to gross loss
+     */
     profit_factor: number;
+    /**
+     * Total gross profit
+     */
     total_profit: number;
+    /**
+     * Total gross loss
+     */
     total_loss: number;
+    /**
+     * Average profit per winning trade
+     */
     average_win: number;
+    /**
+     * Average loss per losing trade
+     */
     average_loss: number;
+    /**
+     * Largest single profit
+     */
     largest_win: number;
+    /**
+     * Largest single loss
+     */
     largest_loss: number;
+    /**
+     * Maximum peak-to-trough decline
+     */
     max_drawdown: number;
+    /**
+     * Risk-adjusted return metric
+     */
     sharpe_ratio: number;
+    /**
+     * Total trading volume
+     */
     total_volume: number;
+    /**
+     * Total trading fees paid
+     */
     total_fees: number;
+};
+
+/**
+ * Schema for returning position via API
+ */
+export type PositionPublic = {
+    /**
+     * The UUID of the user who owns this position.
+     */
+    user_id: string;
+    /**
+     * The type of coin (e.g., 'BTC', 'ETH').
+     */
+    coin_type: string;
+    /**
+     * The quantity of the coin held.
+     */
+    quantity: string;
+    /**
+     * The average price at which the position was acquired.
+     */
+    average_price: string;
+    /**
+     * The total cost basis of the position.
+     */
+    total_cost: string;
+    /**
+     * The unique identifier for the position.
+     */
+    id: string;
+    /**
+     * The timestamp when the position was first created.
+     */
+    created_at: string;
+    /**
+     * The timestamp when the position was last updated.
+     */
+    updated_at: string;
+    /**
+     * The current market value of the position.
+     */
+    current_value?: (string | null);
+    /**
+     * The unrealized profit or loss.
+     */
+    unrealized_pnl?: (string | null);
 };
 
 export type PrivateUserCreate = {
@@ -215,7 +710,144 @@ export type PrivateUserCreate = {
  * Response model for realized P&L
  */
 export type RealizedPnLResponse = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * Total realized profit/loss
+     */
     realized_pnl: number;
+};
+
+export type RiskRuleCreate = {
+    name: string;
+    description?: (string | null);
+    /**
+     * max_daily_loss, max_position_size, etc.
+     */
+    rule_type: string;
+    value?: {
+        [key: string]: unknown;
+    };
+    is_active?: boolean;
+};
+
+export type RiskRulePublic = {
+    name: string;
+    description?: (string | null);
+    /**
+     * max_daily_loss, max_position_size, etc.
+     */
+    rule_type: string;
+    value?: {
+        [key: string]: unknown;
+    };
+    is_active?: boolean;
+    id: string;
+    created_at: string;
+    updated_at: string;
+};
+
+export type RiskRules = {
+    data: Array<RiskRulePublic>;
+    count: number;
+};
+
+export type RiskRuleUpdate = {
+    name?: (string | null);
+    description?: (string | null);
+    rule_type?: (string | null);
+    value?: ({
+    [key: string]: unknown;
+} | null);
+    is_active?: (boolean | null);
+};
+
+export type SafetyStatusResponse = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * Safety system status: active, triggered, disabled
+     */
+    status: string;
+    /**
+     * When the safety mechanism was triggered
+     */
+    triggered_at?: (string | null);
+    /**
+     * User or system that triggered it
+     */
+    triggered_by?: (string | null);
+};
+
+/**
+ * Schema for requesting a strategy promotion
+ */
+export type StrategyPromotionCreate = {
+    algorithm_id: string;
+    promotion_notes?: (string | null);
+    performance_snapshot_json?: (string | null);
+};
+
+/**
+ * Schema for returning strategy promotion via API
+ */
+export type StrategyPromotionPublic = {
+    algorithm_id: string;
+    from_environment?: string;
+    to_environment?: string;
+    status?: string;
+    promotion_notes?: (string | null);
+    /**
+     * JSON snapshot of backtest performance metrics at time of promotion
+     */
+    performance_snapshot_json?: (string | null);
+    id: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    reviewed_at: (string | null);
+    reviewed_by: (string | null);
+    rejection_reason: (string | null);
+};
+
+/**
+ * Schema for reviewing a strategy promotion (approve/reject)
+ */
+export type StrategyPromotionUpdate = {
+    /**
+     * approved or rejected
+     */
+    status: string;
+    rejection_reason?: (string | null);
+};
+
+export type SystemSettingPublic = {
+    key: string;
+    value?: {
+        [key: string]: unknown;
+    };
+    description?: (string | null);
+    updated_at: string;
 };
 
 export type Token = {
@@ -223,10 +855,104 @@ export type Token = {
     token_type?: string;
 };
 
+export type TradeAuditCreate = {
+    /**
+     * ID of the agent making the decision
+     */
+    agent_id: string;
+    /**
+     * BUY, SELL, or HOLD
+     */
+    decision: string;
+    /**
+     * Explanation for the decision
+     */
+    reason: string;
+    /**
+     * Model confidence (0.0 - 1.0)
+     */
+    confidence_score?: number;
+    /**
+     * The asset being traded (e.g. BTC)
+     */
+    asset: string;
+    price_at_decision?: (number | string | null);
+    /**
+     * Whether the trade was actually placed
+     */
+    is_executed?: boolean;
+    /**
+     * Link to the Order if placed
+     */
+    execution_order_id?: (string | null);
+    /**
+     * Reason if blocked by The Guard
+     */
+    block_reason?: (string | null);
+};
+
+export type TradeAuditPublic = {
+    /**
+     * ID of the agent making the decision
+     */
+    agent_id: string;
+    /**
+     * BUY, SELL, or HOLD
+     */
+    decision: string;
+    /**
+     * Explanation for the decision
+     */
+    reason: string;
+    /**
+     * Model confidence (0.0 - 1.0)
+     */
+    confidence_score?: number;
+    /**
+     * The asset being traded (e.g. BTC)
+     */
+    asset: string;
+    price_at_decision?: (string | null);
+    /**
+     * Whether the trade was actually placed
+     */
+    is_executed?: boolean;
+    /**
+     * Link to the Order if placed
+     */
+    execution_order_id?: (string | null);
+    /**
+     * Reason if blocked by The Guard
+     */
+    block_reason?: (string | null);
+    id: string;
+    timestamp: string;
+};
+
+export type TradeAudits = {
+    data: Array<TradeAuditPublic>;
+    count: number;
+};
+
 /**
  * Response model for unrealized P&L
  */
 export type UnrealizedPnLResponse = {
+    /**
+     * Indicates if the data is currently being refreshed or computed.
+     */
+    is_loading?: boolean;
+    /**
+     * Timestamp when the data was last updated.
+     */
+    last_updated?: string;
+    /**
+     * Number of seconds since the data was last updated.
+     */
+    data_staleness_seconds?: number;
+    /**
+     * Total unrealized profit/loss
+     */
     unrealized_pnl: number;
 };
 
@@ -393,6 +1119,12 @@ export type ValidationError = {
     type: string;
 };
 
+export type AdminActivateEmergencyStopResponse = (unknown);
+
+export type AdminClearEmergencyStopResponse = (unknown);
+
+export type AdminGetEmergencyStopStatusResponse = (unknown);
+
 export type AgentCreateAgentSessionData = {
     requestBody: AgentSessionCreate;
 };
@@ -510,6 +1242,19 @@ export type AgentGetArtifactStatsResponse = ({
     [key: string]: unknown;
 });
 
+export type AuditReadTradeAuditsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type AuditReadTradeAuditsResponse = (TradeAudits);
+
+export type AuditCreateTradeAuditData = {
+    requestBody: TradeAuditCreate;
+};
+
+export type AuditCreateTradeAuditResponse = (TradeAuditPublic);
+
 export type CredentialsGetCredentialsResponse = (CoinspotCredentialsPublic);
 
 export type CredentialsUpdateCredentialsData = {
@@ -527,6 +1272,26 @@ export type CredentialsCreateCredentialsResponse = (CoinspotCredentialsPublic);
 export type CredentialsDeleteCredentialsResponse = (Message);
 
 export type CredentialsValidateCredentialsResponse = (Message);
+
+export type FloorPauseAlgorithmData = {
+    algorithmId: string;
+};
+
+export type FloorPauseAlgorithmResponse = (ControlResponse);
+
+export type FloorResumeAlgorithmData = {
+    algorithmId: string;
+};
+
+export type FloorResumeAlgorithmResponse = (ControlResponse);
+
+export type FloorStopAlgorithmData = {
+    algorithmId: string;
+};
+
+export type FloorStopAlgorithmResponse = (ControlResponse);
+
+export type FloorEmergencyStopResponse = (ControlResponse);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
@@ -553,6 +1318,27 @@ export type LoginRecoverPasswordHtmlContentData = {
 };
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
+
+export type MockGetMockLedgerDataData = {
+    ledgerType: string;
+    state?: string;
+};
+
+export type MockGetMockLedgerDataResponse = (PnLSummaryResponse);
+
+export type MockGetMockAgentMessagesData = {
+    sessionId: string;
+    stream?: boolean;
+};
+
+export type MockGetMockAgentMessagesResponse = (Array<AgentSessionMessagePublic>);
+
+export type MockTriggerMockSafetyActionData = {
+    actionType: string;
+    confirm?: boolean;
+};
+
+export type MockTriggerMockSafetyActionResponse = (SafetyStatusResponse);
 
 export type PnlGetPnlSummaryData = {
     /**
@@ -645,6 +1431,96 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type PromotionsRequestPromotionData = {
+    requestBody: StrategyPromotionCreate;
+};
+
+export type PromotionsRequestPromotionResponse = (StrategyPromotionPublic);
+
+export type PromotionsListPromotionsData = {
+    limit?: number;
+    skip?: number;
+    status?: (string | null);
+};
+
+export type PromotionsListPromotionsResponse = (Array<StrategyPromotionPublic>);
+
+export type PromotionsGetPromotionData = {
+    id: string;
+};
+
+export type PromotionsGetPromotionResponse = (StrategyPromotionPublic);
+
+export type PromotionsReviewPromotionData = {
+    id: string;
+    requestBody: StrategyPromotionUpdate;
+};
+
+export type PromotionsReviewPromotionResponse = (StrategyPromotionPublic);
+
+export type RiskReadRiskRulesData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type RiskReadRiskRulesResponse = (RiskRules);
+
+export type RiskCreateRiskRuleData = {
+    requestBody: RiskRuleCreate;
+};
+
+export type RiskCreateRiskRuleResponse = (RiskRulePublic);
+
+export type RiskUpdateRiskRuleData = {
+    requestBody: RiskRuleUpdate;
+    riskRuleId: string;
+};
+
+export type RiskUpdateRiskRuleResponse = (RiskRulePublic);
+
+export type RiskDeleteRiskRuleData = {
+    riskRuleId: string;
+};
+
+export type RiskDeleteRiskRuleResponse = (Message);
+
+export type RiskGetKillSwitchStatusResponse = (SystemSettingPublic);
+
+export type RiskSetKillSwitchData = {
+    active: boolean;
+};
+
+export type RiskSetKillSwitchResponse = (SystemSettingPublic);
+
+export type RiskReadAuditLogsData = {
+    eventType?: (string | null);
+    limit?: number;
+    skip?: number;
+};
+
+export type RiskReadAuditLogsResponse = (AuditLogs);
+
+export type TradingPlaceOrderData = {
+    requestBody: OrderRequest;
+};
+
+export type TradingPlaceOrderResponse = (OrderResponse);
+
+export type TradingReadOrdersData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type TradingReadOrdersResponse = (Array<OrderPublic>);
+
+export type TradingCancelOrderData = {
+    orderId: string;
+};
+
+export type TradingCancelOrderResponse = (OrderPublic);
+
+export type TradingReadPositionsResponse = (Array<PositionPublic>);
 
 export type UsersReadUsersData = {
     limit?: number;

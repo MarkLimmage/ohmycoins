@@ -3,7 +3,50 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class AdminService {
+    /**
+     * Activate Emergency Stop
+     * Activate the emergency stop (Kill Switch).
+     * Halt all trading activities immediately.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static activateEmergencyStop(): CancelablePromise<AdminActivateEmergencyStopResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/emergency-stop/activate'
+        });
+    }
+    
+    /**
+     * Clear Emergency Stop
+     * Clear the emergency stop.
+     * Resume trading activities.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static clearEmergencyStop(): CancelablePromise<AdminClearEmergencyStopResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/admin/emergency-stop/clear'
+        });
+    }
+    
+    /**
+     * Get Emergency Stop Status
+     * Check the current status of the emergency stop.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getEmergencyStopStatus(): CancelablePromise<AdminGetEmergencyStopStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/admin/emergency-stop/status'
+        });
+    }
+}
 
 export class AgentService {
     /**
@@ -512,6 +555,51 @@ export class AgentService {
     }
 }
 
+export class AuditService {
+    /**
+     * Read Trade Audits
+     * Retrieve trade audits.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns TradeAudits Successful Response
+     * @throws ApiError
+     */
+    public static readTradeAudits(data: AuditReadTradeAuditsData = {}): CancelablePromise<AuditReadTradeAuditsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/audit/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Trade Audit
+     * Create new trade audit record.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns TradeAuditPublic Successful Response
+     * @throws ApiError
+     */
+    public static createTradeAudit(data: AuditCreateTradeAuditData): CancelablePromise<AuditCreateTradeAuditResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/audit/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class CredentialsService {
     /**
      * Get Credentials
@@ -596,6 +684,84 @@ export class CredentialsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/credentials/coinspot/validate'
+        });
+    }
+}
+
+export class FloorService {
+    /**
+     * Pause Algorithm
+     * Pause a running algorithm.
+     * @param data The data for the request.
+     * @param data.algorithmId
+     * @returns ControlResponse Successful Response
+     * @throws ApiError
+     */
+    public static pauseAlgorithm(data: FloorPauseAlgorithmData): CancelablePromise<FloorPauseAlgorithmResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/floor/algorithms/{algorithm_id}/pause',
+            path: {
+                algorithm_id: data.algorithmId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Resume Algorithm
+     * Resume a paused algorithm.
+     * @param data The data for the request.
+     * @param data.algorithmId
+     * @returns ControlResponse Successful Response
+     * @throws ApiError
+     */
+    public static resumeAlgorithm(data: FloorResumeAlgorithmData): CancelablePromise<FloorResumeAlgorithmResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/floor/algorithms/{algorithm_id}/resume',
+            path: {
+                algorithm_id: data.algorithmId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Stop Algorithm
+     * Stop a running algorithm.
+     * @param data The data for the request.
+     * @param data.algorithmId
+     * @returns ControlResponse Successful Response
+     * @throws ApiError
+     */
+    public static stopAlgorithm(data: FloorStopAlgorithmData): CancelablePromise<FloorStopAlgorithmResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/floor/algorithms/{algorithm_id}/stop',
+            path: {
+                algorithm_id: data.algorithmId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Emergency Stop
+     * Trigger emergency stop for ALL algorithms.
+     * @returns ControlResponse Successful Response
+     * @throws ApiError
+     */
+    public static emergencyStop(): CancelablePromise<FloorEmergencyStopResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/floor/emergency-stop'
         });
     }
 }
@@ -689,6 +855,90 @@ export class LoginService {
             url: '/api/v1/password-recovery-html-content/{email}',
             path: {
                 email: data.email
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class MockService {
+    /**
+     * Get Mock Ledger Data
+     * Get mock data for LedgerCard component.
+     *
+     * Args:
+     * ledger_type: 'human', 'catalyst', 'algorithm', 'exchange', etc.
+     * state: 'success', 'loading', 'error', 'empty'
+     * @param data The data for the request.
+     * @param data.ledgerType
+     * @param data.state
+     * @returns PnLSummaryResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMockLedgerData(data: MockGetMockLedgerDataData): CancelablePromise<MockGetMockLedgerDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/mock/ledgers/{ledger_type}',
+            path: {
+                ledger_type: data.ledgerType
+            },
+            query: {
+                state: data.state
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Mock Agent Messages
+     * Get mock messages for AgentTerminal.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.stream
+     * @returns AgentSessionMessagePublic Successful Response
+     * @throws ApiError
+     */
+    public static getMockAgentMessages(data: MockGetMockAgentMessagesData): CancelablePromise<MockGetMockAgentMessagesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/mock/agent/sessions/{session_id}/messages',
+            path: {
+                session_id: data.sessionId
+            },
+            query: {
+                stream: data.stream
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Trigger Mock Safety Action
+     * Mock endpoint for SafetyButton actions.
+     *
+     * Args:
+     * action_type: 'kill-switch', 'confirm-trade', 'emergency-stop'
+     * @param data The data for the request.
+     * @param data.actionType
+     * @param data.confirm
+     * @returns SafetyStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static triggerMockSafetyAction(data: MockTriggerMockSafetyActionData): CancelablePromise<MockTriggerMockSafetyActionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/mock/safety/{action_type}',
+            path: {
+                action_type: data.actionType
+            },
+            query: {
+                confirm: data.confirm
             },
             errors: {
                 422: 'Validation Error'
@@ -918,6 +1168,327 @@ export class PrivateService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+}
+
+export class PromotionsService {
+    /**
+     * Request Promotion
+     * Request promotion of a strategy (Algorithm) from Lab to Floor.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns StrategyPromotionPublic Successful Response
+     * @throws ApiError
+     */
+    public static requestPromotion(data: PromotionsRequestPromotionData): CancelablePromise<PromotionsRequestPromotionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/promotions/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Promotions
+     * List strategy promotion requests.
+     * @param data The data for the request.
+     * @param data.status
+     * @param data.skip
+     * @param data.limit
+     * @returns StrategyPromotionPublic Successful Response
+     * @throws ApiError
+     */
+    public static listPromotions(data: PromotionsListPromotionsData = {}): CancelablePromise<PromotionsListPromotionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/promotions/',
+            query: {
+                status: data.status,
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Promotion
+     * Get a specific promotion request.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns StrategyPromotionPublic Successful Response
+     * @throws ApiError
+     */
+    public static getPromotion(data: PromotionsGetPromotionData): CancelablePromise<PromotionsGetPromotionResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/promotions/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Review Promotion
+     * Review a promotion request (Approve/Reject).
+     * Requires Architect (Superuser) privileges.
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns StrategyPromotionPublic Successful Response
+     * @throws ApiError
+     */
+    public static reviewPromotion(data: PromotionsReviewPromotionData): CancelablePromise<PromotionsReviewPromotionResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/promotions/{id}',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class RiskService {
+    /**
+     * Read Risk Rules
+     * Retrieve risk rules.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns RiskRules Successful Response
+     * @throws ApiError
+     */
+    public static readRiskRules(data: RiskReadRiskRulesData = {}): CancelablePromise<RiskReadRiskRulesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/risk/rules',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Risk Rule
+     * Create new risk rule.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns RiskRulePublic Successful Response
+     * @throws ApiError
+     */
+    public static createRiskRule(data: RiskCreateRiskRuleData): CancelablePromise<RiskCreateRiskRuleResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/risk/rules',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Risk Rule
+     * Update a risk rule.
+     * @param data The data for the request.
+     * @param data.riskRuleId
+     * @param data.requestBody
+     * @returns RiskRulePublic Successful Response
+     * @throws ApiError
+     */
+    public static updateRiskRule(data: RiskUpdateRiskRuleData): CancelablePromise<RiskUpdateRiskRuleResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/risk/rules/{risk_rule_id}',
+            path: {
+                risk_rule_id: data.riskRuleId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Risk Rule
+     * Delete a risk rule.
+     * @param data The data for the request.
+     * @param data.riskRuleId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteRiskRule(data: RiskDeleteRiskRuleData): CancelablePromise<RiskDeleteRiskRuleResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/risk/rules/{risk_rule_id}',
+            path: {
+                risk_rule_id: data.riskRuleId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Kill Switch Status
+     * Get current kill switch status.
+     * @returns SystemSettingPublic Successful Response
+     * @throws ApiError
+     */
+    public static getKillSwitchStatus(): CancelablePromise<RiskGetKillSwitchStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/risk/kill-switch'
+        });
+    }
+    
+    /**
+     * Set Kill Switch
+     * Enable or disable the global kill switch.
+     * @param data The data for the request.
+     * @param data.active
+     * @returns SystemSettingPublic Successful Response
+     * @throws ApiError
+     */
+    public static setKillSwitch(data: RiskSetKillSwitchData): CancelablePromise<RiskSetKillSwitchResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/risk/kill-switch',
+            query: {
+                active: data.active
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Audit Logs
+     * Retrieve audit logs.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.eventType
+     * @returns AuditLogs Successful Response
+     * @throws ApiError
+     */
+    public static readAuditLogs(data: RiskReadAuditLogsData = {}): CancelablePromise<RiskReadAuditLogsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/risk/audit-logs',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                event_type: data.eventType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class TradingService {
+    /**
+     * Place Order
+     * Place a new trading order.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns OrderResponse Successful Response
+     * @throws ApiError
+     */
+    public static placeOrder(data: TradingPlaceOrderData): CancelablePromise<TradingPlaceOrderResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/floor/trading/orders',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Orders
+     * Retrieve orders.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns OrderPublic Successful Response
+     * @throws ApiError
+     */
+    public static readOrders(data: TradingReadOrdersData = {}): CancelablePromise<TradingReadOrdersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/trading/orders',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Cancel Order
+     * Cancel an order.
+     * @param data The data for the request.
+     * @param data.orderId
+     * @returns OrderPublic Successful Response
+     * @throws ApiError
+     */
+    public static cancelOrder(data: TradingCancelOrderData): CancelablePromise<TradingCancelOrderResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/floor/trading/orders/{order_id}',
+            path: {
+                order_id: data.orderId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Positions
+     * Retrieve positions.
+     * @returns PositionPublic Successful Response
+     * @throws ApiError
+     */
+    public static readPositions(): CancelablePromise<TradingReadPositionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/floor/trading/positions'
         });
     }
 }

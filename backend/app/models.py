@@ -1429,6 +1429,55 @@ class AuditLogs(SQLModel):
     data: list[AuditLogPublic]
     count: int
 
+
+# ============================================================================
+# Trade Audit Models (Track C)
+# ============================================================================
+
+class TradeAuditBase(SQLModel):
+    """
+    Records the decision-making process of Trading Agents (The Strategist).
+    Required for "Lab-to-Floor" integrity and "The Guard" analysis.
+    """
+    agent_id: str = Field(index=True, max_length=100, description="ID of the agent making the decision")
+    decision: str = Field(max_length=20, description="BUY, SELL, or HOLD")
+    reason: str = Field(max_length=1000, description="Explanation for the decision")
+    confidence_score: float = Field(default=0.0, description="Model confidence (0.0 - 1.0)")
+    asset: str = Field(max_length=20, index=True, description="The asset being traded (e.g. BTC)")
+    
+    # Context snapshots (optional but helpful)
+    price_at_decision: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=8)))
+    
+    # Outcome tracking
+    is_executed: bool = Field(default=False, description="Whether the trade was actually placed")
+    execution_order_id: uuid.UUID | None = Field(default=None, description="Link to the Order if placed")
+    block_reason: str | None = Field(default=None, description="Reason if blocked by The Guard")
+
+
+class TradeAudit(TradeAuditBase, table=True):
+    __tablename__ = "trade_audit"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+
+
+class TradeAuditCreate(TradeAuditBase):
+    pass
+
+
+class TradeAuditPublic(TradeAuditBase):
+    id: uuid.UUID
+    timestamp: datetime
+
+
+class TradeAudits(SQLModel):
+    data: list[TradeAuditPublic]
+    count: int
+
+
 # System Setting Schemas
 class SystemSettingCreate(SystemSettingBase):
     pass

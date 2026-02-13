@@ -31,8 +31,8 @@
 ### 4. The Interface - Audit Visualization (Track C - Frontend)
 *   **Goal**: Visualize the decisions made by the Agents and The Guard.
 *   **Tasks**:
-    *   **Audit Log UI**: Table view of `TradeAudit` records (Who decided? Why? Outcome?).
-    *   **Kill Switch History**: Timeline of when/why the switch was thrown.
+    *   ✅ **Audit Log UI**: Table view of `TradeAudit` records (Who decided? Why? Outcome?).
+    *   ✅ **Kill Switch History**: Timeline of when/why the switch was thrown.
 
 ---
 

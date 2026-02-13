@@ -136,14 +136,17 @@ def set_kill_switch(
 # -----------------------------------------------------------------------------
 @router.get("/audit-logs", response_model=AuditLogs)
 def read_audit_logs(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100, event_type: str | None = None
 ) -> Any:
     """
     Retrieve audit logs.
     """
     get_current_active_superuser(current_user)
-    logs = crud_risk.get_audit_logs(session=session, skip=skip, limit=limit)
-    # This count is inefficient for large tables, but fine for now
+    logs = crud_risk.get_audit_logs(session=session, skip=skip, limit=limit, event_type=event_type)
+    
     count_statement = select(func.count()).select_from(crud_risk.AuditLog)
+    if event_type:
+        count_statement = count_statement.where(crud_risk.AuditLog.event_type == event_type)
     count = session.exec(count_statement).one()
+    
     return AuditLogs(data=logs, count=count)

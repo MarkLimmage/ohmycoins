@@ -5,20 +5,24 @@ export const AgentArtifactPublicSchema = {
         id: {
             type: 'string',
             format: 'uuid',
-            title: 'Id'
+            title: 'Id',
+            description: 'Unique artifact identifier'
         },
         session_id: {
             type: 'string',
             format: 'uuid',
-            title: 'Session Id'
+            title: 'Session Id',
+            description: 'ID of the session this artifact belongs to'
         },
         artifact_type: {
             type: 'string',
-            title: 'Artifact Type'
+            title: 'Artifact Type',
+            description: 'Type of artifact (model, plot, report, code, data)'
         },
         name: {
             type: 'string',
-            title: 'Name'
+            title: 'Name',
+            description: 'Name of the artifact'
         },
         description: {
             anyOf: [
@@ -29,7 +33,8 @@ export const AgentArtifactPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Description'
+            title: 'Description',
+            description: 'Description of the artifact'
         },
         file_path: {
             anyOf: [
@@ -40,7 +45,8 @@ export const AgentArtifactPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'File Path'
+            title: 'File Path',
+            description: 'Storage path'
         },
         mime_type: {
             anyOf: [
@@ -51,7 +57,8 @@ export const AgentArtifactPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Mime Type'
+            title: 'Mime Type',
+            description: 'MIME type'
         },
         size_bytes: {
             anyOf: [
@@ -62,16 +69,36 @@ export const AgentArtifactPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Size Bytes'
+            title: 'Size Bytes',
+            description: 'Size in bytes'
         },
         created_at: {
             type: 'string',
             format: 'date-time',
-            title: 'Created At'
+            title: 'Created At',
+            description: 'Artifact creation timestamp'
+        },
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
         }
     },
     type: 'object',
-    required: ['id', 'session_id', 'artifact_type', 'name', 'description', 'file_path', 'mime_type', 'size_bytes', 'created_at'],
+    required: ['id', 'session_id', 'artifact_type', 'name', 'created_at'],
     title: 'AgentArtifactPublic',
     description: 'Schema for returning agent artifact via API'
 } as const;
@@ -97,20 +124,24 @@ export const AgentSessionMessagePublicSchema = {
         id: {
             type: 'string',
             format: 'uuid',
-            title: 'Id'
+            title: 'Id',
+            description: 'Unique message identifier'
         },
         session_id: {
             type: 'string',
             format: 'uuid',
-            title: 'Session Id'
+            title: 'Session Id',
+            description: 'ID of the session this message belongs to'
         },
         role: {
             type: 'string',
-            title: 'Role'
+            title: 'Role',
+            description: 'Role of the sender (user, assistant, system, function)'
         },
         content: {
             type: 'string',
-            title: 'Content'
+            title: 'Content',
+            description: 'Content of the message'
         },
         agent_name: {
             anyOf: [
@@ -121,16 +152,36 @@ export const AgentSessionMessagePublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Agent Name'
+            title: 'Agent Name',
+            description: 'Name of the specific agent'
         },
         created_at: {
             type: 'string',
             format: 'date-time',
-            title: 'Created At'
+            title: 'Created At',
+            description: 'Message creation timestamp'
+        },
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
         }
     },
     type: 'object',
-    required: ['id', 'session_id', 'role', 'content', 'agent_name', 'created_at'],
+    required: ['id', 'session_id', 'role', 'content', 'created_at'],
     title: 'AgentSessionMessagePublic',
     description: 'Schema for returning agent session message via API'
 } as const;
@@ -144,17 +195,20 @@ export const AgentSessionPublicSchema = {
         },
         status: {
             type: 'string',
-            title: 'Status'
+            title: 'Status',
+            description: 'Current status (pending, running, completed, failed, cancelled)'
         },
         id: {
             type: 'string',
             format: 'uuid',
-            title: 'Id'
+            title: 'Id',
+            description: 'Unique session identifier'
         },
         user_id: {
             type: 'string',
             format: 'uuid',
-            title: 'User Id'
+            title: 'User Id',
+            description: 'ID of the user who owns this session'
         },
         error_message: {
             anyOf: [
@@ -165,7 +219,8 @@ export const AgentSessionPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Error Message'
+            title: 'Error Message',
+            description: 'Error message if failed'
         },
         result_summary: {
             anyOf: [
@@ -176,17 +231,20 @@ export const AgentSessionPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Result Summary'
+            title: 'Result Summary',
+            description: 'Summary of the session results'
         },
         created_at: {
             type: 'string',
             format: 'date-time',
-            title: 'Created At'
+            title: 'Created At',
+            description: 'Session creation timestamp'
         },
         updated_at: {
             type: 'string',
             format: 'date-time',
-            title: 'Updated At'
+            title: 'Updated At',
+            description: 'Last update timestamp'
         },
         completed_at: {
             anyOf: [
@@ -198,11 +256,30 @@ export const AgentSessionPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Completed At'
+            title: 'Completed At',
+            description: 'Completion timestamp'
+        },
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
         }
     },
     type: 'object',
-    required: ['user_goal', 'status', 'id', 'user_id', 'error_message', 'result_summary', 'created_at', 'updated_at', 'completed_at'],
+    required: ['user_goal', 'status', 'id', 'user_id', 'created_at', 'updated_at'],
     title: 'AgentSessionPublic',
     description: 'Schema for returning agent session via API'
 } as const;
@@ -214,11 +291,31 @@ export const AgentSessionsPublicSchema = {
                 '$ref': '#/components/schemas/AgentSessionPublic'
             },
             type: 'array',
-            title: 'Data'
+            title: 'Data',
+            description: 'List of agent sessions'
         },
         count: {
             type: 'integer',
-            title: 'Count'
+            title: 'Count',
+            description: 'Total count of sessions'
+        },
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
         }
     },
     type: 'object',
@@ -249,6 +346,72 @@ export const ApprovalDecisionSchema = {
     required: ['approved'],
     title: 'ApprovalDecision',
     description: 'User approval or rejection.'
+} as const;
+
+export const AuditLogPublicSchema = {
+    properties: {
+        event_type: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Event Type'
+        },
+        severity: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Severity',
+            default: 'info'
+        },
+        details: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Details',
+            default: {}
+        },
+        user_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Id'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        timestamp: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Timestamp'
+        }
+    },
+    type: 'object',
+    required: ['event_type', 'id', 'timestamp'],
+    title: 'AuditLogPublic'
+} as const;
+
+export const AuditLogsSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/AuditLogPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'AuditLogs'
 } as const;
 
 export const Body_login_login_access_tokenSchema = {
@@ -440,6 +603,22 @@ export const CoinspotCredentialsUpdateSchema = {
     description: 'Schema for updating Coinspot credentials'
 } as const;
 
+export const ControlResponseSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            title: 'Status'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['status', 'message'],
+    title: 'ControlResponse'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -456,17 +635,38 @@ export const HTTPValidationErrorSchema = {
 
 export const HistoricalPnLEntrySchema = {
     properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
         timestamp: {
             type: 'string',
-            title: 'Timestamp'
+            title: 'Timestamp',
+            description: 'ISO 8601 timestamp of the entry'
         },
         realized_pnl: {
             type: 'number',
-            title: 'Realized Pnl'
+            title: 'Realized Pnl',
+            description: 'Realized P&L value for this interval'
         },
         interval: {
             type: 'string',
-            title: 'Interval'
+            title: 'Interval',
+            description: 'Time interval (hour, day, week, month)'
         }
     },
     type: 'object',
@@ -505,6 +705,376 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
+export const OrderPublicSchema = {
+    properties: {
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id',
+            description: 'The UUID of the user placing the order.'
+        },
+        algorithm_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Algorithm Id',
+            description: 'The UUID of the algorithm that placed this order, if any.'
+        },
+        coin_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Coin Type',
+            description: "The type of coin (e.g., 'BTC', 'ETH')."
+        },
+        side: {
+            type: 'string',
+            maxLength: 10,
+            title: 'Side',
+            description: "The side of the order ('buy' or 'sell')."
+        },
+        order_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Order Type',
+            description: "The type of order ('market' or 'limit').",
+            default: 'market'
+        },
+        quantity: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Quantity',
+            description: 'The quantity to buy or sell.'
+        },
+        price: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Price',
+            description: 'The price for limit orders. Optional for market orders.'
+        },
+        filled_quantity: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Filled Quantity',
+            description: 'The quantity that has been filled so far.',
+            default: '0'
+        },
+        status: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Status',
+            description: "The status of the order (e.g., 'pending', 'filled', 'cancelled').",
+            default: 'pending'
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message',
+            description: 'Error message if the order failed.'
+        },
+        coinspot_order_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Coinspot Order Id',
+            description: 'The ID of the order on CoinSpot.'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id',
+            description: 'The unique identifier for the order.'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At',
+            description: 'The timestamp when the order was created.'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At',
+            description: 'The timestamp when the order was last updated.'
+        },
+        submitted_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Submitted At',
+            description: 'The timestamp when the order was submitted.'
+        },
+        filled_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Filled At',
+            description: 'The timestamp when the order was filled.'
+        }
+    },
+    type: 'object',
+    required: ['user_id', 'coin_type', 'side', 'quantity', 'id', 'created_at', 'updated_at', 'submitted_at', 'filled_at'],
+    title: 'OrderPublic',
+    description: 'Schema for returning order via API'
+} as const;
+
+export const OrderRequestSchema = {
+    properties: {
+        coin_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Coin Type',
+            description: "The type of coin (e.g., 'BTC', 'ETH')."
+        },
+        side: {
+            type: 'string',
+            maxLength: 10,
+            title: 'Side',
+            description: "The side of the order ('buy' or 'sell')."
+        },
+        order_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Order Type',
+            description: "The type of order ('market' or 'limit').",
+            default: 'market'
+        },
+        quantity: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                }
+            ],
+            title: 'Quantity',
+            description: 'The quantity to buy or sell.'
+        },
+        price: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Price',
+            description: 'The price for limit orders. Optional for market orders.'
+        },
+        algorithm_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Algorithm Id',
+            description: 'The UUID of the algorithm placing the order.'
+        }
+    },
+    type: 'object',
+    required: ['coin_type', 'side', 'quantity'],
+    title: 'OrderRequest',
+    description: 'Request schema for placing a new order'
+} as const;
+
+export const OrderResponseSchema = {
+    properties: {
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id',
+            description: 'The UUID of the user placing the order.'
+        },
+        algorithm_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Algorithm Id',
+            description: 'The UUID of the algorithm that placed this order, if any.'
+        },
+        coin_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Coin Type',
+            description: "The type of coin (e.g., 'BTC', 'ETH')."
+        },
+        side: {
+            type: 'string',
+            maxLength: 10,
+            title: 'Side',
+            description: "The side of the order ('buy' or 'sell')."
+        },
+        order_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Order Type',
+            description: "The type of order ('market' or 'limit').",
+            default: 'market'
+        },
+        quantity: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Quantity',
+            description: 'The quantity to buy or sell.'
+        },
+        price: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Price',
+            description: 'The price for limit orders. Optional for market orders.'
+        },
+        filled_quantity: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Filled Quantity',
+            description: 'The quantity that has been filled so far.',
+            default: '0'
+        },
+        status: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Status',
+            description: "The status of the order (e.g., 'pending', 'filled', 'cancelled').",
+            default: 'pending'
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message',
+            description: 'Error message if the order failed.'
+        },
+        coinspot_order_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Coinspot Order Id',
+            description: 'The ID of the order on CoinSpot.'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id',
+            description: 'The unique identifier for the order.'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At',
+            description: 'The timestamp when the order was created.'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At',
+            description: 'The timestamp when the order was last updated.'
+        },
+        submitted_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Submitted At',
+            description: 'The timestamp when the order was submitted.'
+        },
+        filled_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Filled At',
+            description: 'The timestamp when the order was filled.'
+        }
+    },
+    type: 'object',
+    required: ['user_id', 'coin_type', 'side', 'quantity', 'id', 'created_at', 'updated_at', 'submitted_at', 'filled_at'],
+    title: 'OrderResponse',
+    description: 'Response schema for an order'
+} as const;
+
 export const OverrideRequestSchema = {
     properties: {
         override_type: {
@@ -525,21 +1095,43 @@ export const OverrideRequestSchema = {
 
 export const PnLByAlgorithmResponseSchema = {
     properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
         algorithm_id: {
             type: 'string',
-            title: 'Algorithm Id'
+            title: 'Algorithm Id',
+            description: 'Unique identifier of the trading algorithm'
         },
         realized_pnl: {
             type: 'number',
-            title: 'Realized Pnl'
+            title: 'Realized Pnl',
+            description: 'Realized P&L for this algorithm'
         },
         unrealized_pnl: {
             type: 'number',
-            title: 'Unrealized Pnl'
+            title: 'Unrealized Pnl',
+            description: 'Unrealized P&L for this algorithm'
         },
         total_pnl: {
             type: 'number',
-            title: 'Total Pnl'
+            title: 'Total Pnl',
+            description: 'Total P&L for this algorithm'
         }
     },
     type: 'object',
@@ -550,21 +1142,43 @@ export const PnLByAlgorithmResponseSchema = {
 
 export const PnLByCoinResponseSchema = {
     properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
         coin_type: {
             type: 'string',
-            title: 'Coin Type'
+            title: 'Coin Type',
+            description: 'Cryptocurrency symbol (e.g., BTC)'
         },
         realized_pnl: {
             type: 'number',
-            title: 'Realized Pnl'
+            title: 'Realized Pnl',
+            description: 'Realized P&L for this coin'
         },
         unrealized_pnl: {
             type: 'number',
-            title: 'Unrealized Pnl'
+            title: 'Unrealized Pnl',
+            description: 'Unrealized P&L for this coin'
         },
         total_pnl: {
             type: 'number',
-            title: 'Total Pnl'
+            title: 'Total Pnl',
+            description: 'Total P&L for this coin'
         }
     },
     type: 'object',
@@ -575,83 +1189,202 @@ export const PnLByCoinResponseSchema = {
 
 export const PnLSummaryResponseSchema = {
     properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
         realized_pnl: {
             type: 'number',
-            title: 'Realized Pnl'
+            title: 'Realized Pnl',
+            description: 'Total realized profit/loss from closed trades'
         },
         unrealized_pnl: {
             type: 'number',
-            title: 'Unrealized Pnl'
+            title: 'Unrealized Pnl',
+            description: 'Total unrealized profit/loss from open positions'
         },
         total_pnl: {
             type: 'number',
-            title: 'Total Pnl'
+            title: 'Total Pnl',
+            description: 'Sum of realized and unrealized P&L'
         },
         total_trades: {
             type: 'integer',
-            title: 'Total Trades'
+            title: 'Total Trades',
+            description: 'Total number of trades executed'
         },
         winning_trades: {
             type: 'integer',
-            title: 'Winning Trades'
+            title: 'Winning Trades',
+            description: 'Number of profitable trades'
         },
         losing_trades: {
             type: 'integer',
-            title: 'Losing Trades'
+            title: 'Losing Trades',
+            description: 'Number of unprofitable trades'
         },
         win_rate: {
             type: 'number',
-            title: 'Win Rate'
+            title: 'Win Rate',
+            description: 'Percentage of winning trades (0-1.0)'
         },
         profit_factor: {
             type: 'number',
-            title: 'Profit Factor'
+            title: 'Profit Factor',
+            description: 'Ratio of gross profit to gross loss'
         },
         total_profit: {
             type: 'number',
-            title: 'Total Profit'
+            title: 'Total Profit',
+            description: 'Total gross profit'
         },
         total_loss: {
             type: 'number',
-            title: 'Total Loss'
+            title: 'Total Loss',
+            description: 'Total gross loss'
         },
         average_win: {
             type: 'number',
-            title: 'Average Win'
+            title: 'Average Win',
+            description: 'Average profit per winning trade'
         },
         average_loss: {
             type: 'number',
-            title: 'Average Loss'
+            title: 'Average Loss',
+            description: 'Average loss per losing trade'
         },
         largest_win: {
             type: 'number',
-            title: 'Largest Win'
+            title: 'Largest Win',
+            description: 'Largest single profit'
         },
         largest_loss: {
             type: 'number',
-            title: 'Largest Loss'
+            title: 'Largest Loss',
+            description: 'Largest single loss'
         },
         max_drawdown: {
             type: 'number',
-            title: 'Max Drawdown'
+            title: 'Max Drawdown',
+            description: 'Maximum peak-to-trough decline'
         },
         sharpe_ratio: {
             type: 'number',
-            title: 'Sharpe Ratio'
+            title: 'Sharpe Ratio',
+            description: 'Risk-adjusted return metric'
         },
         total_volume: {
             type: 'number',
-            title: 'Total Volume'
+            title: 'Total Volume',
+            description: 'Total trading volume'
         },
         total_fees: {
             type: 'number',
-            title: 'Total Fees'
+            title: 'Total Fees',
+            description: 'Total trading fees paid'
         }
     },
     type: 'object',
     required: ['realized_pnl', 'unrealized_pnl', 'total_pnl', 'total_trades', 'winning_trades', 'losing_trades', 'win_rate', 'profit_factor', 'total_profit', 'total_loss', 'average_win', 'average_loss', 'largest_win', 'largest_loss', 'max_drawdown', 'sharpe_ratio', 'total_volume', 'total_fees'],
     title: 'PnLSummaryResponse',
     description: 'Response model for P&L summary'
+} as const;
+
+export const PositionPublicSchema = {
+    properties: {
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id',
+            description: 'The UUID of the user who owns this position.'
+        },
+        coin_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Coin Type',
+            description: "The type of coin (e.g., 'BTC', 'ETH')."
+        },
+        quantity: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Quantity',
+            description: 'The quantity of the coin held.'
+        },
+        average_price: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Average Price',
+            description: 'The average price at which the position was acquired.'
+        },
+        total_cost: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Total Cost',
+            description: 'The total cost basis of the position.'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id',
+            description: 'The unique identifier for the position.'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At',
+            description: 'The timestamp when the position was first created.'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At',
+            description: 'The timestamp when the position was last updated.'
+        },
+        current_value: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Value',
+            description: 'The current market value of the position.'
+        },
+        unrealized_pnl: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Unrealized Pnl',
+            description: 'The unrealized profit or loss.'
+        }
+    },
+    type: 'object',
+    required: ['user_id', 'coin_type', 'quantity', 'average_price', 'total_cost', 'id', 'created_at', 'updated_at'],
+    title: 'PositionPublic',
+    description: 'Schema for returning position via API'
 } as const;
 
 export const PrivateUserCreateSchema = {
@@ -681,15 +1414,476 @@ export const PrivateUserCreateSchema = {
 
 export const RealizedPnLResponseSchema = {
     properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
         realized_pnl: {
             type: 'number',
-            title: 'Realized Pnl'
+            title: 'Realized Pnl',
+            description: 'Total realized profit/loss'
         }
     },
     type: 'object',
     required: ['realized_pnl'],
     title: 'RealizedPnLResponse',
     description: 'Response model for realized P&L'
+} as const;
+
+export const RiskRuleCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        rule_type: {
+            type: 'string',
+            title: 'Rule Type',
+            description: 'max_daily_loss, max_position_size, etc.'
+        },
+        value: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Value',
+            default: {}
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['name', 'rule_type'],
+    title: 'RiskRuleCreate'
+} as const;
+
+export const RiskRulePublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        rule_type: {
+            type: 'string',
+            title: 'Rule Type',
+            description: 'max_daily_loss, max_position_size, etc.'
+        },
+        value: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Value',
+            default: {}
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            default: true
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['name', 'rule_type', 'id', 'created_at', 'updated_at'],
+    title: 'RiskRulePublic'
+} as const;
+
+export const RiskRuleUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        rule_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rule Type'
+        },
+        value: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Value'
+        },
+        is_active: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
+        }
+    },
+    type: 'object',
+    title: 'RiskRuleUpdate'
+} as const;
+
+export const RiskRulesSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/RiskRulePublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'RiskRules'
+} as const;
+
+export const SafetyStatusResponseSchema = {
+    properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
+        status: {
+            type: 'string',
+            title: 'Status',
+            description: 'Safety system status: active, triggered, disabled'
+        },
+        triggered_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Triggered At',
+            description: 'When the safety mechanism was triggered'
+        },
+        triggered_by: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Triggered By',
+            description: 'User or system that triggered it'
+        }
+    },
+    type: 'object',
+    required: ['status'],
+    title: 'SafetyStatusResponse'
+} as const;
+
+export const StrategyPromotionCreateSchema = {
+    properties: {
+        algorithm_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Algorithm Id'
+        },
+        promotion_notes: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Promotion Notes'
+        },
+        performance_snapshot_json: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Performance Snapshot Json'
+        }
+    },
+    type: 'object',
+    required: ['algorithm_id'],
+    title: 'StrategyPromotionCreate',
+    description: 'Schema for requesting a strategy promotion'
+} as const;
+
+export const StrategyPromotionPublicSchema = {
+    properties: {
+        algorithm_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Algorithm Id'
+        },
+        from_environment: {
+            type: 'string',
+            maxLength: 50,
+            title: 'From Environment',
+            default: 'lab'
+        },
+        to_environment: {
+            type: 'string',
+            maxLength: 50,
+            title: 'To Environment',
+            default: 'floor'
+        },
+        status: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Status',
+            default: 'pending'
+        },
+        promotion_notes: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 1000
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Promotion Notes'
+        },
+        performance_snapshot_json: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Performance Snapshot Json',
+            description: 'JSON snapshot of backtest performance metrics at time of promotion'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_by: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Created By'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
+        reviewed_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reviewed At'
+        },
+        reviewed_by: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reviewed By'
+        },
+        rejection_reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rejection Reason'
+        }
+    },
+    type: 'object',
+    required: ['algorithm_id', 'id', 'created_by', 'created_at', 'updated_at', 'reviewed_at', 'reviewed_by', 'rejection_reason'],
+    title: 'StrategyPromotionPublic',
+    description: 'Schema for returning strategy promotion via API'
+} as const;
+
+export const StrategyPromotionUpdateSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            title: 'Status',
+            description: 'approved or rejected'
+        },
+        rejection_reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rejection Reason'
+        }
+    },
+    type: 'object',
+    required: ['status'],
+    title: 'StrategyPromotionUpdate',
+    description: 'Schema for reviewing a strategy promotion (approve/reject)'
+} as const;
+
+export const SystemSettingPublicSchema = {
+    properties: {
+        key: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Key'
+        },
+        value: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Value',
+            default: {}
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['key', 'updated_at'],
+    title: 'SystemSettingPublic'
 } as const;
 
 export const TokenSchema = {
@@ -709,11 +1903,224 @@ export const TokenSchema = {
     title: 'Token'
 } as const;
 
+export const TradeAuditCreateSchema = {
+    properties: {
+        agent_id: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Agent Id',
+            description: 'ID of the agent making the decision'
+        },
+        decision: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Decision',
+            description: 'BUY, SELL, or HOLD'
+        },
+        reason: {
+            type: 'string',
+            maxLength: 1000,
+            title: 'Reason',
+            description: 'Explanation for the decision'
+        },
+        confidence_score: {
+            type: 'number',
+            title: 'Confidence Score',
+            description: 'Model confidence (0.0 - 1.0)',
+            default: 0
+        },
+        asset: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Asset',
+            description: 'The asset being traded (e.g. BTC)'
+        },
+        price_at_decision: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Price At Decision'
+        },
+        is_executed: {
+            type: 'boolean',
+            title: 'Is Executed',
+            description: 'Whether the trade was actually placed',
+            default: false
+        },
+        execution_order_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Execution Order Id',
+            description: 'Link to the Order if placed'
+        },
+        block_reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Block Reason',
+            description: 'Reason if blocked by The Guard'
+        }
+    },
+    type: 'object',
+    required: ['agent_id', 'decision', 'reason', 'asset'],
+    title: 'TradeAuditCreate'
+} as const;
+
+export const TradeAuditPublicSchema = {
+    properties: {
+        agent_id: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Agent Id',
+            description: 'ID of the agent making the decision'
+        },
+        decision: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Decision',
+            description: 'BUY, SELL, or HOLD'
+        },
+        reason: {
+            type: 'string',
+            maxLength: 1000,
+            title: 'Reason',
+            description: 'Explanation for the decision'
+        },
+        confidence_score: {
+            type: 'number',
+            title: 'Confidence Score',
+            description: 'Model confidence (0.0 - 1.0)',
+            default: 0
+        },
+        asset: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Asset',
+            description: 'The asset being traded (e.g. BTC)'
+        },
+        price_at_decision: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Price At Decision'
+        },
+        is_executed: {
+            type: 'boolean',
+            title: 'Is Executed',
+            description: 'Whether the trade was actually placed',
+            default: false
+        },
+        execution_order_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Execution Order Id',
+            description: 'Link to the Order if placed'
+        },
+        block_reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Block Reason',
+            description: 'Reason if blocked by The Guard'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        timestamp: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Timestamp'
+        }
+    },
+    type: 'object',
+    required: ['agent_id', 'decision', 'reason', 'asset', 'id', 'timestamp'],
+    title: 'TradeAuditPublic'
+} as const;
+
+export const TradeAuditsSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/TradeAuditPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'TradeAudits'
+} as const;
+
 export const UnrealizedPnLResponseSchema = {
     properties: {
+        is_loading: {
+            type: 'boolean',
+            title: 'Is Loading',
+            description: 'Indicates if the data is currently being refreshed or computed.',
+            default: false
+        },
+        last_updated: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Last Updated',
+            description: 'Timestamp when the data was last updated.'
+        },
+        data_staleness_seconds: {
+            type: 'number',
+            title: 'Data Staleness Seconds',
+            description: 'Number of seconds since the data was last updated.',
+            default: 0
+        },
         unrealized_pnl: {
             type: 'number',
-            title: 'Unrealized Pnl'
+            title: 'Unrealized Pnl',
+            description: 'Total unrealized profit/loss'
         }
     },
     type: 'object',
