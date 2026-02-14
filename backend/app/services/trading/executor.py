@@ -20,6 +20,7 @@ from app.services.trading.client import CoinspotTradingClient, CoinspotAPIError,
 from fastapi.encoders import jsonable_encoder
 from app.services.trading.exceptions import OrderExecutionError
 from app.services.trading.safety import TradingSafetyManager, SafetyViolation
+from app.services.trading.paper_exchange import PaperExchange
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ class OrderExecutor:
         self._queue: asyncio.Queue[UUID] = asyncio.Queue()
         self._running = False
         self.safety_manager = TradingSafetyManager(session)
+        self.paper_exchange: PaperExchange | None = None
     
     async def submit_order(self, order_id: UUID) -> None:
         """
@@ -83,6 +85,12 @@ class OrderExecutor:
         # Initialize safety manager redis connection
         await self.safety_manager.connect()
         
+        # Initialize PaperExchange if in paper mode
+        if settings.TRADING_MODE == 'paper':
+            logger.info("Initializing Paper Exchange")
+            self.paper_exchange = PaperExchange()
+            await self.paper_exchange.__aenter__()
+
         self._running = True
         logger.info("Starting order executor")
         
@@ -109,6 +117,10 @@ class OrderExecutor:
         finally:
             self._running = False
             await self.safety_manager.disconnect()
+            
+            if self.paper_exchange:
+                await self.paper_exchange.__aexit__(None, None, None)
+
             logger.info("Order executor stopped")
     
     async def stop(self) -> None:
@@ -193,7 +205,11 @@ class OrderExecutor:
                 
                 # Update order with results
                 order.status = 'filled'
-                order.filled_quantity = order.quantity
+                if result.get('amount'):
+                     order.filled_quantity = Decimal(str(result['amount']))
+                else:
+                     order.filled_quantity = order.quantity
+                
                 order.filled_at = datetime.now(timezone.utc)
                 order.updated_at = datetime.now(timezone.utc)
                 order.coinspot_order_id = result.get('id')
@@ -278,25 +294,30 @@ class OrderExecutor:
         """
         # Ghost Mode Check
         if settings.TRADING_MODE == 'paper':
-            logger.info(f"Ghost Mode: Simulating execution for order {order.id}")
-            # Mock successful response
-            mock_price = order.price if order.price else Decimal('1000.0')
+            logger.info(f"Ghost Mode: Simulating execution for order {order.id} using PaperExchange")
             
-            # Helper to calculate expected coin amount for buy (AUD quantity) or sell (Coin quantity)
-            if order.side == 'buy':
-                # Quantity is AUD
-                mock_coins = order.quantity / mock_price
-            else:
-                # Quantity is Coins
-                mock_coins = order.quantity
+            if not self.paper_exchange:
+                # Should have been initialized in start(), but ensure it exists
+                logger.warning("PaperExchange not initialized, initializing now")
+                self.paper_exchange = PaperExchange()
+                await self.paper_exchange.__aenter__()
 
-            return {
-                'status': 'ok',
-                'id': f'ghost-{order.id}',
-                'rate': str(mock_price),
-                'amount': str(mock_coins), # Coins amount
-                'total': str(order.quantity * mock_price) if order.side == 'sell' else str(order.quantity) # AUD total
-            }
+            if order.side == 'buy':
+                if order.order_type == 'limit':
+                    if not order.price:
+                         raise OrderExecutionError("Limit buy order requires price")
+                    return await self.paper_exchange.limit_buy(order.coin_type, order.quantity, order.price)
+                else: 
+                     # Market Buy
+                     return await self.paper_exchange.market_buy(order.coin_type, order.quantity)
+            else: # sell
+                if order.order_type == 'limit':
+                    if not order.price:
+                        raise OrderExecutionError("Limit sell order requires price")
+                    return await self.paper_exchange.limit_sell(order.coin_type, order.quantity, order.price)
+                else:
+                    # Market Sell
+                    return await self.paper_exchange.market_sell(order.coin_type, order.quantity)
 
         async with CoinspotTradingClient(self.api_key, self.api_secret) as client:
             if order.side == 'buy':

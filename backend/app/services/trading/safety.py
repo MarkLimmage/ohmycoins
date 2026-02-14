@@ -352,14 +352,36 @@ class TradingSafetyManager:
             logger.info(f"User {user_id} has no portfolio, allowing initial algorithmic trade")
             return
         
-        order_statement = select(func.sum(Order.filled_quantity * Order.price)).where(
+        # Calculate current exposure (Buys - Sells) for this algorithm
+        # Note: This is a simplified calculation. Ideally should track current position held by algo.
+        # Assuming algo only trades one direction or net value.
+        
+        # Sum buys
+        buys = self.session.exec(select(func.sum(Order.filled_quantity * Order.price)).where(
             Order.user_id == user_id,
             Order.algorithm_id == algorithm_id,
             Order.status == 'filled',
             Order.side == 'buy'
-        )
-        algorithm_exposure = self.session.exec(order_statement).first() or Decimal('0')
-        new_exposure = algorithm_exposure + trade_value
+        )).first() or Decimal('0')
+        
+        # Sum sells
+        sells = self.session.exec(select(func.sum(Order.filled_quantity * Order.price)).where(
+            Order.user_id == user_id,
+            Order.algorithm_id == algorithm_id,
+            Order.status == 'filled',
+            Order.side == 'sell'
+        )).first() or Decimal('0')
+        
+        current_exposure = buys - sells
+        if current_exposure < 0:
+            current_exposure = Decimal('0') # Should not be negative unless PnL is positive? 
+            # Actually, if we sold more value than bought (profit), net exposure in currency terms is weird.
+            # Exposure should be Value of Chips on Table.
+            # Correct way: Sum(Sequence of Buys - Sequence of Sells) * Current Price.
+            # But we don't have current price easily here for all coins.
+            # Simple fallback: Net Invested Capital.
+        
+        new_exposure = current_exposure + trade_value
         max_exposure = portfolio_value * self.max_algorithm_exposure_pct
         
         if new_exposure > max_exposure:

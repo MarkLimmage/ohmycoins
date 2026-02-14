@@ -12,7 +12,7 @@ from uuid import UUID
 
 from sqlmodel import Session
 
-from app.models import Order, User
+from app.models import Order, User, AuditLog
 from app.services.trading.client import CoinspotTradingClient
 from app.services.trading.recorder import TradeRecorder, get_trade_recorder
 from app.services.trading.safety import TradingSafetyManager, get_safety_manager, SafetyViolation
@@ -118,13 +118,35 @@ class AlgorithmExecutor:
             # Check if signal recommends action
             action = signal.get('action')
             if action == 'hold' or not action:
-                logger.info(f"Algorithm {algorithm_id} recommends holding, no action taken")
+                logger.debug(f"Algorithm {algorithm_id} recommends holding, no action taken")
+                # Optional: Log 'hold' signals if needed, but might be spammy
                 return {
                     'executed': False,
                     'reason': 'hold_signal',
                     'signal': signal
                 }
             
+            # Log the signal to AuditLog (The "Why")
+            # Convert signal decimals to strings for JSON serialization
+            serializable_signal = {
+                k: str(v) if isinstance(v, Decimal) else v 
+                for k, v in signal.items()
+            }
+            
+            audit_log = AuditLog(
+                event_type="ALGORITHM_SIGNAL",
+                severity="info",
+                user_id=user_id,
+                details={
+                    "algorithm_id": str(algorithm_id),
+                    "signal": serializable_signal,
+                    "market_data_snapshot": {k: v for k, v in market_data.items() if k in ['price', 'coin_type', 'volume_24h']}
+                },
+                timestamp=datetime.now(timezone.utc)
+            )
+            self.session.add(audit_log)
+            self.session.commit()
+
             # Extract trade parameters
             coin_type = signal.get('coin_type')
             quantity = Decimal(str(signal.get('quantity', 0)))
