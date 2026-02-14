@@ -16,6 +16,7 @@ from app.api.routes import websockets
 from app.core.config import settings
 from app.core.db import engine
 from app.services.scheduler import start_scheduler, stop_scheduler
+from app.services.collectors.config import setup_collectors, start_collection, stop_collection
 from app.services.trading.executor import get_order_queue
 
 
@@ -24,6 +25,10 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
     # Startup: Start the data collection scheduler
     await start_scheduler()
+
+    # Startup: Start Phase 2.5 Data Collectors
+    setup_collectors()
+    start_collection()
     
     # Initialize and start Order Queue
     executor_session = Session(engine)
@@ -39,6 +44,9 @@ async def lifespan(app: FastAPI):
     
     yield
     
+    # Shutdown: Stop Phase 2.5 Collectors
+    stop_collection()
+
     # Shutdown: Stop the scheduler gracefully
     await stop_scheduler()
     
