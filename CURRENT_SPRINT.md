@@ -18,7 +18,7 @@
 *   **Goal**: First autonomous real-money trade (Limited Cap).
 *   **Tasks**:
     *   **Strategy Promotion**: Select the best performing "Paper" agent (likely MA-Crossover) and promote it to "Live Candidates".
-    *   **Execution**: Enable `CoinSpotPrivate` execution for this specific agentID, capped at $50 USD/trade.
+    *   **Execution**: Enable `CoinSpotPrivate` execution for this specific agentID, capped at $10 AUD/trade.
     *   **Monitoring**: Run the agent for 48h under strict supervision.
 
 ### 3. The Guard - Production Hardening (Track A)
