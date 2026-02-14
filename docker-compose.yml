@@ -201,7 +201,8 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=https://api.${DOMAIN?Variable not set}
+        # Should be empty string so requests use same host/port as frontend
+        - VITE_API_URL=
         - NODE_ENV=production
     labels:
       - traefik.enable=true
