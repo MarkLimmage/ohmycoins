@@ -7,30 +7,23 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # This requires a runner installed on 192.168.0.241
+    runs-on: self-hosted
     environment: local-server
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Removed the "Create .env" step because the file should persist on the server
-      # If you need to update secrets, scp a new .env file to the server manually
+      - name: Inject Secrets
+        run: |
+          # Use the new centralized secrets management script
+          # This pulls from ~/omc/secrets.safe on the host machine (192.168.0.241)
+          chmod +x populate_secrets.sh
+          ./populate_secrets.sh
           
       - name: Build and Start Containers
         run: |
-          # Copy the persistent .env file from the project root if it exists
-          # We assume the runner is in _work/ohmycoins/ohmycoins, so we look in the user home or expected path
-          if [ -f ~/omc/ohmycoins/.env ]; then
-             cp ~/omc/ohmycoins/.env .env
-             echo "Loaded existing .env from server"
-          else
-             echo "WARNING: No .env file found! Deployment may fail."
-          fi
-
-          # Ensure we are using the local docker-compose
-          docker compose -f docker-compose.yml build
-          docker compose -f docker-compose.yml up -d --remove-orphans
+          docker compose -f docker-compose.yml up -d --build --remove-orphans
           
       - name: Prune unused images
         run: docker image prune -f
