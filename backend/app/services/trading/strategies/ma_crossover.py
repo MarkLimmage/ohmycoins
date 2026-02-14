@@ -2,9 +2,10 @@ from decimal import Decimal
 from typing import Any, List
 
 class MACrossoverStrategy:
-    def __init__(self, short_window: int = 10, long_window: int = 50):
+    def __init__(self, short_window: int = 10, long_window: int = 50, coin_type: str = 'BTC'):
         self.short_window = short_window
         self.long_window = long_window
+        self.coin_type = coin_type
         self.prices: List[Decimal] = []
 
     def generate_signal(self, market_data: dict[str, Any]) -> dict[str, Any]:
@@ -12,8 +13,14 @@ class MACrossoverStrategy:
         Simple MA Crossover.
         market_data expected to have 'price' and 'coin_type'.
         """
-        coin_type = market_data.get('coin_type', 'BTC')
-        current_price = Decimal(str(market_data.get('price', 1000)))
+        # If market_data has specific coin info, use it. Otherwise fallback to self.coin_type
+        # In a real system, market_data would be a large dict of all coins, so we'd pick ours.
+        price_data = market_data.get(self.coin_type)
+        if not price_data:
+            # Maybe broad market data structure?
+            price_data = market_data
+            
+        current_price = Decimal(str(price_data.get('price', 1000)))
         
         self.prices.append(current_price)
         

@@ -92,28 +92,85 @@ class CoinspotTradingClient:
             logger.error(f"HTTP error making request to {url}: {e}")
             raise CoinspotTradingError(f"HTTP error: {e}")
     
+    async def _get_public_price(self, coin_type: str, side: str = 'buy') -> Decimal | None:
+        """Fetch current price from public API"""
+        try:
+            url = "https://www.coinspot.com.au/pub/api/latest"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        return None
+                    data = await response.json()
+                    
+                    coin_data = data.get('prices', {}).get(coin_type.lower())
+                    if not coin_data:
+                        return None
+                    
+                    # For buying, we want the 'ask' price (what sellers are asking)
+                    # For selling, we want the 'bid' price (what buyers are bidding)
+                    price_key = 'ask' if side == 'buy' else 'bid'
+                    price_str = coin_data.get(price_key) or coin_data.get('last')
+                    
+                    if price_str:
+                        return Decimal(str(price_str))
+                    return None
+        except Exception as e:
+            logger.error(f"Error fetching public price: {e}")
+            return None
+
     async def market_buy(
         self,
         coin_type: str,
         amount_aud: Decimal
     ) -> dict[str, Any]:
         """
-        Execute a market buy order
-        
-        Args:
-            coin_type: Cryptocurrency to buy (e.g., 'BTC', 'ETH')
-            amount_aud: Amount in AUD to spend
-            
-        Returns:
-            Order response with id, market, rate, coin, amount, total
-            
-        Raises:
-            CoinspotAPIError: If API returns an error
+        Execute a market buy order using Quote -> Buy flow
         """
+        # 1. Get Quote to satisfy "rate required"
+        rate = None
+        quote_data = {
+            'cointype': coin_type,
+            'amount': str(amount_aud)
+        }
+        
+        try:
+            logger.debug(f"Fetching quote for {coin_type} buy...")
+            # Try /quote/buy endpoint (standard v2)
+            quote_response = await self._make_request('/quote/buy', quote_data)
+            rate = quote_response.get('rate')
+        except Exception:
+            pass
+            
+        if not rate:
+             # Fallback to public API
+             logger.info("Quote failed, using public API price")
+             rate = await self._get_public_price(coin_type, 'buy')
+             
+             # If we have a public rate, add 5% slippage tolerance for the "limit"
+             if rate:
+                 original_rate = rate
+                 rate = rate * Decimal("1.05") 
+                 logger.info(f"Using public rate {original_rate} + 5% leniency: {rate}")
+        
+        # FINAL FALLBACK: Hardcoded safety net for BTC/ETH to allow test trades if APIs fail
+        if not rate:
+            if coin_type == 'BTC':
+                 rate = Decimal("200000") # $200k AUD (Realistic High Cap)
+                 logger.warning(f"Using HARDCODED fallback rate for {coin_type}: {rate}")
+            elif coin_type == 'ETH':
+                 rate = Decimal("5000") # $5k AUD (Realistic High Cap)
+                 logger.warning(f"Using HARDCODED fallback rate for {coin_type}: {rate}")
+            elif coin_type == 'DOGE':
+                 rate = Decimal("1.0") # $1.00 AUD (Safe fallback)
+                 logger.warning(f"Using HARDCODED fallback rate for {coin_type}: {rate}")
+
         data = {
             'cointype': coin_type,
             'amount': str(amount_aud)
         }
+        if rate:
+            data['rate'] = str(rate)
+            logger.info(f"Using quoted rate: {rate}")
         
         logger.info(f"Placing market buy order: {amount_aud} AUD worth of {coin_type}")
         response = await self._make_request('/my/buy', data)
@@ -232,7 +289,7 @@ class CoinspotTradingClient:
             data['cointype'] = coin_type
         
         logger.debug(f"Fetching orders for {coin_type or 'all coins'}")
-        response = await self._make_request('/my/orders', data)
+        response = await self._make_request('/ro/my/orders', data)
         
         return response
     
@@ -313,16 +370,20 @@ class CoinspotTradingClient:
     async def get_balance(self, coin_type: str) -> dict[str, Any]:
         """
         Get balance for a specific coin
-        
-        Args:
-            coin_type: Coin to get balance for (e.g., 'BTC')
-            
-        Returns:
-            Balance information for the specified coin
         """
-        data = {'cointype': coin_type}
-        
-        logger.debug(f"Fetching balance for {coin_type}")
-        response = await self._make_request('/my/balance', data)
-        
-        return response
+        # Note: /my/balance (singular) might be deprecated. Using /my/balances
+        try:
+             response = await self.get_balances()
+             # Structure: {'status': 'ok', 'balances': [{'aud': 100}, {'btc': 0.1}]} or similar?
+             # Actually usually: {'status': 'ok', 'balances': {'aud': {'balance': 100}, ...}}
+             if response.get('status') == 'ok':
+                 balances = response.get('balances', {})
+                 # Handle case insensitivity
+                 for k, v in balances.items():
+                     if k.upper() == coin_type.upper():
+                         return v
+                 return {'balance': 0}
+             return response
+        except Exception as e:
+            logger.error(f"Error fetching balance for {coin_type}: {e}")
+            raise

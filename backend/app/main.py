@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.db import engine
 from app.services.scheduler import start_scheduler, stop_scheduler
 from app.services.trading.executor import get_order_queue
+from app.services.trading.scheduler import get_execution_scheduler
 
 
 @asynccontextmanager
@@ -37,10 +38,27 @@ async def lifespan(app: FastAPI):
     )
     queue_task = asyncio.create_task(queue.start())
     
+    # Initialize and start Execution Scheduler (Strategies)
+    # Using the same session as the queue for now (or create another if needed)
+    execution_scheduler = get_execution_scheduler(
+        session=executor_session,
+        api_key=settings.COINSPOT_API_KEY,
+        api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode"
+    )
+    
+    # Start scheduler FIRST so it can accept jobs
+    execution_scheduler.start()
+    
+    # Load any active "Live" algorithms from the database
+    execution_scheduler.load_deployed_algorithms()
+    
     yield
     
     # Shutdown: Stop the scheduler gracefully
     await stop_scheduler()
+    
+    # Stop Execution Scheduler
+    execution_scheduler.stop()
     
     # Stop Order Queue
     await queue.stop()
