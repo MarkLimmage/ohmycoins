@@ -59,3 +59,183 @@ This report details critical workflow failures identified during the Sprint 2.25
 - **Zombie Containers:** Track A environment failed to start due to port conflicts from previous track containers. Required a forceful cleanup (`docker kill`) to release ports.
 - **Infrastructure Conflicts:** The merge of Track A into `main` caused conflicts in `.env` and `docker-compose.override.yml` due to track-specific port settings.
 - **Resolution:** Adopted a "Main Config First" strategy – discarding track-specific infrastructure changes (ports) while preserving the feature logic code. This ensured the stability of the integrated environment.
+
+
+
+# Developer reports
+
+# Sprint 2.25 Retrospective: Development Workflow & Tooling
+
+**Date:** February 14, 2026
+**Focus:** Track C (Frontend/Audit) & Cross-Cutting Config
+**Participants:** The Architect, The Frontend Lead
+
+## 📊 Overview
+While the feature goals for Track C (Audit Logs & Kill Switch History) were met, the development session was characterized by significant friction related to the **local development environment** and **Docker containerization**.
+
+This retrospective specifically targets the "Developer Experience" (DX) issues encountered to prevent recurrence in future sprints.
+
+## 🛑 Critical Friction Points
+
+### 1. Docker Internal Networking Mismatch
+*   **Issue**: The backend container initially failed to connect to the database with `psycopg.OperationalError`.
+*   **Root Cause**: The `.env` configuration specified `POSTGRES_SERVER=postgresserver` (likely a legacy or cloud-template value), but the Docker Compose service is named `db`.
+*   **Resolution**: Manually updated `.env` to `POSTGRES_SERVER=db`.
+*   **Impact**: 15-30 minutes of debugging connectivity.
+*   **Action Logic**: Ensure `.env.example` aligns strictly with `docker-compose.yml` service names.
+
+### 2. Alembic Migration Complexity ("The Immutable Index")
+*   **Issue**: Applying the migration for `TradeAudit` failed with `psycopg.errors.InvalidObjectDefinition`.
+*   **Root Cause**: SQLModel/Alembic auto-generated a Unique Index on the `TradeAudit` model that involved a type cast (Datetime -> Date). Postgres requires functions in indexes to be marked `IMMUTABLE`, but the cast was not.
+*   **Resolution**: Manually patched the migration file (`versions/1d0434380682_...`) to remove the problematic index.
+*   **Lesson**: "Auto-generate" is not "Auto-correct". Complex constraints involving dates need manual review.
+
+### 3. "Host vs. Container" Context Switching
+*   **Issue**: Repeated failures when trying to run utility scripts or generators from the host terminal.
+    *   `npm run generate-client`: Failed (missing dependencies on host).
+    *   `python tests/populate_trade_audits.py`: Failed (`ModuleNotFoundError: No module named 'app'`).
+*   **Root Cause**: The project relies on containerized dependencies, but dev habits/scripts often assume a local environment.
+*   **Resolution**: Shifted exclusively to `docker compose exec [frontend|backend] [command]`.
+*   **Action Logic**: All scripts in `scripts/` should automatically detect if they are running on host and wrap the command in `docker compose exec` if necessary.
+
+## 🛠 Action Items for Sprint 2.26
+
+| Category | Action | Owner | Priority |
+| :--- | :--- | :--- | :--- |
+| **DevOps** | Update `scripts/` to force execution inside containers (e.g., `run_in_backend.sh`). | The Architect | High |
+| **Config** | Audit `.env` vs `docker-compose.yml` consistency. | DevOps | Medium |
+| **Docs** | Update `README.md` "Getting Started" to emphasize `docker compose exec`. | Tech Writer | Medium |
+| **DB** | Add a pre-commit check or linter warning for functional indexes in Alembic. | Backend Lead | Low |
+
+## 📉 Velocity Impact
+*   **Estimated Drag**: ~20% of sprint time lost to environment debugging.
+*   **Effective Velocity**: High (Features delivered), but **Efficiency** was Low.
+
+## ✅ Conclusion
+The "Local Linux Server" transition is functionally complete, but the developer tooling has not yet fully adapted to a "Container-First" mindset. We must stop trying to run code on the host OS.
+
+# Sprint 2.25 Retrospective: The Strategist & Workflow Analysis
+
+**Date:** February 14, 2026
+**Topic:** Track B Development Workflow & "Ghost Mode" Implementation
+**Participants:** Mark (User), Copilot (Agent)
+
+---
+
+## 🚀 Executive Summary
+The sprint goals for **"The Strategist" (Track B)** were successfully met. We implemented a working "Ghost Mode" (Paper Trading) environment, deployed a simulation script (`run_ma_strategy.py`), and verified that algorithmic signals are correctly audited.
+
+However, the development session revealed significant friction in the **local Docker workflow**, specifically regarding port allocations and code synchronization.
+
+---
+
+## 🛑 Workflow Friction Points (The "Why it took longer")
+
+### 1. Port Collision "Whac-A-Mole"
+*   **Issue**: On startup, the Track B stack failed because ports `8094` (Traefik) and `1080` (Mailcatcher) were already bound, likely by Track C or the Main stack.
+*   **Impact**: Required manual debugging, `lsof` checks, and editing `docker-compose.override.yml` multiple times to find clear ports (`8096/8097` and `1084`).
+*   **Root Cause**: Lack of a centralized, automated registry or script to assign unique ports per "Track" workspace.
+
+### 2. The "Docker CP" Pattern
+*   **Issue**: Changes made to `backend/scripts/run_ma_strategy.py` locally were **not** reflecting inside the running container.
+*   **Impact**: We had to manually run `docker cp backend/scripts/run_ma_strategy.py ...` after every edit.
+*   **Root Cause**: The `docker-compose.override.yml` mounts `./backend/app` and `./backend/tests`, but **missing** `./backend/scripts`.
+    ```yaml
+    # Current Mounts
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      # MISSING: - ./backend/scripts:/app/scripts
+    ```
+
+### 3. Manual Database Verification
+*   **Issue**: To verify if the Audit Logs were working, we relied on executing complex Python one-liners inside the container via `docker exec`.
+*   **Impact**: High cognitive load and risk of syntax errors. "Flying blind" regarding the state of the simulation until the query runs.
+*   **Root Cause**: Lack of simple CLI utility scripts (e.g., `scripts/check_status.py`) to dump key metrics (Order counts, Audit Log tail).
+
+---
+
+## ✅ The Wins (What went right)
+*   **Ghost Mode Verification**: The `PaperExchange` successfully blocked attempts to call the real CoinSpot API (verified via logs).
+*   **Safety Logic**: Quickly identified a bug in `SafetyManager` (Gross vs Net exposure) and fixed it, preventing false positive blocks.
+*   **Audit Trail**: Confirmed that `ALGORITHM_SIGNAL` events are writing to Postgres, satisfying the "Black Box" transparency requirement.
+
+---
+
+## 🛠 Action Plan (Next Steps)
+
+1.  **Fix Docker Mounts**:
+    *   Update `docker-compose.override.yml` to include `- ./backend/scripts:/app/scripts`.
+    *   This will allow instant hot-reloading of simulation scripts.
+
+2.  **Standardize Ports**:
+    *   Update `README.md` with a "Track Port Matrix".
+    *   Track A: 8000-8010
+    *   Track B: 8020-8030
+    *   Track C: 8040-8050
+
+3.  **Create CLI Utils**:
+    *   Build a lightweight TUI or script `scripts/status.sh` that queries the DB and prints:
+        *   Active Algorithms
+        *   Recent Audit Logs
+        *   Current PnL (Ghost Mode)
+
+---
+**Status:** 🏁 Sprint Completed. Fixes documented.
+
+
+# Sprint 2.25 Retrospective: Dev Workflow & Infrastructure
+
+**Date:** February 14, 2026
+**Track:** Track A (Risk Management & Backend)
+**Focus:** Development Workflow, Docker Environment, and Testing Infrastructure.
+
+---
+
+## 🛑 Blockers & Issues Encountered
+
+### 1. Docker Internal vs. Host Port Mismatch
+**Impact:** 🔴 High (Prevented Test Execution)
+*   **Observation:** The `.env` file configures `POSTGRES_PORT=5433` to allow multiple tracks (A, B, C) to run simultaneously on the host machine without port conflicts. However, the internal Docker network expects the standard Postgres port (`5432`).
+*   **Result:** Backend services inside the container tried to connect to `db:5433` and failed with `Connection Refused`.
+*   **Resolution:** Modified `docker-compose.override.yml` to explicitly override the `POSTGRES_PORT` environment variable back to `5432` for the `backend`, `prestart`, and `db-init` services involved in the internal network.
+
+### 2. Redis State Leakage in Tests
+**Impact:** 🟡 Medium (Flaky Tests)
+*   **Observation:** Unit tests for "Volatile Market" features failed when run in specific sequences.
+*   **Root Cause:** The `TradiingSafetyManager` fixture cleaned up the `omc:emergency_stop` key but failed to clean up the new `omc:market_status` key. Redis limits persisted across tests.
+*   **Resolution:** Updated the `safety_manager` pytest fixture to include explicit `teardown` logic for all relevant Redis keys.
+
+### 3. Pytest Argument Parsing in Docker Compose
+**Impact:** ⚪ Low (Command Friction)
+*   **Observation:** Passing complex arguments (like `--cov`) through `docker compose run` often caused argument parsing errors or path mismatch warnings (`pluggy.PluggyTeardownRaisedWarning`).
+*   **Resolution:** Relied on the encapsulated `scripts/test.sh` script inside the container rather than constructing raw `pytest` commands.
+
+### 4. Database Reset Script Syntax Errors
+**Impact:** ⚪ Low
+*   **Observation:** `scripts/db-reset.sh` failed execution due to a syntax error (`unexpected token newline`), likely due to file formatting or copy-paste issues in the shell environment.
+*   **Resolution:** Used `docker compose down -v` to wipe volumes entirely as a fallback, which is cleaner but slower.
+
+---
+
+## 🛠 Actionable Instructions for Future Sprints
+
+### For the "Agent Instructions" / "System Prompts":
+
+1.  **Docker Network Isolation Rule:**
+    > "When debugging connection issues within Docker Compose, verify if `.env` variables meant for the *Host* (like mapped ports) are leaking into the *Container* environment. Override internal ports (e.g., `POSTGRES_PORT=5432`) in `docker-compose.override.yml`."
+
+2.  **State Management Rule:**
+    > "When implementing Redis-backed features, accompanied Test Fixtures MUST include explicit `teardown` steps that delete all keys created during the test (`await redis.delete("key")`). Do not rely on 'clean slate' assumptions."
+
+3.  **Test Execution Preference:**
+    > "To run tests, prefer executing the standardized script inside the container: `docker compose run --rm backend bash scripts/test.sh`. Avoid constructing complex `pytest` command strings directly in the terminal unless debugging a single file."
+
+4.  **Configuration Consistency:**
+    > "Check `docker-compose.override.yml` before starting work on a new machine/track to ensure environment variables match the expected internal service architecture."
+
+---
+
+## ✅ Successes
+*   **Circuit Breaker Logic:** The "Guard" implementation is robust and successfully integrates synchronous (Limits) and asynchronous (Slack) patterns.
+*   **Deployment:** Git workflow was smooth with clear branch separation.
