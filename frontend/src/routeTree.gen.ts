@@ -18,7 +18,6 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutPerformanceRouteImport } from './routes/_layout/performance'
 import { Route as LayoutLlmSettingsRouteImport } from './routes/_layout/llm-settings'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutAuditRouteImport } from './routes/_layout/audit'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 
@@ -66,11 +65,6 @@ const LayoutLlmSettingsRoute = LayoutLlmSettingsRouteImport.update({
   path: '/llm-settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutAuditRoute = LayoutAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -89,7 +83,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/audit': typeof LayoutAuditRoute
-  '/items': typeof LayoutItemsRoute
   '/llm-settings': typeof LayoutLlmSettingsRoute
   '/performance': typeof LayoutPerformanceRoute
   '/settings': typeof LayoutSettingsRoute
@@ -102,7 +95,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/audit': typeof LayoutAuditRoute
-  '/items': typeof LayoutItemsRoute
   '/llm-settings': typeof LayoutLlmSettingsRoute
   '/performance': typeof LayoutPerformanceRoute
   '/settings': typeof LayoutSettingsRoute
@@ -117,7 +109,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/audit': typeof LayoutAuditRoute
-  '/_layout/items': typeof LayoutItemsRoute
   '/_layout/llm-settings': typeof LayoutLlmSettingsRoute
   '/_layout/performance': typeof LayoutPerformanceRoute
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -132,7 +123,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/audit'
-    | '/items'
     | '/llm-settings'
     | '/performance'
     | '/settings'
@@ -145,7 +135,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/audit'
-    | '/items'
     | '/llm-settings'
     | '/performance'
     | '/settings'
@@ -159,7 +148,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/audit'
-    | '/_layout/items'
     | '/_layout/llm-settings'
     | '/_layout/performance'
     | '/_layout/settings'
@@ -239,13 +227,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLlmSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/audit': {
       id: '/_layout/audit'
       path: '/audit'
@@ -266,7 +247,6 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAuditRoute: typeof LayoutAuditRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutLlmSettingsRoute: typeof LayoutLlmSettingsRoute
   LayoutPerformanceRoute: typeof LayoutPerformanceRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -276,7 +256,6 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAuditRoute: LayoutAuditRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
   LayoutLlmSettingsRoute: LayoutLlmSettingsRoute,
   LayoutPerformanceRoute: LayoutPerformanceRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,

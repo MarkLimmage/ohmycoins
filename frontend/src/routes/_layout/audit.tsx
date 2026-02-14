@@ -1,4 +1,12 @@
-import { Badge, Container, Heading, Table, Text, Box, Tabs } from "@chakra-ui/react"
+import {
+  Badge,
+  Box,
+  Container,
+  Heading,
+  Table,
+  Tabs,
+  Text,
+} from "@chakra-ui/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
@@ -20,14 +28,18 @@ const PER_PAGE = 20
 function getAuditQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
-      AuditService.readTradeAudits({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+      AuditService.readTradeAudits({
+        skip: (page - 1) * PER_PAGE,
+        limit: PER_PAGE,
+      }),
     queryKey: ["audit", { page }],
   }
 }
 
 function getKillSwitchHistoryQueryOptions() {
   return {
-    queryFn: () => RiskService.readAuditLogs({ eventType: "kill_switch_toggle", limit: 50 }),
+    queryFn: () =>
+      RiskService.readAuditLogs({ eventType: "kill_switch_toggle", limit: 50 }),
     queryKey: ["risk", "audit", "kill_switch"],
   }
 }
@@ -53,7 +65,7 @@ function Audit() {
 
   const records = data?.data ?? []
   const count = data?.count ?? 0
-  
+
   const ksRecords = ksData?.data ?? []
 
   return (
@@ -67,12 +79,8 @@ function Audit() {
 
       <Tabs.Root defaultValue="trades">
         <Tabs.List>
-          <Tabs.Trigger value="trades">
-            Trade Decisions
-          </Tabs.Trigger>
-          <Tabs.Trigger value="killswitch">
-            Kill Switch History
-          </Tabs.Trigger>
+          <Tabs.Trigger value="trades">Trade Decisions</Tabs.Trigger>
+          <Tabs.Trigger value="killswitch">Kill Switch History</Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Content value="trades">
@@ -113,7 +121,9 @@ function Audit() {
                           {record.decision}
                         </Badge>
                       </Table.Cell>
-                      <Table.Cell>{((record.confidence_score ?? 0) * 100).toFixed(1)}%</Table.Cell>
+                      <Table.Cell>
+                        {((record.confidence_score ?? 0) * 100).toFixed(1)}%
+                      </Table.Cell>
                       <Table.Cell maxW="md" truncate title={record.reason}>
                         {record.reason}
                       </Table.Cell>
@@ -132,7 +142,7 @@ function Audit() {
                   ))}
                 </Table.Body>
               </Table.Root>
-              
+
               <PaginationRoot
                 count={count}
                 pageSize={PER_PAGE}
@@ -154,7 +164,7 @@ function Audit() {
 
         <Tabs.Content value="killswitch">
           {ksLoading ? (
-             <Text>Loading...</Text>
+            <Text>Loading...</Text>
           ) : (
             <Box overflowX="auto">
               <Table.Root size="sm" striped>
@@ -166,7 +176,7 @@ function Audit() {
                     <Table.ColumnHeader>Details</Table.ColumnHeader>
                   </Table.Row>
                 </Table.Header>
-                 <Table.Body>
+                <Table.Body>
                   {ksRecords.map((record) => (
                     <Table.Row key={record.id}>
                       <Table.Cell whiteSpace="nowrap">
@@ -178,7 +188,7 @@ function Audit() {
                       </Table.Cell>
                       <Table.Cell>
                         <Text as="pre" fontSize="xs">
-                            {JSON.stringify(record.details, null, 2)}
+                          {JSON.stringify(record.details, null, 2)}
                         </Text>
                       </Table.Cell>
                     </Table.Row>

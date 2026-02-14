@@ -21,7 +21,13 @@ export const PLTicker = ({ data }: PLTickerProps) => {
       aria-live="polite"
       role="status"
     >
-      <Flex h="full" alignItems="center" justifyContent="space-between" fontSize="18px" fontWeight="bold">
+      <Flex
+        h="full"
+        alignItems="center"
+        justifyContent="space-between"
+        fontSize="18px"
+        fontWeight="bold"
+      >
         <Flex gap={4}>
           <Text>
             P&L: {data.total_pnl >= 0 ? "+" : ""}${data.total_pnl.toFixed(2)} (
@@ -35,17 +41,17 @@ export const PLTicker = ({ data }: PLTickerProps) => {
         </Flex>
 
         <Flex alignItems="center" gap={2}>
-            {data.is_connected ? (
-                <>
-                    <Box w="3" h="3" borderRadius="full" bg="green.400" />
-                    <Text>LIVE</Text>
-                </>
-            ) : (
-                <>
-                     <Box w="3" h="3" borderRadius="full" bg="red.400" />
-                     <Text>DISCONNECTED</Text>
-                </>
-            )}
+          {data.is_connected ? (
+            <>
+              <Box w="3" h="3" borderRadius="full" bg="green.400" />
+              <Text>LIVE</Text>
+            </>
+          ) : (
+            <>
+              <Box w="3" h="3" borderRadius="full" bg="red.400" />
+              <Text>DISCONNECTED</Text>
+            </>
+          )}
         </Flex>
       </Flex>
     </Box>

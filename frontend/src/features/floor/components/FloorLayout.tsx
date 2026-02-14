@@ -1,13 +1,14 @@
 import { Box, VStack } from "@chakra-ui/react"
-import { PLTicker } from "./PLTicker"
-import { AlgorithmGrid } from "./AlgorithmGrid"
-import { KillSwitch } from "./KillSwitch"
 import { useFloorWebSocket } from "../hooks/useFloorWebSocket"
 import { useTradingControls } from "../hooks/useTradingControls"
+import { AlgorithmGrid } from "./AlgorithmGrid"
+import { KillSwitch } from "./KillSwitch"
+import { PLTicker } from "./PLTicker"
 
 export const FloorLayout = () => {
   const { tickerData, algorithms } = useFloorWebSocket()
-  const { pauseAlgorithm, resumeAlgorithm, stopAlgorithm, emergencyStop } = useTradingControls()
+  const { pauseAlgorithm, resumeAlgorithm, stopAlgorithm, emergencyStop } =
+    useTradingControls()
 
   return (
     <Box minH="100vh" bg="gray.50" position="relative">
@@ -15,8 +16,10 @@ export const FloorLayout = () => {
         <PLTicker data={tickerData} />
       </Box>
 
-      <Box p={6} pb={32}> {/* Padding bottom for KillSwitch space */}
-        <VStack  align="stretch">
+      <Box p={6} pb={32}>
+        {" "}
+        {/* Padding bottom for KillSwitch space */}
+        <VStack align="stretch">
           <AlgorithmGrid
             algorithms={algorithms}
             onPause={pauseAlgorithm}
@@ -26,9 +29,9 @@ export const FloorLayout = () => {
         </VStack>
       </Box>
 
-      <KillSwitch 
-        onEmergencyStop={emergencyStop} 
-        isActive={algorithms.some(a => a.status === 'active')} 
+      <KillSwitch
+        onEmergencyStop={emergencyStop}
+        isActive={algorithms.some((a) => a.status === "active")}
       />
     </Box>
   )
