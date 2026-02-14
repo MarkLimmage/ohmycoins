@@ -24,9 +24,9 @@
 ### 3. The Strategist - Live Paper Trading (Track B - AI)
 *   **Goal**: Let the Agents trade "on paper" in the stable environment.
 *   **Tasks**:
-    *   **Paper Exchange**: verify `PaperExchange` class executes orders against local DB without touching CoinSpot API.
-    *   **Strategy Loop**: Run a simple "Moving Average Crossover" agent for 24h on the local server.
-    *   **Observation**: Ensure agents correctly log to `TradeAudit` (Track C's work).
+    *   [x] **Paper Exchange**: verify `PaperExchange` class executes orders against local DB without touching CoinSpot API.
+    *   [x] **Strategy Loop**: Run a simple "Moving Average Crossover" agent for 24h on the local server.
+    *   [x] **Observation**: Ensure agents correctly log to `TradeAudit` (Track C's work).
 
 ### 4. The Interface - Audit Visualization (Track C - Frontend)
 *   **Goal**: Visualize the decisions made by the Agents and The Guard.

@@ -9,8 +9,8 @@ services:
       - --entrypoints.http.address=:80
       - --log.level=INFO
     ports:
-      - "8094:80"
-      - "8095:8080"
+      - "8096:80"
+      - "8097:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:

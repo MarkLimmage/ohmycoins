@@ -12,8 +12,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "8094:80"
-      - "8095:8080"
+      - "8096:80"
+      - "8097:8080"
     # Duplicate the command from docker-compose.yml to add --api.insecure=true
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
@@ -54,6 +54,8 @@ services:
 
   prestart:
     restart: "no"
+    environment:
+      - POSTGRES_PORT=5432
     # Mount backend directory so prestart sees latest migrations
     volumes:
       - ./backend/app:/app/app
@@ -62,7 +64,7 @@ services:
   adminer:
     restart: "no"
     ports:
-      - "8083:8080"
+      - "8084:8080"
 
   backend:
     restart: "no"
@@ -98,13 +100,14 @@ services:
       SMTP_HOST: "mailcatcher"
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
+      POSTGRES_PORT: "5432"
       EMAILS_FROM_EMAIL: "noreply@example.com"
 
   mailcatcher:
     image: schickling/mailcatcher
     ports:
-      - "1083:1080"
-      - "1028:1025"
+      - "1084:1080"
+      - "1029:1025"
 
   db-init:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
@@ -120,7 +123,7 @@ services:
       - .env
     environment:
       - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
@@ -190,7 +193,7 @@ services:
       - ./frontend/blob-report:/app/blob-report
       - ./frontend/test-results:/app/test-results
     ports:
-      - 9323:9323
+      - 9322:9323
 
 networks:
   traefik-public:
