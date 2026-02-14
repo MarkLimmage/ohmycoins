@@ -16,11 +16,12 @@ class MACrossoverStrategy:
         # If market_data has specific coin info, use it. Otherwise fallback to self.coin_type
         # In a real system, market_data would be a large dict of all coins, so we'd pick ours.
         price_data = market_data.get(self.coin_type)
-        if not price_data:
-            # Maybe broad market data structure?
-            price_data = market_data
-            
-        current_price = Decimal(str(price_data.get('price', 1000)))
+        raw_price = price_data.get('price')
+        if raw_price is None:
+             # Fallback if price is explicitly None (e.g. failed fetch)
+             raw_price = 1000
+        
+        current_price = Decimal(str(raw_price))
         
         self.prices.append(current_price)
         
