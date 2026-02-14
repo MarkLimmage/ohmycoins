@@ -1,29 +1,30 @@
 {
-	"folders": [
-		{
-			"name": "OhMyCoins (Track A - Data Scientist)",
-			"path": "."
-		}
-	],
-	"settings": {
-		"workbench.colorCustomizations": {
-			"activityBar.background": "#800080",
-			"titleBar.activeBackground": "#800080",
-			"titleBar.activeForeground": "#FFFFFF"
-		},
-		"python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
-		"python.analysis.typeCheckingMode": "basic",
-		"python.testing.pytestEnabled": true,
-		"python.testing.pytestArgs": [
-			"backend/tests"
-		]
-	},
-	"extensions": {
-		"recommendations": [
-			"ms-python.python",
-			"tamasfe.even-better-toml",
-			"charliermarsh.ruff",
-			"ms-toolsai.jupyter"
-		]
-	}
+    "folders": [
+        {
+            "name": "OMC TRACK-A",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "workbench.colorCustomizations": {
+            "activityBar.background": "#C62828",
+            "titleBar.activeBackground": "#C62828",
+            "titleBar.activeForeground": "#FFFFFF",
+            "statusBar.background": "#C62828"
+        },
+        "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+            "backend/tests"
+        ]
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "tamasfe.even-better-toml",
+            "charliermarsh.ruff",
+            "ms-toolsai.jupyter"
+        ]
+    }
 }
