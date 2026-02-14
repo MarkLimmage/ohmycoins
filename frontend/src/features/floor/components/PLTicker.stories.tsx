@@ -1,18 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { PLTicker } from "./PLTicker";
-import { AlgorithmCard } from "./AlgorithmCard";
-import { KillSwitch } from "./KillSwitch";
-import { AlgorithmGrid } from "./AlgorithmGrid";
-import { Box } from "@chakra-ui/react";
-import { fn } from '@storybook/test';
+import type { Meta, StoryObj } from "@storybook/react"
+import { PLTicker } from "./PLTicker"
 
 // --- PLTicker Stories ---
 const metaTicker: Meta<typeof PLTicker> = {
   component: PLTicker,
   title: "Floor/PLTicker",
-};
-export default metaTicker;
-type StoryTicker = StoryObj<typeof PLTicker>;
+}
+export default metaTicker
+type StoryTicker = StoryObj<typeof PLTicker>
 
 export const Positive: StoryTicker = {
   args: {
@@ -25,12 +20,12 @@ export const Positive: StoryTicker = {
       last_update: "2026-01-25T10:00:00Z",
     },
   },
-};
+}
 
 export const Negative: StoryTicker = {
   args: {
     data: {
-      total_pnl: -542.30,
+      total_pnl: -542.3,
       pnl_percentage: -0.012,
       active_count: 2,
       paused_count: 2,
@@ -38,7 +33,7 @@ export const Negative: StoryTicker = {
       last_update: "2026-01-25T10:00:00Z",
     },
   },
-};
+}
 
 export const Disconnected: StoryTicker = {
   args: {
@@ -51,4 +46,4 @@ export const Disconnected: StoryTicker = {
       last_update: "2026-01-25T10:00:00Z",
     },
   },
-};
+}

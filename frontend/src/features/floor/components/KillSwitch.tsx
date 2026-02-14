@@ -1,6 +1,6 @@
 import { Box, Flex, Text } from "@chakra-ui/react"
-import { SafetyButton } from "@/components/Floor"
 import { BsOctagonFill } from "react-icons/bs"
+import { SafetyButton } from "@/components/Floor"
 
 interface KillSwitchProps {
   onEmergencyStop: () => Promise<void>
@@ -24,11 +24,21 @@ export const KillSwitch = ({ onEmergencyStop, isActive }: KillSwitchProps) => {
         borderRadius="lg"
         boxShadow="dark-lg"
       >
-        <Flex direction="column" alignItems="center" justifyContent="center" gap={2}>
-            <BsOctagonFill size={32} />
-            <Text fontWeight="bold" fontSize="lg" lineHeight="1.2" textAlign="center">
-                EMERGENCY STOP
-            </Text>
+        <Flex
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
+          gap={2}
+        >
+          <BsOctagonFill size={32} />
+          <Text
+            fontWeight="bold"
+            fontSize="lg"
+            lineHeight="1.2"
+            textAlign="center"
+          >
+            EMERGENCY STOP
+          </Text>
         </Flex>
       </SafetyButton>
     </Box>

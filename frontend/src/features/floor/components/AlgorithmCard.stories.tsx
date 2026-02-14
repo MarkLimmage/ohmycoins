@@ -1,25 +1,25 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { AlgorithmCard } from "./AlgorithmCard";
-import { fn } from '@storybook/test';
+import type { Meta, StoryObj } from "@storybook/react"
+import { fn } from "@storybook/test"
+import { AlgorithmCard } from "./AlgorithmCard"
 
 const meta: Meta<typeof AlgorithmCard> = {
   component: AlgorithmCard,
   title: "Floor/AlgorithmCard",
   args: {
-      onPause: fn(),
-      onResume: fn(),
-      onStop: fn(),
-  }
-};
-export default meta;
-type Story = StoryObj<typeof AlgorithmCard>;
+    onPause: fn(),
+    onResume: fn(),
+    onStop: fn(),
+  },
+}
+export default meta
+type Story = StoryObj<typeof AlgorithmCard>
 
 export const Active: Story = {
   args: {
     algorithm: {
       id: "1",
       name: "BTC Arb v2",
-      pnl_amount: 542.30,
+      pnl_amount: 542.3,
       pnl_percentage: 0.018,
       uptime_seconds: 754,
       trade_count: 23,
@@ -28,14 +28,14 @@ export const Active: Story = {
       status: "active",
     },
   },
-};
+}
 
 export const Paused: Story = {
   args: {
     algorithm: {
       id: "2",
       name: "ETH Grid",
-      pnl_amount: 320.50,
+      pnl_amount: 320.5,
       pnl_percentage: 0.009,
       uptime_seconds: 2700,
       trade_count: 12,
@@ -44,14 +44,14 @@ export const Paused: Story = {
       status: "paused",
     },
   },
-};
+}
 
 export const Stopped: Story = {
   args: {
     algorithm: {
       id: "3",
       name: "SOL MeanRev",
-      pnl_amount: -120.00,
+      pnl_amount: -120.0,
       pnl_percentage: -0.015,
       uptime_seconds: 400,
       trade_count: 5,
@@ -60,7 +60,7 @@ export const Stopped: Story = {
       status: "stopped",
     },
   },
-};
+}
 
 export const ErrorState: Story = {
   args: {
@@ -74,7 +74,7 @@ export const ErrorState: Story = {
       win_count: 0,
       loss_count: 0,
       status: "error",
-      status_message: "Insufficient Balance"
+      status_message: "Insufficient Balance",
     },
   },
-};
+}

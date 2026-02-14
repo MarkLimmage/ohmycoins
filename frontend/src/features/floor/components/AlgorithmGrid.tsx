@@ -1,6 +1,6 @@
-import { Box, SimpleGrid, Text, Flex } from "@chakra-ui/react"
-import { AlgorithmCard } from "./AlgorithmCard"
+import { Box, SimpleGrid, Text } from "@chakra-ui/react"
 import type { AlgorithmData } from "../types"
+import { AlgorithmCard } from "./AlgorithmCard"
 
 interface AlgorithmGridProps {
   algorithms: AlgorithmData[]
@@ -18,9 +18,20 @@ export const AlgorithmGrid = ({
   return (
     <>
       {/* Mobile Warning - Visible only on small screens */}
-      <Box display={{ base: "block", md: "none" }} p={4} bg="gray.100" borderRadius="md" textAlign="center">
-        <Text fontSize="lg" fontWeight="bold" mb={2}>⚠️ Desktop Only</Text>
-        <Text>Trading controls are only available on desktop devices for safety reasons.</Text>
+      <Box
+        display={{ base: "block", md: "none" }}
+        p={4}
+        bg="gray.100"
+        borderRadius="md"
+        textAlign="center"
+      >
+        <Text fontSize="lg" fontWeight="bold" mb={2}>
+          ⚠️ Desktop Only
+        </Text>
+        <Text>
+          Trading controls are only available on desktop devices for safety
+          reasons.
+        </Text>
       </Box>
 
       {/* Grid - Visible on medium screens and up */}

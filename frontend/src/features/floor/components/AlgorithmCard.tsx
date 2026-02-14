@@ -1,5 +1,5 @@
+import { Badge, Box, Button, Flex, Text } from "@chakra-ui/react"
 import { useState } from "react"
-import { Box, Button, Flex, Text, Badge } from "@chakra-ui/react"
 import { SafetyButton } from "@/components/Floor"
 import type { AlgorithmData } from "../types"
 
@@ -18,13 +18,16 @@ export const AlgorithmCard = ({
 }: AlgorithmCardProps) => {
   const [pendingAction, setPendingAction] = useState<string | null>(null)
 
-  const handleAction = async (action: 'pause' | 'resume', handler: (id: string) => Promise<void>) => {
-      setPendingAction(action)
-      try {
-          await handler(algorithm.id)
-      } finally {
-          setPendingAction(null)
-      }
+  const handleAction = async (
+    action: "pause" | "resume",
+    handler: (id: string) => Promise<void>,
+  ) => {
+    setPendingAction(action)
+    try {
+      await handler(algorithm.id)
+    } finally {
+      setPendingAction(null)
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -70,64 +73,86 @@ export const AlgorithmCard = ({
 
       <Flex justifyContent="space-between" mb={2} alignItems="center">
         <Box>
-            <Text fontSize="20px" fontWeight="bold">
-            {algorithm.pnl_amount >= 0 ? "+" : ""}${algorithm.pnl_amount.toFixed(2)}{" "}
-            <Text as="span" fontSize="sm" color={algorithm.pnl_percentage >= 0 ? "green.600" : "red.600"}>
-                ({(algorithm.pnl_percentage * 100).toFixed(1)}%)
+          <Text fontSize="20px" fontWeight="bold">
+            {algorithm.pnl_amount >= 0 ? "+" : ""}$
+            {algorithm.pnl_amount.toFixed(2)}{" "}
+            <Text
+              as="span"
+              fontSize="sm"
+              color={algorithm.pnl_percentage >= 0 ? "green.600" : "red.600"}
+            >
+              ({(algorithm.pnl_percentage * 100).toFixed(1)}%)
             </Text>
-            </Text>
+          </Text>
         </Box>
-        <Badge colorPalette={algorithm.status === 'active' ? 'green' : algorithm.status === 'paused' ? 'orange' : 'red'}>
-            {algorithm.status.toUpperCase()}
+        <Badge
+          colorPalette={
+            algorithm.status === "active"
+              ? "green"
+              : algorithm.status === "paused"
+                ? "orange"
+                : "red"
+          }
+        >
+          {algorithm.status.toUpperCase()}
         </Badge>
       </Flex>
 
-      <Text fontSize="sm" color="gray.600">Uptime: {formatUptime(algorithm.uptime_seconds)}</Text>
       <Text fontSize="sm" color="gray.600">
-        Trades: {algorithm.trade_count} ({algorithm.win_count} wins, {algorithm.loss_count} losses)
+        Uptime: {formatUptime(algorithm.uptime_seconds)}
+      </Text>
+      <Text fontSize="sm" color="gray.600">
+        Trades: {algorithm.trade_count} ({algorithm.win_count} wins,{" "}
+        {algorithm.loss_count} losses)
       </Text>
       <Text fontSize="sm" color="gray.600" mb={4}>
-        Win Rate: {algorithm.trade_count > 0 ? ((algorithm.win_count / algorithm.trade_count) * 100).toFixed(1) : 0}%
+        Win Rate:{" "}
+        {algorithm.trade_count > 0
+          ? ((algorithm.win_count / algorithm.trade_count) * 100).toFixed(1)
+          : 0}
+        %
       </Text>
 
       <Flex gap={2} mt={4}>
         {algorithm.status === "active" && (
-          <Button 
-            size="sm" 
-            onClick={() => handleAction('pause', onPause)} 
+          <Button
+            size="sm"
+            onClick={() => handleAction("pause", onPause)}
             colorScheme="orange"
-            loading={pendingAction === 'pause'}
+            loading={pendingAction === "pause"}
             disabled={pendingAction !== null}
           >
             ⏸ Pause
           </Button>
         )}
         {algorithm.status === "paused" && (
-          <Button 
-            size="sm" 
-            onClick={() => handleAction('resume', onResume)} 
+          <Button
+            size="sm"
+            onClick={() => handleAction("resume", onResume)}
             colorScheme="green"
-            loading={pendingAction === 'resume'}
+            loading={pendingAction === "resume"}
             disabled={pendingAction !== null}
           >
             ▶ Resume
           </Button>
         )}
-        
+
         <SafetyButton
-            action="stop"
-            onConfirm={async () => await onStop(algorithm.id)}
-            requireConfirmation={true}
-            confirmationText="STOP"
-            label="Stop Algorithm"
-            buttonSize="sm"
+          action="stop"
+          onConfirm={async () => await onStop(algorithm.id)}
+          requireConfirmation={true}
+          confirmationText="STOP"
+          label="Stop Algorithm"
+          buttonSize="sm"
         >
-            🛑 Stop
+          🛑 Stop
         </SafetyButton>
       </Flex>
 
-      {algorithm.status === 'error' && (
-          <Text color="red.500" mt={2} fontSize="sm">ERROR - {algorithm.status_message}</Text>
+      {algorithm.status === "error" && (
+        <Text color="red.500" mt={2} fontSize="sm">
+          ERROR - {algorithm.status_message}
+        </Text>
       )}
     </Box>
   )
