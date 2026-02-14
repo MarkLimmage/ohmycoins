@@ -110,6 +110,21 @@ services:
       - "1081:1080"
       - "1029:1025"
 
+  watcher:
+    build:
+      context: ./backend
+    restart: "no"
+    command: python scripts/hard_stop_watcher.py
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/scripts:/app/scripts
+      - ./backend/tests:/app/tests
+    environment:
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
   db-init:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     build:
