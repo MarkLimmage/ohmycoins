@@ -113,7 +113,7 @@ function Audit() {
                           {record.decision}
                         </Badge>
                       </Table.Cell>
-                      <Table.Cell>{(record.confidence_score * 100).toFixed(1)}%</Table.Cell>
+                      <Table.Cell>{((record.confidence_score ?? 0) * 100).toFixed(1)}%</Table.Cell>
                       <Table.Cell maxW="md" truncate title={record.reason}>
                         {record.reason}
                       </Table.Cell>
