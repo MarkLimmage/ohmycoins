@@ -320,6 +320,11 @@ class OrderExecutor:
                     return await self.paper_exchange.market_sell(order.coin_type, order.quantity)
 
         async with CoinspotTradingClient(self.api_key, self.api_secret) as client:
+            # SAFETY CLAMP FOR BETA: Hard limit of $10 AUD per buy trade
+            if order.side == 'buy' and order.quantity > Decimal('10.00'):
+                 logger.error(f"Order {order.id} rejected by BETA safety clamp: {order.quantity} AUD > $10 AUD limit")
+                 raise SafetyViolation(f"BETA SAFETY CLAMP: Buy order exceeds $10 AUD limit ({order.quantity} AUD).")
+
             if order.side == 'buy':
                 if order.order_type == 'limit':
                     if not order.price:

@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
+from decimal import Decimal
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -21,6 +22,11 @@ from app.services.trading.algorithm_executor import (
     get_algorithm_executor
 )
 from app.services.trading.exceptions import SchedulerError
+from app.models import DeployedAlgorithm, Algorithm
+from sqlmodel import select
+from app.services.trading.strategies.ma_crossover import MACrossoverStrategy
+import json
+from app.services.trading.client import CoinspotTradingClient
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +88,65 @@ class ExecutionScheduler:
         self._running = False
         logger.info("Execution scheduler stopped")
     
+    def load_deployed_algorithms(self) -> int:
+        """
+        Load active deployed algorithms from the database and schedule them.
+        
+        Returns:
+            Number of algorithms scheduled
+        """
+        logger.info("Loading deployed algorithms from database...")
+        stmt = select(DeployedAlgorithm, Algorithm).join(Algorithm).where(DeployedAlgorithm.is_active == True)
+        results = self.session.exec(stmt).all()
+        
+        count = 0
+        for deployed_algo, algo_def in results:
+            try:
+                # Instantiate based on algorithm type/name - minimal implementation for Sprint 2.26
+                algorithm_instance = None
+                
+                # Simple dispatch logic (to be replaced by a proper registry in Phase 3)
+                if "MA Crossover" in algo_def.name or "MACrossover" in algo_def.name:
+                    # Parse parameters
+                    params = {}
+                    if deployed_algo.parameters_json:
+                        try:
+                            params = json.loads(deployed_algo.parameters_json)
+                        except json.JSONDecodeError:
+                            logger.warning(f"Invalid parameters JSON for deployment {deployed_algo.id}")
+                    
+                    # Defaults
+                    short_window = params.get('short_window', 10)
+                    long_window = params.get('long_window', 50)
+                    coin_type = params.get('coin_type', 'BTC')
+                    
+                    algorithm_instance = MACrossoverStrategy(
+                        short_window=short_window,
+                        long_window=long_window,
+                        coin_type=coin_type
+                    )
+                
+                if algorithm_instance:
+                    # Calculate frequency
+                    freq_seconds = deployed_algo.execution_frequency or algo_def.default_execution_frequency or 300
+                    frequency = f"interval:{freq_seconds}:seconds"
+                    
+                    self.schedule_algorithm(
+                        user_id=deployed_algo.user_id,
+                        algorithm_id=deployed_algo.algorithm_id,  # Use Algorithm ID for uniqueness per user/algo pair
+                        algorithm=algorithm_instance,
+                        frequency=frequency
+                    )
+                    count += 1
+                else:
+                    logger.warning(f"Unknown algorithm type for deployment {deployed_algo.id}: {algo_def.name}")
+                    
+            except Exception as e:
+                logger.error(f"Failed to load deployment {deployed_algo.id}: {e}")
+                
+        logger.info(f"Loaded {count} active algorithms from database")
+        return count
+
     def schedule_algorithm(
         self,
         user_id: UUID,
@@ -266,15 +331,36 @@ class ExecutionScheduler:
             return await self.market_data_provider.get_data()
         
         # Fallback: Fetch from Coinspot API
-        # TODO: Implement market data fetching from database or API when Phase 2.5 data integration is complete
-        # Market data will be sourced from price_data_5min table and comprehensive data collectors
-        logger.warning("Using placeholder market data - implement proper market data provider")
-        
-        return {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'prices': {},
-            'volumes': {}
-        }
+        try:
+            async with CoinspotTradingClient(self.api_key, self.api_secret) as client:
+                # Fetch latest prices for common coins
+                prices = await client._get_public_price('BTC', 'buy')
+                eth_price = await client._get_public_price('ETH', 'buy')
+                doge_price = await client._get_public_price('DOGE', 'buy')
+                
+                market_data = {
+                    'timestamp': datetime.now(timezone.utc).isoformat(),
+                    'prices': {
+                        'BTC': {'last': prices, 'coin_type': 'BTC'},
+                        'ETH': {'last': eth_price, 'coin_type': 'ETH'},
+                        'DOGE': {'last': doge_price, 'coin_type': 'DOGE'}
+                    },
+                    # Legacy support for naive strats
+                    'price': prices, 
+                    'coin_type': 'BTC',
+                    'BTC': {'price': prices},
+                    'ETH': {'price': eth_price},
+                    'DOGE': {'price': doge_price} 
+                }
+                return market_data
+        except Exception as e:
+            logger.error(f"Failed to fetch live market data: {e}")
+            return {
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'prices': {},
+                'price': Decimal('0'),
+                'coin_type': 'BTC'
+            }
     
     def unschedule_algorithm(
         self,
