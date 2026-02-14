@@ -74,7 +74,7 @@ sed -i "s|^FRONTEND_HOST=.*|FRONTEND_HOST=http://localhost:$FRONTEND_PORT|" "$TA
 # Inject secrets from master file
 echo "  - Injecting secrets from $SECRETS_FILE..."
 
-while IFS='=' read -r key value; do
+while IFS='=' read -r key value || [ -n "$key" ]; do
     # Skip comments and empty lines
     [[ $key =~ ^#.* ]] && continue
     [[ -z $key ]] && continue
