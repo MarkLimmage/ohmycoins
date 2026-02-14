@@ -24,8 +24,8 @@
 ### 3. The Guard - Production Hardening (Track A)
 *   **Goal**: Ensure The Guard can stop a "Live" runaway agent.
 *   **Tasks**:
-    *   **Latency Check**: Verify Risk Checks add <200ms latency to execution.
-    *   **Double Circuit**: Implement a secondary "Hard Stop" at the exchange level (if API supports it) or via a separate watcher process that monitors total account equity.
+    *   **Latency Check**: ✅ Verified Risk Checks add <200ms (Actual: 6ms).
+    *   **Double Circuit**: ✅ Implemented `HardStopWatcher` service monitoring total account equity (5% drawdown trigger).
 
 ### 4. The Interface - "The Floor" (Track C)
 *   **Goal**: A unified "Mission Control" specifically for the Beta test.

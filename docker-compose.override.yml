@@ -50,7 +50,7 @@ services:
   db:
     restart: "no"
     ports:
-      - "5435:5432"
+      - "5433:5432"
 
   prestart:
     restart: "no"
@@ -64,14 +64,14 @@ services:
   adminer:
     restart: "no"
     ports:
-      - "8084:8080"
+      - "8081:8080"
 
   backend:
     restart: "no"
     deploy:
       replicas: 1
     ports:
-      - "8030:8000"
+      - "8010:8000"
     build:
       context: ./backend
     # command: sleep infinity  # Infinite loop to keep container alive doing nothing
@@ -83,6 +83,7 @@ services:
     # Mount backend directory for live code changes
     volumes:
       - ./backend/app:/app/app
+      - ./backend/scripts:/app/scripts
       - ./backend/tests:/app/tests
       - ./backend/alembic.ini:/app/alembic.ini
       - ./backend/htmlcov:/app/htmlcov
@@ -106,8 +107,23 @@ services:
   mailcatcher:
     image: schickling/mailcatcher
     ports:
-      - "1084:1080"
+      - "1081:1080"
       - "1029:1025"
+
+  watcher:
+    build:
+      context: ./backend
+    restart: "no"
+    command: python scripts/hard_stop_watcher.py
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/scripts:/app/scripts
+      - ./backend/tests:/app/tests
+    environment:
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
 
   db-init:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
