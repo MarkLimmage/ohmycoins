@@ -1,47 +1,45 @@
-# Current Sprint - Sprint 2.25 (Reliability & Scalability Polish)
+# Current Sprint - Sprint 2.26 (Autonomous Trading Beta)
 
 **Status:** 🚀 PLANNED
-**Overall Goal:** Eliminate technical debt identified in the 2.24 retrospective, solidify the "Guard" layer, and prepare "The Strategist" for autonomous trading on the live local server.
+**Overall Goal:** Transition from "Paper Trading" to "Limited Live Trading" (Beta), enabled by a fully integrated Strategist-Guard-Floor loop, and finalize the "Living Documentation" system.
 
 ---
 
-## 🎯 Sprint 2.25 Objectives
+## 🎯 Sprint 2.26 Objectives
 
-### 1. Robustness & Cleanup (The Architect & Tester)
-*   **Goal**: Smooth out the "Worktree + Docker" workflow friction.
+### 1. Workflow Hygiene (The Architect & Tester)
+*   **Goal**: Eliminate the "Phantom Code" and "Context Switching" friction identified in Sprint 2.25.
 *   **Tasks**:
-    *   Create `scripts/clean_worktree.sh` to handle the "root artifact" deletion automatically.
-    *   Implement a Github Action or Pre-commit hook to check for `alembic` branching conflicts.
-    *   Standardize `.env` templates to use docker service names by default.
+    *   **Enforcement**: Strict rejection of any PR that hasn't been verified on `origin`.
+    *   **Tooling**: Check `clean_worktree.sh` into `scripts/` and integrate it into the developer shutdown routine.
+    *   **CI/CD**: Verify the Self-Hosted Runner on `192.168.0.241` correctly auto-deploys `main` to the "Live" environment.
 
-### 2. The Guard - Phase 2 (Track A - Risk)
-*   **Goal**: Advanced Risk Logic & Circuit Breakers.
+### 2. The Strategist - Live Beta (Track B)
+*   **Goal**: First autonomous real-money trade (Limited Cap).
 *   **Tasks**:
-    *   **Dynamic Limits**: Implement "Volatile Market" mode where limits tighten automatically if market volatility spikes (Glass Ledger integration).
-    *   **Slack/Discord Alerts**: When the Kill Switch is triggered, fire a webhook notification.
-    *   **Unit Test Coverage**: Increase coverage for `RiskCheckService` to >95%.
+    *   **Strategy Promotion**: Select the best performing "Paper" agent (likely MA-Crossover) and promote it to "Live Candidates".
+    *   **Execution**: Enable `CoinSpotPrivate` execution for this specific agentID, capped at $50 USD/trade.
+    *   **Monitoring**: Run the agent for 48h under strict supervision.
 
-### 3. The Strategist - Live Paper Trading (Track B - AI)
-*   **Goal**: Let the Agents trade "on paper" in the stable environment.
+### 3. The Guard - Production Hardening (Track A)
+*   **Goal**: Ensure The Guard can stop a "Live" runaway agent.
 *   **Tasks**:
-    *   [x] **Paper Exchange**: verify `PaperExchange` class executes orders against local DB without touching CoinSpot API.
-    *   [x] **Strategy Loop**: Run a simple "Moving Average Crossover" agent for 24h on the local server.
-    *   [x] **Observation**: Ensure agents correctly log to `TradeAudit` (Track C's work).
+    *   **Latency Check**: Verify Risk Checks add <200ms latency to execution.
+    *   **Double Circuit**: Implement a secondary "Hard Stop" at the exchange level (if API supports it) or via a separate watcher process that monitors total account equity.
 
-### 4. The Interface - Audit Visualization (Track C - Frontend)
-*   **Goal**: Visualize the decisions made by the Agents and The Guard.
+### 4. The Interface - "The Floor" (Track C)
+*   **Goal**: A unified "Mission Control" specifically for the Beta test.
 *   **Tasks**:
-    *   ✅ **Audit Log UI**: Table view of `TradeAudit` records (Who decided? Why? Outcome?).
-    *   ✅ **Kill Switch History**: Timeline of when/why the switch was thrown.
+    *   **Live vs Paper Toggle**: Unified dashboard showing both Paper P&L and Live P&L side-by-side.
+    *   **Agent Control Panel**: "Pause/Resume" buttons for individual running agents.
 
 ---
 
 ## 📦 Deliverables
 
-1.  **DevOps Scripts**: `clean_worktree.sh` functionality confirmed.
-2.  **Alerting System**: Webhook fired on Risk Event.
-3.  **Active Paper Trading**: Logs showing agents placing "paper" orders locally.
-4.  **Audit Dashboard**: UI visible on `http://192.168.0.241:3001/audit`.
+1.  **Live Trade Proof**: Transaction ID of the first autonomous real-money trade.
+2.  **Unified Dashboard**: UI showing "Live Beta" status.
+3.  **Workflow Report**: Zero instances of "Phantom Code" or Permission blockers.
 
 ---
 
