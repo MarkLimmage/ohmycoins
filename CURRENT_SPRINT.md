@@ -12,6 +12,7 @@
 *   **Tasks**:
     *   **Deploy**: Execute `git pull && docker compose up --build` on the production server.
     *   **Verify**: Ensure `populate_secrets.sh` correctly injects the live keys.
+    *   **CI/CD**: Fix permission issues on self-hosted runner to allow clean builds.
     *   **Monitor**: Watch the logs for the first autonomous trade execution.
 
 ### 2. The Strategist - Live Optimizations (Track B)
