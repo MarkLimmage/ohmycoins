@@ -61,7 +61,7 @@ class NewscatcherCollector(APICollector):
         super().__init__(
             name="newscatcher_api",
             ledger="human",
-            base_url="https://api.newscatcherapi.com/v2",
+            base_url="https://v3-api.newscatcherapi.com/api",
             timeout=30,
             max_retries=3,
             rate_limit_delay=3.0,  # Stay within rate limits
