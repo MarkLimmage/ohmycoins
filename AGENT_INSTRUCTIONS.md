@@ -96,16 +96,15 @@ Each track operates as an isolated Docker Compose project.
     *   **Tester**: Edits `.env` to set `COMPOSE_PROJECT_NAME`, `POSTGRES_PORT`, and host-mapped API ports.
     *   **Tester**: Generates `track-x.code-workspace` JSON with unique `workbench.colorCustomizations`.
     *   **Tester**: Launches sessions: `code ../omc-track-x/track-x.code-workspace`.
-2.  **Development Cycle**:
+2.  **Development Cycle (The Standard)**:
+    *   **No Host Verification**: You CANNOT verify functionality on your host machine.
+    *   **Container Only**: `docker compose exec backend pytest` is the ONLY valid test.
+    *   **Remote Verification**: Before marking "Done", run `git push` and then `git fetch`. If the code isn't visible on `origin/feature-branch`, it doesn't exist.
     *   **Developer**: Works ONLY in the launched VS Code, using the pre-configured terminal context.
-    *   **Developer**: `cd ../omc-track-x`
-    *   **Developer**: `docker compose up -d --build`
-    *   **Developer**: `docker exec -it track-x-backend pytest tests/my_new_feature_test.py`
-    *   **Developer**: Git Commit & Push.
-3.  **Merge & Cleanup**:
-    *   **Tester**: Verifies functionality.
-    *   **Tester**: Merges to `main`.
-    *   **Tester**: `docker compose down` (in worktree) -> `git worktree remove ../omc-track-x`.
+3.  **Cleanup Protocol**:
+    *   **Developer**: When finished, run `docker compose down`.
+    *   **Developer**: If you cannot delete files due to permissions, run `scripts/clean_worktree.sh` (or `docker run --rm -v $(pwd):/mnt alpine chown -R $(id -u):$(id -g) /mnt`).
+    *   **Tester**: Verifies functionality on the *Remote Branch* before merging.
 
 ---
 **Note**: The Main `ohmycoins` folder is strictly for "The Architect" (Documentation/Planning) and "The Tester" (Final Integration/Release).
