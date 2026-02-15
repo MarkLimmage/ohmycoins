@@ -4,35 +4,14 @@ import {
   Flex,
   Heading,
   Table,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
   Badge,
   Button,
-  useColorModeValue,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
   Icon,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  useDisclosure,
-  useToast,
   Box,
   Text,
-  VStack
+  VStack,
+  chakra,
+  Input
 } from "@chakra-ui/react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -45,6 +24,22 @@ import { CollectorsService } from "../../client"
 import type { CollectorCreate, CollectorPublic } from "../../client"
 import { ApiError } from "../../client/core/ApiError"
 import { SelectorBuilder } from "../../components/SelectorBuilder"
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogCloseTrigger,
+  DialogBody,
+  DialogFooter,
+} from "../../components/ui/dialog"
+import { Field } from "../../components/ui/field"
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+} from "../../components/ui/menu"
+import { toaster } from "../../components/ui/toaster"
 
 export const Route = createFileRoute("/_layout/collectors")({
   component: CollectorsPage,
@@ -52,19 +47,15 @@ export const Route = createFileRoute("/_layout/collectors")({
 
 function CollectorsPage() {
   const queryClient = useQueryClient()
-  const toast = useToast()
-  const tableBg = useColorModeValue("white", "gray.800")
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  
+  // Create Dialog State
+  const [isCreateOpen, setCreateOpen] = useState(false)
+  const onCreateOpen = () => setCreateOpen(true)
+  const onCreateClose = () => setCreateOpen(false)
   
   // Selector Builder State
-  const { 
-    isOpen: isSelectorOpen, 
-    onOpen: onSelectorOpen, 
-    onClose: onSelectorClose 
-  } = useDisclosure()
+  const [isSelectorOpen, setSelectorOpen] = useState(false)
   
-  // We track which config field we are building a selector for (if multiple)
-  // For this sprint, we assume it sets a specific config key
   const [selectorTarget, setSelectorTarget] = useState<string>("price_selector")
 
   // --- Queries ---
@@ -81,49 +72,49 @@ function CollectorsPage() {
   // --- Mutations ---
   const createMutation = useMutation({
     mutationFn: (data: CollectorCreate) =>
-      CollectorsService.createCollector({ requestBody: data }),
+      CollectorsService.createCollectorEndpoint({ requestBody: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collectors"] })
-      toast({ status: "success", title: "Collector created", duration: 3000 })
-      onClose()
+      toaster.create({ title: "Collector created", type: "success" })
+      onCreateClose()
       reset()
     },
     onError: (err: ApiError) => {
-      toast({
-        status: "error",
+      toaster.create({
+        type: "error",
         title: "Creation failed",
-        description: err.body?.detail || err.message,
+        description: (err.body as any)?.detail || err.message,
       })
     },
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      CollectorsService.updateCollector({
-        id,
+      CollectorsService.updateCollectorEndpoint({
+        collectorId: id,
         requestBody: { is_active: isActive },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collectors"] })
-      toast({ status: "success", title: "Collector updated" })
+      toaster.create({ title: "Collector updated", type: "success" })
     },
   })
 
   const runMutation = useMutation({
-    mutationFn: (id: string) => CollectorsService.runCollector({ id }),
+    mutationFn: (name: string) => CollectorsService.triggerCollector({ collectorName: name }),
     onSuccess: () => {
-      toast({ status: "info", title: "Run triggered" })
+      toaster.create({ title: "Run triggered", type: "info" })
     },
     onError: (err: ApiError) => {
-        toast({ status: "error", title: "Run failed", description: err.body?.detail || "Unknown error" })
+      toaster.create({ title: "Run failed", description: (err.body as any)?.detail || "Unknown error", type: "error" })
     }
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => CollectorsService.deleteCollector({ id }),
+    mutationFn: (id: string) => CollectorsService.deleteCollectorEndpoint({ collectorId: id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collectors"] })
-      toast({ status: "success", title: "Collector deleted" })
+      toaster.create({ title: "Collector deleted", type: "success" })
     },
   })
 
@@ -132,72 +123,63 @@ function CollectorsPage() {
   const selectedType = watch("type")
 
   const onSubmit = (data: CollectorCreate) => {
-    // Basic defaults
-    if (!data.schedule_cron) delete data.schedule_cron
-    // Config needs to be an object, react-hook-form might keep it flat or undefined
+    // Clean up schedule if empty
+    if (!data.schedule) delete data.schedule
     if (!data.config) data.config = {}
     
-    // Ensure ledger is set
-    if (!data.ledger) data.ledger = "glass" 
-
     createMutation.mutate(data)
   }
 
-  // Helper to inject selector
   const handleSelectorSelect = (selector: string) => {
-      // In a real app we'd merge this into the config object
-      // For now, we'll assume the form has a helper input for it
-      // or we manipulate the config directly
-      const currentConfig = watch("config") || {}
-      setValue("config", { ...currentConfig, [selectorTarget]: selector })
-      toast({ status: "success", title: "Selector Applied", description: selector })
+      const currentConfig = watch("config") ?? {}
+      setValue("config", { ...(currentConfig as Record<string, unknown>), [selectorTarget]: selector })
+      toaster.create({ title: "Selector Applied", description: selector, type: "success" })
   }
 
-  // --- Render ---
   return (
     <Container maxW="full">
       <Flex py={8} justifyContent="space-between" alignItems="center">
         <Heading size="lg">Data Collectors</Heading>
-        <Button leftIcon={<FiPlus />} colorScheme="teal" onClick={onOpen}>
-          Add Collector
+        <Button onClick={onCreateOpen} colorPalette="teal">
+          <FiPlus /> Add Collector
         </Button>
       </Flex>
 
-      <Table variant="simple" bg={tableBg} shadow="sm">
-        <Thead>
-          <Tr>
-            <Th>Name</Th>
-            <Th>Type</Th>
-            <Th>Status</Th>
-            <Th>Schedule</Th>
-            <Th>Last Run</Th>
-            <Th>Actions</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
+      <Table.Root variant="outline" bg="white" _dark={{ bg: "gray.800" }} shadow="sm">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Name</Table.ColumnHeader>
+            <Table.ColumnHeader>Type</Table.ColumnHeader>
+            <Table.ColumnHeader>Status</Table.ColumnHeader>
+            <Table.ColumnHeader>Schedule</Table.ColumnHeader>
+            <Table.ColumnHeader>Last Run</Table.ColumnHeader>
+            <Table.ColumnHeader>Actions</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {isLoading && (
-            <Tr>
-              <Td colSpan={6} textAlign="center">
+            <Table.Row>
+              <Table.Cell colSpan={6} textAlign="center">
                 Loading...
-              </Td>
-            </Tr>
+              </Table.Cell>
+            </Table.Row>
           )}
           {isError && (
-             <Tr>
-              <Td colSpan={6} textAlign="center" color="red.500">
+             <Table.Row>
+              <Table.Cell colSpan={6} textAlign="center" color="red.500">
                 Error: {error?.message}
-              </Td>
-            </Tr>
+              </Table.Cell>
+            </Table.Row>
           )}
           {collectors?.data.map((collector: CollectorPublic) => (
-            <Tr key={collector.id}>
-              <Td fontWeight="bold">{collector.name}</Td>
-              <Td>
+            <Table.Row key={collector.id}>
+              <Table.Cell fontWeight="bold">{collector.name}</Table.Cell>
+              <Table.Cell>
                 <Badge>{collector.type}</Badge>
-              </Td>
-              <Td>
+              </Table.Cell>
+              <Table.Cell>
                 <Badge
-                  colorScheme={
+                  colorPalette={
                     collector.is_active
                       ? collector.last_status === "error"
                         ? "red"
@@ -207,29 +189,31 @@ function CollectorsPage() {
                 >
                   {collector.is_active ? "Active" : "Paused"}
                 </Badge>
-              </Td>
-              <Td fontSize="sm" fontFamily="monospace">
-                {collector.schedule_cron || "Manual"}
-              </Td>
-              <Td fontSize="sm">
+              </Table.Cell>
+              <Table.Cell fontSize="sm" fontFamily="monospace">
+                {collector.schedule || "Manual"}
+              </Table.Cell>
+              <Table.Cell fontSize="sm">
                 {collector.last_run_at
                   ? new Date(collector.last_run_at).toLocaleString()
                   : "-"}
-              </Td>
-              <Td>
-                <Menu>
-                  <MenuButton as={Button} size="sm" variant="ghost">
-                    <Icon as={FiMoreVertical} />
-                  </MenuButton>
-                  <MenuList>
+              </Table.Cell>
+              <Table.Cell>
+                <MenuRoot>
+                  <MenuTrigger asChild>
+                    <Button size="sm" variant="ghost">
+                        <Icon as={FiMoreVertical} />
+                    </Button>
+                  </MenuTrigger>
+                  <MenuContent>
                     <MenuItem
-                      icon={<FiRefreshCw />}
-                      onClick={() => runMutation.mutate(collector.id)}
+                      value="run"
+                      onClick={() => runMutation.mutate(collector.name)}
                     >
-                      Run Now
+                      <FiRefreshCw /> Run Now
                     </MenuItem>
                     <MenuItem
-                      icon={collector.is_active ? <FiPause /> : <FiPlay />}
+                      value="toggle"
                       onClick={() =>
                         updateMutation.mutate({
                           id: collector.id,
@@ -237,53 +221,59 @@ function CollectorsPage() {
                         })
                       }
                     >
+                      {collector.is_active ? <FiPause /> : <FiPlay />}
                       {collector.is_active ? "Pause" : "Resume"}
                     </MenuItem>
                     <MenuItem
-                      icon={<FiTrash2 />}
+                      value="delete"
                       color="red.500"
                       onClick={() => {
                         if (confirm("Delete this collector?"))
                             deleteMutation.mutate(collector.id)
                       }}
                     >
-                      Delete
+                      <FiTrash2 /> Delete
                     </MenuItem>
-                  </MenuList>
-                </Menu>
-              </Td>
-            </Tr>
+                  </MenuContent>
+                </MenuRoot>
+              </Table.Cell>
+            </Table.Row>
           ))}
-        </Tbody>
-      </Table>
+        </Table.Body>
+      </Table.Root>
 
       {/* Create Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Create New Collector</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={4}>
-                <FormControl isRequired>
-                <FormLabel>Name</FormLabel>
-                <Input {...register("name")} placeholder="e.g. CoinGecko Price scraper" />
-                </FormControl>
+      <DialogRoot open={isCreateOpen} onOpenChange={(e) => setCreateOpen(e.open)} size="lg">
+        <DialogContent>
+          <DialogHeader>Create New Collector</DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <form id="create-collector-form" onSubmit={handleSubmit(onSubmit)}>
+            <VStack gap={4} align="stretch">
+                <Field label="Name" required>
+                    <Input {...register("name")} placeholder="e.g. CoinGecko Price scraper" />
+                </Field>
 
-                <FormControl mt={4} isRequired>
-                <FormLabel>Type</FormLabel>
-                <Select {...register("type")}>
-                    <option value="api">API Collector</option>
-                    <option value="scraper">Web Scraper</option>
-                    <option value="rss">RSS Feed</option>
-                </Select>
-                </FormControl>
+                <Field label="Type" required>
+                    <chakra.select 
+                        {...register("type")} 
+                        height="10" 
+                        width="full" 
+                        borderRadius="md" 
+                        borderWidth="1px" 
+                        borderColor="inherit"
+                        px={3}
+                    >
+                        <option value="api">API Collector</option>
+                        <option value="scraper">Web Scraper</option>
+                        <option value="rss">RSS Feed</option>
+                    </chakra.select>
+                </Field>
                 
-                {/* Visual Builder for Scraper */}
                 {selectedType === 'scraper' && (
                     <Box w="full" p={4} bg="gray.50" borderRadius="md" border="1px dashed" borderColor="gray.300">
                         <Text fontSize="sm" fontWeight="bold" mb={2}>Scraper Configuration Helper</Text>
-                        <Button size="sm" onClick={() => { setSelectorTarget("price_selector"); onSelectorOpen(); }}>
+                        <Button size="sm" onClick={() => { setSelectorTarget("price_selector"); setSelectorOpen(true); }}>
                             Build Selector
                         </Button>
                         <Text fontSize="xs" mt={2} color="gray.500">
@@ -292,39 +282,29 @@ function CollectorsPage() {
                     </Box>
                 )}
 
-                <FormControl mt={4}>
-                <FormLabel>Cron Schedule (Optional)</FormLabel>
-                <Input
-                    {...register("schedule_cron")}
-                    placeholder="*/15 * * * *"
-                />
-                </FormControl>
-                
-                <FormControl mt={4} isRequired>
-                <FormLabel>Ledger</FormLabel>
-                <Select {...register("ledger")}>
-                    <option value="glass">Glass (Market Data)</option>
-                    <option value="human">Human (Social/News)</option>
-                    <option value="catalyst">Catalyst (Events)</option>
-                    <option value="exchange">Exchange (Order Book)</option>
-                </Select>
-                </FormControl>
+                <Field label="Cron Schedule (Optional)" helperText="Format: */15 * * * *">
+                    <Input
+                        {...register("schedule")}
+                        placeholder="*/15 * * * *"
+                    />
+                </Field>
             </VStack>
-          </ModalBody>
+            </form>
+          </DialogBody>
 
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3} type="submit" isLoading={createMutation.isPending}>
+          <DialogFooter>
+            <Button variant="ghost" mr={3} onClick={onCreateClose}>Cancel</Button>
+            <Button colorPalette="blue" type="submit" form="create-collector-form" loading={createMutation.isPending}>
               Create
             </Button>
-            <Button onClick={onClose}>Cancel</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
       
       {/* Selector Builder Component */}
       <SelectorBuilder 
         isOpen={isSelectorOpen} 
-        onClose={onSelectorClose} 
+        onClose={() => setSelectorOpen(false)} 
         onSelect={handleSelectorSelect}
       />
     </Container>

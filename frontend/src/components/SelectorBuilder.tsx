@@ -1,15 +1,6 @@
 
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
   Button,
-  FormControl,
-  FormLabel,
   Input,
   VStack,
   HStack,
@@ -17,6 +8,15 @@ import {
   Box,
   Code
 } from "@chakra-ui/react"
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogCloseTrigger,
+  DialogBody,
+  DialogFooter,
+} from "./ui/dialog"
+import { Field } from "./ui/field"
 import { useState } from "react"
 
 interface SelectorBuilderProps {
@@ -54,37 +54,35 @@ export function SelectorBuilder({ isOpen, onClose, onSelect, initialUrl = "" }: 
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>CSS Selector Builder</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <VStack spacing={4} align="stretch">
+    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
+      <DialogContent>
+        <DialogHeader>CSS Selector Builder</DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <VStack gap={4} align="stretch">
             <Text fontSize="sm" color="gray.500">
               Enter the target URL and the CSS selector you want to scrape.
             </Text>
+
             
-            <FormControl>
-              <FormLabel>Target URL</FormLabel>
+            <Field label="Target URL">
               <Input 
                 value={url} 
                 onChange={(e) => setUrl(e.target.value)} 
                 placeholder="https://example.com/price"
               />
-            </FormControl>
+            </Field>
 
-            <FormControl>
-              <FormLabel>CSS Selector</FormLabel>
+            <Field label="CSS Selector">
               <HStack>
                 <Input 
                   value={selector} 
                   onChange={(e) => setSelector(e.target.value)} 
                   placeholder=".price-value span" 
                 />
-                <Button onClick={handleTest} isLoading={isLoading}>Test</Button>
+                <Button onClick={handleTest} loading={isLoading}>Test</Button>
               </HStack>
-            </FormControl>
+            </Field>
 
             {previewText && (
               <Box p={3} bg="gray.100" borderRadius="md">
@@ -93,15 +91,15 @@ export function SelectorBuilder({ isOpen, onClose, onSelect, initialUrl = "" }: 
               </Box>
             )}
           </VStack>
-        </ModalBody>
+        </DialogBody>
 
-        <ModalFooter>
+        <DialogFooter>
           <Button variant="ghost" mr={3} onClick={onClose}>Cancel</Button>
-          <Button colorScheme="blue" onClick={handleSave} isDisabled={!selector}>
-            Use Selector
+          <Button colorScheme="blue" onClick={handleSave} disabled={!selector}>
+            Save
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   )
 }
