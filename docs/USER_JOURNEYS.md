@@ -16,6 +16,61 @@ This document defines the end-to-end user journeys across the Oh My Coins platfo
 - The Lab (Agentic Data Science)
 - The Floor (Algorithmic Trading)
 - BYOM (Bring Your Own Model)
+- Collector Management (Admin Only)
+
+---
+
+## 5. Collector Management (Admin Only)
+
+**Goal**: Full lifecycle control over data collection sources, including creation, configuration, execution, and monitoring.
+
+### J-COLL-001: Create and Activate New Collector
+**Persona:** Administrator (Superuser)  
+**Precondition:** Admin is logged in.
+
+**Steps:**
+1.  Admin navigates to **Connectors > Collectors** dashboard.
+2.  Clicks **"Create Collector"**.
+3.  Selects collector type (e.g., "Exchange API", "Web Scraper").
+4.  Fills out **Details**:
+    *   **Name**: "CoinGecko Market Data"
+    *   **Endpoint URL**: `https://api.coingecko.com/api/v3/coins/markets`
+    *   **Schedule**: `Every 5 minutes`
+    *   **API Key**: `...` (optional)
+5.  If "Web Scraper", defines scraping logic (e.g., CSS selectors).
+6.  Tests logic with **"Test Run"** button (dry run).
+7.  Clicks **"Save & Activate"**.
+8.  **Result**: Collector appears in the dashboard with status **ACTIVE**.
+
+### J-COLL-002: Monitor and Update Collector
+**Persona:** Administrator (Superuser)  
+**Precondition:** At least one collector is active.
+
+**Steps:**
+1.  Admin navigates to **Connectors > Collectors**.
+2.  Views the **Collection Dashboard**:
+    *   Sees list of collectors with status (`Running`, `Paused`, `Error`).
+    *   Checks "Last Run" timestamp and "Success Rate".
+3.  Identifies a failed collector (marked **Red**).
+4.  Clicks on the collector to view **Logs**.
+5.  Analyzes the error (e.g., 429 Too Many Requests).
+6.  Updates the configuration:
+    *   Decreases the **Frequency** or updates the **API Key**.
+7.  Clicks **"Update"**.
+8.  Manually triggers a run via **"Run Now"**.
+9.  **Result**: Execution succeeds, status updates to **ACTIVE**.
+
+### J-COLL-003: Pause and Resume Collection
+**Persona:** Administrator (Superuser)  
+**Precondition:** Collector is running.
+
+**Steps:**
+1.  Admin navigates to **Connectors > Collectors**.
+2.  Locates an active collector.
+3.  Clicks the **"Pause"** toggle.
+4.  **Result**: Status updates to **PAUSED**. No further scheduled executions occur.
+5.  Later, Admin clicks **"Resume"**.
+6.  **Result**: Status updates to **ACTIVE**. Schedule resumes.
 
 ---
 
