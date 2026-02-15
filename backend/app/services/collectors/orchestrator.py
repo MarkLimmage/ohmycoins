@@ -161,6 +161,7 @@ class CollectionOrchestrator:
         All registered collectors will begin running according to their schedules.
         """
         if not self._is_running:
+            self._load_collectors_from_db()
             self.scheduler.start()
             self._is_running = True
             logger.info(
@@ -168,6 +169,86 @@ class CollectionOrchestrator:
             )
         else:
             logger.warning("Collection orchestrator is already running")
+
+    def _load_collectors_from_db(self) -> None:
+        """
+        Load active collectors from the database and register them.
+        """
+        from sqlmodel import Session, select
+        from app.core.db import engine
+        from app.models import Collector
+
+        with Session(engine) as session:
+            statement = select(Collector).where(Collector.is_active == True)
+            collectors_db = session.exec(statement).all()
+            
+            logger.info(f"Loading {len(collectors_db)} collectors from DB...")
+
+            for db_collector in collectors_db:
+                self.update_collector_from_model(db_collector)
+
+    def update_collector_from_model(self, db_collector: Any) -> None:
+        """
+        Update or register a collector from its database model.
+        Args:
+            db_collector: valid Collector model instance
+        """
+        from app.services.collectors.factory import CollectorFactory
+        
+        try:
+            # Create instance using factory
+            collector_instance = CollectorFactory.create_collector(
+                db_collector.type, 
+                db_collector.config or {}
+            )
+            
+            # Parse schedule
+            # Format: "cron:hour=2,minute=0" or "interval:minutes=5"
+            schedule_str = db_collector.schedule
+            if not schedule_str:
+                    logger.warning(f"Collector {db_collector.name} has no schedule. Skipping.")
+                    return
+            
+            parts = schedule_str.split(":", 1)
+            if len(parts) != 2:
+                logger.warning(f"Invalid schedule format for {db_collector.name}: {schedule_str}. Expected 'type:kwargs'")
+                return
+                
+            sched_type = parts[0]
+            sched_kwargs_str = parts[1]
+            
+            # Parse kwargs string "key=val,key2=val2"
+            sched_kwargs = {}
+            for pair in sched_kwargs_str.split(","):
+                if "=" in pair:
+                    k, v = pair.split("=", 1)
+                    if v.isdigit():
+                        sched_kwargs[k.strip()] = int(v)
+                    else:
+                        sched_kwargs[k.strip()] = v.strip()
+            
+            self.register_collector(
+                collector_instance, 
+                schedule_type=sched_type, 
+                **sched_kwargs
+            )
+            logger.info(f"Updated collector {db_collector.name} (type: {db_collector.type})")
+        except Exception as e:
+            logger.error(f"Failed to update collector {db_collector.name}: {e}")
+
+    def remove_collector(self, collector_name: str) -> None:
+        """
+        Remove a collector from the orchestrator and scheduler.
+        """
+        if collector_name in self.collectors:
+            try:
+                self.scheduler.remove_job(collector_name)
+            except Exception: # Job might not exist
+                 logger.warning(f"Job for {collector_name} not found in scheduler, but removed from registry.")
+            
+            del self.collectors[collector_name]
+            logger.info(f"Removed collector: {collector_name}")
+
     
     def stop(self) -> None:
         """

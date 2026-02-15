@@ -1,28 +1,20 @@
 """
-API routes for Phase 2.5 data collectors.
+API routes for data collectors.
 
 Provides endpoints for:
-- Collector health monitoring
-- Manual trigger of collectors
-- Collection status and metrics
-- CRUD operations for dynamic collectors
+- CRUD operations for Collector configuration
+- Monitoring and manual triggering
 """
 
-import uuid
 from typing import Any
+import uuid
 
-from fastapi import APIRouter, HTTPException
-from sqlmodel import func, select
+from fastapi import APIRouter, HTTPException, Depends
+from sqlmodel import Session
 
 from app.api.deps import SessionDep, CurrentUser
-from app.models import (
-    Collector,
-    CollectorCreate,
-    CollectorPublic,
-    CollectorsPublic,
-    CollectorUpdate,
-    Message,
-)
+from app.models import Message, Collector, CollectorCreate, CollectorUpdate, CollectorPublic, CollectorsPublic
+from app.crud_collector import create_collector, get_collector, get_collectors, update_collector, delete_collector
 from app.services.collectors.orchestrator import get_orchestrator
 
 router = APIRouter()
@@ -38,158 +30,127 @@ def read_collectors(
     """
     Retrieve collectors.
     """
-    count_statement = select(func.count()).select_from(Collector)
-    count = session.exec(count_statement).one()
-    statement = select(Collector).offset(skip).limit(limit)
-    collectors = session.exec(statement).all()
-    return CollectorsPublic(data=collectors, count=count)
+    collectors = get_collectors(session=session, skip=skip, limit=limit)
+    return CollectorsPublic(data=collectors, count=len(collectors))
 
 
-@router.get("/{id}", response_model=CollectorPublic)
-def read_collector(
-    id: uuid.UUID,
+@router.post("/", response_model=CollectorPublic)
+def create_collector_endpoint(
+    *,
     session: SessionDep,
+    collector_in: CollectorCreate,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Create new collector.
+    """
+    collector = create_collector(session=session, collector_create=collector_in)
+    
+    # Register with orchestrator if active via side effect
+    if collector.is_active:
+        orchestrator = get_orchestrator()
+        orchestrator.update_collector_from_model(collector)
+        
+    return collector
+
+
+@router.get("/{collector_id}", response_model=CollectorPublic)
+def read_collector(
+    *,
+    session: SessionDep,
+    collector_id: uuid.UUID,
     current_user: CurrentUser,
 ) -> Any:
     """
     Get collector by ID.
     """
-    collector = session.get(Collector, id)
+    collector = get_collector(session=session, collector_id=collector_id)
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
     return collector
 
 
-@router.post("/", response_model=CollectorPublic)
-def create_collector(
+@router.put("/{collector_id}", response_model=CollectorPublic)
+def update_collector_endpoint(
     *,
     session: SessionDep,
-    current_user: CurrentUser,
-    collector_in: CollectorCreate,
-) -> Any:
-    """
-    Create new collector.
-    """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not enough privileges")
-    
-    collector = Collector.model_validate(collector_in)
-    session.add(collector)
-    session.commit()
-    session.refresh(collector)
-    return collector
-
-
-@router.put("/{id}", response_model=CollectorPublic)
-def update_collector(
-    *,
-    session: SessionDep,
-    current_user: CurrentUser,
-    id: uuid.UUID,
+    collector_id: uuid.UUID,
     collector_in: CollectorUpdate,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Update a collector.
     """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not enough privileges")
-    
-    collector = session.get(Collector, id)
+    collector = get_collector(session=session, collector_id=collector_id)
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
     
-    update_data = collector_in.model_dump(exclude_unset=True)
-    collector.sqlmodel_update(update_data)
-    session.add(collector)
-    session.commit()
-    session.refresh(collector)
+    # Check if name changed to handle removal of old job name?
+    # For now assuming name is immutable or we handle it by removing old and adding new?
+    # CollectorUpdate model doesn't seem to have name? Let's assume name is identifying.
+    # If name changes, we need to remove old job ID.
+    old_name = collector.name
+    
+    collector = update_collector(session=session, db_collector=collector, collector_in=collector_in)
+    
+    orchestrator = get_orchestrator()
+    
+    if old_name != collector.name:
+         orchestrator.remove_collector(old_name)
+
+    if collector.is_active:
+        orchestrator.update_collector_from_model(collector)
+    else:
+        orchestrator.remove_collector(collector.name)
+        
     return collector
 
 
-@router.delete("/{id}", response_model=Message)
-def delete_collector(
+@router.delete("/{collector_id}", response_model=CollectorPublic)
+def delete_collector_endpoint(
     *,
     session: SessionDep,
+    collector_id: uuid.UUID,
     current_user: CurrentUser,
-    id: uuid.UUID,
 ) -> Any:
     """
     Delete a collector.
     """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not enough privileges")
-    
-    collector = session.get(Collector, id)
+    collector = get_collector(session=session, collector_id=collector_id)
     if not collector:
         raise HTTPException(status_code=404, detail="Collector not found")
+        
+    name_to_remove = collector.name
+    collector = delete_collector(session=session, db_collector=collector)
     
-    session.delete(collector)
-    session.commit()
-    return Message(message="Collector deleted successfully")
+    orchestrator = get_orchestrator()
+    orchestrator.remove_collector(name_to_remove)
+    
+    return collector
 
 
 @router.get("/health", response_model=dict[str, Any])
-def get_collectors_health(current_user: CurrentUser) -> dict[str, Any]:
+def get_collectors_health(
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     """
     Get health status of all data collectors.
-    
-    Returns:
-        Dictionary containing:
-        - orchestrator_status: running or stopped
-        - collector_count: number of registered collectors
-        - collectors: list of collector statuses
-        - timestamp: current timestamp
     """
     orchestrator = get_orchestrator()
     return orchestrator.get_health_status()
 
 
 @router.get("/name/{collector_name}/status", response_model=dict[str, Any])
-def get_collector_status(collector_name: str, current_user: CurrentUser) -> dict[str, Any]:
-    """
-    Get status of a specific collector.
-    
-    Args:
-        collector_name: Name of the collector (e.g., "defillama_api")
-    
-    Returns:
-        Dictionary containing collector status and metrics
-    
-    Raises:
-        HTTPException: If collector not found
-    """
-    orchestrator = get_orchestrator()
-    # TODO: check if collector exists in DB too?
-    return orchestrator.get_collector_status(collector_name)
-
-@router.post("/{id}/run", response_model=Message)
-def run_collector(
-    id: uuid.UUID,
-    session: SessionDep,
+def get_collector_status(
+    collector_name: str,
     current_user: CurrentUser,
-) -> Any:
+) -> dict[str, Any]:
     """
-    Trigger a collector run manually.
+    Get status of a specific collector (Orchestrator based).
     """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Not enough privileges")
-
-    collector = session.get(Collector, id)
-    if not collector:
-        raise HTTPException(status_code=404, detail="Collector not found")
-    
-    # Logic to trigger run via orchestrator
     orchestrator = get_orchestrator()
-    # Assuming orchestrator has a method to run by name or we register it dynamically
-    # For now simply attempt to run if registered
-    success = orchestrator.force_run_collector_by_name(collector.name) # We need to implement this
-    if not success:
-         # If not registered, maybe register and run? 
-         # This implies dynamic loading logic which is part of "Refactor collector_engine"
-         return Message(message=f"Collector {collector.name} scheduled for run (if active)")
-
-    return Message(message=f"Triggered collector {collector.name}")
-
+    
     try:
         return orchestrator.get_collector_status(collector_name)
     except KeyError:
@@ -199,19 +160,13 @@ def run_collector(
         )
 
 
-@router.post("/{collector_name}/trigger", response_model=Message)
-async def trigger_collector(collector_name: str) -> Message:
+@router.post("/name/{collector_name}/trigger", response_model=Message)
+async def trigger_collector(
+    collector_name: str,
+    current_user: CurrentUser,
+) -> Message:
     """
-    Manually trigger a collector to run immediately.
-    
-    Args:
-        collector_name: Name of the collector to trigger
-    
-    Returns:
-        Success or error message
-    
-    Raises:
-        HTTPException: If collector not found or execution fails
+    Manually trigger a collector to run immediately (Orchestrator based).
     """
     orchestrator = get_orchestrator()
     
