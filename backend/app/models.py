@@ -668,76 +668,7 @@ class CatalystEvents(SQLModel, table=True):
     )
 
 
-class Collector(SQLModel, table=True):
-    """
-    Configuration for dynamic data collectors.
-    """
-    __tablename__ = "collector"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(max_length=100, unique=True, index=True)
-    type: str = Field(max_length=50) # api, scraper
-    description: str | None = Field(default=None, max_length=500)
-    
-    # Configuration
-    status: str = Field(default="active", max_length=20) # active, paused, error
-    schedule_type: str = Field(default="interval", max_length=20) # interval, cron
-    schedule_interval: int | None = Field(default=None) # seconds (for interval)
-    schedule_cron: str | None = Field(default=None, max_length=100) # cron expression
-    
-    # Target Config
-    config: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
-    
-    # Metadata
-    ledger: str = Field(max_length=50) # glass, human, etc.
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
-    )
-
-class CollectorCreate(SQLModel):
-    name: str = Field(max_length=100)
-    type: str = Field(max_length=50)
-    description: str | None = Field(default=None, max_length=500)
-    status: str = Field(default="active", max_length=20)
-    schedule_type: str = Field(default="interval", max_length=20)
-    schedule_interval: int | None = Field(default=None)
-    schedule_cron: str | None = Field(default=None, max_length=100)
-    config: dict[str, Any] = Field(default_factory=dict)
-    ledger: str = Field(max_length=50)
-
-class CollectorUpdate(SQLModel):
-    name: str | None = Field(default=None, max_length=100)
-    type: str | None = Field(default=None, max_length=50)
-    description: str | None = Field(default=None, max_length=500)
-    status: str | None = Field(default=None, max_length=20)
-    schedule_type: str | None = Field(default=None, max_length=20)
-    schedule_interval: int | None = Field(default=None)
-    schedule_cron: str | None = Field(default=None, max_length=100)
-    config: dict[str, Any] | None = Field(default=None)
-    ledger: str | None = Field(default=None, max_length=50)
-
-class CollectorPublic(SQLModel):
-    id: uuid.UUID
-    name: str
-    type: str
-    description: str | None
-    status: str
-    schedule_type: str
-    schedule_interval: int | None
-    schedule_cron: str | None
-    config: dict[str, Any]
-    ledger: str
-    created_at: datetime
-    updated_at: datetime
-
-class CollectorsPublic(SQLModel):
-    data: list[CollectorPublic]
-    count: int
 
 # Collector Metadata
 class CollectorRuns(SQLModel, table=True):
