@@ -1,43 +1,40 @@
-# Current Sprint - Sprint 2.27 (Autonomous Beta Launch)
+# Current Sprint - Sprint 2.28 (Collector Uplift)
 
-**Status:** 🏗️ PLANNING
-**Overall Goal:** Deploy the "Autonomous Beta" to the production server (`192.168.0.241`) and monitor the first live trades, while expanding the "Living Documentation" system.
+**Status:** 🚀 ACTIVE
+**Overall Goal:** Revolutionize data collection management by moving it from code to an Admin UI, enabling simple addition/modification of data sources.
+**SIM**: [docs/sprints/SIM_SPRINT_2.28.md](docs/sprints/SIM_SPRINT_2.28.md)
 
 ---
 
-## 🎯 Sprint 2.27 Objectives
+## 🎯 Sprint 2.28 Objectives
 
-### 1. Production Deployment (The Architect)
-*   **Goal**: Bring `jupiter` (192.168.0.241) to full parity with `main`.
+### 1. Collector Management API (Track A)
+*   **Goal**: Create the backend infrastructure for dynamic collector management.
 *   **Tasks**:
-    *   **Deploy**: Execute `git pull && docker compose up --build` on the production server.
-    *   **Verify**: Ensure `populate_secrets.sh` correctly injects the live keys.
-    *   **CI/CD**: Fix permission issues on self-hosted runner to allow clean builds.
-    *   **Monitor**: Watch the logs for the first autonomous trade execution.
+    *   **Model**: Design `Collector` SQLAlchemy model with JSON configuration fields.
+    *   **API**: Implement `CRUD /api/v1/collectors` endpoints.
+    *   **Engine**: Refactor `collector_engine` to load jobs from the DB.
 
-### 2. The Strategist - Live Optimizations (Track B)
-*   **Goal**: Refine the MA Crossover strategy based on live data.
+### 2. Admin UI Dashboard (Track B)
+*   **Goal**: Build the "Control Center" for data collection.
 *   **Tasks**:
-    *   **Analyze**: Review the first 48 hours of trade data.
-    *   **Tune**: Adjust parameters if slippage is higher than expected.
+    *   **Dashboard**: Visualize collector health (Green/Red indicators), last run time, and success rate.
+    *   **Form**: Dynamic form for creating specific collector types (API vs Scraper).
+    *   **Actions**: "Run Now", "Pause", "Resume" buttons.
 
-### 3. The Guard - Safety Checks (Track A)
-*   **Goal**: Validate the `HardStopWatcher` in a live environment.
+### 3. Dynamic Scraper Logic (Track A+B)
+*   **Goal**: Allow scraping rules to be defined without code deployment.
 *   **Tasks**:
-    *   **Simulate**: Trigger a "psuedo-drawdown" event to ensure the safety clamps activate correctly.
-
-### 4. The Interface - Dashboard Polish (Track C)
-*   **Goal**: Enhance the "Live Beta" dashboard for better visibility.
-*   **Tasks**:
-    *   **Alerts**: Add visual indicators for "Risk Limit Reached" or "Strategy Paused".
+    *   **Storage**: Store CSS/XPath selectors and extraction rules in JSON.
+    *   **Execution**: Build a generic `WebScraperCollector` that parses this config at runtime.
 
 ---
 
 ## 📦 Deliverables
 
-1.  **Production Deployment**: `jupiter` running the latest `main` commit.
-2.  **Live Trade Logs**: Successfull execution of autonomous trades.
-3.  **Risk Audit**: Logged evidence of risk checks passing/failing correctly.
+1.  **Collector Admin Panel**: Accessible at `/admin/collectors`.
+2.  **Generic Scraper**: A collector type that can be configured purely via UI to scrape a new site.
+3.  **Automated Scheduling**: Pausing a collector in UI stops it in the backend immediately.
 
 ---
 
