@@ -8,33 +8,34 @@
 
 ## 🎯 Sprint 2.28 Objectives
 
-### 1. Collector Management API (Track A)
-*   **Goal**: Create the backend infrastructure for dynamic collector management.
+### 1. Plugin Architecture (Track A)
+*   **Goal**: Create a robust, extensible backend for data collection.
 *   **Tasks**:
-    *   **Model**: Design `Collector` SQLAlchemy model with JSON configuration fields.
-    *   **API**: Implement `CRUD /api/v1/collectors` endpoints.
-    *   **Engine**: Refactor `collector_engine` to load jobs from the DB.
+    *   **Registry**: Build `CollectorRegistry` to auto-discover strategies.
+    *   **Interface**: Define `ICollector` protocol for all plugins.
+    *   **Migration**: Port current price collectors to the new plugin format.
+    *   **Reference**: Port `CoinDesk` and `Yahoo` scrapers from reference code.
 
 ### 2. Admin UI Dashboard (Track B)
-*   **Goal**: Build the "Control Center" for data collection.
+*   **Goal**: Build the "Control Center" for data collection strategies.
 *   **Tasks**:
-    *   **Dashboard**: Visualize collector health (Green/Red indicators), last run time, and success rate.
-    *   **Form**: Dynamic form for creating specific collector types (API vs Scraper).
-    *   **Actions**: "Run Now", "Pause", "Resume" buttons.
+    *   **Dynamic Forms**: Render configuration inputs based on plugin JSON schemas.
+    *   **Dashboard**: Visualize collector health (Green/Red indicators).
+    *   **Actions**: "Run Now", "Pause", "Resume" instance controls.
 
-### 3. Dynamic Scraper Logic (Track A+B)
-*   **Goal**: Allow scraping rules to be defined without code deployment.
+### 3. Signal Pipeline (Track A)
+*   **Goal**: Standardize the output of all collectors.
 *   **Tasks**:
-    *   **Storage**: Store CSS/XPath selectors and extraction rules in JSON.
-    *   **Execution**: Build a generic `WebScraperCollector` that parses this config at runtime.
+    *   **Models**: Create `Signal`, `NewsItem`, and `SentimentScore` DB models.
+    *   **Ingestion**: Build a service to normalize plugin output into these models.
 
 ---
 
 ## 📦 Deliverables
 
-1.  **Collector Admin Panel**: Accessible at `/admin/collectors`.
-2.  **Generic Scraper**: A collector type that can be configured purely via UI to scrape a new site.
-3.  **Automated Scheduling**: Pausing a collector in UI stops it in the backend immediately.
+1.  **Collector Registry**: Backend system that loads strategies from `backend/app/collectors/strategies/`.
+2.  **Plugin Library**: At least 3 working plugins (Price, CoinDesk, Yahoo).
+3.  **Dynamic UI**: Admin panel that adapts to the configuration needs of each plugin.
 
 ---
 

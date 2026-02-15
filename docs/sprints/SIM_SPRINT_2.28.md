@@ -9,14 +9,14 @@
 ## Sprint Objectives
 
 ### Primary Goal
-Revolutionize data collection management by moving it from code-based configuration to an Admin UI, enabling simpler addition/modification of new data sources and improved operational visibility.
+Revolutionize data collection management by implementing a **Plugin-Based Architecture**. Refactor existing scripts into standardized modules and create a `CollectorRegistry` for auto-discovery, allowing admins to configure powerful, pre-built strategies via the UI.
 
 ### Success Criteria
-- [ ] **Frontend**: Admin UI for Collectors (List, Create/Edit Form, Dashboard) implemented and functional.
-- [ ] **Backend**: API endpoints for Collector management (CRUD, active state toggling) exposed and secured.
-- [ ] **Logic**: "Web Scraper" collector type supports dynamic selector configuration via UI.
-- [ ] **Integration**: New collectors created via UI successfully fetch data and populate the **4 Ledgers**.
-- [ ] **Validation**: E2E tests for `J-COLL-001`, `J-COLL-002`, `J-COLL-003` passing.
+- [ ] **Architecture**: `ICollector` interface defined and enforced for all plugins.
+- [ ] **Registry**: `CollectorRegistry` implemented to scan and register valid plugins at startup.
+- [ ] **Plugins**: Ported 3+ reference scrapers (e.g., CoinDesk, Yahoo) to the new plugin format.
+- [ ] **Frontend**: Dynamic configuration forms generated from plugin JSON schemas.
+- [ ] **Backend**: Scheduler refactored to execute plugin instances with stored config.
 
 ---
 
@@ -34,33 +34,32 @@ Revolutionize data collection management by moving it from code-based configurat
 
 | Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port | Color Code | Container Prefix |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Track A** | `feat/REQ-COLL-API` | `../omc-track-a` | `../omc-data/agent-a` | `8010` | `#3771c8` (Blue) | `track-a` |
+| **Track A** | `feat/REQ-COLL-PLUGIN` | `../omc-track-a` | `../omc-data/agent-a` | `8010` | `#3771c8` (Blue) | `track-a` |
 | **Track B** | `feat/REQ-COLL-UI` | `../omc-track-b` | `../omc-data/agent-b` | `8020` | `#c83737` (Red) | `track-b` |
 
 ### Track Objectives
 
-#### **Track A: Backend & API (Protocol Droid)**
-*   **Goal**: Enable dynamic collector management via API.
+#### **Track A: Backend & Plugin System (Protocol Droid)**
+*   **Goal**: robust plugin infrastructure.
 *   **Key Files**:
-    *   `backend/app/models/collector.py`: New comprehensive DB model.
-    *   `backend/app/api/v1/endpoints/collectors.py`: CRUD endpoints.
-    *   `backend/app/services/collector_engine.py`: Scheduler logic to respect DB-driven configs.
-*   **Requirements**: `REQ-COLL-UBI-001`, `REQ-COLL-EVT-001` to `005`.
+    *   `backend/app/core/collectors/base.py`: Abstract Base Class.
+    *   `backend/app/core/collectors/registry.py`: Discovery logic.
+    *   `backend/app/collectors/strategies/news_coindesk.py`: Ported scraper.
+*   **Requirements**: `REQ-COLL-PLUG-001`, `REQ-COLL-PLUG-002`.
 
-#### **Track B: Frontend Admin UI (UI/UX Agent)**
-*   **Goal**: Provide a clean, powerful interface for managing collectors.
+#### **Track B: Frontend Dynamic Forms (UI/UX Agent)**
+*   **Goal**: Render configuration forms based on plugin schemas.
 *   **Key Files**:
-    *   `frontend/src/features/admin/CollectorDashboard.tsx`: Health overview.
-    *   `frontend/src/features/admin/CollectorForm.tsx`: Creation/Editing wizard.
-    *   `frontend/src/components/SelectorBuilder.tsx`: Visual helper for CSS selectors.
-*   **Requirements**: `REQ-COLL-OPT-001`, `REQ-COLL-OPT-003`.
+    *   `frontend/src/features/admin/CollectorForm.tsx`: Schema-driven form builder.
+    *   `frontend/src/features/admin/CollectorDashboard.tsx`: Instance management.
+*   **Requirements**: `REQ-COLL-PLUG-003`, `REQ-COLL-OPT-003`.
 
 ---
 
 ## Testing Strategy
-- **Unit**: 95% coverage on `collector_engine.py` (critical path).
-- **Integration**: Verify scheduler picks up database changes (e.g., pause/resume) immediately.
-- **E2E**: Implement `J-COLL-001` (Create & Activate) using Playwright.
+- **Unit**: Mocked plugin execution in `test_registry.py`.
+- **Integration**: Verify a new plugin added to the folder appears in the API response.
+
 
 ---
 

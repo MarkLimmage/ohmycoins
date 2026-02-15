@@ -24,27 +24,28 @@ This document defines the end-to-end user journeys across the Oh My Coins platfo
 
 **Goal**: Full lifecycle control over data collection sources, including creation, configuration, execution, and monitoring.
 
-### J-COLL-001: Create and Activate New Collector
+### J-COLL-001: Create and Activate New Collector (Plugin-Based)
 **Persona:** Administrator (Superuser)  
 **Precondition:** Admin is logged in.
 
 **Steps:**
 1.  Admin navigates to **Connectors > Collectors** dashboard.
 2.  Clicks **"Create Collector"**.
-3.  Selects collector type (e.g., "Exchange API", "Web Scraper").
-4.  Fills out **Details**:
-    *   **Name**: "CoinGecko Market Data"
-    *   **Endpoint URL**: `https://api.coingecko.com/api/v3/coins/markets`
-    *   **Schedule**: `Every 5 minutes`
-    *   **API Key**: `...` (optional)
-5.  If "Web Scraper", defines scraping logic (e.g., CSS selectors).
-6.  Tests logic with **"Test Run"** button (dry run).
+3.  Selects a **Plugin Strategy** from the list (e.g., `coindesk.news`, `coinmarketcap.price`).
+4.  The system loads the plugin-specific configuration form.
+5.  Fills out **Configuration Parameters**:
+    *   **Poll Interval**: `3600` (Seconds)
+    *   **Target Symbols**: `[BTC, ETH]` (List)
+    *   **API Key**: `...` (Secure Field)
+    *   **Include Sentiment**: `True` (Checkbox)
+6.  Clicks **"Test Connection"** (Backend executes `plugin.test_connection(config)`).
 7.  Clicks **"Save & Activate"**.
-8.  **Result**: Collector appears in the dashboard with status **ACTIVE**.
+8.  **Result**: A new Collector instance is created, running the selected plugin with the provided configuration.
 
 ### J-COLL-002: Monitor and Update Collector
 **Persona:** Administrator (Superuser)  
 **Precondition:** At least one collector is active.
+
 
 **Steps:**
 1.  Admin navigates to **Connectors > Collectors**.

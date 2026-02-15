@@ -54,13 +54,21 @@
 **REQ-COLL-ST-002: Error State Threshold**
 - **While** a collector is in an `ERROR` state (consecutive failures exceeding threshold), **the system SHALL** automatically transition it to `PAUSED` and notify administrators.
 
-## 5. Optional Feature Requirements
+## 5. Plugin Architecture Requirements
 
-**REQ-COLL-OPT-001: Web Scraping Logic**
-- **Where** the collector type is "Web Scraper", **the system SHALL** allow Admins to define scraping logic (CSS selectors, XPath) directly via the UI.
+**REQ-COLL-PLUG-001: Plugin Registry**
+- **The system SHALL** maintain a registry of available collector plugins, auto-discovered from the `backend/app/collectors` module at startup.
 
-**REQ-COLL-OPT-002: Data Mapping**
-- **Where** the collector supports custom data mapping, **the system SHALL** allow Admins to map external JSON fields to internal data model fields.
+**REQ-COLL-PLUG-002: Plugin Interface**
+- **The system SHALL** enforce a strict interface (`ICollector`) for all plugins, requiring methods for `collect()`, `test_connection()`, and `get_config_schema()`.
 
-**REQ-COLL-OPT-003: Health Dashboard**
+**REQ-COLL-PLUG-003: Dynamic Configuration Schema**
+- **When** an Admin selects a collector plugin in the UI, **the system SHALL** dynamically render the configuration form based on the plugin's schema (e.g., specific API keys, target symbols).
+
+**REQ-COLL-PLUG-004: Versioned Plugins**
+- **The system SHALL** store the version of the plugin used for each collector instance to ensure compatibility across upgrades.
+
+## 6. Optional Feature Requirements
+
+**REQ-COLL-OPT-001: Health Dashboard**
 - **Where** the Admin views the collector dashboard, **the system SHALL** display real-time metrics including status, extensive logs, last run time, and success rate.
