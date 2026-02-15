@@ -13,8 +13,12 @@ from typing import Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+from sqlmodel import Session, select
 
+from app.core.db import engine
+from app.models import Collector
 from .base import BaseCollector
+from .generic import GenericScraperCollector
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +32,7 @@ class CollectionOrchestrator:
     - Start/stop the collection scheduler
     - Monitor collector health
     - Provide metrics and status endpoints
+    - Load dynamic collectors from DB
     """
     
     def __init__(self):
@@ -36,6 +41,65 @@ class CollectionOrchestrator:
         self.collectors: dict[str, BaseCollector] = {}
         self._is_running = False
     
+    def load_collectors_from_db(self) -> None:
+        """Load and register collectors defined in the database."""
+        try:
+            with Session(engine) as session:
+                collectors = session.exec(select(Collector).where(Collector.status == "active")).all()
+                logger.info(f"Loading {len(collectors)} collectors from database...")
+                for c in collectors:
+                    self.register_dynamic_collector(c)
+        except Exception as e:
+            logger.error(f"Failed to load collectors from DB: {e}")
+
+    def register_dynamic_collector(self, c: Collector) -> None:
+        try:
+            # Determine collector class based on type
+            if c.type == "scraper":
+                collector_instance = GenericScraperCollector(
+                    name=c.name,
+                    ledger=c.ledger,
+                    config=c.config or {}
+                )
+            else:
+                logger.warning(f"Unknown or unsupported collector type {c.type} for {c.name}")
+                return
+
+            # Determine schedule
+            kwargs = {}
+            if c.schedule_type == "interval":
+                if c.schedule_interval:
+                     kwargs["seconds"] = c.schedule_interval
+                else:
+                    logger.warning(f"Interval collector {c.name} missing interval")
+                    return
+            elif c.schedule_type == "cron":
+                # For simplicity, assume kwargs in config or cron string parsing
+                # For now just log warning if not implemented fully
+                logger.warning(f"Cron schedule for dynamic collector {c.name} not fully implemented")
+                return
+            
+            self.register_collector(
+                collector_instance,
+                schedule_type=c.schedule_type,
+                **kwargs
+            )
+        except Exception as e:
+            logger.error(f"Error registering dynamic collector {c.name}: {e}")
+
+    def update_collector_from_db(self, collector_id: Any) -> None:
+        """Reload a specific collector from DB (to be called by API on update)"""
+        # Logic to remove existing job and re-register
+        pass # TODO
+
+    def force_run_collector_by_name(self, name: str) -> bool:
+        """Trigger a collector execution immediately."""
+        job = self.scheduler.get_job(name)
+        if job:
+            job.modify(next_run_time=datetime.now(timezone.utc))
+            return True
+        return False
+
     def register_collector(
         self,
         collector: BaseCollector,

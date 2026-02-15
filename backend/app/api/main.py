@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import admin, agent, credentials, login, pnl, private, users, utils, strategy_promotions, websockets, trading, floor, risk, trade_audit
+from app.api.routes import admin, agent, credentials, login, pnl, private, users, utils, strategy_promotions, websockets, trading, floor, risk, trade_audit, collectors
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -17,6 +17,7 @@ api_router.include_router(strategy_promotions.router, prefix="/promotions", tags
 api_router.include_router(pnl.router, prefix="/floor/pnl", tags=["pnl"])
 api_router.include_router(trading.router, prefix="/floor/trading", tags=["trading"])
 api_router.include_router(floor.router, prefix="/floor", tags=["floor"])
+api_router.include_router(collectors.router, prefix="/collectors", tags=["collectors"])
 
 
 if settings.ENVIRONMENT == "local":
