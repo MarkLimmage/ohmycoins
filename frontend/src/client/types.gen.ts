@@ -267,6 +267,46 @@ export type CoinspotCredentialsUpdate = {
     api_secret?: (string | null);
 };
 
+export type CollectorCreate = {
+    name: string;
+    type: string;
+    config?: {
+        [key: string]: unknown;
+    };
+    is_active?: boolean;
+    schedule?: (string | null);
+};
+
+export type CollectorPublic = {
+    name: string;
+    type: string;
+    config?: {
+        [key: string]: unknown;
+    };
+    is_active?: boolean;
+    schedule?: (string | null);
+    id: string;
+    last_run_at: (string | null);
+    last_status: (string | null);
+    created_at: string;
+    updated_at: string;
+};
+
+export type CollectorsPublic = {
+    data: Array<CollectorPublic>;
+    count: number;
+};
+
+export type CollectorUpdate = {
+    name?: (string | null);
+    type?: (string | null);
+    config?: ({
+    [key: string]: unknown;
+} | null);
+    is_active?: (boolean | null);
+    schedule?: (string | null);
+};
+
 export type ControlResponse = {
     status: string;
     message: string;
@@ -1254,6 +1294,56 @@ export type AuditCreateTradeAuditData = {
 };
 
 export type AuditCreateTradeAuditResponse = (TradeAuditPublic);
+
+export type CollectorsReadCollectorsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type CollectorsReadCollectorsResponse = (CollectorsPublic);
+
+export type CollectorsCreateCollectorEndpointData = {
+    requestBody: CollectorCreate;
+};
+
+export type CollectorsCreateCollectorEndpointResponse = (CollectorPublic);
+
+export type CollectorsReadCollectorData = {
+    collectorId: string;
+};
+
+export type CollectorsReadCollectorResponse = (CollectorPublic);
+
+export type CollectorsUpdateCollectorEndpointData = {
+    collectorId: string;
+    requestBody: CollectorUpdate;
+};
+
+export type CollectorsUpdateCollectorEndpointResponse = (CollectorPublic);
+
+export type CollectorsDeleteCollectorEndpointData = {
+    collectorId: string;
+};
+
+export type CollectorsDeleteCollectorEndpointResponse = (CollectorPublic);
+
+export type CollectorsGetCollectorsHealthResponse = ({
+    [key: string]: unknown;
+});
+
+export type CollectorsGetCollectorStatusData = {
+    collectorName: string;
+};
+
+export type CollectorsGetCollectorStatusResponse = ({
+    [key: string]: unknown;
+});
+
+export type CollectorsTriggerCollectorData = {
+    collectorName: string;
+};
+
+export type CollectorsTriggerCollectorResponse = (Message);
 
 export type CredentialsGetCredentialsResponse = (CoinspotCredentialsPublic);
 

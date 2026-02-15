@@ -98,26 +98,53 @@ docker compose logs backend
 
 ## Local Server Management (192.168.0.241)
 
-In the Local Server environment, which uses a self-hosted GitHub Actions runner, secrets are managed via a persistent `.env` file on the host machine.
+In the Local Server environment, which uses a self-hosted GitHub Actions runner, secrets are managed via a centralized "safe" file on the host machine.
 
 ### Strategy
-1.  **Persistence:** The file is located at `~/omc/ohmycoins/.env`.
-2.  **Deployment:** The GitHub Actions workflow (`deploy-local.yml`) copies this file from the host's directory into the runner's workspace before building/starting containers.
-3.  **Updates:** Updates to secrets must be done directly on the server via SSH.
+1.  **Central Source:** All secrets are stored in a single master file: `~/omc/secrets.safe` on the host machine.
+2.  **Injection:** The `populate_secrets.sh` script is used to generate `.env` files for specific deployments.
+3.  **Deployment:** The GitHub Actions workflow (`deploy-local.yml`) executes this script during the build process to inject secrets into the runner's workspace.
+
+### The `secrets.safe` File
+This file is a simple key-value store, compatible with shell sourcing but never committed to git. It resides outside the repository structure.
+
+```bash
+# ~/omc/secrets.safe on 192.168.0.241
+COINSPOT_API_KEY=...
+COINSPOT_SECRET=...
+OPENAI_API_KEY=...
+# ... other secrets
+```
+
+### The `populate_secrets.sh` Script
+This script automates the creation of `.env` files for different contexts (production vs. feature tracks).
+
+**Usage:**
+```bash
+./populate_secrets.sh <target-directory>
+```
+*   **Production:** `STACK=ohmycoins ./populate_secrets.sh .` (Used by CI/CD)
+*   **Feature Tracks:** `./populate_secrets.sh ../omc-track-a` (Used by developers for worktrees)
+
+The script automatically:
+1.  Copies `.env.template` to the target.
+2.  Injects secrets from `~/omc/secrets.safe`.
+3.  Configures unique ports based on the directory name (e.g., `track-a` uses ports 8010/5433).
 
 ### Updating Secrets
 1.  **SSH into Server:**
     ```bash
     ssh mark@192.168.0.241
     ```
-2.  **Edit File:**
+2.  **Edit Master Safe:**
     ```bash
-    nano ~/omc/ohmycoins/.env
+    nano ~/omc/secrets.safe
     ```
 3.  **Apply Changes:**
-    Either wait for the next deployment or restart services manually:
+    Commit a change to `main` (even an empty one) to trigger a redeployment, or manually run the script and restart containers:
     ```bash
-    cd ~/omc/ohmycoins
+    cd ~/omc/ohmycoins/
+    ./populate_secrets.sh .
     docker compose up -d --force-recreate
     ```
 
@@ -149,10 +176,10 @@ Document the new secret in `.env.template`:
 NEW_API_KEY=<your-api-key-here>
 ```
 
-### 3. Update Local Environments
+### 3. Update Master Secrets
 
-- **Developers:** Update their local `.env` files.
-- **Server:** SSH into `192.168.0.241` and update `~/omc/ohmycoins/.env`.
+- **Server:** SSH into `192.168.0.241` and add the key to `~/omc/secrets.safe`.
+- **Local Dev:** Add the key to your local `secrets.safe` (refrence it in `populate_secrets.sh`) or manually update your `.env`.
 
 ---
 

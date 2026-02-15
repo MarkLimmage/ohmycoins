@@ -18,7 +18,7 @@ api_router.include_router(strategy_promotions.router, prefix="/promotions", tags
 api_router.include_router(pnl.router, prefix="/floor/pnl", tags=["pnl"])
 api_router.include_router(trading.router, prefix="/floor/trading", tags=["trading"])
 api_router.include_router(floor.router, prefix="/floor", tags=["floor"])
-api_router.include_router(collectors.router, prefix="/collectors", tags=["collectors"])
+
 
 
 if settings.ENVIRONMENT == "local":
