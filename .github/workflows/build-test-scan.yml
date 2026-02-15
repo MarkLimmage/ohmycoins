@@ -21,7 +21,7 @@ on:
 jobs:
   build-and-scan-backend:
     name: Build and Scan Backend
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       security-events: write
@@ -67,7 +67,7 @@ jobs:
   
   build-and-scan-frontend:
     name: Build and Scan Frontend
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       security-events: write
