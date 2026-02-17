@@ -19,7 +19,7 @@ jobs:
           # Use the new centralized secrets management script
           # This pulls from ~/omc/secrets.safe on the host machine (192.168.0.241)
           chmod +x populate_secrets.sh
-          ./populate_secrets.sh
+          ./populate_secrets.sh .
           
       - name: Build and Start Containers
         run: |
