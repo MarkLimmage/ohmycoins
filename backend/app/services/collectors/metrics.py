@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Collection metrics tracking for Phase 2.5 collectors.
 
@@ -112,7 +111,7 @@ class MetricsTracker:
     orchestrator and individual collectors.
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the metrics tracker."""
         self._metrics: dict[str, CollectorMetrics] = {}
         self._started_at = datetime.now(timezone.utc)
