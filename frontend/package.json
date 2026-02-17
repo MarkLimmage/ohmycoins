@@ -65,6 +65,9 @@
   },
   "overrides": {
     "react": "$react",
-    "react-dom": "$react-dom"
+    "react-dom": "$react-dom",
+    "@storybook/test": {
+      "storybook": "$storybook"
+    }
   }
 }
