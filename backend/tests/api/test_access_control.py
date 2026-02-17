@@ -26,16 +26,16 @@ def enabled_whitelist():
 def test_whitelist_disabled_by_default(client: TestClient, db: Session, disabled_whitelist: None) -> None:
     # Ensure whitelist is disabled (default state)
     email = random_email()
-        password = random_lower_string()
-        user_in = UserCreate(email=email, password=password)
-        create_user(session=db, user_create=user_in)
+    password = random_lower_string()
+    user_in = UserCreate(email=email, password=password)
+    create_user(session=db, user_create=user_in)
 
-        # Get token
-        headers = authentication_token_from_email(client=client, email=email, db=db)
+    # Get token
+    headers = authentication_token_from_email(client=client, email=email, db=db)
 
-        # Access protected endpoint
-        r = client.post(f"{settings.API_V1_STR}/login/test-token", headers=headers)
-        assert r.status_code == 200
+    # Access protected endpoint
+    r = client.post(f"{settings.API_V1_STR}/login/test-token", headers=headers)
+    assert r.status_code == 200
 
 
 def test_whitelist_enabled_user_blocked(client: TestClient, db: Session, enabled_whitelist: None) -> None:
@@ -63,11 +63,12 @@ def test_whitelist_enabled_user_blocked(client: TestClient, db: Session, enabled
 def test_whitelist_enabled_user_allowed(client: TestClient, db: Session, enabled_whitelist: None) -> None:
     # Enable whitelist
     original_whitelist = settings.EMAIL_WHITELIST
-    settings.EMAIL_WHITELIST = ["allowed@example.com", "another@example.com"]
+    # Allow the specific test user
+    email = "allowed@example.com"
+    settings.EMAIL_WHITELIST = [email, "another@example.com"]
 
     try:
         # Create a user IN whitelist
-        email = "allowed@example.com"
         password = random_lower_string()
         user_in = UserCreate(email=email, password=password)
         create_user(session=db, user_create=user_in)
@@ -78,11 +79,6 @@ def test_whitelist_enabled_user_allowed(client: TestClient, db: Session, enabled
         # Access protected endpoint
         r = client.post(f"{settings.API_V1_STR}/login/test-token", headers=headers)
         assert r.status_code == 200
-        assert r.json()["detail"] == "Token test successful"
-    finally:
-        settings.EMAIL_WHITELIST = original_whitelist
-        assert r.status_code == 200
         assert r.json()["email"] == email
     finally:
-        settings.EMAIL_WHITELIST_ENABLED = original_enabled
         settings.EMAIL_WHITELIST = original_whitelist
