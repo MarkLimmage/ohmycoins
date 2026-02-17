@@ -7,7 +7,7 @@ os.environ["ENCRYPTION_KEY"] = "_KLoPGOzT2wEFRDU1Rmb7-85GIDf4QJUVGPzkTKRTis="
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, delete
+from sqlmodel import Session, SQLModel, delete
 
 from app.core.config import settings
 from app.core.db import engine, init_db
@@ -39,7 +39,7 @@ from app.utils.test_fixtures import (
 )
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
-from sqlmodel import SQLModel
+
 
 @pytest.fixture(scope="session", autouse=True)
 def db_init() -> None:
@@ -48,7 +48,8 @@ def db_init() -> None:
     # No teardown here as we just want the schema created once
 
 @pytest.fixture(scope="function", autouse=True)
-def db(db_init: None) -> Generator[Session, None, None]:
+@pytest.mark.usefixtures("db_init")
+def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
         yield session
