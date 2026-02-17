@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Collection orchestrator for managing all data collectors in Phase 2.5.
 
@@ -11,9 +10,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
+from apscheduler.triggers.cron import CronTrigger  # type: ignore
+from apscheduler.triggers.interval import IntervalTrigger  # type: ignore
 
 from .base import BaseCollector
 
@@ -31,7 +30,7 @@ class CollectionOrchestrator:
     - Provide metrics and status endpoints
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the orchestrator with an async scheduler."""
         self.scheduler = AsyncIOScheduler(timezone="UTC")
         self.collectors: dict[str, BaseCollector] = {}
