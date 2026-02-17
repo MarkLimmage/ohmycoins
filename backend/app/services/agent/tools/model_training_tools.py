@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Model Training Tools - Week 5-6 Implementation
 

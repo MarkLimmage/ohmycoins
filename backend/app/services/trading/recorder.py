@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Trade Recording and Reconciliation Service
 

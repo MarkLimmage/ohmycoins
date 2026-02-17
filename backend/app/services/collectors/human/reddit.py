@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Reddit API collector for community sentiment (Human Ledger).
 

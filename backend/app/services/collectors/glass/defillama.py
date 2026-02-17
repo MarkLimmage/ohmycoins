@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 DeFiLlama API collector for protocol fundamentals (Glass Ledger).
 

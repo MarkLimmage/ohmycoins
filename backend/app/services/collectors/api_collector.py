@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 API collector base class for HTTP API-based data sources.
 

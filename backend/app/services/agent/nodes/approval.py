@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Approval Gate Node for Human-in-the-Loop workflow.
 

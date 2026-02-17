@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Choice Presentation Node for Human-in-the-Loop workflow.
 

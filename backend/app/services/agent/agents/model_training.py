@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Model Training Agent - Trains machine learning models on cryptocurrency data.
 

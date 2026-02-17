@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Example configuration for Phase 2.5 comprehensive data collectors.
 

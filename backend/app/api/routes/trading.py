@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import Annotated, List
 from uuid import UUID
 

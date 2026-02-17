@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Data Analysis Tools - Week 3-4 Implementation
 

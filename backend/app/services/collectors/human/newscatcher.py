@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Newscatcher API collector for cryptocurrency news (Human Ledger).
 

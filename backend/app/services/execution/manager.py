@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime

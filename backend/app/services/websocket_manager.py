@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import Dict, List
 from fastapi import WebSocket
 

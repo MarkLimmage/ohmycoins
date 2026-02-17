@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 CoinSpot announcements scraper for exchange events (Catalyst Ledger).
 

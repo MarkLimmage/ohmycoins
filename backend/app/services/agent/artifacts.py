@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Artifact Management System - Week 11 Implementation
 

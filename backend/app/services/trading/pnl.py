@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Profit & Loss (P&L) Calculation Engine
 

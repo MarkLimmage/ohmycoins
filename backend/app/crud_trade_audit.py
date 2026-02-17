@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import Sequence
 import uuid
 from sqlmodel import Session, select

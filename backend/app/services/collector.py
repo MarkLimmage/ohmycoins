@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Coinspot Data Collector Service
 

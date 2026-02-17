@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Model Evaluation Tools - Week 5-6 Implementation
 

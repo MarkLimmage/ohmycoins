@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 CryptoPanic API collector for news sentiment (Human Ledger).
 

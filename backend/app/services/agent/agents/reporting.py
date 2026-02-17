@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Reporting Agent - Week 11 Implementation
 

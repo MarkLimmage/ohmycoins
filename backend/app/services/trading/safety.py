@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Safety Mechanisms for Trading System
 

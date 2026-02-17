@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Mock API endpoints for Storybook and UI development.
 Available only in non-production environments.

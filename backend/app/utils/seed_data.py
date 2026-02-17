@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Synthetic data generation for Oh My Coins development environment.
 

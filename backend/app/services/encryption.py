@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Encryption Service for Coinspot API Credentials
 

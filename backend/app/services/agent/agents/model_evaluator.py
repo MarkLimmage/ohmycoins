@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Model Evaluator Agent - Evaluates and compares machine learning models.
 

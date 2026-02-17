@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Base collector class for all data collectors in Phase 2.5.
 

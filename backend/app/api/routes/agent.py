@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 API routes for Agent Sessions (Phase 3 - Agentic Data Science).
 

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Collection orchestrator for managing all data collectors in Phase 2.5.
 

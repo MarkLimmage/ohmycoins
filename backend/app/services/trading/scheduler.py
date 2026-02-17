@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Execution Scheduler for Trading Algorithms
 

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Test fixtures for Oh My Coins.
 

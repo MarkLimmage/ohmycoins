@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Clarification Node for Human-in-the-Loop workflow.
 

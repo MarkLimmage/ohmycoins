@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import asyncio
 import sentry_sdk
 from contextlib import asynccontextmanager

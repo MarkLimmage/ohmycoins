@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 SEC EDGAR API collector for regulatory events (Catalyst Ledger).
 

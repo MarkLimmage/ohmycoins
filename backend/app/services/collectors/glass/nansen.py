@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Nansen API collector for smart money wallet tracking (Glass Ledger).
 

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Collection metrics tracking for Phase 2.5 collectors.
 

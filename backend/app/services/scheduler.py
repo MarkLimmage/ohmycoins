@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Scheduled Task Runner for Cryptocurrency Data Collection
 

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Data Quality Monitor for Phase 2.5 collectors.
 

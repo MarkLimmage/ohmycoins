@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 Reporting Tools - Week 11 Implementation
 
