@@ -23,7 +23,8 @@ def enabled_whitelist():
     yield
     settings.EMAIL_WHITELIST_ENABLED = original_val
 
-def test_whitelist_disabled_by_default(client: TestClient, db: Session, disabled_whitelist: None) -> None:
+@pytest.mark.usefixtures("disabled_whitelist")
+def test_whitelist_disabled_by_default(client: TestClient, db: Session) -> None:
     # Ensure whitelist is disabled (default state)
     email = random_email()
     password = random_lower_string()
@@ -38,7 +39,8 @@ def test_whitelist_disabled_by_default(client: TestClient, db: Session, disabled
     assert r.status_code == 200
 
 
-def test_whitelist_enabled_user_blocked(client: TestClient, db: Session, enabled_whitelist: None) -> None:
+@pytest.mark.usefixtures("enabled_whitelist")
+def test_whitelist_enabled_user_blocked(client: TestClient, db: Session) -> None:
     # Enable whitelist
     original_whitelist = settings.EMAIL_WHITELIST
     settings.EMAIL_WHITELIST = ["allowed@example.com"]
@@ -60,7 +62,8 @@ def test_whitelist_enabled_user_blocked(client: TestClient, db: Session, enabled
         settings.EMAIL_WHITELIST = original_whitelist
 
 
-def test_whitelist_enabled_user_allowed(client: TestClient, db: Session, enabled_whitelist: None) -> None:
+@pytest.mark.usefixtures("enabled_whitelist")
+def test_whitelist_enabled_user_allowed(client: TestClient, db: Session) -> None:
     # Enable whitelist
     original_whitelist = settings.EMAIL_WHITELIST
     # Allow the specific test user
