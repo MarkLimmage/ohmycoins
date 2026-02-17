@@ -60,5 +60,9 @@
     "typescript": "^5.2.2",
     "vite": "^7.1.11",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom"
   }
 }
