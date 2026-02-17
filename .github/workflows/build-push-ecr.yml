@@ -52,12 +52,14 @@ jobs:
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Login to Amazon ECR
         id: login-ecr
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
         uses: aws-actions/amazon-ecr-login@v2
       
       - name: Extract metadata
@@ -92,8 +94,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: !cancelled() && hashFiles('trivy-backend-results.sarif') != ''
         with:
           sarif_file: 'trivy-backend-results.sarif'
           category: 'backend-image'
@@ -108,6 +110,7 @@ jobs:
       
       - name: Push to ECR
         id: push
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_BACKEND_REPO }}:${{ steps.meta.outputs.version }}
           echo "image-uri=${{ env.ECR_REGISTRY }}/${{ env.ECR_BACKEND_REPO }}:${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
@@ -136,12 +139,14 @@ jobs:
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Login to Amazon ECR
         id: login-ecr
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
         uses: aws-actions/amazon-ecr-login@v2
       
       - name: Extract metadata
@@ -176,8 +181,8 @@ jobs:
           severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: !cancelled() && hashFiles('trivy-frontend-results.sarif') != ''
         with:
           sarif_file: 'trivy-frontend-results.sarif'
           category: 'frontend-image'
@@ -192,6 +197,7 @@ jobs:
       
       - name: Push to ECR
         id: push
+        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_FRONTEND_REPO }}:${{ steps.meta.outputs.version }}
           echo "image-uri=${{ env.ECR_REGISTRY }}/${{ env.ECR_FRONTEND_REPO }}:${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
