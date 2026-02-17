@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # This overrides the default settings to ensure we actually hit the live endpoint
 settings.TRADING_MODE = 'live'
 
-async def main():
+async def main() -> None:
     logger.info("Starting Live Strategy Execution Test")
     logger.info("WARNING: This is a REAL MONEY test. Funds will be spent.")
 
