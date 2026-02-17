@@ -61,7 +61,7 @@ class TestEncryptionService:
         encrypted = service1.encrypt(plaintext)
 
         # Attempting to decrypt with different key should raise error
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidToken):
             service2.decrypt(encrypted)
 
     def test_mask_api_key_shows_last_4_chars(self, encryption_service):
