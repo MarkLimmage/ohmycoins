@@ -180,7 +180,7 @@ def benchmark_llm(llm: Any, provider: str, prompt: str) -> dict[str, Any]:
         }
 
 
-def print_comparison_table(results: list[dict[str, Any]], prompt_name: str) -> None:
+def print_comparison_table(results: list[dict[str, Any]], _prompt_name: str) -> None:
     """Print formatted comparison table"""
 
     # Filter successful results
@@ -201,7 +201,7 @@ def print_comparison_table(results: list[dict[str, Any]], prompt_name: str) -> N
 
 
     # Print response previews
-    for result in successful:
+    for _result in successful:
         pass
 
 
@@ -224,7 +224,7 @@ def run_benchmark() -> None:
 
     # Check available API keys
     available_keys = check_api_keys()
-    for provider, _available in available_keys.items():
+    for _provider, _available in available_keys.items():
         pass
 
     providers_to_test = [p for p, available in available_keys.items() if available]

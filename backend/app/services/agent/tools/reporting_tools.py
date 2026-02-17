@@ -227,7 +227,7 @@ def create_comparison_report(
 
 
 def generate_recommendations(
-    user_goal: str,
+    _user_goal: str,
     evaluation_results: dict[str, Any],
     model_results: dict[str, Any],
     analysis_results: dict[str, Any],
@@ -378,7 +378,7 @@ def generate_recommendations(
 
 def create_visualizations(
     evaluation_results: dict[str, Any],
-    model_results: dict[str, Any],
+    _model_results: dict[str, Any],
     analysis_results: dict[str, Any],
     output_dir: Path,
 ) -> list[dict[str, str]]:

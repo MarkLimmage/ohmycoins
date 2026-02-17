@@ -9,8 +9,8 @@ login_data = {
     "password": settings.FIRST_SUPERUSER_PASSWORD,
 }
 
-print(f"Attempting login with username: {login_data['username']}")
+print(f"Attempting login with username: {login_data['username']}")  # noqa: T201
 r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
 
-print(f"Status Code: {r.status_code}")
-print(f"Response: {r.json()}")
+print(f"Status Code: {r.status_code}")  # noqa: T201
+print(f"Response: {r.json()}")  # noqa: T201

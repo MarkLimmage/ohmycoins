@@ -32,7 +32,7 @@ class MACrossoverStrategy:
 
         if len(self.prices) < self.long_window:
              # Not enough data
-            return {'action': 'hold', 'coin_type': coin_type, 'quantity': Decimal('0'), 'confidence': 0.0}
+            return {'action': 'hold', 'coin_type': self.coin_type, 'quantity': Decimal('0'), 'confidence': 0.0}
 
         # Calculate MAs
         short_ma = sum(self.prices[-self.short_window:]) / self.short_window
@@ -49,6 +49,6 @@ class MACrossoverStrategy:
             # Buy 100 AUD worth
             # Calculate coin quantity
             qty = (Decimal('100') / current_price).quantize(Decimal("0.00000001"))
-            return {'action': 'buy', 'coin_type': coin_type, 'quantity': qty, 'confidence': 0.8}
+            return {'action': 'buy', 'coin_type': self.coin_type, 'quantity': qty, 'confidence': 0.8}
         else:
-            return {'action': 'sell', 'coin_type': coin_type, 'quantity': Decimal('0.1'), 'confidence': 0.8} # Sell 0.1 Coin
+            return {'action': 'sell', 'coin_type': self.coin_type, 'quantity': Decimal('0.1'), 'confidence': 0.8} # Sell 0.1 Coin

@@ -125,7 +125,7 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
     return users
 
 
-async def collect_real_price_data(session: Session, hours: int = 24) -> int:
+async def collect_real_price_data(session: Session, _hours: int = 24) -> int:
     """
     Collect REAL price data from Coinspot API.
 

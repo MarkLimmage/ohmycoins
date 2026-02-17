@@ -278,7 +278,7 @@ def _format_choices_for_llm(choices: list[dict[str, Any]]) -> str:
 
 def _parse_llm_recommendation(
     llm_response: str,
-    choices: list[dict[str, Any]]
+    _choices: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Parse LLM recommendation response."""
     lines = llm_response.strip().split("\n")

@@ -516,7 +516,7 @@ def delete_llm_credential(
 @router.post("/me/llm-credentials/validate", response_model=UserLLMCredentialsValidationResult)
 async def validate_llm_credential(
     *,
-    session: SessionDep,
+    _session: SessionDep,
     current_user: CurrentUser,
     validation_request: UserLLMCredentialsValidate,
 ) -> Any:

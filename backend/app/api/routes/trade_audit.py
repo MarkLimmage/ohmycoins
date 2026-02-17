@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.get("/", response_model=TradeAudits)
 def read_trade_audits(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
     Retrieve trade audits.
@@ -24,7 +24,7 @@ def read_trade_audits(
 
 @router.post("/", response_model=TradeAuditPublic)
 def create_trade_audit(
-    *, session: SessionDep, current_user: CurrentUser, trade_audit_in: TradeAuditCreate
+    *, session: SessionDep, _current_user: CurrentUser, trade_audit_in: TradeAuditCreate
 ) -> Any:
     """
     Create new trade audit record.

@@ -155,7 +155,7 @@ class TestEndToEndWorkflow:
         # Simulate an error on first attempt, success on retry
         call_count = 0
 
-        async def mock_workflow_with_retry(*args, **kwargs):
+        async def mock_workflow_with_retry(*_args, **_kwargs):
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -314,7 +314,7 @@ class TestEndToEndWorkflow:
         assert session.status == AgentSessionStatus.PENDING
 
         # Mock status transitions
-        async def mock_workflow_with_status(*args, **kwargs):
+        async def mock_workflow_with_status(*_args, **_kwargs):
             # Simulate session status updates
             await session_manager.update_status(db, session.id, AgentSessionStatus.RUNNING)
             return {

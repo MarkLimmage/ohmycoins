@@ -156,7 +156,7 @@ def anthropic_credential(session: Session, test_user: User) -> UserLLMCredential
 
 
 @pytest.fixture
-def session_manager(session: Session) -> SessionManager:
+def session_manager(_session: Session) -> SessionManager:
     """Create session manager for orchestrator tests"""
     return SessionManager()
 
@@ -448,7 +448,7 @@ class TestBYOMPerformanceComparison:
             assert len(result["content"]) > 0
 
         # Print comparison summary
-        for result in sorted(results, key=lambda x: x["response_time"]):
+        for _result in sorted(results, key=lambda x: x["response_time"]):
             pass
 
     @pytest.mark.skipif(

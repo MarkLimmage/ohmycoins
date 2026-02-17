@@ -34,7 +34,7 @@ class BroadcastMessage(BaseModel):
 @router.post("/broadcast", include_in_schema=False)
 async def broadcast_message(
     body: BroadcastMessage,
-    user: Annotated[User, Depends(get_current_active_superuser)]
+    _user: Annotated[User, Depends(get_current_active_superuser)]
 ):
     """
     Internal endpoint to test WebSocket broadcasts.
@@ -67,7 +67,7 @@ async def get_websocket_user(
 @router.websocket("/catalyst/live")
 async def websocket_catalyst_live(
     websocket: WebSocket,
-    user: Annotated[User, Depends(get_websocket_user)],
+    _user: Annotated[User, Depends(get_websocket_user)],
 ):
     """
     Real-time feed for Catalyst Ledger (events).
@@ -83,7 +83,7 @@ async def websocket_catalyst_live(
 @router.websocket("/glass/live")
 async def websocket_glass_live(
     websocket: WebSocket,
-    user: Annotated[User, Depends(get_websocket_user)],
+    _user: Annotated[User, Depends(get_websocket_user)],
 ):
     """
     Real-time feed for Glass Ledger (TVL/Fees).
@@ -99,7 +99,7 @@ async def websocket_glass_live(
 @router.websocket("/human/live")
 async def websocket_human_live(
     websocket: WebSocket,
-    user: Annotated[User, Depends(get_websocket_user)],
+    _user: Annotated[User, Depends(get_websocket_user)],
 ):
     """
     Real-time feed for Human Ledger (Sentiment).
@@ -115,7 +115,7 @@ async def websocket_human_live(
 @router.websocket("/exchange/live")
 async def websocket_exchange_live(
     websocket: WebSocket,
-    user: Annotated[User, Depends(get_websocket_user)],
+    _user: Annotated[User, Depends(get_websocket_user)],
 ):
     """
     Real-time feed for Exchange Ledger (Prices).
@@ -148,7 +148,7 @@ async def websocket_trading_live(
 @router.websocket("/floor/pnl")
 async def websocket_floor_pnl(
     websocket: WebSocket,
-    user: Annotated[User, Depends(get_websocket_user)],
+    _user: Annotated[User, Depends(get_websocket_user)],
 ):
     """
     Real-time feed for The Floor (P&L and Algorithm Status).

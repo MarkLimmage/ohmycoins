@@ -28,7 +28,7 @@ from app.services.trading.scheduler import get_execution_scheduler
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
     # Startup: Start the data collection scheduler
     await start_scheduler()
@@ -115,7 +115,7 @@ if settings.RATE_LIMIT_ENABLED:
 
 
 @app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+async def http_exception_handler(_request: Request, exc: StarletteHTTPException):
     """
     Global exception handler to ensure standard error response format.
     Returns: { "message": "User-facing", "detail": "Technical", "error_code": "CODE" }
@@ -160,7 +160,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     )
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(_request: Request, exc: RequestValidationError):
     """
     Handle 422 Validation Errors
     """

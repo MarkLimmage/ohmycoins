@@ -23,7 +23,7 @@ router = APIRouter()
 # ============================================================================
 
 @router.get("/ledgers/{ledger_type}", response_model=PnLSummaryResponse)
-async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLSummaryResponse:
+async def get_mock_ledger_data(_ledger_type: str, state: str = "success") -> PnLSummaryResponse:
     """
     Get mock data for LedgerCard component.
 
@@ -76,7 +76,7 @@ async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLS
 # ============================================================================
 
 @router.get("/agent/sessions/{session_id}/messages", response_model=list[AgentSessionMessagePublic])
-async def get_mock_agent_messages(session_id: uuid.UUID, stream: bool = False) -> list[AgentSessionMessagePublic]:
+async def get_mock_agent_messages(session_id: uuid.UUID, _stream: bool = False) -> list[AgentSessionMessagePublic]:
     """Get mock messages for AgentTerminal."""
 
     agents = ["ResearchAgent", "StrategyAgent", "ExecutionAgent", "RiskAgent"]
@@ -112,7 +112,7 @@ class SafetyStatusResponse(APIResponseBase):
     triggered_by: str | None = Field(default=None, description="User or system that triggered it")
 
 @router.post("/safety/{action_type}", response_model=SafetyStatusResponse)
-async def trigger_mock_safety_action(action_type: str, confirm: bool = False) -> SafetyStatusResponse:
+async def trigger_mock_safety_action(_action_type: str, confirm: bool = False) -> SafetyStatusResponse:
     """
     Mock endpoint for SafetyButton actions.
 

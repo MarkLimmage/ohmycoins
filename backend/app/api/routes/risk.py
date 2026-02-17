@@ -26,7 +26,7 @@ router = APIRouter()
 # -----------------------------------------------------------------------------
 @router.get("/rules", response_model=RiskRules)
 def read_risk_rules(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
     Retrieve risk rules.
@@ -91,7 +91,7 @@ def delete_risk_rule(
 # Kill Switch
 # -----------------------------------------------------------------------------
 @router.get("/kill-switch", response_model=SystemSettingPublic)
-def get_kill_switch_status(session: SessionDep, current_user: CurrentUser) -> Any:
+def get_kill_switch_status(session: SessionDep, _current_user: CurrentUser) -> Any:
     """
     Get current kill switch status.
     """

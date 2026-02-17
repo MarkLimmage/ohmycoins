@@ -132,7 +132,7 @@ class TestRedditCollector:
         # Mock fetch to fail for first subreddit, succeed for second
         call_count = [0]
 
-        async def mock_fetch(endpoint, params=None, headers=None):
+        async def mock_fetch(_endpoint, _params=None, _headers=None):
             call_count[0] += 1
             if call_count[0] == 1:
                 raise Exception("Subreddit error")

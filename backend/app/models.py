@@ -1391,9 +1391,6 @@ class SystemSetting(SystemSettingBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
     )
 
-class SystemSettingPublic(SystemSettingBase):
-    updated_at: datetime
-
 
 
 

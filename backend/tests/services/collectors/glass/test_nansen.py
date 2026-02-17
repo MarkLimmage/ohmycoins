@@ -99,7 +99,7 @@ class TestNansenCollectorIntegration:
         """Test collection continues when one token fails."""
         call_count = {"count": 0}
 
-        async def mock_fetch_with_error(*args, **kwargs):
+        async def mock_fetch_with_error(*_args, **_kwargs):
             call_count["count"] += 1
             if call_count["count"] == 1:
                 raise Exception("API error for first token")

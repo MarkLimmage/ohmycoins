@@ -753,7 +753,7 @@ async def delete_artifact(
 @router.get("/artifacts/stats")
 async def get_artifact_stats(
     db: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
 ) -> dict[str, Any]:
     """
     Get artifact storage statistics.
