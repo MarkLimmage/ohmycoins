@@ -30,9 +30,15 @@ jobs:
       - run: docker compose down -v --remove-orphans
       - run: docker compose up -d db mailcatcher
       - name: Migrate DB
+        env:
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: 5433
         run: uv run bash scripts/prestart.sh
         working-directory: backend
       - name: Run tests
+        env:
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: 5433
         run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
         working-directory: backend
       - run: docker compose down -v --remove-orphans
