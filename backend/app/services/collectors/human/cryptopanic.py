@@ -27,14 +27,14 @@ logger = logging.getLogger(__name__)
 class CryptoPanicCollector(APICollector):
     """
     Collector for cryptocurrency news with sentiment from CryptoPanic API.
-    
+
     Collects:
     - News headlines and URLs
     - Source information
     - Publication timestamps
     - Sentiment tags (positive, negative, neutral)
     - Associated cryptocurrencies
-    
+
     API Documentation: https://cryptopanic.com/developers/api/
     """
 
@@ -52,7 +52,7 @@ class CryptoPanicCollector(APICollector):
     def __init__(self, api_key: str | None = None):
         """
         Initialize the CryptoPanic collector.
-        
+
         Args:
             api_key: CryptoPanic API key (if None, reads from environment)
         """
@@ -75,10 +75,10 @@ class CryptoPanicCollector(APICollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect recent cryptocurrency news from CryptoPanic API.
-        
+
         Returns:
             List of news article dictionaries
-        
+
         Raises:
             Exception: If API request fails
         """
@@ -152,10 +152,10 @@ class CryptoPanicCollector(APICollector):
     def _determine_sentiment(self, article: dict[str, Any]) -> str | None:
         """
         Determine sentiment from article votes and metadata.
-        
+
         Args:
             article: Article data from CryptoPanic API
-        
+
         Returns:
             Sentiment string or None
         """
@@ -194,10 +194,10 @@ class CryptoPanicCollector(APICollector):
     def _calculate_sentiment_score(self, article: dict[str, Any]) -> float | None:
         """
         Calculate numerical sentiment score from votes.
-        
+
         Args:
             article: Article data from CryptoPanic API
-        
+
         Returns:
             Sentiment score between -1.0 (bearish) and 1.0 (bullish), or None
         """
@@ -226,13 +226,13 @@ class CryptoPanicCollector(APICollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected news data.
-        
+
         Args:
             data: Raw data collected from CryptoPanic API
-        
+
         Returns:
             Validated data ready for storage
-        
+
         Raises:
             ValueError: If validation fails
         """
@@ -271,11 +271,11 @@ class CryptoPanicCollector(APICollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated news sentiment in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

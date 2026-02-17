@@ -218,9 +218,9 @@ class TestDataRealism:
         users = [create_test_user(db) for _ in range(10)]
 
         # Check for variety in risk tolerance
-        risk_levels = set(u.risk_tolerance for u in users)
+        risk_levels = {u.risk_tolerance for u in users}
         assert len(risk_levels) > 1  # Should have variety
 
         # Check for variety in trading experience
-        experience_levels = set(u.trading_experience for u in users)
+        experience_levels = {u.trading_experience for u in users}
         assert len(experience_levels) > 1  # Should have variety

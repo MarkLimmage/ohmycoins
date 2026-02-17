@@ -10,10 +10,10 @@ For private/user-specific data (users, positions, orders), we generate synthetic
 Usage:
     # Generate full dataset
     python -m app.utils.seed_data --all
-    
+
     # Generate specific data types
     python -m app.utils.seed_data --users 10 --collect-prices --days 7
-    
+
     # Clear all data
     python -m app.utils.seed_data --clear
 """
@@ -128,7 +128,7 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
 async def collect_real_price_data(session: Session, hours: int = 24) -> int:
     """
     Collect REAL price data from Coinspot API.
-    
+
     Since we can only get current prices from the public API,
     we'll collect real-time data and store it with timestamps.
     For historical data, we would need to run this over time or use a paid API.
@@ -241,7 +241,7 @@ async def collect_real_defi_data(session: Session) -> int:
 async def collect_real_news_data(session: Session, days: int = 7) -> int:
     """
     Collect REAL cryptocurrency news from CryptoPanic API (free tier).
-    
+
     Note: CryptoPanic offers a free tier with limited requests.
     For production, you would need an API key set in CRYPTOPANIC_API_KEY env var.
     """

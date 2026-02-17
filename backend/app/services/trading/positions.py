@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class PositionManager:
     """
     Manages trading positions and portfolio tracking
-    
+
     Features:
     - Position queries by user and coin
     - Portfolio value calculation
@@ -29,7 +29,7 @@ class PositionManager:
     def __init__(self, session: Session):
         """
         Initialize position manager
-        
+
         Args:
             session: Database session
         """
@@ -38,11 +38,11 @@ class PositionManager:
     def get_position(self, user_id: UUID, coin_type: str) -> Position | None:
         """
         Get position for a specific user and coin
-        
+
         Args:
             user_id: User UUID
             coin_type: Cryptocurrency symbol (e.g., 'BTC')
-            
+
         Returns:
             Position or None if not found
         """
@@ -55,10 +55,10 @@ class PositionManager:
     def get_all_positions(self, user_id: UUID) -> list[Position]:
         """
         Get all positions for a user
-        
+
         Args:
             user_id: User UUID
-            
+
         Returns:
             List of positions
         """
@@ -74,13 +74,13 @@ class PositionManager:
     ) -> PositionPublic | None:
         """
         Get position with current market value and unrealized P&L
-        
+
         Args:
             user_id: User UUID
             coin_type: Cryptocurrency symbol
             api_key: Coinspot API key
             api_secret: Coinspot API secret
-            
+
         Returns:
             PositionPublic with calculated values or None
         """
@@ -119,12 +119,12 @@ class PositionManager:
     ) -> list[PositionPublic]:
         """
         Get all positions with current market values and unrealized P&L
-        
+
         Args:
             user_id: User UUID
             api_key: Coinspot API key
             api_secret: Coinspot API secret
-            
+
         Returns:
             List of PositionPublic with calculated values
         """
@@ -162,10 +162,10 @@ class PositionManager:
     def get_portfolio_summary(self, user_id: UUID) -> dict:
         """
         Get portfolio summary for a user
-        
+
         Args:
             user_id: User UUID
-            
+
         Returns:
             Dictionary with portfolio statistics
         """
@@ -175,7 +175,7 @@ class PositionManager:
         total_cost = sum(p.total_cost for p in positions)
 
         # Get unique coins
-        coins = list(set(p.coin_type for p in positions))
+        coins = list({p.coin_type for p in positions})
 
         return {
             'user_id': user_id,
@@ -192,12 +192,12 @@ class PositionManager:
     ) -> dict:
         """
         Get complete portfolio value and P&L
-        
+
         Args:
             user_id: User UUID
             api_key: Coinspot API key
             api_secret: Coinspot API secret
-            
+
         Returns:
             Dictionary with portfolio value and P&L
         """
@@ -224,10 +224,10 @@ class PositionManager:
 def get_position_manager(session: Session) -> PositionManager:
     """
     Get a position manager instance
-    
+
     Args:
         session: Database session
-        
+
     Returns:
         PositionManager instance
     """

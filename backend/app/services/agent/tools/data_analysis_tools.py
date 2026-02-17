@@ -89,7 +89,7 @@ def analyze_sentiment_trends(
     social = sentiment_data.get("social_sentiment", [])
 
     # Convert time window to hours
-    window_hours = {
+    {
         "24h": 24,
         "7d": 168,
         "30d": 720,

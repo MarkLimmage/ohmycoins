@@ -20,7 +20,7 @@ from .base import BaseAgent
 class ModelTrainingAgent(BaseAgent):
     """
     Agent responsible for training machine learning models.
-    
+
     Week 5-6 Implementation Tools:
     - train_classification_model: Train classification models (e.g., price direction prediction)
     - train_regression_model: Train regression models (e.g., price prediction)
@@ -37,10 +37,10 @@ class ModelTrainingAgent(BaseAgent):
     async def execute(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Execute model training based on analyzed data and user goal.
-        
+
         Args:
             state: Current workflow state with analysis_results
-        
+
         Returns:
             Updated state with trained models
         """

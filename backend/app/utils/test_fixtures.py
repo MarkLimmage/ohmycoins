@@ -75,7 +75,7 @@ def create_test_price_data(
     current_time = datetime.now(timezone.utc) - timedelta(hours=count // 12)
     current_price = start_price
 
-    for i in range(count):
+    for _i in range(count):
         # Add some volatility
         change = Decimal(random.uniform(-0.02, 0.02))
         current_price = current_price * (Decimal("1") + change)

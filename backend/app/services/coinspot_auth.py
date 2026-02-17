@@ -20,7 +20,7 @@ class CoinspotAuthenticator:
     def __init__(self, api_key: str, api_secret: str):
         """
         Initialize authenticator with API credentials
-        
+
         Args:
             api_key: Coinspot API key
             api_secret: Coinspot API secret
@@ -31,7 +31,7 @@ class CoinspotAuthenticator:
     def generate_nonce(self) -> int:
         """
         Generate a nonce (number used once) for API requests
-        
+
         Returns:
             Current timestamp in milliseconds
         """
@@ -40,10 +40,10 @@ class CoinspotAuthenticator:
     def sign_request(self, payload: dict[str, Any]) -> str:
         """
         Generate HMAC-SHA512 signature for a request payload
-        
+
         Args:
             payload: Request payload dictionary (must include nonce)
-            
+
         Returns:
             Hex-encoded signature string
         """
@@ -62,10 +62,10 @@ class CoinspotAuthenticator:
     def get_headers(self, payload: dict[str, Any]) -> dict[str, str]:
         """
         Generate complete headers for Coinspot API request
-        
+
         Args:
             payload: Request payload dictionary
-            
+
         Returns:
             Dictionary of headers including signature and API key
         """
@@ -84,10 +84,10 @@ class CoinspotAuthenticator:
     def prepare_request(self, endpoint_data: dict[str, Any] | None = None) -> tuple[dict[str, str], dict[str, Any]]:
         """
         Prepare headers and payload for a Coinspot API request
-        
+
         Args:
             endpoint_data: Additional data for the endpoint (e.g., cointype, amount)
-            
+
         Returns:
             Tuple of (headers, payload)
         """
@@ -104,12 +104,12 @@ class CoinspotAuthenticator:
 def verify_coinspot_signature(payload: dict[str, Any], signature: str, api_secret: str) -> bool:
     """
     Verify a Coinspot API signature
-    
+
     Args:
         payload: Request payload
         signature: Signature to verify
         api_secret: API secret to verify against
-        
+
     Returns:
         True if signature is valid, False otherwise
     """

@@ -36,13 +36,13 @@ logger = logging.getLogger(__name__)
 class RedditCollector(APICollector):
     """
     Collector for cryptocurrency discussions from Reddit.
-    
+
     Collects:
     - Hot/trending posts from crypto subreddits
     - Post titles, scores, comments
     - Submission timestamps
     - Mentioned cryptocurrencies
-    
+
     Uses Reddit's public JSON API for reading public posts.
     """
 
@@ -85,10 +85,10 @@ class RedditCollector(APICollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect hot/trending posts from monitored subreddits.
-        
+
         Returns:
             List of post data dictionaries
-        
+
         Raises:
             Exception: If API request fails
         """
@@ -157,11 +157,11 @@ class RedditCollector(APICollector):
     def _extract_post_data(self, post: dict[str, Any], subreddit: str) -> dict[str, Any] | None:
         """
         Extract structured data from a Reddit post.
-        
+
         Args:
             post: Reddit post data from API
             subreddit: Name of the subreddit
-        
+
         Returns:
             Dictionary with post data or None if extraction fails
         """
@@ -226,11 +226,11 @@ class RedditCollector(APICollector):
     def _determine_sentiment(self, text: str, score: int) -> str:
         """
         Determine sentiment from post text and score.
-        
+
         Args:
             text: Post text (title + body, lowercased)
             score: Post score (upvotes - downvotes)
-        
+
         Returns:
             Sentiment string: "bullish", "bearish", or "neutral"
         """
@@ -260,12 +260,12 @@ class RedditCollector(APICollector):
     ) -> float:
         """
         Calculate numerical sentiment score.
-        
+
         Args:
             text: Post text (lowercased)
             score: Post score
             num_comments: Number of comments
-        
+
         Returns:
             Sentiment score between -1.0 (bearish) and 1.0 (bullish)
         """
@@ -297,11 +297,11 @@ class RedditCollector(APICollector):
     def _extract_currencies(self, title: str, text: str) -> list[str]:
         """
         Extract mentioned cryptocurrency symbols from text.
-        
+
         Args:
             title: Post title
             text: Post body
-        
+
         Returns:
             List of currency symbols
         """
@@ -340,10 +340,10 @@ class RedditCollector(APICollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected Reddit post data.
-        
+
         Args:
             data: Raw data collected from Reddit API
-        
+
         Returns:
             Validated data ready for storage
         """
@@ -387,11 +387,11 @@ class RedditCollector(APICollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated Reddit posts in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

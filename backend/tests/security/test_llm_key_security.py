@@ -34,7 +34,7 @@ class TestAPIKeyEncryption:
     def test_keys_encrypted_at_rest(self, session: Session, normal_user: User):
         """
         Test 1: Verify API keys are AES-256 encrypted in database.
-        
+
         Security Requirement: API keys must never be stored in plain text.
         Expected: Database contains encrypted bytes, not readable text.
         """
@@ -75,7 +75,7 @@ class TestAPIKeyEncryption:
     def test_keys_never_logged(self, caplog, session: Session, normal_user: User):
         """
         Test 2: Verify API keys never appear in logs.
-        
+
         Security Requirement: API keys must not be logged in plain text.
         Expected: Log messages do not contain API keys.
         """
@@ -109,10 +109,10 @@ class TestAPIKeyEncryption:
     def test_keys_transmitted_over_https_only(self, client: TestClient, normal_user_token_headers: dict):
         """
         Test 3: Verify API keys are transmitted over HTTPS only.
-        
+
         Security Requirement: API keys must only be transmitted over secure connections.
         Expected: Application enforces HTTPS in production environments.
-        
+
         Note: This test verifies the enforcement logic exists. Actual HTTPS
         enforcement happens at the infrastructure level (nginx, load balancer).
         """
@@ -147,7 +147,7 @@ class TestAPIKeyEncryption:
     ):
         """
         Test 4: Verify API keys are not exposed in API responses (masked).
-        
+
         Security Requirement: API keys must be masked in all API responses.
         Expected: Only last 4 characters visible, rest masked with asterisks.
         """
@@ -196,7 +196,7 @@ class TestAPIKeyEncryption:
     def test_encrypted_keys_cannot_be_reverse_engineered(self, session: Session, normal_user: User):
         """
         Test 5: Verify encrypted keys cannot be reverse-engineered.
-        
+
         Security Requirement: Encryption must be strong enough to prevent
         reverse engineering without the encryption key.
         Expected: Without proper decryption key, data is unreadable.
@@ -226,7 +226,7 @@ class TestAPIKeyEncryption:
     def test_key_rotation_capability(self, session: Session, normal_user: User):
         """
         Test 6: Test key rotation capability.
-        
+
         Security Requirement: System must support rotating encryption keys.
         Expected: Can decrypt old keys and re-encrypt with new keys.
         """
@@ -285,7 +285,7 @@ class TestAPIKeyEncryption:
     ):
         """
         Test 7: Verify audit logging for key access/modifications.
-        
+
         Security Requirement: All access to API keys must be logged for audit trail.
         Expected: Key creation, access, and deletion are logged with user context.
         """
@@ -309,14 +309,14 @@ class TestAPIKeyEncryption:
             session.refresh(credential)
 
             # Access credential (decrypt)
-            decrypted = encryption_service.decrypt_api_key(credential.encrypted_api_key)
+            encryption_service.decrypt_api_key(credential.encrypted_api_key)
 
             # Delete credential
             session.delete(credential)
             session.commit()
 
         # Verify audit trail exists
-        log_messages = [record.message for record in caplog.records]
+        [record.message for record in caplog.records]
 
         # Note: This test verifies the capability exists
         # Actual audit logging would be implemented in the API routes
@@ -371,7 +371,7 @@ class TestEncryptionStrength:
     def test_uses_aes_256(self):
         """
         Verify encryption uses AES-256 (via Fernet).
-        
+
         Fernet uses AES-128-CBC with HMAC SHA-256 for authentication.
         While technically AES-128, the key derivation and HMAC provide
         equivalent security to AES-256 for most use cases.
@@ -387,7 +387,7 @@ class TestEncryptionStrength:
     def test_encryption_includes_authentication(self):
         """
         Verify encryption includes authentication (prevents tampering).
-        
+
         Fernet includes HMAC SHA-256 which provides authentication.
         """
         test_data = "test-api-key-12345"
@@ -404,7 +404,7 @@ class TestEncryptionStrength:
     def test_encryption_prevents_replay(self):
         """
         Verify encryption prevents simple replay attacks.
-        
+
         Same plaintext should produce different ciphertext (includes nonce).
         """
         test_data = "test-api-key-12345"
@@ -432,7 +432,7 @@ class TestKeyValidationSecurity:
     ):
         """
         Test that validation failures don't leak sensitive information.
-        
+
         Security Requirement: Error messages should not reveal why validation failed.
         Expected: Generic error message, no details about key format or API response.
         """
@@ -451,7 +451,7 @@ class TestKeyValidationSecurity:
         )
 
         assert response.status_code == 200
-        credential_id = response.json()["id"]
+        response.json()["id"]
 
         # Try to validate (will fail with real API)
         # Note: This would need to be tested with mocked API calls

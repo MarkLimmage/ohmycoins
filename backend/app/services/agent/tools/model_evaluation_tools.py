@@ -35,7 +35,7 @@ def evaluate_model(
 ) -> dict[str, Any]:
     """
     Evaluate a trained model on test data.
-    
+
     Args:
         model: Trained model object
         test_data: DataFrame containing test features and target
@@ -43,7 +43,7 @@ def evaluate_model(
         feature_columns: List of feature column names
         scaler: Optional StandardScaler for feature scaling
         task_type: Type of task ('classification' or 'regression')
-    
+
     Returns:
         Dictionary containing:
         - metrics: Dictionary of performance metrics
@@ -126,7 +126,7 @@ def tune_hyperparameters(
 ) -> dict[str, Any]:
     """
     Tune hyperparameters for a model using grid search or random search.
-    
+
     Args:
         training_data: DataFrame containing features and target
         target_column: Name of the target column
@@ -139,7 +139,7 @@ def tune_hyperparameters(
         n_iter: Number of iterations for random search
         scoring: Scoring metric (e.g., 'accuracy', 'f1', 'neg_mean_squared_error')
         random_state: Random seed for reproducibility
-    
+
     Returns:
         Dictionary containing:
         - best_params: Best hyperparameters found
@@ -231,7 +231,7 @@ def compare_models(
 ) -> dict[str, Any]:
     """
     Compare multiple trained models on the same test data.
-    
+
     Args:
         models: Dictionary mapping model names to model info dicts
                Each model info dict should contain:
@@ -243,7 +243,7 @@ def compare_models(
         task_type: Type of task ('classification' or 'regression')
         primary_metric: Primary metric for comparison
                        If None, uses 'accuracy' for classification or 'r2' for regression
-    
+
     Returns:
         Dictionary containing:
         - comparisons: Dictionary mapping model names to their metrics
@@ -317,12 +317,12 @@ def calculate_feature_importance(
 ) -> dict[str, Any]:
     """
     Calculate and rank feature importance for a trained model.
-    
+
     Args:
         model: Trained model with feature_importances_ attribute
         feature_columns: List of feature column names
         top_n: Number of top features to return
-    
+
     Returns:
         Dictionary containing:
         - feature_importances: Dictionary mapping features to importance scores

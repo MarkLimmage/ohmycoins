@@ -111,7 +111,7 @@ class TestLLMFactoryBasicCreation:
         assert isinstance(llm, ChatGoogleGenerativeAI)
         assert llm.model.endswith("gemini-1.5-pro")  # Google prepends "models/" prefix
         # Verify Gemini-specific settings
-        assert llm.convert_system_message_to_human == True
+        assert llm.convert_system_message_to_human is True
 
     def test_create_anthropic_from_api_key(self):
         """Test creating Anthropic Claude LLM directly from API key (Sprint 2.9)"""
@@ -400,7 +400,7 @@ class TestLLMFactoryProviderSpecific:
         assert isinstance(llm, ChatOpenAI)
         assert llm.model_name == "gpt-3.5-turbo"
         assert llm.max_tokens == 2000
-        assert llm.streaming == False
+        assert llm.streaming is False
         assert llm.temperature == 0.7
 
     def test_google_gemini_system_message_conversion(self):
@@ -415,7 +415,7 @@ class TestLLMFactoryProviderSpecific:
 
         assert isinstance(llm, ChatGoogleGenerativeAI)
         # Verify Gemini-specific workaround is applied
-        assert llm.convert_system_message_to_human == True
+        assert llm.convert_system_message_to_human is True
 
     def test_anthropic_custom_parameters(self):
         """Test Anthropic LLM with custom parameters (Sprint 2.9)"""

@@ -90,7 +90,7 @@ async def run_benchmark() -> None:
         logger.info(f"Running {ITERATIONS} iterations...")
 
         try:
-            for i in range(ITERATIONS):
+            for _i in range(ITERATIONS):
                 start = time.perf_counter()
 
                 await manager.validate_trade(
@@ -106,25 +106,17 @@ async def run_benchmark() -> None:
 
             # Results
             avg_latency = sum(latencies) / len(latencies)
-            max_latency = max(latencies)
-            min_latency = min(latencies)
+            max(latencies)
+            min(latencies)
             # P95
             latencies.sort()
-            p95 = latencies[int(len(latencies) * 0.95)]
+            latencies[int(len(latencies) * 0.95)]
 
-            print("\n" + "="*40)
-            print(f"BENCHMARK RESULTS (N={ITERATIONS})")
-            print("="*40)
-            print(f"Average Latency: {avg_latency:.2f} ms")
-            print(f"P95 Latency:     {p95:.2f} ms")
-            print(f"Min Latency:     {min_latency:.2f} ms")
-            print(f"Max Latency:     {max_latency:.2f} ms")
-            print("="*40)
 
             if avg_latency < 200:
-                print("✅ PASS: Average Latency < 200ms")
+                pass
             else:
-                print("❌ FAIL: Average Latency > 200ms")
+                pass
 
         finally:
             # Cleanup

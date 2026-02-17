@@ -101,7 +101,7 @@ class TestSeedData:
         # Setup: Create some test data
         user = create_test_user(db)
         create_test_price_data(db, count=10)
-        algo = create_test_algorithm(db, user)
+        create_test_algorithm(db, user)
 
         # Clear all data
         clear_all_data(db, commit=False)

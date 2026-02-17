@@ -13,7 +13,8 @@ NC='\033[0m' # No Color
 # Load environment variables
 if [ -f .env ]; then
     set -a
-    source <(cat .env | grep -v '^#' | grep -v '^$' | sed 's/#.*//')
+    # shellcheck disable=SC1090
+    . .env
     set +a
 else
     echo -e "${RED}Error: .env file not found${NC}"

@@ -105,7 +105,7 @@ class PnLMetrics:
 class PnLEngine:
     """
     Profit & Loss Calculation Engine
-    
+
     Calculates realized and unrealized P&L, tracks performance metrics,
     and provides historical P&L data aggregation.
     """
@@ -113,7 +113,7 @@ class PnLEngine:
     def __init__(self, session: Session):
         """
         Initialize P&L engine
-        
+
         Args:
             session: Database session
         """
@@ -129,17 +129,17 @@ class PnLEngine:
     ) -> Decimal:
         """
         Calculate realized P&L from completed trades
-        
+
         Realized P&L is calculated from the difference between sell price and
         matching buy prices using FIFO (First In First Out) accounting method.
-        
+
         Args:
             user_id: User UUID
             start_date: Start date for P&L calculation (inclusive)
             end_date: End date for P&L calculation (inclusive)
             algorithm_id: Filter by algorithm ID
             coin_type: Filter by coin type
-            
+
         Returns:
             Realized P&L as Decimal
         """
@@ -223,14 +223,14 @@ class PnLEngine:
     ) -> Decimal:
         """
         Calculate unrealized P&L from current positions
-        
+
         Unrealized P&L is the difference between current market value
         and the total cost of current positions.
-        
+
         Args:
             user_id: User UUID
             coin_type: Filter by coin type
-            
+
         Returns:
             Unrealized P&L as Decimal
         """
@@ -269,12 +269,12 @@ class PnLEngine:
     ) -> PnLMetrics:
         """
         Get comprehensive P&L summary with performance metrics
-        
+
         Args:
             user_id: User UUID
             start_date: Start date for analysis
             end_date: End date for analysis
-            
+
         Returns:
             PnLMetrics object with all performance statistics
         """
@@ -377,12 +377,12 @@ class PnLEngine:
     ) -> dict[UUID, PnLMetrics]:
         """
         Get P&L metrics grouped by algorithm
-        
+
         Args:
             user_id: User UUID
             start_date: Start date for analysis
             end_date: End date for analysis
-            
+
         Returns:
             Dictionary mapping algorithm_id to PnLMetrics
         """
@@ -418,12 +418,12 @@ class PnLEngine:
     ) -> dict[str, PnLMetrics]:
         """
         Get P&L metrics grouped by cryptocurrency
-        
+
         Args:
             user_id: User UUID
             start_date: Start date for analysis
             end_date: End date for analysis
-            
+
         Returns:
             Dictionary mapping coin_type to PnLMetrics
         """
@@ -462,13 +462,13 @@ class PnLEngine:
     ) -> list[dict[str, Any]]:
         """
         Get historical P&L data aggregated by time interval
-        
+
         Args:
             user_id: User UUID
             start_date: Start date for historical data
             end_date: End date for historical data
             interval: Aggregation interval ('hour', 'day', 'week', 'month')
-            
+
         Returns:
             List of dictionaries with timestamp and P&L data
         """
@@ -510,10 +510,10 @@ class PnLEngine:
     def _get_current_price(self, coin_type: str) -> Decimal | None:
         """
         Get the most recent price for a cryptocurrency
-        
+
         Args:
             coin_type: Cryptocurrency symbol
-            
+
         Returns:
             Current price or None if not available
         """
@@ -540,10 +540,10 @@ class PnLEngine:
 def get_pnl_engine(session: Session) -> PnLEngine:
     """
     Factory function to create a PnLEngine instance
-    
+
     Args:
         session: Database session
-        
+
     Returns:
         PnLEngine instance
     """

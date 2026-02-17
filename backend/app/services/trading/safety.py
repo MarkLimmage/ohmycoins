@@ -30,7 +30,7 @@ class SafetyViolation(Exception):
 class TradingSafetyManager:
     """
     Manages trading safety mechanisms and risk controls
-    
+
     Features:
     - Maximum position size limits (Dynamic via RiskRules)
     - Kill Switch (Redis-backed for speed)
@@ -290,7 +290,7 @@ class TradingSafetyManager:
         # --- Dynamic Risk Rule Check (Merged from Track A) ---
         active_rules = self.session.exec(
             select(RiskRule).where(
-                RiskRule.is_active == True,
+                RiskRule.is_active is True,
                 RiskRule.rule_type == "max_position_size"
             )
         ).all()

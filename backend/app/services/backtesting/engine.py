@@ -68,7 +68,7 @@ class BacktestService:
     def run_backtest(self, config: BacktestConfig, strategy_fn: Callable[[pd.DataFrame, dict], pd.DataFrame] = None, fee_rate: float = 0.001, slippage: float = 0.0005) -> BacktestResult:
         """
         Run a backtest for a given configuration.
-        
+
         Args:
             config: BacktestConfiguration object
             strategy_fn: Optional function to calculate signals. If None, uses a default simple strategy.
@@ -164,7 +164,6 @@ class BacktestService:
         max_drawdown = df["drawdown"].min()
 
         # Sharpe Ratio (assuming constant risk free rate of 0 for simplicity)
-        risk_free_rate = 0.0
         # Annualized Sharpe (assuming 5min candles -> 288 per day -> 365 days)
         periods_per_year = 288 * 365
         if df["strategy_returns"].std() == 0:

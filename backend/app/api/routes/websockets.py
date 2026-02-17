@@ -213,8 +213,8 @@ async def websocket_floor_pnl(
                     ]
                 }
                 await websocket.send_text(json.dumps(algos))
-        except Exception as e:
-            print(f"Mock data error: {e}")
+        except Exception:
+            pass
 
     task = asyncio.create_task(send_mock_data())
 

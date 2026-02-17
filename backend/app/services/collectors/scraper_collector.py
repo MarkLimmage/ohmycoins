@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 class ScraperCollector(BaseCollector):
     """
     Base class for web scraping-based collectors.
-    
+
     Provides:
     - Abstract interface for scraping operations
     - Common scraping utilities
     - Error handling for scraping failures
-    
+
     Subclasses should implement either:
     - scrape_static() for static HTML scraping (BeautifulSoup)
     - scrape_dynamic() for dynamic content scraping (Playwright)
@@ -37,7 +37,7 @@ class ScraperCollector(BaseCollector):
     ):
         """
         Initialize the scraper collector.
-        
+
         Args:
             name: Unique name for this collector
             ledger: The ledger this collector belongs to
@@ -51,10 +51,10 @@ class ScraperCollector(BaseCollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect data by scraping the target URL.
-        
+
         Returns:
             List of dictionaries containing the scraped data
-        
+
         Raises:
             Exception: If scraping fails
         """
@@ -69,10 +69,10 @@ class ScraperCollector(BaseCollector):
     async def scrape_static(self) -> list[dict[str, Any]]:
         """
         Scrape data from static HTML using BeautifulSoup.
-        
+
         Returns:
             List of dictionaries containing the scraped data
-        
+
         Raises:
             Exception: If scraping fails
         """
@@ -82,10 +82,10 @@ class ScraperCollector(BaseCollector):
     async def scrape_dynamic(self) -> list[dict[str, Any]]:
         """
         Scrape data from dynamic content using Playwright.
-        
+
         Returns:
             List of dictionaries containing the scraped data
-        
+
         Raises:
             Exception: If scraping fails
         """

@@ -15,7 +15,7 @@ class VWAPStrategy(ExecutionStrategy):
     """
     Volume-Weighted Average Price (VWAP) Strategy.
     Splits order based on historical volume profile to match market liquidity.
-    
+
     Parameters:
     - duration_minutes (int): Total duration.
     - interval_minutes (int): Bucket size (default 5).

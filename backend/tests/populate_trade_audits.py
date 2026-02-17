@@ -11,7 +11,6 @@ USERNAME = os.getenv("FIRST_SUPERUSER", "admin@example.com")
 PASSWORD = os.getenv("FIRST_SUPERUSER_PASSWORD", "changethis")
 
 def main():
-    print(f"Connecting to {BASE_URL}...")
 
     # Authenticate
     try:
@@ -27,23 +26,19 @@ def main():
             })
 
         if r.status_code != 200:
-            print(f"Login failed: {r.status_code} {r.text}")
             return
 
         token = r.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
-        print("Logged in successfully.")
 
-    except Exception as e:
-        print(f"Connection error: {e}")
+    except Exception:
         return
 
     assets = ["BTC", "ETH", "SOL", "XRP", "ADA"]
     decisions = ["BUY", "SELL", "HOLD"]
     agents = ["strategy_momentum_v1", "strategy_mean_reversion_v2", "guard_rail_max_drawdown"]
 
-    print("Generating Trade Audit Logs...")
-    for i in range(15):
+    for _i in range(15):
         decision = random.choice(decisions)
         asset = random.choice(assets)
         agent_id = random.choice(agents)
@@ -76,9 +71,9 @@ def main():
         )
 
         if r.status_code == 200:
-            print(f"[{i+1}/15] Created: {decision} {asset} {'(Blocked)' if block_reason else ''}")
+            pass
         else:
-            print(f"[{i+1}/15] Failed: {r.status_code} {r.text}")
+            pass
 
         time.sleep(0.1)
 

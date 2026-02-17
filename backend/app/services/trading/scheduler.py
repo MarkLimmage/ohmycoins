@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class ExecutionScheduler:
     """
     Schedules and manages algorithm execution
-    
+
     Features:
     - Per-algorithm execution frequency configuration
     - Concurrent execution management
@@ -50,7 +50,7 @@ class ExecutionScheduler:
     ):
         """
         Initialize execution scheduler
-        
+
         Args:
             session: Database session
             api_key: Coinspot API key
@@ -89,12 +89,12 @@ class ExecutionScheduler:
     def load_deployed_algorithms(self) -> int:
         """
         Load active deployed algorithms from the database and schedule them.
-        
+
         Returns:
             Number of algorithms scheduled
         """
         logger.info("Loading deployed algorithms from database...")
-        stmt = select(DeployedAlgorithm, Algorithm).join(Algorithm).where(DeployedAlgorithm.is_active == True)
+        stmt = select(DeployedAlgorithm, Algorithm).join(Algorithm).where(DeployedAlgorithm.is_active is True)
         results = self.session.exec(stmt).all()
 
         count = 0
@@ -155,7 +155,7 @@ class ExecutionScheduler:
     ) -> str:
         """
         Schedule an algorithm for execution
-        
+
         Args:
             user_id: User ID
             algorithm_id: Algorithm ID
@@ -164,10 +164,10 @@ class ExecutionScheduler:
                 - 'interval:N:unit' for interval (e.g., 'interval:5:minutes')
                 - 'cron:expression' for cron (e.g., 'cron:0 */4 * * *')
             **kwargs: Additional scheduler arguments
-            
+
         Returns:
             Job ID
-            
+
         Raises:
             SchedulerError: If scheduling fails
         """
@@ -181,7 +181,7 @@ class ExecutionScheduler:
 
         # Add job to scheduler
         try:
-            job = self.scheduler.add_job(
+            self.scheduler.add_job(
                 func=self._execute_algorithm_job,
                 trigger=trigger,
                 id=job_id,
@@ -215,13 +215,13 @@ class ExecutionScheduler:
     def _parse_frequency(self, frequency: str) -> Any:
         """
         Parse frequency string into APScheduler trigger
-        
+
         Args:
             frequency: Frequency string
-            
+
         Returns:
             APScheduler trigger
-            
+
         Raises:
             SchedulerError: If frequency format is invalid
         """
@@ -279,7 +279,7 @@ class ExecutionScheduler:
     ) -> None:
         """
         Execute algorithm job (called by scheduler)
-        
+
         Args:
             user_id: User ID
             algorithm_id: Algorithm ID
@@ -320,7 +320,7 @@ class ExecutionScheduler:
     async def _get_market_data(self) -> dict[str, Any]:
         """
         Get current market data
-        
+
         Returns:
             Dictionary with market data
         """
@@ -367,11 +367,11 @@ class ExecutionScheduler:
     ) -> bool:
         """
         Unschedule an algorithm
-        
+
         Args:
             user_id: User ID
             algorithm_id: Algorithm ID
-            
+
         Returns:
             True if algorithm was unscheduled, False if not found
         """
@@ -398,11 +398,11 @@ class ExecutionScheduler:
     ) -> bool:
         """
         Pause an algorithm (keep schedule but don't execute)
-        
+
         Args:
             user_id: User ID
             algorithm_id: Algorithm ID
-            
+
         Returns:
             True if algorithm was paused, False if not found
         """
@@ -424,11 +424,11 @@ class ExecutionScheduler:
     ) -> bool:
         """
         Resume a paused algorithm
-        
+
         Args:
             user_id: User ID
             algorithm_id: Algorithm ID
-            
+
         Returns:
             True if algorithm was resumed, False if not found
         """
@@ -446,7 +446,7 @@ class ExecutionScheduler:
     def get_scheduled_algorithms(self) -> list[dict[str, Any]]:
         """
         Get list of all scheduled algorithms
-        
+
         Returns:
             List of scheduled algorithm info
         """
@@ -465,7 +465,7 @@ class ExecutionScheduler:
     def get_scheduler_status(self) -> dict[str, Any]:
         """
         Get scheduler status
-        
+
         Returns:
             Dictionary with scheduler status
         """
@@ -488,12 +488,12 @@ def get_execution_scheduler(
 ) -> ExecutionScheduler:
     """
     Get or create the global execution scheduler instance
-    
+
     Args:
         session: Database session
         api_key: Coinspot API key
         api_secret: Coinspot API secret
-        
+
     Returns:
         ExecutionScheduler instance
     """

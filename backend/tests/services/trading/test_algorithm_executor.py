@@ -320,7 +320,7 @@ class TestExecutionScheduler:
         execution_scheduler.start()
 
         # Schedule multiple algorithms
-        for i in range(3):
+        for _i in range(3):
             algorithm = MockAlgorithm({'action': 'hold'})
             execution_scheduler.schedule_algorithm(
                 user_id=test_user.id,

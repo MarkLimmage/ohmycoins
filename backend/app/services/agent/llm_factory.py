@@ -34,21 +34,21 @@ logger = logging.getLogger(__name__)
 class LLMFactory:
     """
     Factory for creating LLM instances based on user configuration or system defaults.
-    
+
     This factory supports the BYOM (Bring Your Own Model) feature by allowing
     users to configure their own API keys for various LLM providers.
-    
+
     Example usage:
         # System default LLM (from environment variables)
         llm = LLMFactory.create_llm(session=db_session, user_id=user.id)
-        
+
         # User-specific LLM (uses their configured credentials)
         llm = LLMFactory.create_llm(
             session=db_session,
             user_id=user.id,
             credential_id=credential.id
         )
-        
+
         # Specific provider override
         llm = LLMFactory.create_llm_from_api_key(
             provider="google",
@@ -66,21 +66,21 @@ class LLMFactory:
     ):
         """
         Create an LLM instance based on user configuration or system default.
-        
+
         Decision logic:
         1. If credential_id provided: Use that specific credential
         2. If prefer_default=True: Use system default (ignore user credentials)
         3. Otherwise: Use user's default credential if exists, else system default
-        
+
         Args:
             session: Database session
             user_id: User ID to retrieve credentials for
             credential_id: Optional specific credential ID to use
             prefer_default: If True, always use system default regardless of user credentials
-            
+
         Returns:
             LangChain LLM instance (ChatOpenAI, ChatGoogleGenerativeAI, etc.)
-            
+
         Raises:
             ValueError: If credential_id provided but not found or not owned by user
         """
@@ -108,8 +108,8 @@ class LLMFactory:
         # Option 3: Find user's default credential
         statement = select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == user_id,
-            UserLLMCredentials.is_default == True,
-            UserLLMCredentials.is_active == True
+            UserLLMCredentials.is_default is True,
+            UserLLMCredentials.is_active is True
         )
         default_credential = session.exec(statement).first()
 
@@ -128,10 +128,10 @@ class LLMFactory:
     def _create_llm_from_credential(credential: UserLLMCredentials):
         """
         Create an LLM instance from a UserLLMCredentials record.
-        
+
         Args:
             credential: UserLLMCredentials database record
-            
+
         Returns:
             LangChain LLM instance
         """
@@ -156,21 +156,21 @@ class LLMFactory:
     ):
         """
         Create an LLM instance directly from provider and API key.
-        
+
         This method is useful for:
         1. Testing API keys before saving them
         2. One-off LLM creation without database
         3. Integration tests
-        
+
         Args:
             provider: LLM provider ("openai", "google", "anthropic")
             api_key: API key for the provider
             model_name: Optional model name (uses provider default if not specified)
             **kwargs: Additional provider-specific parameters
-            
+
         Returns:
             LangChain LLM instance
-            
+
         Raises:
             ValueError: If provider is not supported
         """
@@ -192,7 +192,7 @@ class LLMFactory:
     def _create_system_default_llm():
         """
         Create system default LLM from environment configuration.
-        
+
         Returns:
             LangChain LLM instance configured from settings
         """
@@ -232,12 +232,12 @@ class LLMFactory:
     ) -> ChatOpenAI:
         """
         Create OpenAI LLM instance.
-        
+
         Args:
             api_key: OpenAI API key
             model_name: Model name (defaults to gpt-4-turbo-preview)
             **kwargs: Additional ChatOpenAI parameters
-            
+
         Returns:
             ChatOpenAI instance
         """
@@ -263,12 +263,12 @@ class LLMFactory:
     ) -> ChatGoogleGenerativeAI:
         """
         Create Google Gemini LLM instance.
-        
+
         Args:
             api_key: Google API key
             model_name: Model name (defaults to gemini-1.5-pro)
             **kwargs: Additional ChatGoogleGenerativeAI parameters
-            
+
         Returns:
             ChatGoogleGenerativeAI instance
         """
@@ -296,12 +296,12 @@ class LLMFactory:
     ) -> ChatAnthropic:
         """
         Create Anthropic Claude LLM instance.
-        
+
         Args:
             api_key: Anthropic API key
             model_name: Model name (defaults to claude-3-sonnet-20240229)
             **kwargs: Additional ChatAnthropic parameters
-            
+
         Returns:
             ChatAnthropic instance
         """
@@ -322,7 +322,7 @@ class LLMFactory:
     def get_supported_providers() -> list[str]:
         """
         Get list of supported LLM providers.
-        
+
         Returns:
             List of provider names
         """
@@ -332,7 +332,7 @@ class LLMFactory:
     def get_provider_default_models() -> dict[str, str]:
         """
         Get default model names for each provider.
-        
+
         Returns:
             Dict mapping provider name to default model
         """
@@ -352,15 +352,15 @@ def create_llm(
 ):
     """
     Convenience function for creating LLM instances.
-    
+
     This is a shorthand for LLMFactory.create_llm().
-    
+
     Args:
         session: Database session
         user_id: User ID
         credential_id: Optional specific credential ID
         prefer_default: If True, use system default
-        
+
     Returns:
         LangChain LLM instance
     """

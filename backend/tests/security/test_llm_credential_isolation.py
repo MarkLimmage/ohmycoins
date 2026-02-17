@@ -103,7 +103,7 @@ class TestUserCredentialIsolation:
     ):
         """
         Test 1: User A cannot access User B's credentials via API.
-        
+
         Security Requirement: Users must only see their own credentials.
         Expected: GET /me/llm-credentials only returns current user's credentials.
         """
@@ -145,7 +145,7 @@ class TestUserCredentialIsolation:
     ):
         """
         Test 2: User A cannot set User B's credential as their default.
-        
+
         Security Requirement: Users can only modify their own credentials.
         Expected: Attempting to set another user's credential fails with 403/404.
         """
@@ -169,7 +169,7 @@ class TestUserCredentialIsolation:
         # Verify user B's credential is still their default
         db_credential = session.get(UserLLMCredentials, user_b_credential.id)
         assert db_credential.user_id == user_b.id
-        assert db_credential.is_default == True
+        assert db_credential.is_default is True
 
     def test_user_cannot_delete_other_users_credentials(
         self,
@@ -182,7 +182,7 @@ class TestUserCredentialIsolation:
     ):
         """
         Test 3: User A cannot delete User B's credentials.
-        
+
         Security Requirement: Users can only delete their own credentials.
         Expected: DELETE attempt fails with 403/404, credential remains.
         """
@@ -206,7 +206,7 @@ class TestUserCredentialIsolation:
         # Verify user B's credential still exists
         db_credential = session.get(UserLLMCredentials, user_b_credential.id)
         assert db_credential is not None
-        assert db_credential.is_active == True
+        assert db_credential.is_active is True
         assert db_credential.user_id == user_b.id
 
     def test_database_queries_filter_by_user_id(
@@ -219,14 +219,14 @@ class TestUserCredentialIsolation:
     ):
         """
         Test 4: Database queries properly filter by user_id.
-        
+
         Security Requirement: All credential queries must filter by user_id.
         Expected: Cannot retrieve credentials without proper user_id filter.
         """
         # Query all active credentials (BAD - should never do this)
         all_credentials = session.exec(
             select(UserLLMCredentials).where(
-                UserLLMCredentials.is_active == True
+                UserLLMCredentials.is_active is True
             )
         ).all()
 
@@ -237,7 +237,7 @@ class TestUserCredentialIsolation:
         user_a_credentials = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == user_a.id,
-                UserLLMCredentials.is_active == True
+                UserLLMCredentials.is_active is True
             )
         ).all()
 
@@ -250,7 +250,7 @@ class TestUserCredentialIsolation:
         user_b_credentials = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == user_b.id,
-                UserLLMCredentials.is_active == True
+                UserLLMCredentials.is_active is True
             )
         ).all()
 
@@ -269,7 +269,7 @@ class TestUserCredentialIsolation:
     ):
         """
         Test 5: LLMFactory.create_llm() enforces credential ownership.
-        
+
         Security Requirement: Cannot use another user's credentials.
         Expected: ValueError when trying to use credential not owned by user.
         """
@@ -309,7 +309,7 @@ class TestAgentSessionIsolation:
     ):
         """
         Test 6: No credential leakage in shared agent sessions.
-        
+
         Security Requirement: Agent sessions must not expose credentials.
         Expected: Agent execution context doesn't include raw API keys.
         """
@@ -402,7 +402,7 @@ class TestDirectDatabaseAccessPrevention:
     def test_cannot_query_credentials_without_user_context(self, session: Session):
         """
         Test that application code requires user context for queries.
-        
+
         This is a design pattern test - all credential access should
         go through functions that require user_id parameter.
         """
@@ -414,7 +414,7 @@ class TestDirectDatabaseAccessPrevention:
             return session.exec(
                 select(UserLLMCredentials).where(
                     UserLLMCredentials.user_id == user_id,
-                    UserLLMCredentials.is_active == True
+                    UserLLMCredentials.is_active is True
                 )
             ).all()
 
@@ -422,7 +422,7 @@ class TestDirectDatabaseAccessPrevention:
             """WRONG: No user_id requirement - NEVER DO THIS"""
             return session.exec(
                 select(UserLLMCredentials).where(
-                    UserLLMCredentials.is_active == True
+                    UserLLMCredentials.is_active is True
                 )
             ).all()
 
@@ -448,7 +448,7 @@ class TestSoftDeleteIsolation:
     ):
         """
         Test that inactive (soft-deleted) credentials are not returned.
-        
+
         Security Requirement: Deleted credentials should not be accessible.
         Expected: Only active credentials returned in API responses.
         """
@@ -492,7 +492,7 @@ class TestSoftDeleteIsolation:
         # Should only return active credential
         assert len(credentials) == 1
         assert credentials[0]["id"] == str(credential1.id)
-        assert credentials[0]["is_active"] == True
+        assert credentials[0]["is_active"] is True
 
         # Should not return inactive credential
         credential_ids = [c["id"] for c in credentials]
@@ -505,7 +505,7 @@ class TestSoftDeleteIsolation:
     ):
         """
         Test that LLM factory rejects inactive credentials.
-        
+
         Security Requirement: Cannot use soft-deleted credentials.
         Expected: ValueError when trying to use inactive credential.
         """

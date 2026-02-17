@@ -50,7 +50,7 @@ class QualityMetrics:
 class DataQualityMonitor:
     """
     Monitor data quality for Phase 2.5 collectors.
-    
+
     Performs three types of checks:
     1. Completeness: Ensures expected data is present
     2. Timeliness: Checks data freshness and collection schedules
@@ -64,10 +64,10 @@ class DataQualityMonitor:
     async def check_all(self, session: Session) -> QualityMetrics:
         """
         Run all quality checks.
-        
+
         Args:
             session: Database session
-        
+
         Returns:
             QualityMetrics object with results
         """
@@ -115,16 +115,16 @@ class DataQualityMonitor:
     async def check_completeness(self, session: Session) -> QualityMetrics:
         """
         Check data completeness.
-        
+
         Validates that expected data is present for each collector:
         - Exchange Ledger: Price data
         - Human Ledger: Sentiment data
         - Catalyst Ledger: Events data
         - Glass Ledger: Protocol fundamentals
-        
+
         Args:
             session: Database session
-        
+
         Returns:
             QualityMetrics with completeness results
         """
@@ -193,14 +193,14 @@ class DataQualityMonitor:
     async def check_timeliness(self, session: Session) -> QualityMetrics:
         """
         Check data timeliness.
-        
+
         Validates that data is being collected according to schedule:
         - Recent data exists within expected collection intervals
         - No large gaps in data collection
-        
+
         Args:
             session: Database session
-        
+
         Returns:
             QualityMetrics with timeliness results
         """
@@ -306,15 +306,15 @@ class DataQualityMonitor:
     async def check_accuracy(self, session: Session) -> QualityMetrics:
         """
         Check data accuracy and integrity.
-        
+
         Validates:
         - No null/invalid values in critical fields
         - Data ranges are reasonable
         - Foreign key relationships are valid
-        
+
         Args:
             session: Database session
-        
+
         Returns:
             QualityMetrics with accuracy results
         """
@@ -328,7 +328,7 @@ class DataQualityMonitor:
             select(func.count(col(PriceData5Min.id)))
             .where(
                 (col(PriceData5Min.last) <= 0) |
-                (col(PriceData5Min.last) == None)
+                (col(PriceData5Min.last) is None)
             )
         ).one()
 
@@ -375,8 +375,8 @@ class DataQualityMonitor:
         invalid_catalysts = session.exec(
             select(func.count(col(CatalystEvents.id)))
             .where(
-                (col(CatalystEvents.event_type) == None) |
-                (col(CatalystEvents.detected_at) == None)
+                (col(CatalystEvents.event_type) is None) |
+                (col(CatalystEvents.detected_at) is None)
             )
         ).one()
 
@@ -409,11 +409,11 @@ class DataQualityMonitor:
     ) -> dict[str, Any] | None:
         """
         Generate alert if quality score is below threshold.
-        
+
         Args:
             metrics: Quality metrics to evaluate
             threshold: Minimum acceptable score (0.0-1.0)
-        
+
         Returns:
             Alert dictionary if threshold breached, None otherwise
         """

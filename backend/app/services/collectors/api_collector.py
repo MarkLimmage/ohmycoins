@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class APICollector(BaseCollector):
     """
     Base class for API-based collectors with retry logic and rate limiting.
-    
+
     Provides:
     - Async HTTP client with proper connection management
     - Exponential backoff retry logic
@@ -45,7 +45,7 @@ class APICollector(BaseCollector):
     ):
         """
         Initialize the API collector.
-        
+
         Args:
             name: Unique name for this collector
             ledger: The ledger this collector belongs to
@@ -64,7 +64,7 @@ class APICollector(BaseCollector):
     async def _enforce_rate_limit(self) -> None:
         """
         Enforce rate limiting by waiting if necessary.
-        
+
         Ensures minimum delay between requests based on rate_limit_delay.
         """
         if self.rate_limit_delay > 0 and self._last_request_time:
@@ -82,15 +82,15 @@ class APICollector(BaseCollector):
     ) -> dict[str, Any] | list[Any]:
         """
         Fetch JSON data from an API endpoint with retry logic.
-        
+
         Args:
             endpoint: API endpoint path (e.g., "/v1/protocols")
             params: Query parameters to include in the request
             headers: Additional HTTP headers
-        
+
         Returns:
             Parsed JSON response (dict or list)
-        
+
         Raises:
             aiohttp.ClientError: If the request fails after all retries
             ValueError: If the response is not valid JSON
@@ -137,15 +137,15 @@ class APICollector(BaseCollector):
     ) -> str:
         """
         Fetch text data from an API endpoint with retry logic.
-        
+
         Args:
             endpoint: API endpoint path
             params: Query parameters to include in the request
             headers: Additional HTTP headers
-        
+
         Returns:
             Response text content
-        
+
         Raises:
             aiohttp.ClientError: If the request fails after all retries
         """

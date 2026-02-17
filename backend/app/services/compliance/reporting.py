@@ -41,11 +41,11 @@ class SlippageCalculator:
         """
         Calculates slippage in Basis Points (bps).
         Formula: ((Avg Fill Price - Arrival Mid Price) / Arrival Mid Price) * 10000
-        
+
         Args:
             avg_fill_price: The weighted average price of all fills.
             arrival_mid_price: The market mid-price when the parent order arrived.
-        
+
         Returns:
             float: Slippage in basis points.
         """

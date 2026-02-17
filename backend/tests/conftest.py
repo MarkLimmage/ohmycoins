@@ -79,10 +79,9 @@ def db() -> Generator[Session, None, None]:
             session.execute(delete(User))
 
             session.commit()
-        except Exception as e:
+        except Exception:
             session.rollback()
             # Log but don't fail - test cleanup is best effort
-            print(f"Warning: Test cleanup encountered error: {e}")
 
 
 @pytest.fixture(scope="function")

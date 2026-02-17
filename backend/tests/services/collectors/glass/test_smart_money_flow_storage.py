@@ -299,7 +299,7 @@ class TestNansenCollectorStorage:
         ]
 
         # Should store only valid record and continue despite error
-        stored_count = await collector.store_data(data, session)
+        await collector.store_data(data, session)
 
         # At least one should be stored
         flows = session.exec(select(SmartMoneyFlow)).all()

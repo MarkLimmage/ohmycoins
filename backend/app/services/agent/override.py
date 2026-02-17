@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class OverrideManager:
     """
     Manages user overrides in the agentic workflow.
-    
+
     Allows users to:
     - Override model selection
     - Override hyperparameters
@@ -40,15 +40,15 @@ class OverrideManager:
     ) -> dict[str, Any]:
         """
         Apply a user override to the workflow state.
-        
+
         Args:
             state: Current workflow state
             override_type: Type of override being applied
             override_data: Override parameters
-            
+
         Returns:
             Updated state with override applied
-            
+
         Raises:
             ValueError: If override_type is invalid or override_data is malformed
         """
@@ -108,12 +108,12 @@ class OverrideManager:
     ) -> str | None:
         """
         Validate override data based on type.
-        
+
         Args:
             override_type: Type of override
             override_data: Override parameters
             state: Current workflow state
-            
+
         Returns:
             Error message if validation fails, None otherwise
         """
@@ -139,7 +139,7 @@ class OverrideManager:
 
             # Validate hyperparameter values are safe
             for key, value in hyperparameters.items():
-                if not isinstance(value, (int, float, str, bool)):
+                if not isinstance(value, int | float | str | bool):
                     return f"Hyperparameter {key} has invalid type {type(value)}"
 
         elif override_type == "data_preprocessing":
@@ -258,10 +258,10 @@ class OverrideManager:
     def get_available_override_points(self, state: dict[str, Any]) -> dict[str, bool]:
         """
         Get available override points based on current state.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Dictionary of override points and their availability
         """
@@ -302,12 +302,12 @@ def apply_user_override(
 ) -> dict[str, Any]:
     """
     Convenience function to apply a user override.
-    
+
     Args:
         state: Current workflow state
         override_type: Type of override
         override_data: Override parameters
-        
+
     Returns:
         Updated state with override applied
     """
@@ -317,10 +317,10 @@ def apply_user_override(
 def get_override_points(state: dict[str, Any]) -> dict[str, bool]:
     """
     Convenience function to get available override points.
-    
+
     Args:
         state: Current workflow state
-        
+
     Returns:
         Dictionary of available override points
     """

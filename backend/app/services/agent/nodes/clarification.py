@@ -2,7 +2,7 @@
 """
 Clarification Node for Human-in-the-Loop workflow.
 
-This node detects ambiguous inputs or data issues and generates 
+This node detects ambiguous inputs or data issues and generates
 clarification questions for the user.
 """
 
@@ -20,16 +20,16 @@ logger = logging.getLogger(__name__)
 def clarification_node(state: dict[str, Any]) -> dict[str, Any]:
     """
     Detect ambiguous inputs and generate clarification questions.
-    
+
     This node analyzes the current state to determine if clarification
     is needed from the user. Common scenarios include:
     - Ambiguous user goals (e.g., "predict prices" without specifying coins or timeframe)
     - Insufficient data for analysis
     - Multiple valid interpretations of the goal
-    
+
     Args:
         state: Current workflow state
-        
+
     Returns:
         Updated state with clarifications_needed and awaiting_clarification fields
     """
@@ -105,10 +105,10 @@ Return questions in a simple list format, one per line.
 def _is_goal_ambiguous(goal: str) -> bool:
     """
     Determine if a user goal is ambiguous.
-    
+
     Args:
         goal: User's stated goal
-        
+
     Returns:
         True if goal is ambiguous and needs clarification
     """
@@ -131,10 +131,10 @@ def _is_goal_ambiguous(goal: str) -> bool:
 def _generate_template_questions(goal: str) -> list[str]:
     """
     Generate template-based clarification questions as fallback.
-    
+
     Args:
         goal: User's stated goal
-        
+
     Returns:
         List of clarification questions
     """
@@ -160,10 +160,10 @@ def _generate_template_questions(goal: str) -> list[str]:
 def _check_data_quality(retrieved_data: dict[str, Any]) -> list[str]:
     """
     Check retrieved data for quality issues.
-    
+
     Args:
         retrieved_data: Data retrieved by DataRetrievalAgent
-        
+
     Returns:
         List of data quality issues requiring user clarification
     """
@@ -193,11 +193,11 @@ def handle_clarification_response(
 ) -> dict[str, Any]:
     """
     Process user responses to clarification questions.
-    
+
     Args:
         state: Current workflow state
         responses: Dict mapping question to user response
-        
+
     Returns:
         Updated state with clarifications incorporated
     """
@@ -241,11 +241,11 @@ def _incorporate_clarifications(
 ) -> str:
     """
     Incorporate user clarifications into the goal statement.
-    
+
     Args:
         original_goal: Original user goal
         clarifications: User responses to clarification questions
-        
+
     Returns:
         Enhanced goal statement
     """

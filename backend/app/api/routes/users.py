@@ -304,7 +304,7 @@ def create_llm_credentials(
 ) -> Any:
     """
     Create new LLM API credentials for the current user (BYOM feature).
-    
+
     Credentials are encrypted before storage using AES-256.
     Multiple credentials can be stored (one per provider).
     """
@@ -313,7 +313,7 @@ def create_llm_credentials(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
             UserLLMCredentials.provider == credentials_in.provider.lower(),
-            UserLLMCredentials.is_active == True
+            UserLLMCredentials.is_active is True
         )
     ).first()
 
@@ -338,7 +338,7 @@ def create_llm_credentials(
         existing_defaults = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == current_user.id,
-                UserLLMCredentials.is_default == True
+                UserLLMCredentials.is_default is True
             )
         ).all()
         for cred in existing_defaults:
@@ -385,14 +385,14 @@ def list_llm_credentials(
 ) -> Any:
     """
     List all LLM API credentials for the current user (BYOM feature).
-    
+
     Returns masked credentials for security.
     Only returns active credentials by default.
     """
     credentials_list = session.exec(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.is_active == True
+            UserLLMCredentials.is_active is True
         )
     ).all()
 
@@ -431,7 +431,7 @@ def set_default_llm_credential(
 ) -> Any:
     """
     Set a specific LLM credential as the default for the user.
-    
+
     Unsets any existing default credentials.
     """
     credential = session.get(UserLLMCredentials, credential_id)
@@ -449,7 +449,7 @@ def set_default_llm_credential(
     existing_defaults = session.exec(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.is_default == True
+            UserLLMCredentials.is_default is True
         )
     ).all()
     for cred in existing_defaults:
@@ -493,7 +493,7 @@ def delete_llm_credential(
 ) -> Any:
     """
     Delete (soft delete) an LLM credential.
-    
+
     Sets is_active=False instead of actually deleting for audit purposes.
     """
     credential = session.get(UserLLMCredentials, credential_id)
@@ -522,7 +522,7 @@ async def validate_llm_credential(
 ) -> Any:
     """
     Validate an LLM API key before saving it.
-    
+
     Tests the API key by making a simple request to the provider.
     Does NOT save the credential - use POST /me/llm-credentials to save.
     """

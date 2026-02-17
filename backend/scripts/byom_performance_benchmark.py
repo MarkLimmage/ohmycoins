@@ -114,7 +114,6 @@ def create_llm_for_provider(provider: str) -> Any:
 
 def benchmark_llm(llm: Any, provider: str, prompt: str) -> dict[str, Any]:
     """Run benchmark for a single LLM"""
-    print(f"  Testing {provider}...", end=" ", flush=True)
 
     start_time = time.time()
 
@@ -151,7 +150,6 @@ def benchmark_llm(llm: Any, provider: str, prompt: str) -> dict[str, Any]:
         output_cost = (output_tokens / 1_000_000) * float(costs["output"]) # type: ignore
         total_cost = input_cost + output_cost
 
-        print(f"✓ ({response_time:.2f}s)")
 
         return {
             "provider": provider,
@@ -172,7 +170,6 @@ def benchmark_llm(llm: Any, provider: str, prompt: str) -> dict[str, Any]:
     except Exception as e:
         end_time = time.time()
         response_time = end_time - start_time
-        print(f"✗ Error: {str(e)[:50]}")
 
         return {
             "provider": provider,
@@ -185,37 +182,27 @@ def benchmark_llm(llm: Any, provider: str, prompt: str) -> dict[str, Any]:
 
 def print_comparison_table(results: list[dict[str, Any]], prompt_name: str) -> None:
     """Print formatted comparison table"""
-    print(f"\n{'='*80}")
-    print(f"Benchmark: {prompt_name}")
-    print(f"{'='*80}")
 
     # Filter successful results
     successful = [r for r in results if r["success"]]
 
     if not successful:
-        print("No successful responses")
         return
 
     # Print header
-    print(f"\n{'Provider':<15} {'Model':<30} {'Time (s)':<10} {'Tokens':<15} {'Cost ($)':<10}")
-    print(f"{'-'*15} {'-'*30} {'-'*10} {'-'*15} {'-'*10}")
 
     # Print results sorted by response time
     for result in sorted(successful, key=lambda x: x["response_time"]):
-        provider = result["provider"].capitalize()
-        model = result["model"][:28]
-        time_str = f"{result['response_time']:.2f}"
-        tokens_str = f"{result['total_tokens']}" if result["total_tokens"] > 0 else "N/A"
-        cost_str = f"{result['total_cost']:.6f}" if result["total_cost"] > 0 else "N/A"
+        result["provider"].capitalize()
+        result["model"][:28]
+        f"{result['response_time']:.2f}"
+        f"{result['total_tokens']}" if result["total_tokens"] > 0 else "N/A"
+        f"{result['total_cost']:.6f}" if result["total_cost"] > 0 else "N/A"
 
-        print(f"{provider:<15} {model:<30} {time_str:<10} {tokens_str:<15} {cost_str:<10}")
 
     # Print response previews
-    print("\nResponse Previews:")
-    print(f"{'-'*80}")
     for result in successful:
-        print(f"\n{result['provider'].upper()}:")
-        print(f"  {result['response_preview']}...")
+        pass
 
 
 def save_results(all_results: dict[str, list[dict[str, Any]]], output_file: str) -> None:
@@ -226,7 +213,6 @@ def save_results(all_results: dict[str, list[dict[str, Any]]], output_file: str)
             "results": all_results
         }, f, indent=2)
 
-    print(f"\n✓ Results saved to: {output_file}")
 
 
 # ============================================================================
@@ -235,34 +221,23 @@ def save_results(all_results: dict[str, list[dict[str, Any]]], output_file: str)
 
 def run_benchmark() -> None:
     """Run the complete benchmark suite"""
-    print("\n" + "="*80)
-    print("BYOM Performance Benchmark")
-    print("="*80)
 
     # Check available API keys
     available_keys = check_api_keys()
-    print("\nAvailable API Keys:")
-    for provider, available in available_keys.items():
-        status = "✓" if available else "✗"
-        print(f"  {status} {provider.capitalize()}")
+    for provider, _available in available_keys.items():
+        pass
 
     providers_to_test = [p for p, available in available_keys.items() if available]
 
     if not providers_to_test:
-        print("\n❌ No API keys configured. Please set environment variables:")
-        print("   - OPENAI_API_KEY")
-        print("   - GOOGLE_API_KEY")
-        print("   - ANTHROPIC_API_KEY")
         sys.exit(1)
 
     # Create LLM instances
-    print("\nInitializing LLMs...")
     llms = {}
     for provider in providers_to_test:
         llm = create_llm_for_provider(provider)
         if llm:
             llms[provider] = llm
-            print(f"  ✓ {provider.capitalize()}: {COST_PER_1M_TOKENS[provider]['model']}")
 
     # Run benchmarks
     all_results = {}
@@ -271,9 +246,6 @@ def run_benchmark() -> None:
         prompt_name = str(benchmark["name"])
         prompt = str(benchmark["prompt"])
 
-        print(f"\n{'-'*80}")
-        print(f"Running benchmark: {prompt_name}")
-        print(f"{'-'*80}")
 
         results = []
         for provider, llm in llms.items():
@@ -285,9 +257,6 @@ def run_benchmark() -> None:
         print_comparison_table(results, prompt_name)
 
     # Print summary
-    print(f"\n{'='*80}")
-    print("SUMMARY")
-    print(f"{'='*80}")
 
     # Calculate averages
     for provider in providers_to_test:
@@ -298,23 +267,16 @@ def run_benchmark() -> None:
                     provider_results.append(result)
 
         if provider_results:
-            avg_time = sum(r["response_time"] for r in provider_results) / len(provider_results)
-            avg_tokens = sum(r["total_tokens"] for r in provider_results) / len(provider_results)
-            avg_cost = sum(r["total_cost"] for r in provider_results) / len(provider_results)
+            sum(r["response_time"] for r in provider_results) / len(provider_results)
+            sum(r["total_tokens"] for r in provider_results) / len(provider_results)
+            sum(r["total_cost"] for r in provider_results) / len(provider_results)
 
-            print(f"\n{provider.upper()}:")
-            print(f"  Average Response Time: {avg_time:.2f}s")
-            print(f"  Average Tokens: {avg_tokens:.0f}")
-            print(f"  Average Cost: ${avg_cost:.6f}")
 
     # Save results
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = f"benchmark_results_{timestamp}.json"
     save_results(all_results, output_file)
 
-    print(f"\n{'='*80}")
-    print("Benchmark complete!")
-    print(f"{'='*80}\n")
 
 
 # ============================================================================
@@ -325,10 +287,8 @@ if __name__ == "__main__":
     try:
         run_benchmark()
     except KeyboardInterrupt:
-        print("\n\n❌ Benchmark interrupted by user")
         sys.exit(1)
-    except Exception as e:
-        print(f"\n\n❌ Benchmark failed: {e}")
+    except Exception:
         import traceback
         traceback.print_exc()
         sys.exit(1)

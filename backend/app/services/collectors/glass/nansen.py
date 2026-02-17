@@ -27,14 +27,14 @@ logger = logging.getLogger(__name__)
 class NansenCollector(APICollector):
     """
     Collector for smart money wallet tracking from Nansen API.
-    
+
     Collects:
     - Smart money wallet net flows (USD)
     - Buying wallet addresses and counts
     - Selling wallet addresses and counts
     - Token/cryptocurrency being traded
     - Timestamp of flow data
-    
+
     API Documentation: https://docs.nansen.ai/
     """
 
@@ -50,7 +50,7 @@ class NansenCollector(APICollector):
     def __init__(self, api_key: str | None = None):
         """
         Initialize the Nansen collector.
-        
+
         Args:
             api_key: Nansen API key (if None, reads from environment)
         """
@@ -73,10 +73,10 @@ class NansenCollector(APICollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect smart money wallet flows from Nansen API.
-        
+
         Returns:
             List of smart money flow dictionaries
-        
+
         Raises:
             Exception: If API request fails
         """
@@ -137,13 +137,13 @@ class NansenCollector(APICollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected smart money flow data.
-        
+
         Args:
             data: Raw data collected from Nansen API
-        
+
         Returns:
             Validated data ready for storage
-        
+
         Raises:
             ValueError: If validation fails
         """
@@ -181,11 +181,11 @@ class NansenCollector(APICollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated smart money flow data in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

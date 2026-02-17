@@ -94,7 +94,7 @@ async def main() -> None:
         )
 
         # Start OrderExecutor
-        executor_task = asyncio.create_task(queue.start())
+        asyncio.create_task(queue.start())
 
         # 4. Setup Strategy & Executor
         strategy = MACrossoverStrategy(short_window=2, long_window=5)

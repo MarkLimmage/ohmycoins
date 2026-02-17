@@ -1,7 +1,7 @@
 """
 Tests for reporting tools - Week 11 Implementation
 
-Tests for generate_summary, create_comparison_report, generate_recommendations, 
+Tests for generate_summary, create_comparison_report, generate_recommendations,
 and create_visualizations functions.
 """
 
@@ -370,7 +370,7 @@ class TestCreateVisualizations:
         output_dir = temp_path / "new_subdir"
 
         try:
-            plots = create_visualizations(
+            create_visualizations(
                 evaluation_results=sample_evaluation_results,
                 model_results={},
                 analysis_results={},

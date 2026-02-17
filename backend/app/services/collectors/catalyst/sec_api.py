@@ -39,14 +39,14 @@ logger = logging.getLogger(__name__)
 class SECAPICollector(APICollector):
     """
     Collector for SEC filings from crypto-related companies.
-    
+
     Collects:
     - Form 4 (Insider Trading)
     - Form 8-K (Current Events)
     - Form 10-K (Annual Reports)
     - Form 10-Q (Quarterly Reports)
     - S-1 (IPO Registrations)
-    
+
     For companies: Coinbase, MicroStrategy, Marathon, Riot, Block
     """
 
@@ -94,10 +94,10 @@ class SECAPICollector(APICollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect recent SEC filings for monitored companies.
-        
+
         Returns:
             List of filing data dictionaries
-        
+
         Raises:
             Exception: If API request fails
         """
@@ -216,13 +216,13 @@ class SECAPICollector(APICollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected SEC filing data.
-        
+
         Args:
             data: Raw data collected from SEC EDGAR API
-        
+
         Returns:
             Validated data ready for storage
-        
+
         Raises:
             ValueError: If validation fails
         """
@@ -260,11 +260,11 @@ class SECAPICollector(APICollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated SEC filings in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

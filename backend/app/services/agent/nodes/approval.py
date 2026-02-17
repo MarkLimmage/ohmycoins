@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 def approval_node(state: dict[str, Any]) -> dict[str, Any]:
     """
     Check if approval is needed at current step.
-    
+
     Approval gates can be configured for different workflow steps:
     - before_data_fetch: Require approval before fetching data
     - before_training: Require approval before model training
     - before_deployment: Require approval before model deployment (always on)
-    
+
     Args:
         state: Current workflow state
-        
+
     Returns:
         Updated state with approval_needed and pending_approvals fields
     """
@@ -75,10 +75,10 @@ def approval_node(state: dict[str, Any]) -> dict[str, Any]:
 def _determine_approval_type(current_step: str) -> str | None:
     """
     Determine which type of approval is needed based on current step.
-    
+
     Args:
         current_step: Current workflow step
-        
+
     Returns:
         Approval type or None if no approval needed
     """
@@ -102,12 +102,12 @@ def _requires_approval(
 ) -> bool:
     """
     Check if this approval type requires user approval.
-    
+
     Args:
         approval_type: Type of approval being checked
         approval_gates: List of active approval gates
         approval_mode: "auto" or "manual"
-        
+
     Returns:
         True if approval is required
     """
@@ -126,11 +126,11 @@ def _requires_approval(
 def _create_approval_request(approval_type: str, state: dict[str, Any]) -> dict[str, Any]:
     """
     Create an approval request with context.
-    
+
     Args:
         approval_type: Type of approval
         state: Current workflow state
-        
+
     Returns:
         Approval request dictionary
     """
@@ -187,7 +187,7 @@ def _count_data_records(state: dict[str, Any]) -> int:
     retrieved_data = state.get("retrieved_data", {})
     total = 0
 
-    for data_type, data in retrieved_data.items():
+    for _data_type, data in retrieved_data.items():
         if isinstance(data, list):
             total += len(data)
 
@@ -216,7 +216,7 @@ def _get_model_accuracy(state: dict[str, Any]) -> str:
 def _grant_auto_approval(state: dict[str, Any], approval_type: str) -> None:
     """
     Grant automatic approval and record it.
-    
+
     Args:
         state: Workflow state
         approval_type: Type of approval being granted
@@ -237,11 +237,11 @@ def handle_approval_granted(
 ) -> dict[str, Any]:
     """
     Process user approval.
-    
+
     Args:
         state: Current workflow state
         approval_type: Type of approval granted
-        
+
     Returns:
         Updated state with approval recorded
     """
@@ -281,12 +281,12 @@ def handle_approval_rejected(
 ) -> dict[str, Any]:
     """
     Process user rejection of approval.
-    
+
     Args:
         state: Current workflow state
         approval_type: Type of approval rejected
         reason: Optional reason for rejection
-        
+
     Returns:
         Updated state with workflow stopped
     """

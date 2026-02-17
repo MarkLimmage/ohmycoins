@@ -166,7 +166,7 @@ class TestReportingAgentExecute:
         """Test that execute creates session-specific directory."""
         session_id = sample_state_complete["session_id"]
 
-        state = await reporting_agent.execute(sample_state_complete)
+        await reporting_agent.execute(sample_state_complete)
 
         session_dir = temp_artifacts_dir / session_id
         assert session_dir.exists()
@@ -213,17 +213,17 @@ class TestReportingAgentExecute:
         state = await reporting_agent.execute(sample_state_complete)
 
         results = state["reporting_results"]
-        session_dir = temp_artifacts_dir / sample_state_complete["session_id"]
+        temp_artifacts_dir / sample_state_complete["session_id"]
 
         # Check visualization files exist
-        for plot_name, plot_path in results["visualizations"].items():
+        for _plot_name, plot_path in results["visualizations"].items():
             assert Path(plot_path).exists()
             assert Path(plot_path).suffix == ".png"
 
     @pytest.mark.asyncio
     async def test_execute_complete_report_structure(self, reporting_agent, sample_state_complete, temp_artifacts_dir):
         """Test complete report has proper structure."""
-        state = await reporting_agent.execute(sample_state_complete)
+        await reporting_agent.execute(sample_state_complete)
 
         session_dir = temp_artifacts_dir / sample_state_complete["session_id"]
         complete_report_path = session_dir / "complete_report.md"

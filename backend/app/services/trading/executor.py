@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class OrderExecutor:
     """
     Executes trading orders with queue management and retry logic
-    
+
     Features:
     - Queue-based order submission
     - Exponential backoff retry logic
@@ -52,7 +52,7 @@ class OrderExecutor:
     ):
         """
         Initialize order executor
-        
+
         Args:
             session: Database session
             api_key: Coinspot API key
@@ -73,7 +73,7 @@ class OrderExecutor:
     async def submit_order(self, order_id: UUID) -> None:
         """
         Add an order to the execution queue
-        
+
         Args:
             order_id: UUID of the order to execute
         """
@@ -138,7 +138,7 @@ class OrderExecutor:
     async def _execute_order(self, order_id: UUID) -> None:
         """
         Execute a single order with retry logic
-        
+
         Args:
             order_id: UUID of the order to execute
         """
@@ -286,13 +286,13 @@ class OrderExecutor:
     async def _execute_trade(self, order: Order) -> dict[str, Any]:
         """
         Execute the actual trade on Coinspot
-        
+
         Args:
             order: Order to execute
-            
+
         Returns:
             Coinspot API response
-            
+
         Raises:
             CoinspotAPIError: If API returns an error
         """
@@ -354,7 +354,7 @@ class OrderExecutor:
     async def _update_position(self, order: Order, result: dict[str, Any] | None = None) -> None:
         """
         Update user's position after order execution
-        
+
         Args:
             order: Executed order
             result: Execution result from API (optional)
@@ -473,7 +473,7 @@ class OrderExecutor:
 class OrderQueue:
     """
     Singleton queue manager for order execution
-    
+
     Provides a global queue for managing order execution across the application.
     """
 
@@ -495,7 +495,7 @@ class OrderQueue:
     ) -> None:
         """
         Initialize the order executor
-        
+
         Args:
             session: Database session
             api_key: Coinspot API key

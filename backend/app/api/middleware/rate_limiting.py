@@ -30,11 +30,11 @@ from app.core.config import settings
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     Rate limiting middleware using Redis for tracking.
-    
+
     Implements per-user rate limits with different windows:
     - Per-minute limits: 60 requests for normal users, 300 for admins
     - Per-hour limits: 1000 requests for normal users, 10000 for admins
-    
+
     Rate limits are tied to user_id (not IP or token) to prevent bypass.
     """
 
@@ -53,7 +53,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     def get_user_id_from_token(self, request: Request) -> tuple[str | None, bool]:
         """
         Extract user_id and is_superuser from JWT token.
-        
+
         Returns:
             (user_id, is_superuser) tuple, or (None, False) if no valid token
         """
@@ -91,12 +91,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     ) -> tuple[bool, int, int]:
         """
         Check if user is within rate limit for given window.
-        
+
         Args:
             user_id: User identifier
             window: Time window ("minute" or "hour")
             limit: Maximum requests allowed in window
-            
+
         Returns:
             (allowed, remaining, reset_time) tuple
             - allowed: True if request is allowed

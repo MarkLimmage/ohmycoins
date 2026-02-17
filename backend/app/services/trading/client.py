@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class CoinspotTradingClient:
     """
     Client for interacting with Coinspot trading API
-    
+
     Provides methods for:
     - Market buy/sell orders
     - Order status queries
@@ -33,7 +33,7 @@ class CoinspotTradingClient:
     def __init__(self, api_key: str, api_secret: str):
         """
         Initialize Coinspot trading client
-        
+
         Args:
             api_key: Coinspot API key
             api_secret: Coinspot API secret
@@ -59,14 +59,14 @@ class CoinspotTradingClient:
     ) -> dict[str, Any]:
         """
         Make an authenticated request to Coinspot API
-        
+
         Args:
             endpoint: API endpoint (e.g., '/my/buy')
             data: Request data
-            
+
         Returns:
             API response as dictionary
-            
+
         Raises:
             CoinspotAPIError: If API returns an error
         """
@@ -186,14 +186,14 @@ class CoinspotTradingClient:
     ) -> dict[str, Any]:
         """
         Execute a market sell order
-        
+
         Args:
             coin_type: Cryptocurrency to sell (e.g., 'BTC', 'ETH')
             amount: Amount of cryptocurrency to sell
-            
+
         Returns:
             Order response with id, market, rate, coin, amount, total
-            
+
         Raises:
             CoinspotAPIError: If API returns an error
         """
@@ -216,15 +216,15 @@ class CoinspotTradingClient:
     ) -> dict[str, Any]:
         """
         Execute a limit buy order
-        
+
         Args:
             coin_type: Cryptocurrency to buy (e.g., 'BTC', 'ETH')
             amount_aud: Amount in AUD to spend
             rate: Max price to pay per coin
-            
+
         Returns:
             Order response with id, market, rate, coin, amount, total
-            
+
         Raises:
             CoinspotAPIError: If API returns an error
         """
@@ -248,15 +248,15 @@ class CoinspotTradingClient:
     ) -> dict[str, Any]:
         """
         Execute a limit sell order
-        
+
         Args:
             coin_type: Cryptocurrency to sell (e.g., 'BTC', 'ETH')
             amount: Amount of cryptocurrency to sell
             rate: Min price to sell per coin
-            
+
         Returns:
             Order response with id, market, rate, coin, amount, total
-            
+
         Raises:
             CoinspotAPIError: If API returns an error
         """
@@ -278,10 +278,10 @@ class CoinspotTradingClient:
     ) -> dict[str, Any]:
         """
         Get open and completed orders
-        
+
         Args:
             coin_type: Filter by coin type (optional)
-            
+
         Returns:
             Dictionary with 'buyorders' and 'sellorders' lists
         """
@@ -301,11 +301,11 @@ class CoinspotTradingClient:
     ) -> dict[str, Any]:
         """
         Get order history
-        
+
         Args:
             coin_type: Filter by coin type (optional)
             limit: Maximum number of orders to return (default 100)
-            
+
         Returns:
             Dictionary with 'buyorders' and 'sellorders' lists
         """
@@ -323,10 +323,10 @@ class CoinspotTradingClient:
     async def cancel_buy_order(self, order_id: str) -> dict[str, Any]:
         """
         Cancel a buy order
-        
+
         Args:
             order_id: ID of the order to cancel
-            
+
         Returns:
             Cancellation response
         """
@@ -341,10 +341,10 @@ class CoinspotTradingClient:
     async def cancel_sell_order(self, order_id: str) -> dict[str, Any]:
         """
         Cancel a sell order
-        
+
         Args:
             order_id: ID of the order to cancel
-            
+
         Returns:
             Cancellation response
         """
@@ -359,7 +359,7 @@ class CoinspotTradingClient:
     async def get_balances(self) -> dict[str, Any]:
         """
         Get account balances for all coins
-        
+
         Returns:
             Dictionary with balance information for each coin
         """

@@ -332,7 +332,7 @@ async def get_clarifications(
 ) -> Any:
     """
     Get pending clarification questions for a session.
-    
+
     Returns clarification questions that need user response
     before the workflow can proceed.
     """
@@ -370,7 +370,7 @@ async def provide_clarifications(
 ) -> Any:
     """
     Provide responses to clarification questions.
-    
+
     This resumes the workflow with the provided clarifications.
     """
     session = await session_manager.get_session(db, session_id)
@@ -413,7 +413,7 @@ async def get_choices(
 ) -> Any:
     """
     Get available choices for user selection.
-    
+
     Returns model choices with pros/cons and recommendation.
     """
     session = await session_manager.get_session(db, session_id)
@@ -450,7 +450,7 @@ async def select_choice(
 ) -> Any:
     """
     Select a choice from available options.
-    
+
     This resumes the workflow with the selected model.
     """
     session = await session_manager.get_session(db, session_id)
@@ -493,7 +493,7 @@ async def get_pending_approvals(
 ) -> Any:
     """
     Get pending approval requests for a session.
-    
+
     Returns approval requests that need user decision.
     """
     session = await session_manager.get_session(db, session_id)
@@ -530,7 +530,7 @@ async def approve_request(
 ) -> Any:
     """
     Approve or reject a pending approval request.
-    
+
     This resumes the workflow if approved, or stops it if rejected.
     """
     session = await session_manager.get_session(db, session_id)
@@ -590,7 +590,7 @@ async def get_override_points_endpoint(
 ) -> Any:
     """
     Get available override points for a session.
-    
+
     Returns which overrides are currently available based on workflow state.
     """
     session = await session_manager.get_session(db, session_id)
@@ -625,7 +625,7 @@ async def apply_override(
 ) -> Any:
     """
     Apply a user override to the workflow.
-    
+
     Allows users to override agent decisions and modify workflow behavior.
     """
     session = await session_manager.get_session(db, session_id)
@@ -678,15 +678,15 @@ async def download_artifact(
 ) -> FileResponse:
     """
     Download an artifact file.
-    
+
     Args:
         artifact_id: Artifact ID
         db: Database session
         current_user: Currently authenticated user
-    
+
     Returns:
         File response with artifact content
-    
+
     Raises:
         HTTPException: If artifact not found, user doesn't have access, or file not found
     """
@@ -721,15 +721,15 @@ async def delete_artifact(
 ) -> dict[str, str]:
     """
     Delete an artifact.
-    
+
     Args:
         artifact_id: Artifact ID
         db: Database session
         current_user: Currently authenticated user
-    
+
     Returns:
         Success message
-    
+
     Raises:
         HTTPException: If artifact not found or user doesn't have access
     """
@@ -757,11 +757,11 @@ async def get_artifact_stats(
 ) -> dict[str, Any]:
     """
     Get artifact storage statistics.
-    
+
     Args:
         db: Database session
         current_user: Currently authenticated user
-    
+
     Returns:
         Storage statistics
     """

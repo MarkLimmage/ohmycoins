@@ -36,7 +36,7 @@ def create_credentials(
 ) -> Any:
     """
     Create new Coinspot API credentials for the current user.
-    
+
     Credentials are encrypted before storage.
     """
     # Check if user already has credentials
@@ -95,7 +95,7 @@ def get_credentials(
 ) -> Any:
     """
     Get Coinspot API credentials for the current user.
-    
+
     Returns masked credentials for security.
     """
     credentials = session.exec(
@@ -235,7 +235,7 @@ async def validate_credentials(
 ) -> Any:
     """
     Validate Coinspot API credentials by testing them against the Coinspot API.
-    
+
     Tests credentials by calling the Coinspot read-only balance endpoint.
     Updates the validation status in the database if successful.
     """

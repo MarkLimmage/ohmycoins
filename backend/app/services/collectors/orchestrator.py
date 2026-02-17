@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class CollectionOrchestrator:
     """
     Orchestrates the execution of all data collectors.
-    
+
     Responsibilities:
     - Register collectors with their schedules
     - Start/stop the collection scheduler
@@ -44,14 +44,14 @@ class CollectionOrchestrator:
     ) -> None:
         """
         Register a collector with a schedule.
-        
+
         Args:
             collector: The collector instance to register
             schedule_type: Type of schedule ("interval" or "cron")
             **schedule_kwargs: Arguments for the schedule trigger
                 For interval: seconds, minutes, hours
                 For cron: minute, hour, day, day_of_week, etc.
-        
+
         Example:
             # Register for 5-minute intervals
             orchestrator.register_collector(
@@ -59,7 +59,7 @@ class CollectionOrchestrator:
                 "interval",
                 minutes=5
             )
-            
+
             # Register for daily at 2 AM
             orchestrator.register_collector(
                 my_collector,
@@ -93,7 +93,7 @@ class CollectionOrchestrator:
     def start(self) -> None:
         """
         Start the collection scheduler.
-        
+
         All registered collectors will begin running according to their schedules.
         """
         if not self._is_running:
@@ -108,7 +108,7 @@ class CollectionOrchestrator:
     def stop(self) -> None:
         """
         Stop the collection scheduler.
-        
+
         All running collectors will be gracefully stopped.
         """
         if self._is_running:
@@ -121,13 +121,13 @@ class CollectionOrchestrator:
     async def trigger_manual(self, collector_name: str) -> bool:
         """
         Manually trigger a collector to run immediately.
-        
+
         Args:
             collector_name: Name of the collector to trigger
-        
+
         Returns:
             True if collector ran successfully, False otherwise
-        
+
         Raises:
             KeyError: If collector name is not found
         """
@@ -142,7 +142,7 @@ class CollectionOrchestrator:
     def get_health_status(self) -> dict[str, Any]:
         """
         Get health status of all collectors.
-        
+
         Returns:
             Dictionary containing:
             - orchestrator status (running/stopped)
@@ -162,13 +162,13 @@ class CollectionOrchestrator:
     def get_collector_status(self, collector_name: str) -> dict[str, Any]:
         """
         Get status of a specific collector.
-        
+
         Args:
             collector_name: Name of the collector
-        
+
         Returns:
             Dictionary containing collector status and metrics
-        
+
         Raises:
             KeyError: If collector name is not found
         """
@@ -185,7 +185,7 @@ _orchestrator: CollectionOrchestrator | None = None
 def get_orchestrator() -> CollectionOrchestrator:
     """
     Get the global orchestrator instance (singleton pattern).
-    
+
     Returns:
         The global CollectionOrchestrator instance
     """

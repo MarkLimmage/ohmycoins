@@ -301,7 +301,7 @@ class TestCoinspotCollectorIntegration:
                 assert len(prices) > 0
 
                 # Verify price structure
-                for coin, data in prices.items():
+                for _coin, data in prices.items():
                     assert "bid" in data
                     assert "ask" in data
                     assert "last" in data

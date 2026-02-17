@@ -105,7 +105,7 @@ class CollectorMetrics:
 class MetricsTracker:
     """
     Tracks metrics for all collectors.
-    
+
     Provides centralized metrics tracking and reporting for the collection
     orchestrator and individual collectors.
     """
@@ -118,10 +118,10 @@ class MetricsTracker:
     def get_collector_metrics(self, collector_name: str) -> CollectorMetrics:
         """
         Get or create metrics for a collector.
-        
+
         Args:
             collector_name: Name of the collector
-        
+
         Returns:
             CollectorMetrics instance for the collector
         """
@@ -137,7 +137,7 @@ class MetricsTracker:
     ) -> None:
         """
         Record a successful collection run.
-        
+
         Args:
             collector_name: Name of the collector
             records_collected: Number of records collected
@@ -154,7 +154,7 @@ class MetricsTracker:
     ) -> None:
         """
         Record a failed collection run.
-        
+
         Args:
             collector_name: Name of the collector
             error: Error message
@@ -166,7 +166,7 @@ class MetricsTracker:
     def get_all_metrics(self) -> dict[str, Any]:
         """
         Get metrics for all collectors.
-        
+
         Returns:
             Dictionary containing all collector metrics
         """
@@ -187,7 +187,7 @@ class MetricsTracker:
     def get_summary(self) -> dict[str, Any]:
         """
         Get summary statistics across all collectors.
-        
+
         Returns:
             Dictionary with summary statistics
         """
@@ -226,7 +226,7 @@ class MetricsTracker:
     def get_health_status(self) -> dict[str, Any]:
         """
         Get health status of all collectors.
-        
+
         Returns:
             Dictionary with health status information
         """
@@ -238,7 +238,7 @@ class MetricsTracker:
         for name, metrics in self._metrics.items():
             # Check if collector has run recently
             if metrics.last_run_at:
-                age = now - metrics.last_run_at
+                now - metrics.last_run_at
 
                 # Check success rate
                 if metrics.success_rate >= 95:
@@ -270,7 +270,7 @@ class MetricsTracker:
     def reset_metrics(self, collector_name: str | None = None) -> None:
         """
         Reset metrics for a specific collector or all collectors.
-        
+
         Args:
             collector_name: Name of collector to reset, or None for all
         """

@@ -130,7 +130,7 @@ class SessionManager:
     ) -> None:
         """
         Alias for update_session_status for backwards compatibility.
-        
+
         Args:
             db: Database session
             session_id: ID of the session to update

@@ -8,10 +8,10 @@ class TWAPStrategy(ExecutionStrategy):
     """
     Time-Weighted Average Price (TWAP) Strategy.
     Splits an order into even chunks executed at regular intervals over a specified duration.
-    
+
     Parameters required in order.parameters:
     - duration_minutes (int): Total duration of the execution.
-    - interval_minutes (int): Time between child orders. 
+    - interval_minutes (int): Time between child orders.
       OR
     - number_of_slices (int): Number of child orders.
     """

@@ -26,14 +26,14 @@ logger = logging.getLogger(__name__)
 class NewscatcherCollector(APICollector):
     """
     Collector for cryptocurrency news from Newscatcher API.
-    
+
     Collects:
     - News headlines and summaries
     - Source information (clean URLs)
     - Publication timestamps
     - Built-in sentiment analysis
     - Article links
-    
+
     API Documentation: https://www.newscatcherapi.com/docs
     """
 
@@ -47,7 +47,7 @@ class NewscatcherCollector(APICollector):
     def __init__(self, api_key: str | None = None):
         """
         Initialize the Newscatcher collector.
-        
+
         Args:
             api_key: Newscatcher API key (if None, reads from environment)
         """
@@ -70,10 +70,10 @@ class NewscatcherCollector(APICollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect recent cryptocurrency news from Newscatcher API.
-        
+
         Returns:
             List of news article dictionaries
-        
+
         Raises:
             Exception: If API request fails
         """
@@ -150,13 +150,13 @@ class NewscatcherCollector(APICollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected news data.
-        
+
         Args:
             data: Raw data collected from Newscatcher API
-        
+
         Returns:
             Validated data ready for storage
-        
+
         Raises:
             ValueError: If validation fails
         """
@@ -185,11 +185,11 @@ class NewscatcherCollector(APICollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated news sentiment in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

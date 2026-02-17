@@ -33,9 +33,9 @@ logger = logging.getLogger(__name__)
 class AgentState(TypedDict):
     """
     State dictionary for the agent workflow.
-    
+
     This state is passed between nodes in the LangGraph workflow.
-    
+
     Week 3-4 additions: retrieved_data, analysis_results, insights
     Week 5-6 additions: trained_models, evaluation_results, training_summary, evaluation_insights
     Week 7-8 additions: ReAct loop fields (reasoning_trace, decision_history, retry_count, etc.)
@@ -99,10 +99,10 @@ class AgentState(TypedDict):
 class LangGraphWorkflow:
     """
     LangGraph-based workflow for coordinating multiple agents.
-    
+
     This implements a state machine that routes between specialized agents
     based on the current state and user goal.
-    
+
     Week 3-4: Enhanced with DataAnalystAgent for comprehensive data analysis.
     Week 5-6: Enhanced with ModelTrainingAgent and ModelEvaluatorAgent for ML pipeline.
     Week 11: Enhanced with ReportingAgent for report generation.
@@ -111,7 +111,7 @@ class LangGraphWorkflow:
     def __init__(self, session: Session | None = None, user_id: uuid.UUID | None = None, credential_id: uuid.UUID | None = None) -> None:
         """
         Initialize the LangGraph workflow with agents and state graph.
-        
+
         Args:
             session: Optional database session for agents
             user_id: Optional user ID for BYOM (Bring Your Own Model) support
@@ -159,7 +159,7 @@ class LangGraphWorkflow:
     def set_session(self, session: Session) -> None:
         """
         Set the database session for agents.
-        
+
         Args:
             session: Database session
         """
@@ -169,12 +169,12 @@ class LangGraphWorkflow:
     def _build_graph(self) -> StateGraph:
         """
         Build the LangGraph state machine with ReAct loop.
-        
+
         Week 3-4: Added analyze_data node between retrieve_data and finalize.
         Week 5-6: Added train_model and evaluate_model nodes for ML pipeline.
         Week 7-8: Enhanced with conditional routing, reasoning nodes, and error recovery.
         Week 11: Added generate_report node for comprehensive reporting.
-        
+
         Returns:
             Configured state graph with conditional edges
         """
@@ -289,12 +289,12 @@ class LangGraphWorkflow:
     async def _initialize_node(self, state: AgentState) -> AgentState:
         """
         Initialize the workflow with ReAct loop fields.
-        
+
         Week 7-8: Enhanced with ReAct loop initialization.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state
         """
@@ -330,17 +330,17 @@ class LangGraphWorkflow:
     async def _reason_node(self, state: AgentState) -> AgentState:
         """
         ReAct Reasoning phase: Determine the next action based on current state.
-        
+
         Week 7-8: New node for ReAct loop reasoning.
         Uses LLM to reason about what to do next based on:
         - User goal
         - Current state (what's been done)
         - Previous errors/failures
         - Data quality
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with reasoning decision
         """
@@ -401,12 +401,12 @@ class LangGraphWorkflow:
     def _determine_next_action(self, state: AgentState) -> str:
         """
         Determine the next action based on current state.
-        
+
         This is a rule-based system that can be enhanced with LLM reasoning.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next action decision
         """
@@ -438,12 +438,12 @@ class LangGraphWorkflow:
     async def _retrieve_data_node(self, state: AgentState) -> AgentState:
         """
         Execute data retrieval agent.
-        
+
         Week 3-4: Enhanced to retrieve comprehensive data (price, sentiment, on-chain, catalysts).
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with retrieved data
         """
@@ -469,13 +469,13 @@ class LangGraphWorkflow:
     async def _validate_data_node(self, state: AgentState) -> AgentState:
         """
         Validate retrieved data quality.
-        
+
         Week 7-8: New node for data quality validation.
         Checks if retrieved data is sufficient and of good quality.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with quality check results
         """
@@ -533,12 +533,12 @@ class LangGraphWorkflow:
     async def _analyze_data_node(self, state: AgentState) -> AgentState:
         """
         Execute data analyst agent.
-        
+
         Week 3-4: New node for comprehensive data analysis.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with analysis results
         """
@@ -565,12 +565,12 @@ class LangGraphWorkflow:
     async def _train_model_node(self, state: AgentState) -> AgentState:
         """
         Execute model training agent.
-        
+
         Week 5-6: New node for training machine learning models.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with trained models
         """
@@ -597,12 +597,12 @@ class LangGraphWorkflow:
     async def _evaluate_model_node(self, state: AgentState) -> AgentState:
         """
         Execute model evaluator agent.
-        
+
         Week 5-6: New node for evaluating and comparing models.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with evaluation results
         """
@@ -630,12 +630,12 @@ class LangGraphWorkflow:
     async def _generate_report_node(self, state: AgentState) -> AgentState:
         """
         Execute reporting agent to generate comprehensive reports.
-        
+
         Week 11: New node for generating reports and visualizations.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with reporting results
         """
@@ -670,13 +670,13 @@ class LangGraphWorkflow:
     async def _finalize_node(self, state: AgentState) -> AgentState:
         """
         Finalize the workflow and prepare results.
-        
+
         Week 3-4: Enhanced to include analysis results and insights in final result.
         Week 5-6: Enhanced to include training and evaluation results.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Final state with results
         """
@@ -716,13 +716,13 @@ class LangGraphWorkflow:
     async def _handle_error_node(self, state: AgentState) -> AgentState:
         """
         Handle errors with recovery logic.
-        
+
         Week 7-8: New node for error recovery.
         Implements retry logic and determines if recovery is possible.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with error handling
         """
@@ -768,12 +768,12 @@ class LangGraphWorkflow:
     def _route_after_reasoning(self, state: AgentState) -> Literal["retrieve", "analyze", "train", "evaluate", "report", "finalize", "error"]:
         """
         Route after reasoning based on current state.
-        
+
         Week 11: Added report routing option.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next node to execute
         """
@@ -807,10 +807,10 @@ class LangGraphWorkflow:
     def _route_after_validation(self, state: AgentState) -> Literal["analyze", "retry", "reason", "error"]:
         """
         Route after data validation.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next node to execute
         """
@@ -851,10 +851,10 @@ class LangGraphWorkflow:
     def _route_after_analysis(self, state: AgentState) -> Literal["train", "finalize", "reason", "error"]:
         """
         Route after data analysis.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next node to execute
         """
@@ -874,10 +874,10 @@ class LangGraphWorkflow:
     def _route_after_training(self, state: AgentState) -> Literal["evaluate", "reason", "error"]:
         """
         Route after model training.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next node to execute
         """
@@ -890,12 +890,12 @@ class LangGraphWorkflow:
     def _route_after_evaluation(self, state: AgentState) -> Literal["report", "retrain", "reason", "error"]:
         """
         Route after model evaluation.
-        
+
         Week 11: Updated to route to report generation instead of finalize.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next node to execute
         """
@@ -916,10 +916,10 @@ class LangGraphWorkflow:
     def _route_after_error(self, state: AgentState) -> Literal["retry", "end"]:
         """
         Route after error handling.
-        
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Next node to execute
         """
@@ -931,10 +931,10 @@ class LangGraphWorkflow:
     async def execute(self, initial_state: AgentState) -> AgentState:
         """
         Execute the workflow from start to finish.
-        
+
         Args:
             initial_state: Initial workflow state
-            
+
         Returns:
             Final workflow state
         """
@@ -945,10 +945,10 @@ class LangGraphWorkflow:
     async def stream_execute(self, initial_state: AgentState):
         """
         Execute the workflow with streaming for real-time updates.
-        
+
         Args:
             initial_state: Initial workflow state
-            
+
         Yields:
             State updates as the workflow progresses
         """

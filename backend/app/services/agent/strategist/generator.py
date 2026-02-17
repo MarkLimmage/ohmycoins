@@ -46,20 +46,20 @@ class StrategyGenerator:
         # 1. Define LLM Prompt
         parser = JsonOutputParser(pydantic_object=StrategyParams)
 
-        system_prompt = """You are an expert quantitative strategist. 
+        system_prompt = """You are an expert quantitative strategist.
         Your goal is to translate a user's trading idea into parameters for a Moving Average Crossover strategy.
-        
+
         The Strategy Engine accepts the following parameters:
         - fast_window (int): Short period MA. Must be > 0.
         - slow_window (int): Long period MA. Must be > fast_window.
-        
+
         Guidelines:
-        - Interpret the user's intent carefully. 
+        - Interpret the user's intent carefully.
         - 'Aggressive' implies faster signals (e.g., fast=5, slow=15).
         - 'Conservative' implies slower signals (e.g., fast=20, slow=50).
         - Ensure logical consistency: slow_window MUST be strictly greater than fast_window.
         - strategy_name should be short and descriptive (e.g., "Aggressive-MA-Cross").
-        
+
         You must output ONLY valid JSON matching the schema. No markdown, no conversational text.
         """
 

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def setup_collectors() -> None:
     """
     Register all Phase 2.5 collectors with the orchestrator.
-    
+
     This function should be called during application startup to initialize
     and schedule all data collectors.
     """
@@ -146,7 +146,7 @@ def setup_collectors() -> None:
 def start_collection() -> None:
     """
     Start the collection orchestrator.
-    
+
     All registered collectors will begin running according to their schedules.
     """
     orchestrator = get_orchestrator()
@@ -157,7 +157,7 @@ def start_collection() -> None:
 def stop_collection() -> None:
     """
     Stop the collection orchestrator.
-    
+
     All running collectors will be gracefully stopped.
     """
     orchestrator = get_orchestrator()
@@ -168,7 +168,7 @@ def stop_collection() -> None:
 def get_collection_status() -> dict:
     """
     Get health status of all collectors.
-    
+
     Returns:
         Dictionary containing orchestrator and collector statuses
     """

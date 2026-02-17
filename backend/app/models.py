@@ -189,7 +189,7 @@ class PriceDataBase(SQLModel):
 class PriceData5Min(PriceDataBase, table=True):
     """
     Stores cryptocurrency price data collected every 5 minutes from Coinspot.
-    
+
     This table serves as the foundation for backtesting and algorithm development
     in The Lab.
     """
@@ -249,7 +249,7 @@ class CoinspotCredentialsBase(SQLModel):
 class CoinspotCredentials(CoinspotCredentialsBase, table=True):
     """
     Stores encrypted Coinspot API credentials for users.
-    
+
     Credentials are encrypted at rest using Fernet (AES-256).
     The api_key and api_secret are stored as encrypted bytes.
     """
@@ -320,7 +320,7 @@ class UserLLMCredentialsBase(SQLModel):
 class UserLLMCredentials(UserLLMCredentialsBase, table=True):
     """
     Stores encrypted LLM API credentials for users (BYOM feature).
-    
+
     Credentials are encrypted at rest using Fernet (AES-256).
     The api_key is stored as encrypted bytes.
     Users can configure multiple providers (OpenAI, Google Gemini, Anthropic Claude).
@@ -929,7 +929,7 @@ class PositionBase(SQLModel):
 class Position(PositionBase, table=True):
     """
     Trading position record
-    
+
     Tracks the current position (holdings) for each user and coin type.
     Updated when orders are executed.
     """
@@ -993,7 +993,7 @@ class OrderBase(SQLModel):
 class Order(OrderBase, table=True):
     """
     Trading order record
-    
+
     Tracks all trading orders (buy/sell) including their execution status.
     Updated as orders progress through their lifecycle.
     """
@@ -1097,7 +1097,7 @@ class AlgorithmBase(SQLModel):
 class Algorithm(AlgorithmBase, table=True):
     """
     Algorithm definition
-    
+
     Represents a trading algorithm that can be deployed by users.
     Can be linked to AgentArtifacts (Phase 3 models) or be standalone.
     """
@@ -1187,7 +1187,7 @@ class DeployedAlgorithmBase(SQLModel):
 class DeployedAlgorithm(DeployedAlgorithmBase, table=True):
     """
     Deployed algorithm instance
-    
+
     Represents a user's deployment of an algorithm with custom parameters.
     Multiple users can deploy the same algorithm with different settings.
     """
@@ -1287,7 +1287,7 @@ class StrategyPromotionBase(SQLModel):
 class StrategyPromotion(StrategyPromotionBase, table=True):
     """
     Strategy Promotion Workflow
-    
+
     Tracks the approval process for moving an algorithm from The Lab to The Floor.
     """
     __tablename__ = "strategy_promotions"

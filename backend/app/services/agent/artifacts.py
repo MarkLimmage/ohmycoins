@@ -20,7 +20,7 @@ from app.models import AgentArtifact
 class ArtifactManager:
     """
     Manages storage, retrieval, and cleanup of agent artifacts.
-    
+
     Supports:
     - Trained models (.pkl, .joblib)
     - Generated plots (.png, .jpg)

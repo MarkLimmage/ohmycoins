@@ -263,18 +263,18 @@ class AgentOrchestrator:
     def get_session_state(self, db: Session | uuid.UUID, session_id: uuid.UUID = None) -> dict[str, Any] | None:
         """
         Get the current state of a session synchronously.
-        
+
         This is a synchronous wrapper for the async get_session_state method,
         used by the HiTL endpoints and tests.
-        
+
         Supports two calling conventions:
         - Legacy: get_session_state(session_id) - for existing production code
         - Test: get_session_state(db, session_id) - for test compatibility
-        
+
         Args:
             db: Database session (for test compatibility) OR session_id for direct calls
             session_id: ID of the session (optional if db is actually session_id)
-            
+
         Returns:
             Session state dictionary or None if not found
         """
@@ -322,7 +322,7 @@ class AgentOrchestrator:
     ) -> None:
         """
         Update the state of a session synchronously.
-        
+
         Args:
             session_id: ID of the session
             state: Updated state dictionary
@@ -346,13 +346,13 @@ class AgentOrchestrator:
     ) -> dict[str, Any]:
         """
         Resume a paused session after user interaction.
-        
+
         This is called after clarifications, choices, or approvals are provided.
-        
+
         Args:
             db: Database session
             session_id: ID of the session to resume
-            
+
         Returns:
             Resume result
         """
@@ -394,14 +394,14 @@ class AgentOrchestrator:
     ) -> dict[str, Any]:
         """
         Run a complete workflow from start to finish.
-        
+
         This is a high-level method that combines start_session and execute_step
         to run the entire workflow. It's primarily used by integration tests.
-        
+
         Args:
             db: Database session
             session_id: ID of the session to run
-            
+
         Returns:
             Workflow execution result with status and any generated data
         """

@@ -30,12 +30,12 @@ class CollectorStatus(str, Enum):
 class BaseCollector(ABC):
     """
     Abstract base class for all data collectors.
-    
+
     Each collector implementation must:
     1. Implement the collect() method to fetch and return data
     2. Implement the validate_data() method to validate collected data
     3. Implement the store_data() method to persist data to the database
-    
+
     The run() method orchestrates the collection workflow and handles:
     - Error handling and logging
     - Metrics tracking
@@ -46,10 +46,10 @@ class BaseCollector(ABC):
     def __init__(self, name: str, ledger: str):
         """
         Initialize the collector.
-        
+
         Args:
             name: Unique name for this collector (e.g., "defillama_api")
-            ledger: The ledger this collector belongs to 
+            ledger: The ledger this collector belongs to
                    ("glass", "human", "catalyst", "exchange")
         """
         self.name = name
@@ -63,11 +63,11 @@ class BaseCollector(ABC):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect data from the source.
-        
+
         Returns:
             List of dictionaries containing the raw collected data.
             Each dict should represent one data point/record.
-        
+
         Raises:
             Exception: If data collection fails
         """
@@ -77,13 +77,13 @@ class BaseCollector(ABC):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected data.
-        
+
         Args:
             data: Raw data collected from the source
-        
+
         Returns:
             Validated and cleaned data ready for storage
-        
+
         Raises:
             ValueError: If data validation fails
         """
@@ -93,14 +93,14 @@ class BaseCollector(ABC):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated data in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session for transaction management
-        
+
         Returns:
             Number of records successfully stored
-        
+
         Raises:
             Exception: If database operations fail
         """
@@ -109,7 +109,7 @@ class BaseCollector(ABC):
     async def run(self) -> bool:
         """
         Execute the complete collection workflow with error handling.
-        
+
         Workflow:
         1. Update status to RUNNING
         2. Collect data from source
@@ -117,7 +117,7 @@ class BaseCollector(ABC):
         4. Store data in database
         5. Update metrics and status
         6. Log results
-        
+
         Returns:
             True if collection succeeded, False otherwise
         """
@@ -203,7 +203,7 @@ class BaseCollector(ABC):
     def get_status(self) -> dict[str, Any]:
         """
         Get current collector status and metrics.
-        
+
         Returns:
             Dictionary containing collector status and metrics
         """

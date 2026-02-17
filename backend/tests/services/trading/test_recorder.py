@@ -363,7 +363,7 @@ class TestTradeRecorder:
             quantity=Decimal('0.01')
         )
 
-        order2 = trade_recorder.log_trade_attempt(
+        trade_recorder.log_trade_attempt(
             user_id=test_user.id,
             coin_type='ETH',
             side='buy',
@@ -406,7 +406,7 @@ class TestTradeRecorder:
         session.commit()
 
         # Create recent order
-        recent_order = trade_recorder.log_trade_attempt(
+        trade_recorder.log_trade_attempt(
             user_id=test_user.id,
             coin_type='ETH',
             side='buy',

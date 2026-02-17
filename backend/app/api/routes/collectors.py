@@ -21,7 +21,7 @@ router = APIRouter()
 def get_collectors_health() -> dict[str, Any]:
     """
     Get health status of all data collectors.
-    
+
     Returns:
         Dictionary containing:
         - orchestrator_status: running or stopped
@@ -37,13 +37,13 @@ def get_collectors_health() -> dict[str, Any]:
 def get_collector_status(collector_name: str) -> dict[str, Any]:
     """
     Get status of a specific collector.
-    
+
     Args:
         collector_name: Name of the collector (e.g., "defillama_api")
-    
+
     Returns:
         Dictionary containing collector status and metrics
-    
+
     Raises:
         HTTPException: If collector not found
     """
@@ -62,13 +62,13 @@ def get_collector_status(collector_name: str) -> dict[str, Any]:
 async def trigger_collector(collector_name: str) -> Message:
     """
     Manually trigger a collector to run immediately.
-    
+
     Args:
         collector_name: Name of the collector to trigger
-    
+
     Returns:
         Success or error message
-    
+
     Raises:
         HTTPException: If collector not found or execution fails
     """

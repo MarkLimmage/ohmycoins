@@ -50,7 +50,7 @@ def train_classification_model(
 ) -> dict[str, Any]:
     """
     Train a classification model on cryptocurrency data.
-    
+
     Args:
         training_data: DataFrame containing features and target
         target_column: Name of the target column to predict
@@ -60,7 +60,7 @@ def train_classification_model(
         test_size: Fraction of data to use for testing (0.0-1.0)
         random_state: Random seed for reproducibility
         scale_features: Whether to scale features using StandardScaler
-    
+
     Returns:
         Dictionary containing:
         - model: Trained model object
@@ -214,7 +214,7 @@ def train_regression_model(
 ) -> dict[str, Any]:
     """
     Train a regression model on cryptocurrency data.
-    
+
     Args:
         training_data: DataFrame containing features and target
         target_column: Name of the target column to predict
@@ -224,7 +224,7 @@ def train_regression_model(
         test_size: Fraction of data to use for testing (0.0-1.0)
         random_state: Random seed for reproducibility
         scale_features: Whether to scale features using StandardScaler
-    
+
     Returns:
         Dictionary containing:
         - model: Trained model object
@@ -373,7 +373,7 @@ def cross_validate_model(
 ) -> dict[str, Any]:
     """
     Perform cross-validation on a model to estimate performance.
-    
+
     Args:
         training_data: DataFrame containing features and target
         target_column: Name of the target column to predict
@@ -384,7 +384,7 @@ def cross_validate_model(
                 If None, uses default for model type
         random_state: Random seed for reproducibility
         scale_features: Whether to scale features using StandardScaler
-    
+
     Returns:
         Dictionary containing:
         - scores: Array of cross-validation scores

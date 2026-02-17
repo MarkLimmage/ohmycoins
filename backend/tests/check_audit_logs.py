@@ -11,12 +11,8 @@ def check_logs():
     engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
     with Session(engine) as session:
         logs = session.exec(select(AuditLog).order_by(AuditLog.timestamp.desc()).limit(5)).all()
-        print("\n--- Checking Last 5 Audit Logs ---")
-        for log in logs:
-            print(f"[{log.timestamp}] ACTION: {log.action} | SEVERITY: {log.severity}")
-            print(f"Actor: {log.actor_id}")
-            print(f"Details: {log.details}")
-            print("-" * 30)
+        for _log in logs:
+            pass
 
 if __name__ == "__main__":
     check_logs()

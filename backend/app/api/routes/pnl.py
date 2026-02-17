@@ -135,14 +135,14 @@ def get_pnl_summary(
 ) -> PnLSummaryResponse:
     """
     Get comprehensive P&L summary with performance metrics
-    
+
     Returns realized and unrealized P&L along with detailed performance statistics
     including win rate, profit factor, largest trades, and total volume.
-    
+
     Query Parameters:
     - start_date: Optional start date for filtering trades (ISO 8601 format)
     - end_date: Optional end date for filtering trades (ISO 8601 format)
-    
+
     Returns:
     - PnLSummaryResponse with all P&L metrics and statistics
     """
@@ -173,13 +173,13 @@ def get_pnl_by_algorithm(
 ) -> list[PnLByAlgorithmResponse]:
     """
     Get P&L metrics grouped by trading algorithm
-    
+
     Shows which algorithms are performing well and which need improvement.
-    
+
     Query Parameters:
     - start_date: Optional start date for filtering trades
     - end_date: Optional end date for filtering trades
-    
+
     Returns:
     - List of P&L metrics per algorithm
     """
@@ -213,13 +213,13 @@ def get_pnl_by_coin(
 ) -> list[PnLByCoinResponse]:
     """
     Get P&L metrics grouped by cryptocurrency
-    
+
     Shows which cryptocurrencies are generating the most profit/loss.
-    
+
     Query Parameters:
     - start_date: Optional start date for filtering trades
     - end_date: Optional end date for filtering trades
-    
+
     Returns:
     - List of P&L metrics per cryptocurrency
     """
@@ -254,14 +254,14 @@ def get_historical_pnl(
 ) -> list[HistoricalPnLEntry]:
     """
     Get historical P&L data aggregated by time interval
-    
+
     Provides time-series P&L data for charting and trend analysis.
-    
+
     Query Parameters:
     - start_date: Start date for historical data (required, ISO 8601 format)
     - end_date: End date for historical data (required, ISO 8601 format)
     - interval: Aggregation interval - 'hour', 'day', 'week', or 'month' (default: 'day')
-    
+
     Returns:
     - List of historical P&L data points with timestamps
     """
@@ -310,16 +310,16 @@ def get_realized_pnl(
 ) -> RealizedPnLResponse:
     """
     Get realized P&L from completed trades
-    
+
     Realized P&L is calculated from the difference between sell price and
     matching buy prices using FIFO accounting method.
-    
+
     Query Parameters:
     - start_date: Optional start date for filtering trades
     - end_date: Optional end date for filtering trades
     - algorithm_id: Optional filter by algorithm UUID
     - coin_type: Optional filter by cryptocurrency symbol
-    
+
     Returns:
     - RealizedPnLResponse with realized_pnl value
     """
@@ -351,13 +351,13 @@ def get_unrealized_pnl(
 ) -> UnrealizedPnLResponse:
     """
     Get unrealized P&L from current open positions
-    
+
     Unrealized P&L is the difference between current market value
     and the total cost of current positions.
-    
+
     Query Parameters:
     - coin_type: Optional filter by cryptocurrency symbol
-    
+
     Returns:
     - UnrealizedPnLResponse with unrealized_pnl value
     """

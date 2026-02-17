@@ -44,7 +44,7 @@ REQUEST_TIMEOUT = 30.0
 
 class CoinspotCollector:
     """Collector service for fetching and storing Coinspot price data
-    
+
     Supports two modes:
     - Public API mode: Fetches 17 major coins from /pubapi/v2/latest
     - Web scraping mode: Scrapes tradecoins page for all 538+ coins
@@ -61,10 +61,10 @@ class CoinspotCollector:
     async def fetch_latest_prices(self) -> dict[str, Any] | None:
         """
         Fetch latest price data from Coinspot with retry logic
-        
+
         Uses either public API (17 coins) or web scraping (538+ coins)
         depending on configuration.
-        
+
         Returns:
             Dictionary containing price data for all coins, or None if all retries fail
         """
@@ -129,17 +129,17 @@ class CoinspotCollector:
     async def _fetch_scraped_prices(self, attempt: int) -> dict[str, Any] | None:
         """
         Fetch prices by scraping the tradecoins page (all 538+ coins)
-        
+
         The tradecoins page displays buy/sell prices for all available coins
         in HTML table rows with data-coin attributes.
-        
+
         Structure: <tr data-coin="BTC">
           <td ...> (image)
           <td ...> (name/symbol)
           <td data-value="137184.97"> (buy price)
           <td data-value="135833.38"> (sell price)
           ...
-        
+
         Based on: https://github.com/kochie/coinspot-async-api
         """
         try:
@@ -229,10 +229,10 @@ class CoinspotCollector:
     def store_prices(self, prices: dict[str, Any]) -> int:
         """
         Store price data in the database with error handling
-        
+
         Args:
             prices: Dictionary of price data from Coinspot API
-            
+
         Returns:
             Number of records successfully stored
         """
@@ -325,7 +325,7 @@ class CoinspotCollector:
     async def collect_and_store(self) -> int:
         """
         Main collection workflow: fetch prices and store them with comprehensive error handling
-        
+
         Returns:
             Number of records stored
         """

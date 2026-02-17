@@ -21,7 +21,7 @@ from .base import BaseAgent
 class ModelEvaluatorAgent(BaseAgent):
     """
     Agent responsible for evaluating and comparing machine learning models.
-    
+
     Week 5-6 Implementation Tools:
     - evaluate_model: Evaluate a trained model on test data
     - tune_hyperparameters: Tune model hyperparameters using grid/random search
@@ -39,10 +39,10 @@ class ModelEvaluatorAgent(BaseAgent):
     async def execute(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Execute model evaluation based on trained models.
-        
+
         Args:
             state: Current workflow state with trained_models
-        
+
         Returns:
             Updated state with evaluation results
         """
@@ -55,7 +55,7 @@ class ModelEvaluatorAgent(BaseAgent):
                 state["model_evaluated"] = False
                 return state
 
-            user_goal = state.get("user_goal", "")
+            state.get("user_goal", "")
             evaluation_params = state.get("evaluation_params", {})
 
             # Get test data for evaluation
@@ -230,7 +230,7 @@ class ModelEvaluatorAgent(BaseAgent):
 
             if task_type == "classification":
                 accuracy = eval_metrics.get("accuracy", 0)
-                f1 = eval_metrics.get("f1", 0)
+                eval_metrics.get("f1", 0)
 
                 if accuracy > 0.7:
                     insights.append(

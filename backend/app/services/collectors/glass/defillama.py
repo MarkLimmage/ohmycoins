@@ -25,12 +25,12 @@ logger = logging.getLogger(__name__)
 class DeFiLlamaCollector(APICollector):
     """
     Collector for DeFi protocol fundamentals from DeFiLlama API.
-    
+
     Collects:
     - Total Value Locked (TVL) in USD
     - 24-hour fees
     - 24-hour revenue
-    
+
     For protocols: Major DeFi protocols tracked by DeFiLlama
     """
 
@@ -72,10 +72,10 @@ class DeFiLlamaCollector(APICollector):
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect protocol fundamental data from DeFiLlama API.
-        
+
         Returns:
             List of protocol data dictionaries
-        
+
         Raises:
             Exception: If API request fails
         """
@@ -134,13 +134,13 @@ class DeFiLlamaCollector(APICollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected protocol data.
-        
+
         Args:
             data: Raw data collected from DeFiLlama API
-        
+
         Returns:
             Validated data ready for storage
-        
+
         Raises:
             ValueError: If validation fails
         """
@@ -188,11 +188,11 @@ class DeFiLlamaCollector(APICollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated protocol fundamentals in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

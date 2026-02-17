@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 def choice_presentation_node(state: dict[str, Any]) -> dict[str, Any]:
     """
     Present model choices to the user with comparison analysis.
-    
+
     This node is triggered when multiple models have been trained
     or when there are different hyperparameter configurations to choose from.
-    
+
     Args:
         state: Current workflow state with trained_models or evaluation_results
-        
+
     Returns:
         Updated state with choices_available and awaiting_choice fields
     """
@@ -81,11 +81,11 @@ def _generate_model_choices(
 ) -> list[dict[str, Any]]:
     """
     Generate structured choices from trained models and their evaluations.
-    
+
     Args:
         trained_models: Dictionary of trained models
         evaluation_results: Dictionary of evaluation metrics
-        
+
     Returns:
         List of choice dictionaries with model info, metrics, and pros/cons
     """
@@ -126,10 +126,10 @@ def _generate_model_choices(
 def _estimate_model_complexity(model_name: str) -> str:
     """
     Estimate model complexity based on model type.
-    
+
     Args:
         model_name: Name of the model
-        
+
     Returns:
         Complexity level: "low", "medium", or "high"
     """
@@ -151,11 +151,11 @@ def _generate_pros_cons(
 ) -> tuple[list[str], list[str]]:
     """
     Generate pros and cons for a model based on its characteristics and metrics.
-    
+
     Args:
         model_name: Name of the model
         metrics: Evaluation metrics
-        
+
     Returns:
         Tuple of (pros, cons) lists
     """
@@ -211,10 +211,10 @@ def _generate_pros_cons(
 def _generate_recommendation(choices: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Generate a recommendation for which model to use.
-    
+
     Args:
         choices: List of model choices with metrics
-        
+
     Returns:
         Recommendation dictionary with selected model and reasoning
     """
@@ -323,11 +323,11 @@ def handle_choice_selection(
 ) -> dict[str, Any]:
     """
     Process user's model selection.
-    
+
     Args:
         state: Current workflow state
         selected_model: Name of the model selected by user
-        
+
     Returns:
         Updated state with selected_choice
     """

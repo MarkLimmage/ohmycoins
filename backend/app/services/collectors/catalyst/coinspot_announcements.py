@@ -30,13 +30,13 @@ logger = logging.getLogger(__name__)
 class CoinSpotAnnouncementsCollector(ScraperCollector):
     """
     Collector for CoinSpot exchange announcements and events.
-    
+
     Collects:
     - New token listings
     - Exchange maintenance notices
     - Trading updates
     - Platform feature announcements
-    
+
     Impact: Token listings on CoinSpot can cause significant price movements
     (the "CoinSpot Effect" for Australian traders)
     """
@@ -88,10 +88,10 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
     async def scrape_dynamic(self) -> list[dict[str, Any]]:
         """
         Scrape data from CoinSpot announcements using Playwright.
-        
+
         Returns:
             List of dictionaries containing the scraped data
-        
+
         Raises:
             Exception: If scraping fails
         """
@@ -123,7 +123,7 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
                 articles = await page.query_selector_all("li.article-list-item")
                 logger.debug(f"{self.name}: Found {len(articles)} articles")
 
-                cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
+                datetime.now(timezone.utc) - timedelta(days=30)
 
                 for article in articles:
                     try:
@@ -190,18 +190,18 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
     def _classify_announcement(self, title: str, description: str) -> dict[str, Any]:
         """
         Classify announcement type based on content.
-        
+
         Args:
             title: Announcement title
             description: Announcement description
-        
+
         Returns:
             Dictionary with event_type and impact score
         """
         content = f"{title} {description}".lower()
 
         # Check against each event type's keywords
-        for event_type, info in self.EVENT_TYPES.items():
+        for _event_type, info in self.EVENT_TYPES.items():
             for keyword in info["keywords"]:
                 if keyword in content:
                     return {
@@ -218,11 +218,11 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
     def _extract_currencies(self, title: str, description: str) -> list[str]:
         """
         Extract mentioned cryptocurrency symbols from text.
-        
+
         Args:
             title: Announcement title
             description: Announcement description
-        
+
         Returns:
             List of currency symbols
         """
@@ -254,10 +254,10 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected announcement data.
-        
+
         Args:
             data: Raw data scraped from CoinSpot
-        
+
         Returns:
             Validated data ready for storage
         """
@@ -295,11 +295,11 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated announcements in the database.
-        
+
         Args:
             data: Validated data to store
             session: Database session
-        
+
         Returns:
             Number of records stored
         """

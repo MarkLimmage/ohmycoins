@@ -30,7 +30,7 @@ class EncryptionService:
     def __init__(self, key: str | None = None):
         """
         Initialize the encryption service
-        
+
         Args:
             key: Base64-encoded encryption key. If None, uses ENCRYPTION_KEY from environment.
         """
@@ -42,10 +42,10 @@ class EncryptionService:
     def encrypt(self, plaintext: str) -> bytes:
         """
         Encrypt a plaintext string
-        
+
         Args:
             plaintext: The string to encrypt
-            
+
         Returns:
             Encrypted bytes
         """
@@ -59,10 +59,10 @@ class EncryptionService:
     def decrypt(self, encrypted: bytes) -> str:
         """
         Decrypt encrypted bytes to string
-        
+
         Args:
             encrypted: The encrypted bytes
-            
+
         Returns:
             Decrypted plaintext string
         """
@@ -75,10 +75,10 @@ class EncryptionService:
     def mask_api_key(self, api_key: str) -> str:
         """
         Mask an API key for display, showing only last 4 characters
-        
+
         Args:
             api_key: The API key to mask
-            
+
         Returns:
             Masked API key (e.g., "****abcd")
         """
@@ -99,16 +99,16 @@ class EncryptionService:
     def encrypt_api_key(self, api_key: str) -> bytes:
         """
         Encrypt an LLM API key for secure storage (BYOM feature)
-        
+
         This is a convenience wrapper around encrypt() to make it explicit
         that LLM API keys use the same encryption as Coinspot credentials.
-        
+
         Args:
             api_key: The LLM API key to encrypt (OpenAI, Google, Anthropic)
-            
+
         Returns:
             Encrypted bytes suitable for database storage
-            
+
         Raises:
             ValueError: If api_key is empty
         """
@@ -117,16 +117,16 @@ class EncryptionService:
     def decrypt_api_key(self, encrypted_api_key: bytes) -> str:
         """
         Decrypt an LLM API key from storage (BYOM feature)
-        
+
         This is a convenience wrapper around decrypt() to make it explicit
         that LLM API keys use the same encryption as Coinspot credentials.
-        
+
         Args:
             encrypted_api_key: The encrypted API key bytes from database
-            
+
         Returns:
             Decrypted API key string
-            
+
         Raises:
             ValueError: If encrypted_api_key is empty
             cryptography.fernet.InvalidToken: If decryption fails

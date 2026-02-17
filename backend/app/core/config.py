@@ -9,7 +9,7 @@ SECRETS MANAGEMENT:
   - ECS task definitions include a 'secrets' section that references Secrets Manager
   - Secrets are injected as environment variables at container startup
   - No boto3 client needed - ECS handles retrieval automatically
-  
+
 See infrastructure/terraform/modules/ecs/main.tf for ECS secrets configuration.
 See .env.template for required environment variables.
 """

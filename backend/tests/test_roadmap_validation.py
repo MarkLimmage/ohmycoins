@@ -314,42 +314,8 @@ def test_roadmap_status_summary(capsys):
     """
     Print a summary of roadmap validation results
     """
-    print("\n" + "="*80)
-    print("ROADMAP VALIDATION SUMMARY")
-    print("="*80)
 
-    print("\n✅ Phase 1: Foundation & Data Collection Service")
-    print("   Status: COMPLETE (100%)")
-    print("   - Data collector service implemented")
-    print("   - Database schema created")
-    print("   - Scheduler configured")
-    print("   - Tests passing")
 
-    print("\n✅ Phase 2: User Authentication & API Credential Management")
-    print("   Status: COMPLETE (100%)")
-    print("   - User profile fields added")
-    print("   - Credential storage with encryption")
-    print("   - Coinspot API authentication")
-    print("   - Tests passing")
 
-    print("\n🔄 Phase 2.5: Comprehensive Data Collection - The 4 Ledgers")
-    print("   Status: PARTIALLY COMPLETE (~40%)")
-    print("   ✅ Database schema (all 4 ledgers)")
-    print("   ✅ Collector framework")
-    print("   ✅ DeFiLlama collector (Glass Ledger)")
-    print("   ✅ CryptoPanic collector (Human Ledger)")
-    print("   ❌ Additional scrapers needed")
-    print("   ❌ Complete catalyst ledger")
 
-    print("\n🔄 Phase 3: The Lab - Agentic Data Science")
-    print("   Status: FOUNDATION ONLY (~15%)")
-    print("   ✅ Database schema")
-    print("   ✅ Session manager")
-    print("   ✅ Basic structure")
-    print("   ❌ Complete agent implementations")
-    print("   ❌ LangGraph integration")
-    print("   ❌ ReAct loop")
 
-    print("\n" + "="*80)
-    print("RECOMMENDATION: Update ROADMAP.md to reflect actual completion status")
-    print("="*80 + "\n")

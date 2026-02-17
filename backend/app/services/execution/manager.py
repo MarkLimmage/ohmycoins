@@ -47,10 +47,9 @@ class AlgoOrderManager:
             schedule = strategy.generate_schedule()
             self.schedules[order.id] = schedule
             order.status = AlgoOrderStatus.RUNNING
-        except Exception as e:
+        except Exception:
             order.status = AlgoOrderStatus.FAILED
             # Log error
-            print(f"Failed to generate schedule for order {order.id}: {e}")
 
         return order
 

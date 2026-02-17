@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class TradeRecorder:
     """
     Records and reconciles trading activity
-    
+
     Features:
     - Log all trade attempts
     - Track successful and failed trades
@@ -33,7 +33,7 @@ class TradeRecorder:
     def __init__(self, session: Session):
         """
         Initialize trade recorder
-        
+
         Args:
             session: Database session
         """
@@ -51,7 +51,7 @@ class TradeRecorder:
     ) -> Order:
         """
         Log a trade attempt by creating an order record
-        
+
         Args:
             user_id: User executing the trade
             coin_type: Cryptocurrency being traded
@@ -60,7 +60,7 @@ class TradeRecorder:
             order_type: Order type (default: 'market')
             price: Limit price (for limit orders)
             algorithm_id: Algorithm ID if automated trade
-            
+
         Returns:
             Created Order object
         """
@@ -97,7 +97,7 @@ class TradeRecorder:
     ) -> None:
         """
         Record a successful trade execution
-        
+
         Args:
             order_id: Internal order ID
             coinspot_order_id: Exchange order ID
@@ -132,7 +132,7 @@ class TradeRecorder:
     ) -> None:
         """
         Record a failed trade attempt
-        
+
         Args:
             order_id: Internal order ID
             error_message: Error description
@@ -161,7 +161,7 @@ class TradeRecorder:
     ) -> None:
         """
         Record a partial fill
-        
+
         Args:
             order_id: Internal order ID
             filled_quantity: Quantity filled so far
@@ -192,11 +192,11 @@ class TradeRecorder:
     ) -> bool:
         """
         Reconcile an order with exchange confirmation
-        
+
         Args:
             order_id: Internal order ID
             exchange_data: Data from exchange API
-            
+
         Returns:
             True if reconciliation successful, False otherwise
         """
@@ -255,7 +255,7 @@ class TradeRecorder:
     ) -> list[Order]:
         """
         Get trade history with filters
-        
+
         Args:
             user_id: User ID
             start_date: Start date filter (optional)
@@ -263,7 +263,7 @@ class TradeRecorder:
             coin_type: Coin type filter (optional)
             algorithm_id: Algorithm ID filter (optional)
             status: Order status filter (optional)
-            
+
         Returns:
             List of Order objects matching filters
         """
@@ -304,12 +304,12 @@ class TradeRecorder:
     ) -> dict[str, Any]:
         """
         Get trade statistics for a user
-        
+
         Args:
             user_id: User ID
             start_date: Start date filter (optional)
             end_date: End date filter (optional)
-            
+
         Returns:
             Dictionary with trade statistics
         """
@@ -362,10 +362,10 @@ class TradeRecorder:
 def get_trade_recorder(session: Session) -> TradeRecorder:
     """
     Get a trade recorder instance
-    
+
     Args:
         session: Database session
-        
+
     Returns:
         TradeRecorder instance
     """

@@ -216,7 +216,6 @@ class TestBYOMProductionWorkflows:
 
         assert response is not None
         assert len(response.content) > 0
-        print(f"✓ OpenAI response: {response.content[:50]}...")
 
     @pytest.mark.skipif(not has_google_key(), reason="Google API key not configured")
     def test_agent_execution_with_google(
@@ -254,7 +253,6 @@ class TestBYOMProductionWorkflows:
         response = llm.invoke([HumanMessage(content="Say 'Hello BYOM' and nothing else")])
         assert response is not None
         assert len(response.content) > 0
-        print(f"✓ Google Gemini response: {response.content[:50]}...")
 
     @pytest.mark.skipif(not has_anthropic_key(), reason="Anthropic API key not configured")
     def test_agent_execution_with_anthropic(
@@ -292,7 +290,6 @@ class TestBYOMProductionWorkflows:
         response = llm.invoke([HumanMessage(content="Say 'Hello BYOM' and nothing else")])
         assert response is not None
         assert len(response.content) > 0
-        print(f"✓ Anthropic Claude response: {response.content[:50]}...")
 
     def test_agent_execution_fallback_to_system_default(
         self,
@@ -321,8 +318,7 @@ class TestBYOMProductionWorkflows:
 
         # Should create system default LLM (OpenAI or Anthropic depending on config)
         assert llm is not None
-        assert isinstance(llm, (ChatOpenAI, ChatAnthropic))
-        print(f"✓ System default LLM type: {type(llm).__name__}")
+        assert isinstance(llm, ChatOpenAI | ChatAnthropic)
 
     def test_agent_execution_invalid_credential_id(
         self,
@@ -340,7 +336,6 @@ class TestBYOMProductionWorkflows:
                 credential_id=invalid_credential_id
             )
 
-        print("✓ Invalid credential_id handled gracefully")
 
 
 # ============================================================================
@@ -424,7 +419,6 @@ class TestBYOMPerformanceComparison:
             )
             result_openai = self._test_llm_performance(llm_openai, "OpenAI", prompt)
             results.append(result_openai)
-            print(f"OpenAI - Time: {result_openai['response_time']:.2f}s")
 
         # Test Google
         if google_credential:
@@ -435,7 +429,6 @@ class TestBYOMPerformanceComparison:
             )
             result_google = self._test_llm_performance(llm_google, "Google", prompt)
             results.append(result_google)
-            print(f"Google - Time: {result_google['response_time']:.2f}s")
 
         # Test Anthropic
         if anthropic_credential:
@@ -446,7 +439,6 @@ class TestBYOMPerformanceComparison:
             )
             result_anthropic = self._test_llm_performance(llm_anthropic, "Anthropic", prompt)
             results.append(result_anthropic)
-            print(f"Anthropic - Time: {result_anthropic['response_time']:.2f}s")
 
         # Assertions
         assert len(results) == 3
@@ -456,9 +448,8 @@ class TestBYOMPerformanceComparison:
             assert len(result["content"]) > 0
 
         # Print comparison summary
-        print("\n=== Performance Comparison ===")
         for result in sorted(results, key=lambda x: x["response_time"]):
-            print(f"{result['provider']:10s}: {result['response_time']:.2f}s - {result['content'][:30]}")
+            pass
 
     @pytest.mark.skipif(
         not (has_openai_key() or has_google_key() or has_anthropic_key()),
@@ -482,7 +473,6 @@ class TestBYOMPerformanceComparison:
         ]
         credentials = [c for c in credentials if c is not None]
 
-        print("\n=== Token Usage Comparison ===")
         for credential, provider_name in credentials:
             llm = LLMFactory.create_llm(
                 session=session,
@@ -490,7 +480,6 @@ class TestBYOMPerformanceComparison:
                 credential_id=credential.id
             )
             result = self._test_llm_performance(llm, provider_name, prompt)
-            print(f"{provider_name:10s}: {result['token_usage']}")
 
             # Verify token usage is tracked
             assert result["token_usage"] is not None or provider_name == "Google"  # Google might not return token usage
@@ -524,7 +513,6 @@ class TestBYOMPerformanceComparison:
         ]
         credentials = [c for c in credentials if c is not None]
 
-        print("\n=== Cost Estimation ===")
         for credential, provider_name in credentials:
             llm = LLMFactory.create_llm(
                 session=session,
@@ -542,9 +530,8 @@ class TestBYOMPerformanceComparison:
                     costs = cost_per_1m_tokens[provider_name]
                     input_cost = (input_tokens / 1_000_000) * costs["input"]
                     output_cost = (output_tokens / 1_000_000) * costs["output"]
-                    total_cost = input_cost + output_cost
+                    input_cost + output_cost
 
-                    print(f"{provider_name:10s}: ${total_cost:.6f} ({input_tokens} in, {output_tokens} out)")
 
 
 # ============================================================================
@@ -589,7 +576,6 @@ class TestBYOMErrorHandling:
         with pytest.raises(Exception):  # Will raise authentication error
             llm.invoke([HumanMessage(content="Test")])
 
-        print("✓ Invalid API key handled gracefully")
 
     def test_inactive_credential_handling(self, session: Session, test_user: User):
         """Test: Inactive credential should not be used"""
@@ -618,7 +604,6 @@ class TestBYOMErrorHandling:
                 credential_id=credential.id
             )
 
-        print("✓ Inactive credential rejected")
 
     def test_wrong_user_credential_access(self, session: Session):
         """Test: User cannot access another user's credentials"""
@@ -663,7 +648,6 @@ class TestBYOMErrorHandling:
                 credential_id=credential.id
             )
 
-        print("✓ Cross-user credential access prevented")
 
     def test_unsupported_provider(self):
         """Test: Unsupported provider should raise error"""
@@ -674,4 +658,3 @@ class TestBYOMErrorHandling:
                 model_name="test-model"
             )
 
-        print("✓ Unsupported provider rejected")

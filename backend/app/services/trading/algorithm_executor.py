@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class TradingAlgorithm(Protocol):
     """
     Protocol for trading algorithms
-    
+
     Any algorithm must implement this interface to be executable.
     This will be fully implemented when Phase 3 (Agentic) or Phase 4 (Manual Lab) is complete.
     """
@@ -36,10 +36,10 @@ class TradingAlgorithm(Protocol):
     def generate_signal(self, market_data: dict[str, Any]) -> dict[str, Any]:
         """
         Generate trading signal based on market data
-        
+
         Args:
             market_data: Current market data including prices, volumes, etc.
-            
+
         Returns:
             Dictionary with trading signal:
             {
@@ -55,7 +55,7 @@ class TradingAlgorithm(Protocol):
 class AlgorithmExecutor:
     """
     Executes trading algorithms and manages their lifecycle
-    
+
     Features:
     - Load and execute deployed algorithms
     - Fetch real-time market data
@@ -75,7 +75,7 @@ class AlgorithmExecutor:
     ):
         """
         Initialize algorithm executor
-        
+
         Args:
             session: Database session
             api_key: Coinspot API key
@@ -99,16 +99,16 @@ class AlgorithmExecutor:
     ) -> dict[str, Any]:
         """
         Execute a trading algorithm
-        
+
         Args:
             user_id: User ID
             algorithm_id: Algorithm ID
             algorithm: Algorithm implementation
             market_data: Current market data
-            
+
         Returns:
             Dictionary with execution results
-            
+
         Raises:
             AlgorithmExecutionError: If execution fails
         """
@@ -220,11 +220,11 @@ class AlgorithmExecutor:
     ) -> Decimal:
         """
         Get estimated execution price from market data
-        
+
         Args:
             market_data: Market data
             coin_type: Coin type
-            
+
         Returns:
             Estimated price
         """
@@ -256,12 +256,12 @@ class AlgorithmExecutor:
     ) -> list[dict[str, Any]]:
         """
         Execute multiple algorithms for a user
-        
+
         Args:
             user_id: User ID
             algorithms: List of (algorithm_id, algorithm) tuples
             market_data: Current market data
-            
+
         Returns:
             List of execution results
         """
@@ -296,12 +296,12 @@ class AlgorithmExecutor:
     ) -> dict[str, Any]:
         """
         Get performance metrics for an algorithm
-        
+
         Args:
             algorithm_id: Algorithm ID
             start_date: Start date (optional)
             end_date: End date (optional)
-            
+
         Returns:
             Dictionary with performance metrics
         """
@@ -335,12 +335,12 @@ def get_algorithm_executor(
 ) -> AlgorithmExecutor:
     """
     Get an algorithm executor instance
-    
+
     Args:
         session: Database session
         api_key: Coinspot API key
         api_secret: Coinspot API secret
-        
+
     Returns:
         AlgorithmExecutor instance
     """

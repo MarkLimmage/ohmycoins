@@ -54,7 +54,7 @@ class TestCredentialsCreate:
         user_email = random_email()
         user_password = random_lower_string()
         user_in = UserCreate(email=user_email, password=user_password)
-        user = crud.create_user(session=db, user_create=user_in)
+        crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
 
         data = {
@@ -101,7 +101,7 @@ class TestCredentialsGet:
         user_email = random_email()
         user_password = random_lower_string()
         user_in = UserCreate(email=user_email, password=user_password)
-        user = crud.create_user(session=db, user_create=user_in)
+        crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
 
         # Create credentials
@@ -146,7 +146,7 @@ class TestCredentialsUpdate:
         user_email = random_email()
         user_password = random_lower_string()
         user_in = UserCreate(email=user_email, password=user_password)
-        user = crud.create_user(session=db, user_create=user_in)
+        crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
 
         # Create initial credentials

@@ -37,7 +37,7 @@ class TestPerUserRateLimits:
     ):
         """
         Test 1: Per-user rate limits enforced (e.g., 100 requests/hour).
-        
+
         Security Requirement: Prevent user from overwhelming system.
         Expected: 429 status after limit exceeded.
         """
@@ -48,7 +48,7 @@ class TestPerUserRateLimits:
         max_requests = 10
         requests_made = 0
 
-        for i in range(max_requests + 5):
+        for _i in range(max_requests + 5):
             response = client.get(
                 "/api/v1/users/me/llm-credentials",
                 headers=normal_user_token_headers
@@ -76,19 +76,14 @@ class TestPerUserRateLimits:
     ):
         """
         Test that rate limits can be per-endpoint.
-        
+
         Security Requirement: Different endpoints can have different limits.
         Expected: Read-heavy endpoints have higher limits than write endpoints.
         """
         # Example rate limits by endpoint type
-        rate_limits = {
-            "GET": 100,      # Higher limit for reads
-            "POST": 20,      # Lower limit for writes
-            "DELETE": 10,    # Even lower for destructive operations
-        }
 
         # GET requests (higher limit)
-        for i in range(15):
+        for _i in range(15):
             response = client.get(
                 "/api/v1/users/me/llm-credentials",
                 headers=normal_user_token_headers
@@ -106,13 +101,11 @@ class TestPerUserRateLimits:
     ):
         """
         Test that rate limits reset after time window.
-        
+
         Security Requirement: Rate limit windows must reset.
         Expected: After window expires, requests allowed again.
         """
         # Simulate rate limit with time window
-        window_seconds = 60  # 1 minute window
-        max_requests = 10
 
         # Make requests to hit limit
         # (In real test, would need to actually hit rate limiter)
@@ -135,7 +128,7 @@ class TestProviderRateLimits:
     def test_openai_rate_limit_respected(self, session: Session, normal_user: User):
         """
         Test 2: Per-provider rate limits respected (OpenAI).
-        
+
         Security Requirement: Don't exceed provider API limits.
         Expected: Requests throttled to stay within provider limits.
         """
@@ -164,7 +157,7 @@ class TestProviderRateLimits:
 
         # In real implementation, would track usage and enforce limits
         # Example tracking:
-        usage_tracker = {
+        {
             "minute": {"count": 0, "reset_at": datetime.now() + timedelta(minutes=1)},
             "day": {"count": 0, "reset_at": datetime.now() + timedelta(days=1)},
         }
@@ -176,7 +169,7 @@ class TestProviderRateLimits:
     def test_anthropic_rate_limit_respected(self, session: Session, normal_user: User):
         """
         Test per-provider rate limits respected (Anthropic).
-        
+
         Security Requirement: Don't exceed Anthropic API limits.
         Expected: Requests throttled to stay within provider limits.
         """
@@ -207,7 +200,7 @@ class TestProviderRateLimits:
     def test_provider_rate_limit_per_user(self, session: Session):
         """
         Test that provider rate limits are per-user API key.
-        
+
         Security Requirement: Each user's API key has independent limits.
         Expected: User A hitting limit doesn't affect User B.
         """
@@ -232,11 +225,11 @@ class TestRateLimitHeaders:
     ):
         """
         Test 3: Rate limit headers in API responses.
-        
+
         Security Requirement: Users should know their rate limit status.
         Expected: X-RateLimit-* headers in responses.
         """
-        response = client.get(
+        client.get(
             "/api/v1/users/me/llm-credentials",
             headers=normal_user_token_headers
         )
@@ -263,12 +256,12 @@ class TestRateLimitHeaders:
     ):
         """
         Test that rate limit headers are accurate.
-        
+
         Security Requirement: Headers must reflect actual limits.
         Expected: Remaining count decreases with each request.
         """
         # Make first request
-        response1 = client.get(
+        client.get(
             "/api/v1/users/me/llm-credentials",
             headers=normal_user_token_headers
         )
@@ -277,7 +270,7 @@ class TestRateLimitHeaders:
         # remaining1 = int(response1.headers.get("X-RateLimit-Remaining", 100))
 
         # Make second request
-        response2 = client.get(
+        client.get(
             "/api/v1/users/me/llm-credentials",
             headers=normal_user_token_headers
         )
@@ -298,7 +291,7 @@ class TestRateLimitResponse:
     ):
         """
         Test 4: Graceful degradation when limits hit (429 status).
-        
+
         Security Requirement: Rate limit violations return proper status.
         Expected: 429 Too Many Requests with Retry-After header.
         """
@@ -326,7 +319,7 @@ class TestRateLimitResponse:
     def test_rate_limit_error_message_helpful(self):
         """
         Test that rate limit errors are user-friendly.
-        
+
         Security Requirement: Error messages guide users.
         Expected: Clear message about what happened and when to retry.
         """
@@ -357,7 +350,7 @@ class TestRateLimitBypassPrevention:
     ):
         """
         Test 5: Rate limit bypass prevention (multiple accounts).
-        
+
         Security Requirement: Cannot bypass by creating multiple accounts.
         Expected: Rate limits enforced per user, not per token.
         """
@@ -370,14 +363,14 @@ class TestRateLimitBypassPrevention:
             "/api/v1/login/access-token",
             data={"username": normal_user.email, "password": "TestPassword123!"}
         )
-        token1 = login1.json()["access_token"]
+        login1.json()["access_token"]
 
         # Login again to get second token (same user)
         login2 = client.post(
             "/api/v1/login/access-token",
             data={"username": normal_user.email, "password": "TestPassword123!"}
         )
-        token2 = login2.json()["access_token"]
+        login2.json()["access_token"]
 
         # Both tokens represent same user
         # Rate limiting should be per user, not per token
@@ -394,7 +387,7 @@ class TestRateLimitBypassPrevention:
     ):
         """
         Test rate limit bypass prevention (IP spoofing).
-        
+
         Security Requirement: Cannot bypass by changing IP.
         Expected: Rate limits tied to authenticated user, not IP.
         """
@@ -428,7 +421,7 @@ class TestRateLimitBypassPrevention:
     ):
         """
         Test that rate limits persist across login sessions.
-        
+
         Security Requirement: Cannot reset by logging out/in.
         Expected: Rate limit tracked in persistent store (Redis/database).
         """
@@ -445,7 +438,7 @@ class TestRateLimitBypassPrevention:
         headers1 = {"Authorization": f"Bearer {token1}"}
 
         # Make some requests
-        for i in range(5):
+        for _i in range(5):
             client.get("/api/v1/users/me/llm-credentials", headers=headers1)
 
         # Logout and login again
@@ -459,7 +452,7 @@ class TestRateLimitBypassPrevention:
 
         # Make more requests in new session
         # Should count toward same rate limit
-        response = client.get("/api/v1/users/me/llm-credentials", headers=headers2)
+        client.get("/api/v1/users/me/llm-credentials", headers=headers2)
 
         # In real implementation with rate limiting:
         # - Rate limit state stored in Redis with user_id key
@@ -478,7 +471,7 @@ class TestAdminRateLimits:
     ):
         """
         Test 6: Admin users have higher limits (if applicable).
-        
+
         Security Requirement: Admins need higher limits for management tasks.
         Expected: Superuser flag grants higher rate limits.
         """
@@ -504,7 +497,7 @@ class TestAdminRateLimits:
     def test_rate_limit_determined_by_user_role(self, session: Session):
         """
         Test that rate limits are determined by user role.
-        
+
         Security Requirement: Different roles have different limits.
         Expected: is_superuser flag affects rate limit calculation.
         """
@@ -553,7 +546,7 @@ class TestConcurrentRequestHandling:
     ):
         """
         Test that concurrent requests are accurately counted.
-        
+
         Security Requirement: Race conditions don't allow bypass.
         Expected: Thread-safe rate limit counter.
         """
@@ -570,7 +563,7 @@ class TestConcurrentRequestHandling:
     def test_rate_limit_with_distributed_system(self):
         """
         Test rate limiting works across multiple API servers.
-        
+
         Security Requirement: Shared rate limit state across servers.
         Expected: Redis or similar for shared state.
         """
@@ -594,7 +587,7 @@ class TestRateLimitConfiguration:
     def test_rate_limits_configurable(self):
         """
         Test that rate limits can be configured.
-        
+
         Security Requirement: Admins can adjust limits without code changes.
         Expected: Limits in config file or environment variables.
         """
@@ -623,7 +616,7 @@ class TestRateLimitConfiguration:
     def test_rate_limits_monitorable(self):
         """
         Test that rate limit metrics can be monitored.
-        
+
         Security Requirement: Ops team can track rate limiting.
         Expected: Metrics exposed for monitoring (Prometheus, etc.).
         """
