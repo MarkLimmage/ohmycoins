@@ -4,7 +4,7 @@ Tests for the encryption service
 Tests encryption, decryption, and API key masking functionality.
 """
 import pytest
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 from app.services.encryption import EncryptionService
 

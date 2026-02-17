@@ -573,7 +573,7 @@ class TestBYOMErrorHandling:
         assert isinstance(llm, ChatOpenAI)
 
         # Invocation should fail gracefully
-        with pytest.raises(Exception):  # Will raise authentication error
+        with pytest.raises(Exception):  # noqa: B017
             llm.invoke([HumanMessage(content="Test")])
 
 

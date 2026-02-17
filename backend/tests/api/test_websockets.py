@@ -46,6 +46,6 @@ def test_websocket_exchange_connection(session: Session):
 
 def test_websocket_invalid_token():
     client = TestClient(app)
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         with client.websocket_connect("/ws/catalyst/live?token=invalid"):
             pass
