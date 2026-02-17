@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Base collector class for all data collectors in Phase 2.5.
 
@@ -183,12 +182,12 @@ class BaseCollector(ABC):
             if run_id:
                 try:
                     with Session(engine) as session:
-                        collector_run = session.get(CollectorRuns, run_id)
-                        if collector_run:
-                            collector_run.status = CollectorStatus.FAILED
-                            collector_run.completed_at = datetime.now(timezone.utc)
-                            collector_run.error_message = str(e)[:1000]  # Truncate long errors
-                            session.add(collector_run)
+                        failed_run = session.get(CollectorRuns, run_id)
+                        if failed_run:
+                            failed_run.status = CollectorStatus.FAILED
+                            failed_run.completed_at = datetime.now(timezone.utc)
+                            failed_run.error_message = str(e)[:1000]  # Truncate long errors
+                            session.add(failed_run)
                             session.commit()
                 except Exception as db_error:
                     logger.error(
