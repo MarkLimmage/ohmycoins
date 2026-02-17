@@ -17,4 +17,7 @@ export default defineConfig({
     }),
     react(),
   ],
+  test: {
+    exclude: ["tests/**", "node_modules/**"],
+  },
 })
