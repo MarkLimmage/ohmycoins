@@ -1,16 +1,20 @@
 # mypy: ignore-errors
-from typing import Annotated, List
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select, desc
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, desc, select
 
 from app.api.deps import CurrentUser, get_db
 from app.models import (
-    Order, OrderCreate, OrderPublic, OrderRequest, OrderResponse,
-    Position, PositionPublic
+    Order,
+    OrderPublic,
+    OrderRequest,
+    OrderResponse,
+    Position,
+    PositionPublic,
 )
-from app.services.trading.executor import get_order_queue, OrderExecutionError
+from app.services.trading.executor import get_order_queue
 
 router = APIRouter()
 
@@ -26,10 +30,10 @@ async def place_order(
     # Create order in DB (pending)
     # OrderRequest inherits from OrderCreate which has basic fields
     # We need to explicitly set user_id
-    
+
     # Note: OrderRequest is exactly OrderCreate.
     # Order has additional fields like status.
-    
+
     order = Order(
         user_id=user.id,
         status="pending",
@@ -52,7 +56,7 @@ async def place_order(
 
     return order
 
-@router.get("/orders", response_model=List[OrderPublic])
+@router.get("/orders", response_model=list[OrderPublic])
 def read_orders(
     session: Annotated[Session, Depends(get_db)],
     user: CurrentUser,
@@ -80,20 +84,20 @@ def cancel_order(
         raise HTTPException(status_code=404, detail="Order not found")
     if order.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+
     if order.status in ['filled', 'cancelled', 'failed']:
         raise HTTPException(status_code=400, detail=f"Order already {order.status}")
 
     # TODO: If status is 'submitted', we should technically call the exchange to cancel.
     # However, for this sprint we handle internal queue cancellation.
-    
+
     order.status = 'cancelled'
     session.add(order)
     session.commit()
     session.refresh(order)
     return order
 
-@router.get("/positions", response_model=List[PositionPublic])
+@router.get("/positions", response_model=list[PositionPublic])
 def read_positions(
     session: Annotated[Session, Depends(get_db)],
     user: CurrentUser,

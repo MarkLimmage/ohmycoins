@@ -37,7 +37,7 @@ class NansenCollector(APICollector):
     
     API Documentation: https://docs.nansen.ai/
     """
-    
+
     # Top tokens to track for smart money flows
     TRACKED_TOKENS = [
         "ETH",  # Ethereum
@@ -46,7 +46,7 @@ class NansenCollector(APICollector):
         "USDC",  # USD Coin
         "DAI",  # Dai stablecoin
     ]
-    
+
     def __init__(self, api_key: str | None = None):
         """
         Initialize the Nansen collector.
@@ -60,7 +60,7 @@ class NansenCollector(APICollector):
                 "Nansen API key required. Set NANSEN_API_KEY environment variable "
                 "or pass api_key parameter. Get a key at: https://nansen.ai/"
             )
-        
+
         super().__init__(
             name="nansen_api",
             ledger="glass",  # On-chain data
@@ -69,7 +69,7 @@ class NansenCollector(APICollector):
             max_retries=3,
             rate_limit_delay=5.0,  # Conservative rate limiting
         )
-    
+
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect smart money wallet flows from Nansen API.
@@ -81,9 +81,9 @@ class NansenCollector(APICollector):
             Exception: If API request fails
         """
         logger.info(f"{self.name}: Collecting smart money flows")
-        
+
         collected_data = []
-        
+
         try:
             # Collect flows for each tracked token
             for token in self.TRACKED_TOKENS:
@@ -93,22 +93,22 @@ class NansenCollector(APICollector):
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                     }
-                    
+
                     # Fetch smart money flows for this token
                     response = await self.fetch_json(
                         f"/smart-money/flows/{token}",
                         headers=headers
                     )
-                    
+
                     if not response:
                         logger.warning(f"{self.name}: No data for {token}")
                         continue
-                    
+
                     # Extract flow data
                     net_flow_usd = response.get("netFlowUsd", 0)
                     buying_wallets = response.get("buyingWallets", [])
                     selling_wallets = response.get("sellingWallets", [])
-                    
+
                     data_point = {
                         "token": token,
                         "net_flow_usd": Decimal(str(net_flow_usd)) if net_flow_usd else Decimal("0"),
@@ -118,22 +118,22 @@ class NansenCollector(APICollector):
                         "selling_wallets": selling_wallets[:10],  # Store top 10 only
                         "collected_at": datetime.now(timezone.utc),
                     }
-                    
+
                     collected_data.append(data_point)
                     logger.debug(f"{self.name}: Collected flow data for {token}")
-                    
+
                 except Exception as e:
                     logger.error(f"{self.name}: Failed to collect {token} flows: {str(e)}")
                     # Continue with other tokens
                     continue
-            
+
             logger.info(f"{self.name}: Collected {len(collected_data)} smart money flows")
             return collected_data
-            
+
         except Exception as e:
             logger.error(f"{self.name}: Failed to collect smart money flows: {str(e)}")
             raise
-    
+
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected smart money flow data.
@@ -148,14 +148,14 @@ class NansenCollector(APICollector):
             ValueError: If validation fails
         """
         validated = []
-        
+
         for item in data:
             try:
                 # Validate required fields
                 if not item.get("token"):
                     logger.warning(f"{self.name}: Missing token, skipping")
                     continue
-                
+
                 # Validate net flow is numeric
                 if "net_flow_usd" in item:
                     try:
@@ -163,21 +163,21 @@ class NansenCollector(APICollector):
                     except Exception:
                         logger.warning(f"{self.name}: Invalid net_flow_usd for {item['token']}, skipping")
                         continue
-                
+
                 # Validate wallet counts
                 if item.get("buying_wallet_count", 0) < 0 or item.get("selling_wallet_count", 0) < 0:
                     logger.warning(f"{self.name}: Invalid wallet counts for {item['token']}, skipping")
                     continue
-                
+
                 validated.append(item)
-                
+
             except (ValueError, TypeError) as e:
                 logger.warning(f"{self.name}: Invalid data: {str(e)}")
                 continue
-        
+
         logger.info(f"{self.name}: Validated {len(validated)}/{len(data)} records")
         return validated
-    
+
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated smart money flow data in the database.
@@ -190,7 +190,7 @@ class NansenCollector(APICollector):
             Number of records stored
         """
         stored_count = 0
-        
+
         for item in data:
             try:
                 smart_money_flow = SmartMoneyFlow(
@@ -203,22 +203,22 @@ class NansenCollector(APICollector):
                     collected_at=item["collected_at"],
                 )
                 session.add(smart_money_flow)
-                
+
                 logger.info(
                     f"{self.name}: Storing smart money flow: {item['token']} - "
                     f"Net Flow: ${item['net_flow_usd']}, "
                     f"Buyers: {item['buying_wallet_count']}, "
                     f"Sellers: {item['selling_wallet_count']}"
                 )
-                
+
                 stored_count += 1
-                
+
             except Exception as e:
                 logger.error(
                     f"{self.name}: Failed to store flow data for '{item.get('token', 'unknown')}': {str(e)}"
                 )
                 continue
-        
+
         try:
             session.commit()
             logger.info(f"{self.name}: Stored {stored_count} smart money flow records")
@@ -226,5 +226,5 @@ class NansenCollector(APICollector):
             logger.error(f"{self.name}: Failed to commit records: {str(e)}")
             session.rollback()
             stored_count = 0
-        
+
         return stored_count

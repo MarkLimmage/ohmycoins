@@ -11,23 +11,21 @@ Week 5-6 enhancement: Added ModelTrainingAgent and ModelEvaluatorAgent nodes for
 Week 7-8 enhancement: Added ReAct loop with reasoning, conditional routing, and error recovery.
 """
 
-from typing import Any, TypedDict, Literal
-from sqlmodel import Session
 import logging
 import uuid
+from typing import Any, Literal, TypedDict
 
-from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.graph import END, StateGraph
+from sqlmodel import Session
 
 from app.core.config import settings
-from app.services.agent.llm_factory import LLMFactory
-from app.services.agent.agents.base import BaseAgent
-from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.data_analyst import DataAnalystAgent
-from app.services.agent.agents.model_training import ModelTrainingAgent
+from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
+from app.services.agent.agents.model_training import ModelTrainingAgent
 from app.services.agent.agents.reporting import ReportingAgent
+from app.services.agent.llm_factory import LLMFactory
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +126,7 @@ class LangGraphWorkflow:
         self.model_training_agent = ModelTrainingAgent()
         self.model_evaluator_agent = ModelEvaluatorAgent()
         self.reporting_agent = ReportingAgent()
-        
+
         # Initialize LLM for reasoning using LLM Factory (Sprint 2.9)
         self.llm = None
         if session and user_id:
@@ -157,7 +155,7 @@ class LangGraphWorkflow:
                 max_tokens=settings.MAX_TOKENS_PER_REQUEST,
                 streaming=settings.ENABLE_STREAMING,
             )
-    
+
     def set_session(self, session: Session) -> None:
         """
         Set the database session for agents.
@@ -182,10 +180,10 @@ class LangGraphWorkflow:
         """
         # Create the state graph
         workflow = StateGraph(AgentState)
-        
+
         # Add reasoning/planning node (ReAct: Reason phase)
         workflow.add_node("reason", self._reason_node)
-        
+
         # Add nodes for different stages (ReAct: Act phase)
         workflow.add_node("initialize", self._initialize_node)
         workflow.add_node("retrieve_data", self._retrieve_data_node)
@@ -195,23 +193,23 @@ class LangGraphWorkflow:
         workflow.add_node("evaluate_model", self._evaluate_model_node)
         workflow.add_node("generate_report", self._generate_report_node)
         workflow.add_node("finalize", self._finalize_node)
-        
+
         # Add error recovery node
         workflow.add_node("handle_error", self._handle_error_node)
-        
+
         # Define edges with conditional routing
         workflow.set_entry_point("initialize")
-        
+
         # After initialization, always reason first
         workflow.add_edge("initialize", "reason")
-        
+
         # Conditional routing from reason node
         workflow.add_conditional_edges(
             "reason",
             self._route_after_reasoning,
             {
                 "retrieve": "retrieve_data",
-                "analyze": "analyze_data", 
+                "analyze": "analyze_data",
                 "train": "train_model",
                 "evaluate": "evaluate_model",
                 "report": "generate_report",
@@ -219,10 +217,10 @@ class LangGraphWorkflow:
                 "error": "handle_error",
             }
         )
-        
+
         # After data retrieval, validate the data
         workflow.add_edge("retrieve_data", "validate_data")
-        
+
         # Conditional routing after validation
         workflow.add_conditional_edges(
             "validate_data",
@@ -234,7 +232,7 @@ class LangGraphWorkflow:
                 "error": "handle_error",
             }
         )
-        
+
         # After analysis, decide next step
         workflow.add_conditional_edges(
             "analyze_data",
@@ -246,7 +244,7 @@ class LangGraphWorkflow:
                 "error": "handle_error",
             }
         )
-        
+
         # After training, evaluate
         workflow.add_conditional_edges(
             "train_model",
@@ -257,7 +255,7 @@ class LangGraphWorkflow:
                 "error": "handle_error",
             }
         )
-        
+
         # After evaluation, generate report or retry
         workflow.add_conditional_edges(
             "evaluate_model",
@@ -269,10 +267,10 @@ class LangGraphWorkflow:
                 "error": "handle_error",
             }
         )
-        
+
         # After report generation, finalize
         workflow.add_edge("generate_report", "finalize")
-        
+
         # Error handling routes back to reason or ends
         workflow.add_conditional_edges(
             "handle_error",
@@ -282,10 +280,10 @@ class LangGraphWorkflow:
                 "end": "finalize",
             }
         )
-        
+
         # Finalize always ends
         workflow.add_edge("finalize", END)
-        
+
         return workflow.compile()
 
     async def _initialize_node(self, state: AgentState) -> AgentState:
@@ -306,7 +304,7 @@ class LangGraphWorkflow:
         state["model_trained"] = False
         state["model_evaluated"] = False
         state["reporting_completed"] = False
-        
+
         # Week 7-8: Initialize ReAct loop fields
         state["reasoning_trace"] = []
         state["decision_history"] = []
@@ -316,16 +314,16 @@ class LangGraphWorkflow:
         state["skip_training"] = False
         state["needs_more_data"] = False
         state["quality_checks"] = {}
-        
+
         # Week 11: Initialize reporting fields
         state["report_generated"] = False
         state["report_data"] = None
-        
+
         state["messages"].append({
             "role": "system",
             "content": "Agent workflow initialized with ReAct loop. Starting reasoning phase..."
         })
-        
+
         logger.info(f"Workflow initialized for session {state.get('session_id')}")
         return state
 
@@ -347,10 +345,10 @@ class LangGraphWorkflow:
             Updated state with reasoning decision
         """
         state["current_step"] = "reasoning"
-        
+
         # Build context for reasoning
         context_parts = [f"User Goal: {state.get('user_goal', 'Unknown')}"]
-        
+
         # Add what's been completed
         completed_steps = []
         if state.get("data_retrieved"):
@@ -361,25 +359,25 @@ class LangGraphWorkflow:
             completed_steps.append("✓ Model trained")
         if state.get("model_evaluated"):
             completed_steps.append("✓ Model evaluated")
-        
+
         if completed_steps:
             context_parts.append(f"Completed: {', '.join(completed_steps)}")
-        
+
         # Add error context if any
         if state.get("error"):
             context_parts.append(f"Previous Error: {state.get('error')}")
             context_parts.append(f"Retry Count: {state.get('retry_count', 0)}/{state.get('max_retries', 3)}")
-        
+
         # Add quality check results if any
         quality_checks = state.get("quality_checks", {})
         if quality_checks:
             context_parts.append(f"Data Quality: {quality_checks.get('overall', 'Unknown')}")
-        
+
         context = "\n".join(context_parts)
-        
+
         # Perform reasoning (simplified version without LLM if no API key)
         reasoning = self._determine_next_action(state)
-        
+
         # Store reasoning trace
         reasoning_entry = {
             "step": state.get("iteration", 0),
@@ -387,19 +385,19 @@ class LangGraphWorkflow:
             "decision": reasoning,
             "timestamp": state.get("current_step", "unknown")
         }
-        
+
         reasoning_trace = state.get("reasoning_trace", [])
         reasoning_trace.append(reasoning_entry)
         state["reasoning_trace"] = reasoning_trace
-        
+
         state["messages"].append({
             "role": "system",
             "content": f"Reasoning: {reasoning}"
         })
-        
+
         logger.info(f"Reasoning completed: {reasoning}")
         return state
-    
+
     def _determine_next_action(self, state: AgentState) -> str:
         """
         Determine the next action based on current state.
@@ -417,7 +415,7 @@ class LangGraphWorkflow:
             return "Will retry the failed step after error recovery"
         elif state.get("error") and state.get("retry_count", 0) >= state.get("max_retries", 3):
             return "Max retries reached, will finalize with partial results"
-        
+
         # Normal flow
         if not state.get("data_retrieved"):
             return "Need to retrieve data first"
@@ -450,18 +448,18 @@ class LangGraphWorkflow:
             Updated state with retrieved data
         """
         state["current_step"] = "data_retrieval"
-        
+
         try:
             # Execute data retrieval agent
             updated_state = await self.data_retrieval_agent.execute(state)
-            
+
             # Add message about data retrieval
             data_types = updated_state.get("retrieval_metadata", {}).get("data_types", [])
             updated_state["messages"].append({
                 "role": "assistant",
                 "content": f"Data retrieval completed. Retrieved: {', '.join(data_types)}"
             })
-            
+
             return updated_state
         except Exception as e:
             logger.error(f"Error in data retrieval: {str(e)}")
@@ -482,14 +480,14 @@ class LangGraphWorkflow:
             Updated state with quality check results
         """
         state["current_step"] = "data_validation"
-        
+
         retrieved_data = state.get("retrieved_data", {})
         quality_checks = {}
-        
+
         # Check if we have data
         has_data = bool(retrieved_data)
         quality_checks["has_data"] = has_data
-        
+
         # Check data completeness
         if has_data:
             data_types = []
@@ -501,15 +499,15 @@ class LangGraphWorkflow:
                 data_types.append("on-chain")
             if "catalyst_data" in retrieved_data and retrieved_data["catalyst_data"]:
                 data_types.append("catalysts")
-            
+
             quality_checks["data_types_available"] = data_types
             quality_checks["completeness"] = len(data_types) >= 1  # At least one type
-            
+
             # Check data size (for price data, main requirement)
             price_data = retrieved_data.get("price_data", [])
             quality_checks["price_records"] = len(price_data)
             quality_checks["sufficient_records"] = len(price_data) >= 30  # At least 30 records
-            
+
             # Overall quality assessment
             if quality_checks["completeness"] and quality_checks["sufficient_records"]:
                 quality_checks["overall"] = "good"
@@ -519,17 +517,17 @@ class LangGraphWorkflow:
                 quality_checks["overall"] = "poor"
         else:
             quality_checks["overall"] = "no_data"
-        
+
         state["quality_checks"] = quality_checks
-        
+
         # Log validation results
         logger.info(f"Data validation: {quality_checks['overall']}")
-        
+
         state["messages"].append({
             "role": "system",
             "content": f"Data validation complete. Quality: {quality_checks['overall']}"
         })
-        
+
         return state
 
     async def _analyze_data_node(self, state: AgentState) -> AgentState:
@@ -545,11 +543,11 @@ class LangGraphWorkflow:
             Updated state with analysis results
         """
         state["current_step"] = "data_analysis"
-        
+
         try:
             # Execute data analyst agent
             updated_state = await self.data_analyst_agent.execute(state)
-            
+
             # Add message about analysis
             insights = updated_state.get("insights", [])
             insight_summary = "; ".join(insights[:3]) if insights else "Analysis complete"
@@ -557,7 +555,7 @@ class LangGraphWorkflow:
                 "role": "assistant",
                 "content": f"Data analysis completed. Key insights: {insight_summary}"
             })
-            
+
             return updated_state
         except Exception as e:
             logger.error(f"Error in data analysis: {str(e)}")
@@ -577,11 +575,11 @@ class LangGraphWorkflow:
             Updated state with trained models
         """
         state["current_step"] = "model_training"
-        
+
         try:
             # Execute model training agent
             updated_state = await self.model_training_agent.execute(state)
-            
+
             # Add message about training
             if updated_state.get("model_trained"):
                 training_summary = updated_state.get("training_summary", "Model training completed")
@@ -589,7 +587,7 @@ class LangGraphWorkflow:
                     "role": "assistant",
                     "content": f"Model training completed. {training_summary.split(chr(10))[0]}"
                 })
-            
+
             return updated_state
         except Exception as e:
             logger.error(f"Error in model training: {str(e)}")
@@ -609,11 +607,11 @@ class LangGraphWorkflow:
             Updated state with evaluation results
         """
         state["current_step"] = "model_evaluation"
-        
+
         try:
             # Execute model evaluator agent
             updated_state = await self.model_evaluator_agent.execute(state)
-            
+
             # Add message about evaluation
             if updated_state.get("model_evaluated"):
                 insights = updated_state.get("evaluation_insights", [])
@@ -622,7 +620,7 @@ class LangGraphWorkflow:
                     "role": "assistant",
                     "content": f"Model evaluation completed. {insight_summary}"
                 })
-            
+
             return updated_state
         except Exception as e:
             logger.error(f"Error in model evaluation: {str(e)}")
@@ -642,17 +640,17 @@ class LangGraphWorkflow:
             Updated state with reporting results
         """
         state["current_step"] = "report_generation"
-        
+
         try:
             # Execute reporting agent
             updated_state = await self.reporting_agent.execute(state)
-            
+
             # Add message about reporting
             if updated_state.get("reporting_completed"):
                 reporting_results = updated_state.get("reporting_results", {})
                 viz_count = len(reporting_results.get("visualizations", {}))
                 rec_count = len(reporting_results.get("recommendations", []))
-                
+
                 updated_state["messages"].append({
                     "role": "assistant",
                     "content": (
@@ -660,7 +658,7 @@ class LangGraphWorkflow:
                         f"and {rec_count} recommendations. Complete report available."
                     )
                 })
-            
+
             return updated_state
         except Exception as e:
             logger.error(f"Error in report generation: {str(e)}")
@@ -684,35 +682,35 @@ class LangGraphWorkflow:
         """
         state["current_step"] = "finalization"
         state["status"] = "completed"
-        
+
         # Build comprehensive result message
         result_parts = ["Workflow completed successfully."]
-        
+
         # Add analysis insights
         insights = state.get("insights", [])
         if insights:
             result_parts.append("\n\nData Analysis Insights:")
             result_parts.extend([f"- {insight}" for insight in insights[:5]])
-        
+
         # Add training summary
         training_summary = state.get("training_summary")
         if training_summary:
             result_parts.append("\n\nModel Training Summary:")
             result_parts.append(training_summary)
-        
+
         # Add evaluation insights
         eval_insights = state.get("evaluation_insights", [])
         if eval_insights:
             result_parts.append("\n\nModel Evaluation Insights:")
             result_parts.extend([f"- {insight}" for insight in eval_insights])
-        
+
         state["result"] = "\n".join(result_parts)
-        
+
         state["messages"].append({
             "role": "assistant",
             "content": "Workflow completed successfully. All results prepared."
         })
-        
+
         return state
 
     async def _handle_error_node(self, state: AgentState) -> AgentState:
@@ -729,16 +727,16 @@ class LangGraphWorkflow:
             Updated state with error handling
         """
         state["current_step"] = "error_handling"
-        
+
         error = state.get("error", "Unknown error")
         retry_count = state.get("retry_count", 0)
         max_retries = state.get("max_retries", 3)
-        
+
         logger.warning(f"Handling error: {error}, retry {retry_count}/{max_retries}")
-        
+
         # Increment retry count
         state["retry_count"] = retry_count + 1
-        
+
         # Record error in decision history
         decision_history = state.get("decision_history", [])
         decision_history.append({
@@ -748,7 +746,7 @@ class LangGraphWorkflow:
             "action": "retry" if state["retry_count"] <= max_retries else "abort"
         })
         state["decision_history"] = decision_history
-        
+
         if state["retry_count"] <= max_retries:
             state["messages"].append({
                 "role": "system",
@@ -759,14 +757,14 @@ class LangGraphWorkflow:
         else:
             state["messages"].append({
                 "role": "system",
-                "content": f"Max retries reached. Finalizing with partial results."
+                "content": "Max retries reached. Finalizing with partial results."
             })
             state["status"] = "completed_with_errors"
-        
+
         return state
-    
+
     # Routing Functions for Conditional Edges
-    
+
     def _route_after_reasoning(self, state: AgentState) -> Literal["retrieve", "analyze", "train", "evaluate", "report", "finalize", "error"]:
         """
         Route after reasoning based on current state.
@@ -782,7 +780,7 @@ class LangGraphWorkflow:
         # Check for errors
         if state.get("error"):
             return "error"
-        
+
         # Normal flow based on completion status
         if not state.get("data_retrieved"):
             return "retrieve"
@@ -805,7 +803,7 @@ class LangGraphWorkflow:
             return "report"
         else:
             return "finalize"
-    
+
     def _route_after_validation(self, state: AgentState) -> Literal["analyze", "retry", "reason", "error"]:
         """
         Route after data validation.
@@ -818,12 +816,12 @@ class LangGraphWorkflow:
         """
         quality_checks = state.get("quality_checks", {})
         overall_quality = quality_checks.get("overall", "unknown")
-        
+
         if overall_quality == "no_data":
             # No data retrieved, check retry count
             retry_count = state.get("retry_count", 0)
             max_retries = state.get("max_retries", 3)
-            
+
             if retry_count < max_retries:
                 # Increment retry count and retry
                 state["retry_count"] = retry_count + 1
@@ -849,7 +847,7 @@ class LangGraphWorkflow:
                 return "error"
             state["retry_count"] = retry_count + 1
             return "reason"
-    
+
     def _route_after_analysis(self, state: AgentState) -> Literal["train", "finalize", "reason", "error"]:
         """
         Route after data analysis.
@@ -864,7 +862,7 @@ class LangGraphWorkflow:
         if not state.get("analysis_completed"):
             state["error"] = "Analysis failed to complete"
             return "error"
-        
+
         # Check if training is needed
         user_goal = state.get("user_goal", "").lower()
         if any(keyword in user_goal for keyword in ["predict", "model", "forecast", "train", "ml"]):
@@ -872,7 +870,7 @@ class LangGraphWorkflow:
         else:
             # No training needed, finalize
             return "finalize"
-    
+
     def _route_after_training(self, state: AgentState) -> Literal["evaluate", "reason", "error"]:
         """
         Route after model training.
@@ -886,9 +884,9 @@ class LangGraphWorkflow:
         if not state.get("model_trained"):
             state["error"] = "Model training failed"
             return "error"
-        
+
         return "evaluate"
-    
+
     def _route_after_evaluation(self, state: AgentState) -> Literal["report", "retrain", "reason", "error"]:
         """
         Route after model evaluation.
@@ -904,17 +902,17 @@ class LangGraphWorkflow:
         if not state.get("model_evaluated"):
             state["error"] = "Model evaluation failed"
             return "error"
-        
+
         # Check if model performance is acceptable
         evaluation_results = state.get("evaluation_results", {})
-        
+
         # Simple check: if we have results, generate report
         # In future, could check metrics and decide to retrain
         if evaluation_results:
             return "report"
         else:
             return "report"
-    
+
     def _route_after_error(self, state: AgentState) -> Literal["retry", "end"]:
         """
         Route after error handling.

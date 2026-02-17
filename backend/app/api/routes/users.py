@@ -1,10 +1,10 @@
+import logging
 import uuid
 from typing import Any
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
 from langchain_core.messages import HumanMessage
+from sqlmodel import func, select
 
 from app import crud
 from app.api.deps import (
@@ -19,22 +19,21 @@ from app.models import (
     UpdatePassword,
     User,
     UserCreate,
+    UserLLMCredentials,
+    UserLLMCredentialsCreate,
+    UserLLMCredentialsPublic,
+    UserLLMCredentialsValidate,
+    UserLLMCredentialsValidationResult,
+    UserProfilePublic,
+    UserProfileUpdate,
     UserPublic,
     UserRegister,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
-    UserProfilePublic,
-    UserProfileUpdate,
-    UserLLMCredentials,
-    UserLLMCredentialsCreate,
-    UserLLMCredentialsUpdate,
-    UserLLMCredentialsPublic,
-    UserLLMCredentialsValidate,
-    UserLLMCredentialsValidationResult,
 )
-from app.services.encryption import encryption_service
 from app.services.agent.llm_factory import LLMFactory
+from app.services.encryption import encryption_service
 from app.utils import generate_new_account_email, send_email
 
 logger = logging.getLogger(__name__)
@@ -144,11 +143,11 @@ def read_user_profile(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     # Check if user has Coinspot credentials
     from app.models import CoinspotCredentials
-    
+
     credentials = session.exec(
         select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
     ).first()
-    
+
     return UserProfilePublic(
         email=current_user.email,
         full_name=current_user.full_name,
@@ -173,14 +172,14 @@ def update_user_profile(
     session.add(current_user)
     session.commit()
     session.refresh(current_user)
-    
+
     # Check credentials for response
     from app.models import CoinspotCredentials
-    
+
     credentials = session.exec(
         select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
     ).first()
-    
+
     return UserProfilePublic(
         email=current_user.email,
         full_name=current_user.full_name,
@@ -317,13 +316,13 @@ def create_llm_credentials(
             UserLLMCredentials.is_active == True
         )
     ).first()
-    
+
     if existing:
         raise HTTPException(
             status_code=400,
             detail=f"Active {credentials_in.provider} credentials already exist. Use PUT to update or DELETE first."
         )
-    
+
     # Encrypt API key
     try:
         encrypted_api_key = encryption_service.encrypt_api_key(credentials_in.api_key)
@@ -333,7 +332,7 @@ def create_llm_credentials(
             status_code=500,
             detail="Failed to encrypt API key"
         )
-    
+
     # If this should be default, unset any existing defaults
     if credentials_in.is_default:
         existing_defaults = session.exec(
@@ -345,7 +344,7 @@ def create_llm_credentials(
         for cred in existing_defaults:
             cred.is_default = False
             session.add(cred)
-    
+
     # Create credentials record
     db_credentials = UserLLMCredentials(
         user_id=current_user.id,
@@ -356,14 +355,14 @@ def create_llm_credentials(
         is_default=credentials_in.is_default,
         is_active=True
     )
-    
+
     session.add(db_credentials)
     session.commit()
     session.refresh(db_credentials)
-    
+
     # Return public view with masked API key
     api_key_masked = encryption_service.mask_api_key(credentials_in.api_key)
-    
+
     return UserLLMCredentialsPublic(
         id=db_credentials.id,
         user_id=db_credentials.user_id,
@@ -396,7 +395,7 @@ def list_llm_credentials(
             UserLLMCredentials.is_active == True
         )
     ).all()
-    
+
     result = []
     for cred in credentials_list:
         # Decrypt API key to mask it
@@ -406,7 +405,7 @@ def list_llm_credentials(
         except Exception as e:
             logger.error(f"Failed to decrypt API key for masking: {e}")
             api_key_masked = "****"
-        
+
         result.append(UserLLMCredentialsPublic(
             id=cred.id,
             user_id=cred.user_id,
@@ -419,7 +418,7 @@ def list_llm_credentials(
             created_at=cred.created_at,
             updated_at=cred.updated_at
         ))
-    
+
     return result
 
 
@@ -436,16 +435,16 @@ def set_default_llm_credential(
     Unsets any existing default credentials.
     """
     credential = session.get(UserLLMCredentials, credential_id)
-    
+
     if not credential:
         raise HTTPException(status_code=404, detail="Credential not found")
-    
+
     if credential.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this credential")
-    
+
     if not credential.is_active:
         raise HTTPException(status_code=400, detail="Cannot set inactive credential as default")
-    
+
     # Unset any existing defaults
     existing_defaults = session.exec(
         select(UserLLMCredentials).where(
@@ -456,13 +455,13 @@ def set_default_llm_credential(
     for cred in existing_defaults:
         cred.is_default = False
         session.add(cred)
-    
+
     # Set this one as default
     credential.is_default = True
     session.add(credential)
     session.commit()
     session.refresh(credential)
-    
+
     # Return with masked API key
     try:
         api_key = encryption_service.decrypt_api_key(credential.encrypted_api_key)
@@ -470,7 +469,7 @@ def set_default_llm_credential(
     except Exception as e:
         logger.error(f"Failed to decrypt API key for masking: {e}")
         api_key_masked = "****"
-    
+
     return UserLLMCredentialsPublic(
         id=credential.id,
         user_id=credential.user_id,
@@ -498,19 +497,19 @@ def delete_llm_credential(
     Sets is_active=False instead of actually deleting for audit purposes.
     """
     credential = session.get(UserLLMCredentials, credential_id)
-    
+
     if not credential:
         raise HTTPException(status_code=404, detail="Credential not found")
-    
+
     if credential.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this credential")
-    
+
     # Soft delete
     credential.is_active = False
     credential.is_default = False  # Can't be default if inactive
     session.add(credential)
     session.commit()
-    
+
     return Message(message=f"{credential.provider} credentials deleted successfully")
 
 
@@ -530,7 +529,7 @@ async def validate_llm_credential(
     provider = validation_request.provider.lower()
     api_key = validation_request.api_key
     model_name = validation_request.model_name
-    
+
     try:
         # Create LLM instance to test the API key
         llm = LLMFactory.create_llm_from_api_key(
@@ -538,16 +537,16 @@ async def validate_llm_credential(
             api_key=api_key,
             model_name=model_name
         )
-        
+
         # Test with a simple message
         test_message = HumanMessage(content="Hello, this is a test. Please respond with 'OK'.")
-        
+
         # Invoke the LLM (this will fail if API key is invalid)
         response = await llm.ainvoke([test_message])
-        
+
         # If we got here, the API key works
         logger.info(f"Successfully validated {provider} API key for user {current_user.id}")
-        
+
         return UserLLMCredentialsValidationResult(
             is_valid=True,
             provider=provider,
@@ -555,10 +554,10 @@ async def validate_llm_credential(
             error_message=None,
             details={"message": "API key validated successfully", "test_response_length": len(response.content)}
         )
-        
+
     except Exception as e:
         logger.warning(f"Failed to validate {provider} API key: {e}")
-        
+
         error_message = str(e)
         if "authentication" in error_message.lower() or "unauthorized" in error_message.lower():
             error_message = "Invalid API key. Please check your credentials."
@@ -568,7 +567,7 @@ async def validate_llm_credential(
             error_message = "API quota exceeded or rate limit reached. Please try again later."
         else:
             error_message = f"Validation failed: {error_message}"
-        
+
         return UserLLMCredentialsValidationResult(
             is_valid=False,
             provider=provider,

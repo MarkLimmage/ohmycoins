@@ -4,14 +4,14 @@ Tests for Coinspot credentials API endpoints
 Tests CRUD operations and validation for Coinspot credentials.
 """
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
+from app import crud
 from app.core.db import engine
 from app.models import CoinspotCredentials, UserCreate
-from app.main import app
-from app import crud
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
@@ -27,19 +27,19 @@ class TestCredentialsCreate:
         user_in = UserCreate(email=user_email, password=user_password)
         user = crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create credentials
         data = {
             "api_key": "test_api_key_12345",
             "api_secret": "test_api_secret_67890"
         }
-        
+
         response = client.post(
             "/api/v1/credentials/coinspot",
             headers=headers,
             json=data
         )
-        
+
         assert response.status_code == 200
         content = response.json()
         assert "id" in content
@@ -56,12 +56,12 @@ class TestCredentialsCreate:
         user_in = UserCreate(email=user_email, password=user_password)
         user = crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         data = {
             "api_key": "test_api_key",
             "api_secret": "test_api_secret"
         }
-        
+
         # Create first time - should succeed
         response = client.post(
             "/api/v1/credentials/coinspot",
@@ -69,7 +69,7 @@ class TestCredentialsCreate:
             json=data
         )
         assert response.status_code == 200
-        
+
         # Try to create again - should fail
         response = client.post(
             "/api/v1/credentials/coinspot",
@@ -85,7 +85,7 @@ class TestCredentialsCreate:
             "api_key": "test_api_key",
             "api_secret": "test_api_secret"
         }
-        
+
         response = client.post(
             "/api/v1/credentials/coinspot",
             json=data
@@ -103,17 +103,17 @@ class TestCredentialsGet:
         user_in = UserCreate(email=user_email, password=user_password)
         user = crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create credentials
         data = {
             "api_key": "test_api_key_abcdef",
             "api_secret": "test_api_secret"
         }
         client.post("/api/v1/credentials/coinspot", headers=headers, json=data)
-        
+
         # Get credentials
         response = client.get("/api/v1/credentials/coinspot", headers=headers)
-        
+
         assert response.status_code == 200
         content = response.json()
         assert content["api_key_masked"].endswith("cdef")
@@ -126,9 +126,9 @@ class TestCredentialsGet:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         response = client.get("/api/v1/credentials/coinspot", headers=headers)
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
@@ -148,14 +148,14 @@ class TestCredentialsUpdate:
         user_in = UserCreate(email=user_email, password=user_password)
         user = crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create initial credentials
         data = {
             "api_key": "old_api_key",
             "api_secret": "old_api_secret"
         }
         client.post("/api/v1/credentials/coinspot", headers=headers, json=data)
-        
+
         # Update credentials
         update_data = {
             "api_key": "new_api_key_xyz123",
@@ -166,7 +166,7 @@ class TestCredentialsUpdate:
             headers=headers,
             json=update_data
         )
-        
+
         assert response.status_code == 200
         content = response.json()
         assert content["api_key_masked"].endswith("z123")
@@ -180,14 +180,14 @@ class TestCredentialsUpdate:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create initial credentials
         data = {
             "api_key": "old_api_key_9999",
             "api_secret": "old_api_secret"
         }
         client.post("/api/v1/credentials/coinspot", headers=headers, json=data)
-        
+
         # Update only API key
         update_data = {"api_key": "new_api_key_8888"}
         response = client.put(
@@ -195,7 +195,7 @@ class TestCredentialsUpdate:
             headers=headers,
             json=update_data
         )
-        
+
         assert response.status_code == 200
         content = response.json()
         assert content["api_key_masked"].endswith("8888")
@@ -207,7 +207,7 @@ class TestCredentialsUpdate:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         update_data = {
             "api_key": "new_api_key",
             "api_secret": "new_api_secret"
@@ -217,7 +217,7 @@ class TestCredentialsUpdate:
             headers=headers,
             json=update_data
         )
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
@@ -232,20 +232,20 @@ class TestCredentialsDelete:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create credentials
         data = {
             "api_key": "test_api_key",
             "api_secret": "test_api_secret"
         }
         client.post("/api/v1/credentials/coinspot", headers=headers, json=data)
-        
+
         # Delete credentials
         response = client.delete("/api/v1/credentials/coinspot", headers=headers)
-        
+
         assert response.status_code == 200
         assert "deleted successfully" in response.json()["message"].lower()
-        
+
         # Verify credentials are deleted
         get_response = client.get("/api/v1/credentials/coinspot", headers=headers)
         assert get_response.status_code == 404
@@ -257,9 +257,9 @@ class TestCredentialsDelete:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         response = client.delete("/api/v1/credentials/coinspot", headers=headers)
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
@@ -275,32 +275,32 @@ class TestCredentialsValidation:
         user_in = UserCreate(email=user_email, password=user_password)
         user = crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create credentials
         data = {
             "api_key": "test_api_key",
             "api_secret": "test_api_secret"
         }
         client.post("/api/v1/credentials/coinspot", headers=headers, json=data)
-        
+
         # Mock successful Coinspot API response
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "ok", "balances": {}}
         mock_response.raise_for_status = MagicMock()
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 return_value=mock_response
             )
-            
+
             response = client.post(
                 "/api/v1/credentials/coinspot/validate",
                 headers=headers
             )
-        
+
         assert response.status_code == 200
         assert "validated successfully" in response.json()["message"].lower()
-        
+
         # Verify validation status updated in database
         with Session(engine) as session:
             credentials = session.exec(
@@ -319,12 +319,12 @@ class TestCredentialsValidation:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         response = client.post(
             "/api/v1/credentials/coinspot/validate",
             headers=headers
         )
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
@@ -336,20 +336,20 @@ class TestCredentialsValidation:
         user_in = UserCreate(email=user_email, password=user_password)
         crud.create_user(session=db, user_create=user_in)
         headers = user_authentication_headers(client=client, email=user_email, password=user_password)
-        
+
         # Create credentials
         data = {
             "api_key": "invalid_key",
             "api_secret": "invalid_secret"
         }
         client.post("/api/v1/credentials/coinspot", headers=headers, json=data)
-        
+
         # Mock failed Coinspot API response (401 Unauthorized)
         from httpx import HTTPStatusError, Request, Response
-        
+
         mock_request = Request("POST", "https://www.coinspot.com.au/api/v2/ro/my/balances")
         mock_response = Response(401, request=mock_request)
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.post = AsyncMock(
                 side_effect=HTTPStatusError(
@@ -358,11 +358,11 @@ class TestCredentialsValidation:
                     response=mock_response
                 )
             )
-            
+
             response = client.post(
                 "/api/v1/credentials/coinspot/validate",
                 headers=headers
             )
-        
+
         assert response.status_code == 401
         assert "invalid credentials" in response.json()["detail"].lower()

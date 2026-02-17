@@ -1,5 +1,5 @@
+
 import httpx
-import time
 
 BASE_URL = "http://localhost:8000/api/v1"
 
@@ -23,7 +23,7 @@ def test_kill_switch():
     except Exception as e:
         print(f"Failed to connect for login: {e}")
         return
-    
+
     # Check initial status
     try:
         r = httpx.get(f"{BASE_URL}/admin/emergency-stop/status", headers=headers)

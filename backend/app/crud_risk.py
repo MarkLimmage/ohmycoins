@@ -1,18 +1,16 @@
 # mypy: ignore-errors
 import uuid
-from typing import Sequence
+from collections.abc import Sequence
 
 from sqlmodel import Session, select
 
 from app.models import (
+    AuditLog,
+    AuditLogCreate,
     RiskRule,
     RiskRuleCreate,
     RiskRuleUpdate,
-    AuditLog,
-    AuditLogCreate,
     SystemSetting,
-    SystemSettingCreate,
-    SystemSettingUpdate,
 )
 
 
@@ -85,7 +83,7 @@ def set_system_setting(
     else:
         db_obj = SystemSetting(key=key, value=value, description=description)
         session.add(db_obj)
-    
+
     session.commit()
     session.refresh(db_obj)
     return db_obj

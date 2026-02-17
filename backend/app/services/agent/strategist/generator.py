@@ -1,15 +1,13 @@
 
 import logging
-import json
 from datetime import datetime
-from uuid import UUID
 from decimal import Decimal
-from typing import Any
+from uuid import UUID
 
-from sqlmodel import Session
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
+from sqlmodel import Session
 
 from app.services.agent.llm_factory import LLMFactory
 from app.services.backtesting.engine import BacktestService
@@ -33,11 +31,11 @@ class StrategyGenerator:
         self.llm = LLMFactory.create_llm(session=session, user_id=user_id)
 
     async def generate_and_backtest(
-        self, 
-        prompt: str, 
-        coin_type: str, 
-        start_date: datetime, 
-        end_date: datetime, 
+        self,
+        prompt: str,
+        coin_type: str,
+        start_date: datetime,
+        end_date: datetime,
         initial_capital: Decimal = Decimal("10000.0")
     ) -> BacktestResult:
         """
@@ -47,7 +45,7 @@ class StrategyGenerator:
 
         # 1. Define LLM Prompt
         parser = JsonOutputParser(pydantic_object=StrategyParams)
-        
+
         system_prompt = """You are an expert quantitative strategist. 
         Your goal is to translate a user's trading idea into parameters for a Moving Average Crossover strategy.
         
@@ -64,7 +62,7 @@ class StrategyGenerator:
         
         You must output ONLY valid JSON matching the schema. No markdown, no conversational text.
         """
-        
+
         prompt_template = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             ("user", "{query}\n\n{format_instructions}")
@@ -95,7 +93,7 @@ class StrategyGenerator:
         # Validate params
         fast = strategy_params.get("fast_window", 10)
         slow = strategy_params.get("slow_window", 30)
-        
+
         if fast >= slow:
             # Fix invalid params
             slow = fast + 10
@@ -115,5 +113,5 @@ class StrategyGenerator:
 
         # 4. Run Backtest
         result = self.backtest_service.run_backtest(config)
-        
+
         return result

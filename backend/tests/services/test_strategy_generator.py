@@ -1,12 +1,14 @@
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 from datetime import datetime
 from decimal import Decimal
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from app.services.agent.strategist.generator import StrategyGenerator
+import pytest
+
 from app.models import PriceData5Min
+from app.services.agent.strategist.generator import StrategyGenerator
+
 
 @pytest.mark.asyncio
 async def test_strategy_gen_flow(session):
@@ -34,21 +36,21 @@ async def test_strategy_gen_flow(session):
         # Mock the pipeline: prompt | llm | parser
         mock_prompt_instance = MagicMock()
         MockPromptCls.from_messages.return_value = mock_prompt_instance
-        
+
         # prompt | llm
         mock_intermediate = MagicMock()
         mock_prompt_instance.__or__.return_value = mock_intermediate
-        
+
         # (prompt | llm) | parser -> chain
         mock_intermediate.__or__.return_value = mock_chain
-        
+
         # Initialize Service
         # We also need to patch LLMFactory to avoid attempts to load real creds/models
         with patch("app.services.agent.strategist.generator.LLMFactory") as MockFactory:
             MockFactory.create_llm.return_value = MagicMock()
-            
+
             generator = StrategyGenerator(session, uuid4())
-            
+
             # Execute
             result = await generator.generate_and_backtest(
                 prompt="Make me rich",
@@ -56,7 +58,7 @@ async def test_strategy_gen_flow(session):
                 start_date=datetime.fromtimestamp(start_ts),
                 end_date=datetime.fromtimestamp(start_ts + 60*300)
             )
-            
+
             # Assertions
             assert result.strategy_name == "Test Strat"
             # With purely uptrending price:

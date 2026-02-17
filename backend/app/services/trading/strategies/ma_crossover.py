@@ -1,13 +1,14 @@
 # mypy: ignore-errors
 from decimal import Decimal
-from typing import Any, List
+from typing import Any
+
 
 class MACrossoverStrategy:
     def __init__(self, short_window: int = 10, long_window: int = 50, coin_type: str = 'BTC'):
         self.short_window = short_window
         self.long_window = long_window
         self.coin_type = coin_type
-        self.prices: List[Decimal] = []
+        self.prices: list[Decimal] = []
 
     def generate_signal(self, market_data: dict[str, Any]) -> dict[str, Any]:
         """
@@ -21,14 +22,14 @@ class MACrossoverStrategy:
         if raw_price is None:
              # Fallback if price is explicitly None (e.g. failed fetch)
              raw_price = 1000
-        
+
         current_price = Decimal(str(raw_price))
-        
+
         self.prices.append(current_price)
-        
+
         if len(self.prices) > self.long_window:
             self.prices.pop(0)
-            
+
         if len(self.prices) < self.long_window:
              # Not enough data
             return {'action': 'hold', 'coin_type': coin_type, 'quantity': Decimal('0'), 'confidence': 0.0}
@@ -36,14 +37,14 @@ class MACrossoverStrategy:
         # Calculate MAs
         short_ma = sum(self.prices[-self.short_window:]) / self.short_window
         long_ma = sum(self.prices[-self.long_window:]) / self.long_window
-        
+
         # Simple Logic:
         # If Short MA > Long MA: Bullish -> Buy
         # If Short MA < Long MA: Bearish -> Sell
-        
+
         # To make it 'trade', we just signal direction.
         # Position management is handled elsewhere (or we assume we want to be long if bullish).
-        
+
         if short_ma > long_ma:
             # Buy 100 AUD worth
             # Calculate coin quantity

@@ -2,18 +2,15 @@
 Unit and integration tests for the Coinspot collector service
 """
 from decimal import Decimal
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
-import uuid
 
-import pytest
 import httpx
+import pytest
 from sqlmodel import Session, select
 
-from app.services.collector import CoinspotCollector, run_collector
-from app.models import PriceData5Min
 from app.core.db import engine
-
+from app.models import PriceData5Min
+from app.services.collector import CoinspotCollector, run_collector
 
 # Sample API response data
 MOCK_API_RESPONSE = {
@@ -86,7 +83,7 @@ class TestCoinspotCollector:
     @pytest.mark.asyncio
     async def test_fetch_latest_prices_api_error_status(self, collector):
         """Test API returns non-ok status"""
-        # Note: Scraper mode doesn't usually return standard error JSONs, 
+        # Note: Scraper mode doesn't usually return standard error JSONs,
         # but if we were using API mode this test would be valid.
         # For scraper mode, this test might need adjustment or we just
         # ensure it handles HTTP 200 but bad content gracefully.
@@ -96,9 +93,9 @@ class TestCoinspotCollector:
         mock_response.text = "<html>Error</html>"
         mock_response.raise_for_status = MagicMock()
 
-        # If web scraping is on, it ignores json() and parses text(). 
+        # If web scraping is on, it ignores json() and parses text().
         # "<html>Error</html>" will yield 0 coins, so fetch_latest_prices returns None (after retries).
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response
@@ -273,9 +270,9 @@ class TestCoinspotCollector:
         mock_response.raise_for_status = MagicMock()
 
         # Force API mode for this test - WAIT, per user request we should test scraping if default.
-        # But run_collector helper might just call the collector. 
+        # But run_collector helper might just call the collector.
         # If we remove the patch, it will use default setting (scraped).
-        
+
         with patch("httpx.AsyncClient") as mock_client:
             mock_client.return_value.__aenter__.return_value.get = AsyncMock(
                 return_value=mock_response

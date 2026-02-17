@@ -12,12 +12,15 @@ from uuid import UUID
 
 from sqlmodel import Session
 
-from app.models import Order, User, AuditLog
-from app.services.trading.client import CoinspotTradingClient
-from app.services.trading.recorder import TradeRecorder, get_trade_recorder
-from app.services.trading.safety import TradingSafetyManager, get_safety_manager, SafetyViolation
-from app.services.trading.executor import OrderQueue, get_order_queue
+from app.models import AuditLog
 from app.services.trading.exceptions import AlgorithmExecutionError
+from app.services.trading.executor import get_order_queue
+from app.services.trading.recorder import TradeRecorder, get_trade_recorder
+from app.services.trading.safety import (
+    SafetyViolation,
+    TradingSafetyManager,
+    get_safety_manager,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +32,7 @@ class TradingAlgorithm(Protocol):
     Any algorithm must implement this interface to be executable.
     This will be fully implemented when Phase 3 (Agentic) or Phase 4 (Manual Lab) is complete.
     """
-    
+
     def generate_signal(self, market_data: dict[str, Any]) -> dict[str, Any]:
         """
         Generate trading signal based on market data
@@ -61,7 +64,7 @@ class AlgorithmExecutor:
     - Manage algorithm state and performance
     - Apply safety checks before execution
     """
-    
+
     def __init__(
         self,
         session: Session,
@@ -86,7 +89,7 @@ class AlgorithmExecutor:
         self.safety_manager = safety_manager or get_safety_manager(session)
         self.trade_recorder = trade_recorder or get_trade_recorder(session)
         self.order_queue = get_order_queue()
-    
+
     async def execute_algorithm(
         self,
         user_id: UUID,
@@ -110,11 +113,11 @@ class AlgorithmExecutor:
             AlgorithmExecutionError: If execution fails
         """
         logger.info(f"Executing algorithm {algorithm_id} for user {user_id}")
-        
+
         try:
             # Generate trading signal
             signal = algorithm.generate_signal(market_data)
-            
+
             # Check if signal recommends action
             action = signal.get('action')
             if action == 'hold' or not action:
@@ -125,14 +128,14 @@ class AlgorithmExecutor:
                     'reason': 'hold_signal',
                     'signal': signal
                 }
-            
+
             # Log the signal to AuditLog (The "Why")
             # Convert signal decimals to strings for JSON serialization
             serializable_signal = {
-                k: str(v) if isinstance(v, Decimal) else v 
+                k: str(v) if isinstance(v, Decimal) else v
                 for k, v in signal.items()
             }
-            
+
             audit_log = AuditLog(
                 event_type="ALGORITHM_SIGNAL",
                 severity="info",
@@ -151,7 +154,7 @@ class AlgorithmExecutor:
             coin_type = signal.get('coin_type')
             quantity = Decimal(str(signal.get('quantity', 0)))
             confidence = signal.get('confidence', 0.0)
-            
+
             if not coin_type or quantity <= 0:
                 logger.warning(f"Invalid signal from algorithm {algorithm_id}: {signal}")
                 return {
@@ -159,10 +162,10 @@ class AlgorithmExecutor:
                     'reason': 'invalid_signal',
                     'signal': signal
                 }
-            
+
             # Get estimated price
             estimated_price = self._get_estimated_price(market_data, coin_type)
-            
+
             # Validate trade with safety checks
             try:
                 validation = await self.safety_manager.validate_trade(
@@ -181,7 +184,7 @@ class AlgorithmExecutor:
                     'error': str(e),
                     'signal': signal
                 }
-            
+
             # Log trade attempt
             order = self.trade_recorder.log_trade_attempt(
                 user_id=user_id,
@@ -190,26 +193,26 @@ class AlgorithmExecutor:
                 quantity=quantity,
                 algorithm_id=algorithm_id
             )
-            
+
             # Submit order to execution queue
             await self.order_queue.submit(order.id)
-            
+
             logger.info(
                 f"Algorithm {algorithm_id} submitted order {order.id}: "
                 f"{action} {quantity} {coin_type} (confidence: {confidence:.2f})"
             )
-            
+
             return {
                 'executed': True,
                 'order_id': str(order.id),
                 'signal': signal,
                 'validation': validation
             }
-            
+
         except Exception as e:
             logger.error(f"Error executing algorithm {algorithm_id}: {e}", exc_info=True)
             raise AlgorithmExecutionError(f"Algorithm execution failed: {e}")
-    
+
     def _get_estimated_price(
         self,
         market_data: dict[str, Any],
@@ -229,22 +232,22 @@ class AlgorithmExecutor:
         # Market data should contain current prices for all coins
         prices = market_data.get('prices', {})
         coin_data = prices.get(coin_type, {})
-        
+
         # Use last price, or average of bid/ask
         last_price = coin_data.get('last')
         if last_price:
             return Decimal(str(last_price))
-        
+
         bid = coin_data.get('bid', 0)
         ask = coin_data.get('ask', 0)
-        
+
         if bid and ask:
             return Decimal(str((bid + ask) / 2))
-        
+
         # Fallback to a default if no price available
         logger.warning(f"No price data available for {coin_type}, using 0")
         return Decimal('0')
-    
+
     async def execute_multiple_algorithms(
         self,
         user_id: UUID,
@@ -263,7 +266,7 @@ class AlgorithmExecutor:
             List of execution results
         """
         results = []
-        
+
         for algorithm_id, algorithm in algorithms:
             try:
                 result = await self.execute_algorithm(
@@ -282,9 +285,9 @@ class AlgorithmExecutor:
                     'algorithm_id': str(algorithm_id),
                     'error': str(e)
                 })
-        
+
         return results
-    
+
     def get_algorithm_performance(
         self,
         algorithm_id: UUID,
@@ -307,9 +310,9 @@ class AlgorithmExecutor:
         # For now, we'll return a placeholder
         # TODO: Update when Phase 3 (Agentic) or Phase 4 (Manual Lab) algorithm system is implemented
         # Will integrate with trade_recorder to get actual algorithm performance metrics
-        
+
         logger.warning("Algorithm performance tracking not fully implemented yet - awaiting Phase 3/4 integration")
-        
+
         return {
             'algorithm_id': str(algorithm_id),
             'metrics': {

@@ -25,7 +25,7 @@ Monitored Filing Types:
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlmodel import Session
@@ -49,7 +49,7 @@ class SECAPICollector(APICollector):
     
     For companies: Coinbase, MicroStrategy, Marathon, Riot, Block
     """
-    
+
     # CIK (Central Index Key) numbers for crypto-related companies
     MONITORED_COMPANIES = {
         "0001679788": "Coinbase",
@@ -58,7 +58,7 @@ class SECAPICollector(APICollector):
         "0001167419": "Riot Platforms",
         "0001073349": "Block Inc",
     }
-    
+
     # Filing types to monitor with impact scores
     FILING_TYPES = {
         "4": {"name": "Insider Trading", "impact": 5},
@@ -67,7 +67,7 @@ class SECAPICollector(APICollector):
         "10-Q": {"name": "Quarterly Report", "impact": 5},
         "S-1": {"name": "IPO Registration", "impact": 9},
     }
-    
+
     # Map companies to related cryptocurrencies
     COMPANY_CRYPTO_MAP = {
         "Coinbase": ["BTC", "ETH", "USDC"],
@@ -76,7 +76,7 @@ class SECAPICollector(APICollector):
         "Riot Platforms": ["BTC"],
         "Block Inc": ["BTC"],
     }
-    
+
     def __init__(self):
         """Initialize the SEC API collector."""
         super().__init__(
@@ -87,10 +87,10 @@ class SECAPICollector(APICollector):
             max_retries=3,
             rate_limit_delay=0.2,  # 5 requests/second = 0.2s between requests
         )
-        
+
         # SEC requires a User-Agent header with contact information
         self.user_agent = "OhMyCoins/1.0 (https://github.com/MarkLimmage/ohmycoins)"
-    
+
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect recent SEC filings for monitored companies.
@@ -104,53 +104,53 @@ class SECAPICollector(APICollector):
         logger.info(
             f"{self.name}: Collecting SEC filings for {len(self.MONITORED_COMPANIES)} companies"
         )
-        
+
         all_filings = []
-        
+
         for cik, company_name in self.MONITORED_COMPANIES.items():
             try:
                 # Fetch recent filings for this company
                 # SEC EDGAR API endpoint: /submissions/CIK##########.json
                 # CIK must be 10 digits with leading zeros
                 cik_padded = cik.zfill(10)
-                
+
                 headers = {
                     "User-Agent": self.user_agent,
                 }
-                
+
                 response = await self.fetch_json(
                     f"/submissions/CIK{cik_padded}.json",
                     headers=headers
                 )
-                
+
                 # Check if response is a dict and has 'filings'
                 if not isinstance(response, dict) or "filings" not in response:
                     logger.warning(f"{self.name}: No filings data for {company_name}")
                     continue
-                
+
                 # Extract recent filings
                 filings_data = response["filings"].get("recent", {})
-                
+
                 if not filings_data:
                     logger.warning(f"{self.name}: No recent filings for {company_name}")
                     continue
-                
+
                 # Parse filings arrays
                 forms = filings_data.get("form", [])
                 filing_dates = filings_data.get("filingDate", [])
                 accession_numbers = filings_data.get("accessionNumber", [])
                 primary_documents = filings_data.get("primaryDocument", [])
-                
+
                 # Get filings from the last 30 days
                 cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
-                
+
                 for i in range(len(forms)):
                     form_type = forms[i]
-                    
+
                     # Only collect monitored filing types
                     if form_type not in self.FILING_TYPES:
                         continue
-                    
+
                     # Parse filing date
                     filing_date_str = filing_dates[i]
                     try:
@@ -159,15 +159,15 @@ class SECAPICollector(APICollector):
                     except Exception as e:
                         logger.debug(f"{self.name}: Failed to parse date {filing_date_str}: {e}")
                         continue
-                    
+
                     # Skip old filings
                     if filing_date < cutoff_date:
                         continue
-                    
+
                     filing_info = self.FILING_TYPES[form_type]
                     accession_number = accession_numbers[i]
                     primary_doc = primary_documents[i] if i < len(primary_documents) else ""
-                    
+
                     # Build filing URL
                     # Format: https://www.sec.gov/Archives/edgar/data/CIK/ACCESSION/DOCUMENT
                     accession_clean = accession_number.replace("-", "")
@@ -175,10 +175,10 @@ class SECAPICollector(APICollector):
                         f"https://www.sec.gov/Archives/edgar/data/{cik}/"
                         f"{accession_clean}/{primary_doc}"
                     )
-                    
+
                     # Get related cryptocurrencies
                     related_cryptos = self.COMPANY_CRYPTO_MAP.get(company_name, [])
-                    
+
                     filing_data = {
                         "event_type": f"sec_filing_{form_type.lower().replace('-', '_')}",
                         "title": f"{company_name} - {filing_info['name']} (Form {form_type})",
@@ -194,25 +194,25 @@ class SECAPICollector(APICollector):
                         "url": filing_url,
                         "collected_at": datetime.now(timezone.utc),
                     }
-                    
+
                     all_filings.append(filing_data)
                     logger.debug(
                         f"{self.name}: Found {form_type} filing for {company_name} "
                         f"on {filing_date_str}"
                     )
-                
+
             except Exception as e:
                 logger.error(
                     f"{self.name}: Failed to collect filings for {company_name}: {str(e)}"
                 )
                 # Continue with other companies
                 continue
-        
+
         logger.info(
             f"{self.name}: Collected {len(all_filings)} SEC filings from last 30 days"
         )
         return all_filings
-    
+
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected SEC filing data.
@@ -227,18 +227,18 @@ class SECAPICollector(APICollector):
             ValueError: If validation fails
         """
         validated = []
-        
+
         for item in data:
             try:
                 # Validate required fields
                 if not item.get("title"):
                     logger.warning(f"{self.name}: Missing title, skipping")
                     continue
-                
+
                 if not item.get("event_type"):
                     logger.warning(f"{self.name}: Missing event_type, skipping")
                     continue
-                
+
                 # Validate impact score
                 impact_score = item.get("impact_score")
                 if impact_score is not None:
@@ -247,16 +247,16 @@ class SECAPICollector(APICollector):
                             f"{self.name}: Invalid impact score {impact_score}, setting to 5"
                         )
                         item["impact_score"] = 5
-                
+
                 validated.append(item)
-                
+
             except (ValueError, TypeError) as e:
                 logger.warning(f"{self.name}: Invalid filing data: {str(e)}")
                 continue
-        
+
         logger.info(f"{self.name}: Validated {len(validated)}/{len(data)} records")
         return validated
-    
+
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated SEC filings in the database.
@@ -269,7 +269,7 @@ class SECAPICollector(APICollector):
             Number of records stored
         """
         stored_count = 0
-        
+
         for item in data:
             try:
                 catalyst_event = CatalystEvents(
@@ -283,10 +283,10 @@ class SECAPICollector(APICollector):
                     url=item.get("url"),
                     collected_at=item["collected_at"],
                 )
-                
+
                 session.add(catalyst_event)
                 stored_count += 1
-                
+
             except Exception as e:
                 logger.error(
                     f"{self.name}: Failed to store filing '{item.get('title', 'unknown')[:50]}...': "
@@ -294,7 +294,7 @@ class SECAPICollector(APICollector):
                 )
                 # Continue with other records
                 continue
-        
+
         # Commit all records at once
         try:
             session.commit()
@@ -303,5 +303,5 @@ class SECAPICollector(APICollector):
             logger.error(f"{self.name}: Failed to commit records: {str(e)}")
             session.rollback()
             stored_count = 0
-        
+
         return stored_count

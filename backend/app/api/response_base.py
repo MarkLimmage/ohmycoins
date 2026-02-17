@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field
+
 
 class APIResponseBase(BaseModel):
     """
@@ -7,7 +9,7 @@ class APIResponseBase(BaseModel):
     Follows API_CONTRACTS.md Global Patterns.
     """
     is_loading: bool = Field(
-        default=False, 
+        default=False,
         description="Indicates if the data is currently being refreshed or computed."
     )
     last_updated: datetime = Field(

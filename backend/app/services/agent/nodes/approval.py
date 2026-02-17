@@ -28,47 +28,47 @@ def approval_node(state: dict[str, Any]) -> dict[str, Any]:
         Updated state with approval_needed and pending_approvals fields
     """
     logger.info("ApprovalNode: Checking approval requirements")
-    
+
     current_step = state.get("current_step", "")
     approval_mode = state.get("approval_mode", "manual")
     approval_gates = state.get("approval_gates", [])
-    
+
     # Determine which approval gate this is
     approval_type = _determine_approval_type(current_step)
-    
+
     if not approval_type:
         logger.info("ApprovalNode: No approval needed for this step")
         state["approval_needed"] = False
         return state
-    
+
     # Check if this gate requires approval
     requires_approval = _requires_approval(approval_type, approval_gates, approval_mode)
-    
+
     if not requires_approval:
         logger.info(f"ApprovalNode: Auto-approval for {approval_type}")
         state["approval_needed"] = False
         _grant_auto_approval(state, approval_type)
         return state
-    
+
     # Request approval
     logger.info(f"ApprovalNode: Requesting approval for {approval_type}")
-    
+
     approval_request = _create_approval_request(approval_type, state)
-    
+
     state["approval_needed"] = True
     state["pending_approvals"] = [approval_request]
     state["current_step"] = f"awaiting_approval_{approval_type}"
-    
+
     # Add to reasoning trace
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
-    
+
     state["reasoning_trace"].append({
         "step": "approval_requested",
         "approval_type": approval_type,
         "request": approval_request
     })
-    
+
     return state
 
 
@@ -87,11 +87,11 @@ def _determine_approval_type(current_step: str) -> str | None:
         "model_training": "before_training",
         "deployment": "before_deployment",
     }
-    
+
     for step_key, approval_type in step_to_approval.items():
         if step_key in current_step:
             return approval_type
-    
+
     return None
 
 
@@ -114,11 +114,11 @@ def _requires_approval(
     # Deployment always requires approval (safety measure)
     if approval_type == "before_deployment":
         return True
-    
+
     # In auto mode, no approvals except deployment
     if approval_mode == "auto":
         return False
-    
+
     # In manual mode, check if this gate is active
     return approval_type in approval_gates
 
@@ -139,7 +139,7 @@ def _create_approval_request(approval_type: str, state: dict[str, Any]) -> dict[
         "timestamp": None,  # Will be set by API
         "status": "pending",
     }
-    
+
     # Add context based on approval type
     if approval_type == "before_data_fetch":
         request["message"] = "Approve data fetching from external sources?"
@@ -147,7 +147,7 @@ def _create_approval_request(approval_type: str, state: dict[str, Any]) -> dict[
             "data_sources": _get_planned_data_sources(state),
             "estimated_records": "Unknown",
         }
-    
+
     elif approval_type == "before_training":
         request["message"] = "Approve model training with current data?"
         request["details"] = {
@@ -155,7 +155,7 @@ def _create_approval_request(approval_type: str, state: dict[str, Any]) -> dict[
             "models_to_train": _get_planned_models(state),
             "estimated_time": "5-30 seconds per model",
         }
-    
+
     elif approval_type == "before_deployment":
         request["message"] = "Approve deployment of trained model?"
         request["details"] = {
@@ -163,7 +163,7 @@ def _create_approval_request(approval_type: str, state: dict[str, Any]) -> dict[
             "accuracy": _get_model_accuracy(state),
             "warning": "This will deploy the model for live trading consideration",
         }
-    
+
     return request
 
 
@@ -171,14 +171,14 @@ def _get_planned_data_sources(state: dict[str, Any]) -> list[str]:
     """Get list of data sources that will be queried."""
     retrieval_params = state.get("retrieval_params", {})
     sources = []
-    
+
     if retrieval_params.get("fetch_price_data", True):
         sources.append("Price data (CoinSpot)")
     if retrieval_params.get("fetch_sentiment", False):
         sources.append("Sentiment data (news, social)")
     if retrieval_params.get("fetch_on_chain", False):
         sources.append("On-chain metrics")
-    
+
     return sources if sources else ["Price data (default)"]
 
 
@@ -186,11 +186,11 @@ def _count_data_records(state: dict[str, Any]) -> int:
     """Count total data records available."""
     retrieved_data = state.get("retrieved_data", {})
     total = 0
-    
+
     for data_type, data in retrieved_data.items():
         if isinstance(data, list):
             total += len(data)
-    
+
     return total
 
 
@@ -205,11 +205,11 @@ def _get_model_accuracy(state: dict[str, Any]) -> str:
     """Get accuracy of selected model."""
     selected_model = state.get("selected_choice")
     evaluation_results = state.get("evaluation_results", {})
-    
+
     if selected_model and selected_model in evaluation_results:
         accuracy = evaluation_results[selected_model].get("accuracy", 0.0)
         return f"{accuracy:.2%}"
-    
+
     return "Unknown"
 
 
@@ -223,7 +223,7 @@ def _grant_auto_approval(state: dict[str, Any], approval_type: str) -> None:
     """
     if "approvals_granted" not in state:
         state["approvals_granted"] = []
-    
+
     state["approvals_granted"].append({
         "approval_type": approval_type,
         "mode": "auto",
@@ -246,31 +246,31 @@ def handle_approval_granted(
         Updated state with approval recorded
     """
     logger.info(f"ApprovalNode: Approval granted for {approval_type}")
-    
+
     if "approvals_granted" not in state:
         state["approvals_granted"] = []
-    
+
     state["approvals_granted"].append({
         "approval_type": approval_type,
         "mode": "manual",
         "timestamp": None,  # Will be set by API
     })
-    
+
     state["approval_needed"] = False
     state["pending_approvals"] = []
-    
+
     # Resume workflow
     state["current_step"] = _get_next_step_after_approval(approval_type)
-    
+
     # Add to reasoning trace
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
-    
+
     state["reasoning_trace"].append({
         "step": "approval_granted",
         "approval_type": approval_type
     })
-    
+
     return state
 
 
@@ -291,26 +291,26 @@ def handle_approval_rejected(
         Updated state with workflow stopped
     """
     logger.info(f"ApprovalNode: Approval rejected for {approval_type}")
-    
+
     state["approval_needed"] = False
     state["pending_approvals"] = []
     state["status"] = "stopped"
     state["current_step"] = "stopped_by_user"
     state["error"] = f"User rejected {approval_type}"
-    
+
     if reason:
         state["error"] += f": {reason}"
-    
+
     # Add to reasoning trace
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
-    
+
     state["reasoning_trace"].append({
         "step": "approval_rejected",
         "approval_type": approval_type,
         "reason": reason
     })
-    
+
     return state
 
 
@@ -321,5 +321,5 @@ def _get_next_step_after_approval(approval_type: str) -> str:
         "before_training": "model_training",
         "before_deployment": "deployment",
     }
-    
+
     return next_steps.get(approval_type, "planning")

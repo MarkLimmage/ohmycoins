@@ -1,12 +1,12 @@
 """
 Shared fixtures for trading service tests
 """
-import pytest
 from uuid import uuid4
+
+import pytest
 from sqlmodel import Session
 
 from app.models import User
-from tests.utils.utils import random_email
 
 
 @pytest.fixture

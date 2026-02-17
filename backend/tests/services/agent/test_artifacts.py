@@ -4,13 +4,13 @@ Tests for ArtifactManager - Week 11 Implementation
 Tests for the artifact management system.
 """
 
-import pytest
-from pathlib import Path
-import tempfile
-import shutil
-import uuid
 import json
-from datetime import datetime, timedelta, timezone
+import shutil
+import tempfile
+import uuid
+from pathlib import Path
+
+import pytest
 
 from app.services.agent.artifacts import ArtifactManager
 
@@ -49,14 +49,14 @@ class TestArtifactManagerInitialization:
     def test_init_with_default_dir(self):
         """Test initialization with default base directory."""
         manager = ArtifactManager()
-        
+
         assert manager.base_dir == Path("/tmp/agent_artifacts")
         assert manager.base_dir.exists()
 
     def test_init_with_custom_dir(self, temp_base_dir):
         """Test initialization with custom base directory."""
         manager = ArtifactManager(base_dir=str(temp_base_dir))
-        
+
         assert manager.base_dir == temp_base_dir
         assert temp_base_dir.exists()
 
@@ -74,7 +74,7 @@ class TestSaveArtifact:
             description="Test artifact description",
             metadata={"key": "value"},
         )
-        
+
         assert artifact.session_id == sample_session_id
         assert artifact.artifact_type == "report"
         assert artifact.name == "Test Report"
@@ -93,7 +93,7 @@ class TestSaveArtifact:
             name="Test Plot",
             file_path=sample_artifact_file,
         )
-        
+
         session_dir = temp_base_dir / str(sample_session_id)
         assert session_dir.exists()
         assert session_dir.is_dir()
@@ -106,7 +106,7 @@ class TestSaveArtifact:
             name="Test Model",
             file_path=sample_artifact_file,
         )
-        
+
         copied_file = Path(artifact.file_path)
         assert copied_file.exists()
         assert copied_file.parent == temp_base_dir / str(sample_session_id)
@@ -131,18 +131,18 @@ class TestSaveArtifact:
             "test.md": "text/markdown",
             "test.json": "application/json",
         }
-        
+
         for filename, expected_mime in test_files.items():
             test_file = temp_base_dir / filename
             test_file.write_text("test")
-            
+
             artifact = artifact_manager.save_artifact(
                 session_id=sample_session_id,
                 artifact_type="test",
                 name=filename,
                 file_path=test_file,
             )
-            
+
             assert artifact.mime_type == expected_mime
 
 
@@ -155,7 +155,7 @@ class TestListArtifacts:
             session_id=sample_session_id,
             db_session=None,
         )
-        
+
         assert artifacts == []
 
     def test_list_artifacts_no_db_session(self, artifact_manager, sample_session_id):
@@ -163,7 +163,7 @@ class TestListArtifacts:
         artifacts = artifact_manager.list_artifacts(
             session_id=sample_session_id,
         )
-        
+
         assert artifacts == []
 
 
@@ -173,7 +173,7 @@ class TestGetStorageStats:
     def test_storage_stats_no_db_session(self, artifact_manager):
         """Test storage stats without database session."""
         stats = artifact_manager.get_storage_stats()
-        
+
         assert stats["total_artifacts"] == 0
         assert stats["total_size_bytes"] == 0
         assert stats["artifacts_by_type"] == {}
@@ -182,7 +182,7 @@ class TestGetStorageStats:
     def test_storage_stats_structure(self, artifact_manager):
         """Test storage stats return structure."""
         stats = artifact_manager.get_storage_stats(db_session=None)
-        
+
         assert "total_artifacts" in stats
         assert "total_size_bytes" in stats
         assert "artifacts_by_type" in stats
@@ -195,29 +195,29 @@ class TestExportSessionArtifacts:
     def test_export_creates_directory(self, artifact_manager, sample_session_id, temp_base_dir):
         """Test that export creates output directory."""
         export_dir = temp_base_dir / "export"
-        
+
         artifact_manager.export_session_artifacts(
             session_id=sample_session_id,
             export_dir=export_dir,
             db_session=None,
         )
-        
+
         assert export_dir.exists()
         assert export_dir.is_dir()
 
     def test_export_creates_metadata_file(self, artifact_manager, sample_session_id, temp_base_dir):
         """Test that export creates metadata.json file."""
         export_dir = temp_base_dir / "export"
-        
+
         artifact_manager.export_session_artifacts(
             session_id=sample_session_id,
             export_dir=export_dir,
             db_session=None,
         )
-        
+
         metadata_file = export_dir / "metadata.json"
         assert metadata_file.exists()
-        
+
         metadata = json.loads(metadata_file.read_text())
         assert metadata["session_id"] == str(sample_session_id)
         assert "export_date" in metadata

@@ -12,8 +12,7 @@ Pricing: $10/month (1000 requests/month on Basic plan)
 
 import logging
 import os
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlmodel import Session
@@ -37,14 +36,14 @@ class NewscatcherCollector(APICollector):
     
     API Documentation: https://www.newscatcherapi.com/docs
     """
-    
+
     # Sentiment mapping from Newscatcher to our schema
     SENTIMENT_MAP = {
         "positive": "bullish",
         "negative": "bearish",
         "neutral": "neutral",
     }
-    
+
     def __init__(self, api_key: str | None = None):
         """
         Initialize the Newscatcher collector.
@@ -58,7 +57,7 @@ class NewscatcherCollector(APICollector):
                 "Newscatcher API key required. Set NEWSCATCHER_API_KEY environment variable "
                 "or pass api_key parameter. Get a key at: https://www.newscatcherapi.com/"
             )
-        
+
         super().__init__(
             name="newscatcher_api",
             ledger="human",
@@ -67,7 +66,7 @@ class NewscatcherCollector(APICollector):
             max_retries=3,
             rate_limit_delay=3.0,  # Stay within rate limits
         )
-    
+
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect recent cryptocurrency news from Newscatcher API.
@@ -79,11 +78,11 @@ class NewscatcherCollector(APICollector):
             Exception: If API request fails
         """
         logger.info(f"{self.name}: Collecting recent crypto news")
-        
+
         try:
             # Search for cryptocurrency news from the last 24 hours
             from_date = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-            
+
             params = {
                 "q": "cryptocurrency OR bitcoin OR ethereum OR crypto",
                 "lang": "en",
@@ -91,21 +90,21 @@ class NewscatcherCollector(APICollector):
                 "sort_by": "relevancy",
                 "page_size": 50,  # Max allowed
             }
-            
+
             # Use custom headers for API key authentication
             headers = {
                 "x-api-key": self.api_key,
             }
-            
+
             response = await self.fetch_json("/search", params=params, headers=headers)
-            
+
             if not response or "articles" not in response:
                 logger.warning(f"{self.name}: No articles in API response")
                 return []
-            
+
             articles = response["articles"]
             logger.info(f"{self.name}: Fetched {len(articles)} news articles")
-            
+
             # Transform API response to our schema
             collected_data = []
             for article in articles:
@@ -116,7 +115,7 @@ class NewscatcherCollector(APICollector):
                         article["sentiment"].lower(),
                         "neutral"
                     )
-                
+
                 # Parse publication timestamp
                 published_at = None
                 if "published_date" in article and article["published_date"]:
@@ -126,7 +125,7 @@ class NewscatcherCollector(APICollector):
                         )
                     except Exception as e:
                         logger.debug(f"{self.name}: Failed to parse timestamp: {str(e)}")
-                
+
                 data_point = {
                     "title": article.get("title", ""),
                     "source": article.get("clean_url"),  # Domain name as source
@@ -138,16 +137,16 @@ class NewscatcherCollector(APICollector):
                     "collected_at": datetime.now(timezone.utc),
                     "summary": article.get("summary"),  # Additional field
                 }
-                
+
                 collected_data.append(data_point)
-            
+
             logger.info(f"{self.name}: Collected {len(collected_data)} articles")
             return collected_data
-            
+
         except Exception as e:
             logger.error(f"{self.name}: Failed to collect news: {str(e)}")
             raise
-    
+
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected news data.
@@ -162,27 +161,27 @@ class NewscatcherCollector(APICollector):
             ValueError: If validation fails
         """
         validated = []
-        
+
         for item in data:
             try:
                 # Validate required fields
                 if not item.get("title"):
                     logger.warning(f"{self.name}: Missing title, skipping")
                     continue
-                
+
                 if not item.get("url"):
                     logger.warning(f"{self.name}: Missing URL for '{item['title'][:50]}...', skipping")
                     continue
-                
+
                 validated.append(item)
-                
+
             except (ValueError, TypeError) as e:
                 logger.warning(f"{self.name}: Invalid data: {str(e)}")
                 continue
-        
+
         logger.info(f"{self.name}: Validated {len(validated)}/{len(data)} records")
         return validated
-    
+
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
         Store validated news sentiment in the database.
@@ -195,7 +194,7 @@ class NewscatcherCollector(APICollector):
             Number of records stored
         """
         stored_count = 0
-        
+
         for item in data:
             try:
                 news_sentiment = NewsSentiment(
@@ -208,16 +207,16 @@ class NewscatcherCollector(APICollector):
                     currencies=item.get("currencies"),
                     collected_at=item["collected_at"],
                 )
-                
+
                 session.add(news_sentiment)
                 stored_count += 1
-                
+
             except Exception as e:
                 logger.error(
                     f"{self.name}: Failed to store article '{item.get('title', 'unknown')[:50]}...': {str(e)}"
                 )
                 continue
-        
+
         # Commit all records at once
         try:
             session.commit()
@@ -226,5 +225,5 @@ class NewscatcherCollector(APICollector):
             logger.error(f"{self.name}: Failed to commit records: {str(e)}")
             session.rollback()
             stored_count = 0
-        
+
         return stored_count

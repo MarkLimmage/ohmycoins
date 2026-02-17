@@ -29,13 +29,13 @@ class CollectionOrchestrator:
     - Monitor collector health
     - Provide metrics and status endpoints
     """
-    
+
     def __init__(self) -> None:
         """Initialize the orchestrator with an async scheduler."""
         self.scheduler = AsyncIOScheduler(timezone="UTC")
         self.collectors: dict[str, BaseCollector] = {}
         self._is_running = False
-    
+
     def register_collector(
         self,
         collector: BaseCollector,
@@ -69,14 +69,14 @@ class CollectionOrchestrator:
             )
         """
         self.collectors[collector.name] = collector
-        
+
         if schedule_type == "interval":
             trigger = IntervalTrigger(**schedule_kwargs, timezone="UTC")
         elif schedule_type == "cron":
             trigger = CronTrigger(**schedule_kwargs, timezone="UTC")
         else:
             raise ValueError(f"Invalid schedule_type: {schedule_type}")
-        
+
         self.scheduler.add_job(
             collector.run,
             trigger=trigger,
@@ -84,12 +84,12 @@ class CollectionOrchestrator:
             name=f"{collector.ledger}/{collector.name}",
             replace_existing=True,
         )
-        
+
         logger.info(
             f"Registered collector: {collector.name} "
             f"with {schedule_type} schedule: {schedule_kwargs}"
         )
-    
+
     def start(self) -> None:
         """
         Start the collection scheduler.
@@ -104,7 +104,7 @@ class CollectionOrchestrator:
             )
         else:
             logger.warning("Collection orchestrator is already running")
-    
+
     def stop(self) -> None:
         """
         Stop the collection scheduler.
@@ -117,7 +117,7 @@ class CollectionOrchestrator:
             logger.info("Collection orchestrator stopped")
         else:
             logger.warning("Collection orchestrator is not running")
-    
+
     async def trigger_manual(self, collector_name: str) -> bool:
         """
         Manually trigger a collector to run immediately.
@@ -133,12 +133,12 @@ class CollectionOrchestrator:
         """
         if collector_name not in self.collectors:
             raise KeyError(f"Collector not found: {collector_name}")
-        
+
         collector = self.collectors[collector_name]
         logger.info(f"Manually triggering collector: {collector_name}")
-        
+
         return await collector.run()
-    
+
     def get_health_status(self) -> dict[str, Any]:
         """
         Get health status of all collectors.
@@ -158,7 +158,7 @@ class CollectionOrchestrator:
             ],
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-    
+
     def get_collector_status(self, collector_name: str) -> dict[str, Any]:
         """
         Get status of a specific collector.
@@ -174,7 +174,7 @@ class CollectionOrchestrator:
         """
         if collector_name not in self.collectors:
             raise KeyError(f"Collector not found: {collector_name}")
-        
+
         return self.collectors[collector_name].get_status()
 
 

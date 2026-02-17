@@ -6,10 +6,18 @@ This module demonstrates how to register and start all collectors with the orche
 """
 
 import logging
-from app.services.collectors.orchestrator import get_orchestrator
+
+from app.services.collectors.catalyst import (
+    CoinSpotAnnouncementsCollector,
+    SECAPICollector,
+)
 from app.services.collectors.glass import DeFiLlamaCollector, NansenCollector
-from app.services.collectors.human import CryptoPanicCollector, NewscatcherCollector, RedditCollector
-from app.services.collectors.catalyst import SECAPICollector, CoinSpotAnnouncementsCollector
+from app.services.collectors.human import (
+    CryptoPanicCollector,
+    NewscatcherCollector,
+    RedditCollector,
+)
+from app.services.collectors.orchestrator import get_orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +30,9 @@ def setup_collectors() -> None:
     and schedule all data collectors.
     """
     orchestrator = get_orchestrator()
-    
+
     logger.info("Setting up Phase 2.5 comprehensive data collectors...")
-    
+
     # Glass Ledger: DeFiLlama Protocol Fundamentals
     # Collects daily at 2 AM UTC
     try:
@@ -38,7 +46,7 @@ def setup_collectors() -> None:
         logger.info("✓ Registered DeFiLlama collector (Glass Ledger)")
     except Exception as e:
         logger.error(f"✗ Failed to register DeFiLlama collector: {str(e)}")
-    
+
     # Human Ledger: CryptoPanic News Sentiment
     # Collects every 5 minutes
     try:
@@ -53,7 +61,7 @@ def setup_collectors() -> None:
     except Exception as e:
         logger.error(f"✗ Failed to register CryptoPanic collector: {str(e)}")
         logger.info("  Get a free API key at: https://cryptopanic.com/developers/api/")
-    
+
     # Human Ledger: Newscatcher News Aggregation
     # Collects every 5 minutes
     try:
@@ -68,7 +76,7 @@ def setup_collectors() -> None:
     except Exception as e:
         logger.error(f"✗ Failed to register Newscatcher collector: {str(e)}")
         logger.info("  Get an API key at: https://www.newscatcherapi.com/ ($10/month - Tier 2)")
-    
+
     # Glass Ledger: Nansen Smart Money Tracking
     # Collects every 15 minutes
     try:
@@ -83,7 +91,7 @@ def setup_collectors() -> None:
     except Exception as e:
         logger.error(f"✗ Failed to register Nansen collector: {str(e)}")
         logger.info("  Get an API key at: https://nansen.ai/ ($49/month - Tier 2)")
-    
+
     # Catalyst Ledger: SEC API
     # Collects daily at 9 AM UTC (after market open)
     try:
@@ -97,7 +105,7 @@ def setup_collectors() -> None:
         logger.info("✓ Registered SEC API collector (Catalyst Ledger)")
     except Exception as e:
         logger.error(f"✗ Failed to register SEC API collector: {str(e)}")
-    
+
     # Catalyst Ledger: CoinSpot Announcements
     # Collects every hour for new announcements
     try:
@@ -110,7 +118,7 @@ def setup_collectors() -> None:
         logger.info("✓ Registered CoinSpot Announcements collector (Catalyst Ledger)")
     except Exception as e:
         logger.error(f"✗ Failed to register CoinSpot Announcements collector: {str(e)}")
-    
+
     # Human Ledger: Reddit API
     # Collects every 15 minutes for community sentiment
     try:
@@ -123,7 +131,7 @@ def setup_collectors() -> None:
         logger.info("✓ Registered Reddit collector (Human Ledger)")
     except Exception as e:
         logger.error(f"✗ Failed to register Reddit collector: {str(e)}")
-    
+
     # TODO: Add more collectors as they are implemented
     # - Enhanced CoinSpot Client (Exchange Ledger)
     #
@@ -131,7 +139,7 @@ def setup_collectors() -> None:
     # ✓ CryptoPanic - Implemented and registered
     # ✓ Newscatcher - Implemented and registered (Tier 2)
     # ✓ Nansen - Implemented and registered (Tier 2)
-    
+
     logger.info("Phase 2.5 collectors setup complete")
 
 

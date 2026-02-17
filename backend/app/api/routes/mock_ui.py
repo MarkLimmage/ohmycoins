@@ -3,10 +3,9 @@
 Mock API endpoints for Storybook and UI development.
 Available only in non-production environments.
 """
-from datetime import datetime, timezone, timedelta
-import uuid
 import random
-from typing import List
+import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import Field
@@ -14,10 +13,7 @@ from pydantic import Field
 from app.api.response_base import APIResponseBase
 from app.api.routes.pnl import PnLSummaryResponse
 from app.models import (
-    AgentSessionPublic, 
-    AgentSessionMessagePublic, 
-    AgentSessionStatus,
-    AgentSessionsPublic
+    AgentSessionMessagePublic,
 )
 
 router = APIRouter()
@@ -44,9 +40,9 @@ async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLS
                 "error_code": "DATA_PROVIDER_TIMEOUT"
             }
         )
-    
+
     is_loading = (state == "loading")
-    
+
     # Base mock data
     mock_data = {
         "realized_pnl": 1250.50 if state != "empty" else 0.0,
@@ -72,25 +68,25 @@ async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLS
         "last_updated": datetime.now(timezone.utc),
         "data_staleness_seconds": 0.0
     }
-    
+
     return PnLSummaryResponse(**mock_data)
 
 # ============================================================================
 # AgentTerminal Mocks
 # ============================================================================
 
-@router.get("/agent/sessions/{session_id}/messages", response_model=List[AgentSessionMessagePublic])
-async def get_mock_agent_messages(session_id: uuid.UUID, stream: bool = False) -> List[AgentSessionMessagePublic]:
+@router.get("/agent/sessions/{session_id}/messages", response_model=list[AgentSessionMessagePublic])
+async def get_mock_agent_messages(session_id: uuid.UUID, stream: bool = False) -> list[AgentSessionMessagePublic]:
     """Get mock messages for AgentTerminal."""
-    
+
     agents = ["ResearchAgent", "StrategyAgent", "ExecutionAgent", "RiskAgent"]
     messages = []
-    
+
     # Generate 10 mock messages
     for i in range(10):
         role = "assistant" if i % 2 == 0 else "user"
         agent_name = random.choice(agents) if role == "assistant" else None
-        
+
         msg = AgentSessionMessagePublic(
             id=uuid.uuid4(),
             session_id=session_id,
@@ -103,7 +99,7 @@ async def get_mock_agent_messages(session_id: uuid.UUID, stream: bool = False) -
             data_staleness_seconds=0.0
         )
         messages.append(msg)
-        
+
     return messages
 
 # ============================================================================
@@ -132,7 +128,7 @@ async def trigger_mock_safety_action(action_type: str, confirm: bool = False) ->
                 "error_code": "MISSING_CONFIRMATION"
             }
         )
-        
+
     return SafetyStatusResponse(
         status="triggered",
         triggered_at=datetime.now(timezone.utc),

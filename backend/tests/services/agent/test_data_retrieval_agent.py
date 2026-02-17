@@ -4,9 +4,10 @@ Tests for Enhanced DataRetrievalAgent - Week 3-4 Implementation
 Tests the enhanced DataRetrievalAgent with comprehensive data retrieval capabilities.
 """
 
+from datetime import datetime
+from unittest.mock import Mock, patch
+
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 
@@ -45,42 +46,42 @@ def basic_state():
 
 class TestDataRetrievalAgentInitialization:
     """Tests for agent initialization."""
-    
+
     def test_agent_creation(self):
         """Test creating an agent."""
         agent = DataRetrievalAgent()
-        
+
         assert agent.name == "DataRetrievalAgent"
         assert "cryptocurrency data" in agent.description.lower()
         assert agent.session is None
-    
+
     def test_agent_with_session(self, mock_session):
         """Test creating an agent with session."""
         agent = DataRetrievalAgent(session=mock_session)
-        
+
         assert agent.session == mock_session
-    
+
     def test_set_session(self, mock_session):
         """Test setting session after creation."""
         agent = DataRetrievalAgent()
         agent.set_session(mock_session)
-        
+
         assert agent.session == mock_session
 
 
 class TestDataRetrievalAgentExecution:
     """Tests for agent execution."""
-    
+
     @pytest.mark.asyncio
     async def test_execute_without_session(self, basic_state):
         """Test execution fails without session."""
         agent = DataRetrievalAgent()
-        
+
         result = await agent.execute(basic_state)
-        
+
         assert result["error"] == "Database session not configured"
         assert result["data_retrieved"] is False
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     @patch("app.services.agent.agents.data_retrieval.get_data_statistics")
@@ -102,10 +103,10 @@ class TestDataRetrievalAgentExecution:
                 "last": 50050.0,
             }
         ]
-        
+
         # Execute
         result = await data_retrieval_agent.execute(basic_state)
-        
+
         # Verify
         assert result["data_retrieved"] is True
         assert "retrieved_data" in result
@@ -113,7 +114,7 @@ class TestDataRetrievalAgentExecution:
         assert "available_coins" in result["retrieved_data"]
         assert "data_statistics" in result["retrieved_data"]
         assert result["message"] == "Successfully retrieved data for BTC"
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     @patch("app.services.agent.agents.data_retrieval.get_data_statistics")
@@ -131,7 +132,7 @@ class TestDataRetrievalAgentExecution:
                 "include_sentiment": True,
             },
         }
-        
+
         # Setup mocks
         mock_coins.return_value = ["BTC"]
         mock_stats.return_value = {"price_data": {}}
@@ -140,15 +141,15 @@ class TestDataRetrievalAgentExecution:
             "news_sentiment": [],
             "social_sentiment": [],
         }
-        
+
         # Execute
         result = await data_retrieval_agent.execute(state)
-        
+
         # Verify sentiment was fetched
         assert result["data_retrieved"] is True
         assert "sentiment_data" in result["retrieved_data"]
         mock_sentiment.assert_called_once()
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     @patch("app.services.agent.agents.data_retrieval.get_data_statistics")
@@ -165,21 +166,21 @@ class TestDataRetrievalAgentExecution:
                 "coin_type": "BTC",
             },
         }
-        
+
         # Setup mocks
         mock_coins.return_value = ["BTC"]
         mock_stats.return_value = {}
         mock_price.return_value = []
         mock_onchain.return_value = []
-        
+
         # Execute
         result = await data_retrieval_agent.execute(state)
-        
+
         # Verify on-chain was fetched (because "on-chain" in goal)
         assert result["data_retrieved"] is True
         assert "on_chain_metrics" in result["retrieved_data"]
         mock_onchain.assert_called_once()
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     @patch("app.services.agent.agents.data_retrieval.get_data_statistics")
@@ -196,21 +197,21 @@ class TestDataRetrievalAgentExecution:
                 "coin_type": "BTC",
             },
         }
-        
+
         # Setup mocks
         mock_coins.return_value = ["BTC"]
         mock_stats.return_value = {}
         mock_price.return_value = []
         mock_catalysts.return_value = []
-        
+
         # Execute
         result = await data_retrieval_agent.execute(state)
-        
+
         # Verify catalysts were fetched (because "catalyst" in goal)
         assert result["data_retrieved"] is True
         assert "catalyst_events" in result["retrieved_data"]
         mock_catalysts.assert_called_once()
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     async def test_execute_with_exception(
@@ -219,15 +220,15 @@ class TestDataRetrievalAgentExecution:
         """Test execution handles exceptions gracefully."""
         # Make mock raise exception
         mock_coins.side_effect = Exception("Database error")
-        
+
         # Execute
         result = await data_retrieval_agent.execute(basic_state)
-        
+
         # Verify error handling
         assert result["data_retrieved"] is False
         assert "error" in result
         assert "Database error" in result["error"]
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     @patch("app.services.agent.agents.data_retrieval.get_data_statistics")
@@ -241,10 +242,10 @@ class TestDataRetrievalAgentExecution:
         mock_coins.return_value = ["BTC"]
         mock_stats.return_value = {}
         mock_price.return_value = []
-        
+
         # Execute
         result = await data_retrieval_agent.execute(basic_state)
-        
+
         # Verify metadata
         assert "retrieval_metadata" in result
         metadata = result["retrieval_metadata"]
@@ -253,7 +254,7 @@ class TestDataRetrievalAgentExecution:
         assert "end_date" in metadata
         assert "data_types" in metadata
         assert metadata["coin_type"] == "BTC"
-    
+
     @pytest.mark.asyncio
     @patch("app.services.agent.agents.data_retrieval.get_available_coins")
     @patch("app.services.agent.agents.data_retrieval.get_data_statistics")
@@ -270,25 +271,25 @@ class TestDataRetrievalAgentExecution:
                 "days": 14,  # Custom 14 days
             },
         }
-        
+
         # Setup mocks
         mock_coins.return_value = ["ETH"]
         mock_stats.return_value = {}
         mock_price.return_value = []
-        
+
         # Execute
         result = await data_retrieval_agent.execute(state)
-        
+
         # Verify custom parameters were used
         assert result["data_retrieved"] is True
         metadata = result["retrieval_metadata"]
         assert metadata["coin_type"] == "ETH"
-        
+
         # Verify fetch_price_data was called with correct dates
         call_args = mock_price.call_args
         start_date = call_args.kwargs["start_date"]
         end_date = call_args.kwargs["end_date"]
-        
+
         # Time difference should be approximately 14 days
         time_diff = end_date - start_date
         assert 13 <= time_diff.days <= 15  # Allow small variance

@@ -1,7 +1,8 @@
 
-import pytest
 from fastapi.testclient import TestClient
+
 from app.core.config import settings
+
 
 def test_pnl_summary_structure(
     client: TestClient, normal_user_token_headers: dict[str, str]
@@ -38,7 +39,7 @@ def test_mock_ledger_endpoint(client: TestClient):
         data = r.json()
         assert "realized_pnl" in data
         assert data["is_loading"] is False
-        
+
         # Test loading state
         r = client.get(f"{settings.API_V1_STR}/mock/ledgers/human?state=loading")
         assert r.status_code == 200
@@ -52,7 +53,7 @@ def test_mock_safety_endpoint(client: TestClient):
         assert r.status_code == 400
         data = r.json()
         assert data["error_code"] == "MISSING_CONFIRMATION"
-        
+
         # Test success
         r = client.post(f"{settings.API_V1_STR}/mock/safety/kill-switch?confirm=true")
         assert r.status_code == 200

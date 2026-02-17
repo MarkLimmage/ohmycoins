@@ -2,21 +2,21 @@
 Tests for data quality monitor.
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
+import pytest
+
+from app.models import (
+    CatalystEvents,
+    NewsSentiment,
+    PriceData5Min,
+)
 from app.services.collectors.quality_monitor import (
     DataQualityMonitor,
     QualityMetrics,
     get_quality_monitor,
-)
-from app.models import (
-    PriceData5Min,
-    NewsSentiment,
-    CatalystEvents,
-    ProtocolFundamentals,
 )
 
 
@@ -81,11 +81,11 @@ def sample_catalyst_event():
 
 class TestQualityMetrics:
     """Test suite for QualityMetrics class."""
-    
+
     def test_initialization(self):
         """Test metrics initialization."""
         metrics = QualityMetrics()
-        
+
         assert metrics.completeness_score == 0.0
         assert metrics.timeliness_score == 0.0
         assert metrics.accuracy_score == 0.0
@@ -93,7 +93,7 @@ class TestQualityMetrics:
         assert metrics.issues == []
         assert metrics.warnings == []
         assert metrics.info == []
-    
+
     def test_to_dict(self):
         """Test conversion to dictionary."""
         metrics = QualityMetrics()
@@ -104,9 +104,9 @@ class TestQualityMetrics:
         metrics.issues = ["Issue 1"]
         metrics.warnings = ["Warning 1"]
         metrics.info = ["Info 1"]
-        
+
         result = metrics.to_dict()
-        
+
         assert result["completeness_score"] == 0.9
         assert result["timeliness_score"] == 0.8
         assert result["accuracy_score"] == 0.95
@@ -118,11 +118,11 @@ class TestQualityMetrics:
 
 class TestDataQualityMonitor:
     """Test suite for DataQualityMonitor."""
-    
+
     def test_initialization(self, quality_monitor):
         """Test monitor initialization."""
         assert quality_monitor.name == "data_quality_monitor"
-    
+
     @pytest.mark.asyncio
     async def test_check_completeness_with_all_data(
         self, quality_monitor, mock_session
@@ -135,13 +135,13 @@ class TestDataQualityMonitor:
             20,   # Catalyst events count
             10,   # Protocol fundamentals count
         ]
-        
+
         metrics = await quality_monitor.check_completeness(mock_session)
-        
+
         assert metrics.completeness_score == 1.0
         assert len(metrics.issues) == 0
         assert len(metrics.info) == 4
-    
+
     @pytest.mark.asyncio
     async def test_check_completeness_with_missing_data(
         self, quality_monitor, mock_session
@@ -154,12 +154,12 @@ class TestDataQualityMonitor:
             0,    # Catalyst events count (missing)
             10,   # Protocol fundamentals count (present)
         ]
-        
+
         metrics = await quality_monitor.check_completeness(mock_session)
-        
+
         assert metrics.completeness_score < 1.0
         assert len(metrics.warnings) >= 2
-    
+
     @pytest.mark.asyncio
     async def test_check_completeness_with_no_price_data(
         self, quality_monitor, mock_session
@@ -172,12 +172,12 @@ class TestDataQualityMonitor:
             20,  # Catalyst events count
             10,  # Protocol fundamentals count
         ]
-        
+
         metrics = await quality_monitor.check_completeness(mock_session)
-        
+
         assert metrics.completeness_score < 1.0
         assert any("price" in issue.lower() for issue in metrics.issues)
-    
+
     @pytest.mark.asyncio
     async def test_check_timeliness_with_fresh_data(
         self, quality_monitor, mock_session, sample_price_data,
@@ -189,19 +189,19 @@ class TestDataQualityMonitor:
         sample_price_data.timestamp = now - timedelta(minutes=5)
         sample_sentiment_data.collected_at = now - timedelta(minutes=10)
         sample_catalyst_event.collected_at = now - timedelta(hours=2)
-        
+
         # Mock query results
         mock_session.exec.return_value.first.side_effect = [
             sample_price_data,
             sample_sentiment_data,
             sample_catalyst_event,
         ]
-        
+
         metrics = await quality_monitor.check_timeliness(mock_session)
-        
+
         assert metrics.timeliness_score >= 0.9
         assert len(metrics.issues) == 0
-    
+
     @pytest.mark.asyncio
     async def test_check_timeliness_with_stale_data(
         self, quality_monitor, mock_session, sample_price_data
@@ -210,19 +210,19 @@ class TestDataQualityMonitor:
         # Set up stale timestamp
         now = datetime.now(timezone.utc)
         sample_price_data.timestamp = now - timedelta(hours=2)
-        
+
         # Mock query results - stale price data, no other data
         mock_session.exec.return_value.first.side_effect = [
             sample_price_data,
             None,  # No sentiment data
             None,  # No catalyst data
         ]
-        
+
         metrics = await quality_monitor.check_timeliness(mock_session)
-        
+
         assert metrics.timeliness_score < 0.5
         assert len(metrics.issues) > 0 or len(metrics.warnings) > 0
-    
+
     @pytest.mark.asyncio
     async def test_check_timeliness_with_no_data(
         self, quality_monitor, mock_session
@@ -230,12 +230,12 @@ class TestDataQualityMonitor:
         """Test timeliness check with no data."""
         # Mock query results - no data
         mock_session.exec.return_value.first.side_effect = [None, None, None]
-        
+
         metrics = await quality_monitor.check_timeliness(mock_session)
-        
+
         assert metrics.timeliness_score < 1.0
         assert len(metrics.issues) > 0 or len(metrics.warnings) > 0
-    
+
     @pytest.mark.asyncio
     async def test_check_accuracy_with_valid_data(
         self, quality_monitor, mock_session
@@ -250,12 +250,12 @@ class TestDataQualityMonitor:
             0,    # Invalid catalyst count
             20,   # Total catalyst count
         ]
-        
+
         metrics = await quality_monitor.check_accuracy(mock_session)
-        
+
         assert metrics.accuracy_score >= 0.9
         assert len(metrics.issues) == 0
-    
+
     @pytest.mark.asyncio
     async def test_check_accuracy_with_invalid_data(
         self, quality_monitor, mock_session
@@ -270,12 +270,12 @@ class TestDataQualityMonitor:
             1,    # Invalid catalyst count
             20,   # Total catalyst count
         ]
-        
+
         metrics = await quality_monitor.check_accuracy(mock_session)
-        
+
         assert metrics.accuracy_score < 1.0
         assert len(metrics.warnings) > 0
-    
+
     @pytest.mark.asyncio
     async def test_check_all_aggregates_scores(
         self, quality_monitor, mock_session
@@ -291,7 +291,7 @@ class TestDataQualityMonitor:
             0, 50,   # Sentiment validity
             0, 20,   # Catalyst validity
         ]
-        
+
         # Mock timeliness queries
         now = datetime.now(timezone.utc)
         mock_price = MagicMock()
@@ -300,20 +300,20 @@ class TestDataQualityMonitor:
         mock_sentiment.collected_at = now - timedelta(minutes=15)
         mock_catalyst = MagicMock()
         mock_catalyst.collected_at = now - timedelta(hours=1)
-        
+
         mock_session.exec.return_value.first.side_effect = [
             mock_price,
             mock_sentiment,
             mock_catalyst,
         ]
-        
+
         metrics = await quality_monitor.check_all(mock_session)
-        
+
         assert 0.0 <= metrics.completeness_score <= 1.0
         assert 0.0 <= metrics.timeliness_score <= 1.0
         assert 0.0 <= metrics.accuracy_score <= 1.0
         assert 0.0 <= metrics.overall_score <= 1.0
-        
+
         # Overall score should be weighted average
         expected_overall = (
             metrics.completeness_score * 0.3 +
@@ -321,7 +321,7 @@ class TestDataQualityMonitor:
             metrics.accuracy_score * 0.3
         )
         assert abs(metrics.overall_score - expected_overall) < 0.01
-    
+
     @pytest.mark.asyncio
     async def test_generate_alert_when_below_threshold(
         self, quality_monitor
@@ -330,15 +330,15 @@ class TestDataQualityMonitor:
         metrics = QualityMetrics()
         metrics.overall_score = 0.6
         metrics.issues = ["Test issue"]
-        
+
         alert = await quality_monitor.generate_alert(metrics, threshold=0.7)
-        
+
         assert alert is not None
         assert alert["severity"] in ["high", "medium"]
         assert "quality score is low" in alert["message"].lower()
         assert "timestamp" in alert
         assert "metrics" in alert
-    
+
     @pytest.mark.asyncio
     async def test_generate_alert_when_above_threshold(
         self, quality_monitor
@@ -346,11 +346,11 @@ class TestDataQualityMonitor:
         """Test no alert when score is above threshold."""
         metrics = QualityMetrics()
         metrics.overall_score = 0.9
-        
+
         alert = await quality_monitor.generate_alert(metrics, threshold=0.7)
-        
+
         assert alert is None
-    
+
     @pytest.mark.asyncio
     async def test_generate_alert_severity_high_for_very_low_score(
         self, quality_monitor
@@ -358,12 +358,12 @@ class TestDataQualityMonitor:
         """Test that very low scores generate high severity alerts."""
         metrics = QualityMetrics()
         metrics.overall_score = 0.4
-        
+
         alert = await quality_monitor.generate_alert(metrics, threshold=0.7)
-        
+
         assert alert is not None
         assert alert["severity"] == "high"
-    
+
     @pytest.mark.asyncio
     async def test_generate_alert_severity_medium_for_low_score(
         self, quality_monitor
@@ -371,9 +371,9 @@ class TestDataQualityMonitor:
         """Test that moderately low scores generate medium severity alerts."""
         metrics = QualityMetrics()
         metrics.overall_score = 0.6
-        
+
         alert = await quality_monitor.generate_alert(metrics, threshold=0.7)
-        
+
         assert alert is not None
         assert alert["severity"] == "medium"
 
@@ -382,6 +382,6 @@ def test_get_quality_monitor_singleton():
     """Test that get_quality_monitor returns a singleton."""
     monitor1 = get_quality_monitor()
     monitor2 = get_quality_monitor()
-    
+
     assert monitor1 is monitor2
     assert isinstance(monitor1, DataQualityMonitor)

@@ -6,15 +6,16 @@ Week 5-6 implementation: New agent for model evaluation and hyperparameter tunin
 """
 
 from typing import Any
+
 import pandas as pd
 
-from .base import BaseAgent
 from ..tools import (
+    calculate_feature_importance,
+    compare_models,
     evaluate_model,
     tune_hyperparameters,
-    compare_models,
-    calculate_feature_importance,
 )
+from .base import BaseAgent
 
 
 class ModelEvaluatorAgent(BaseAgent):
@@ -27,14 +28,14 @@ class ModelEvaluatorAgent(BaseAgent):
     - compare_models: Compare multiple models on the same test data
     - calculate_feature_importance: Calculate feature importance for interpretability
     """
-    
+
     def __init__(self) -> None:
         """Initialize the model evaluator agent."""
         super().__init__(
             name="ModelEvaluatorAgent",
             description="Evaluates and compares machine learning models"
         )
-    
+
     async def execute(self, state: dict[str, Any]) -> dict[str, Any]:
         """
         Execute model evaluation based on trained models.
@@ -48,35 +49,35 @@ class ModelEvaluatorAgent(BaseAgent):
         try:
             # Get trained models from previous agent
             trained_models = state.get("trained_models", {})
-            
+
             if not trained_models:
                 state["error"] = "No trained models available for evaluation"
                 state["model_evaluated"] = False
                 return state
-            
+
             user_goal = state.get("user_goal", "")
             evaluation_params = state.get("evaluation_params", {})
-            
+
             # Get test data for evaluation
             test_data = self._get_test_data(state, evaluation_params)
-            
+
             if test_data is None or len(test_data) == 0:
                 state["error"] = "No test data available for evaluation"
                 state["model_evaluated"] = False
                 return state
-            
+
             # Initialize evaluation results
             evaluation_results: dict[str, Any] = {}
-            
+
             # Evaluate primary model
             primary_model = trained_models.get("primary_model")
             if primary_model:
                 task_type = primary_model.get("task_type", "classification")
                 target_column = evaluation_params.get(
-                    "target_column", 
+                    "target_column",
                     self._infer_target_column(task_type)
                 )
-                
+
                 # Evaluate the model
                 model_evaluation = evaluate_model(
                     model=primary_model["model"],
@@ -86,9 +87,9 @@ class ModelEvaluatorAgent(BaseAgent):
                     scaler=primary_model.get("scaler"),
                     task_type=task_type,
                 )
-                
+
                 evaluation_results["primary_model_evaluation"] = model_evaluation
-                
+
                 # Calculate feature importance
                 if evaluation_params.get("calculate_importance", True):
                     importance = calculate_feature_importance(
@@ -97,7 +98,7 @@ class ModelEvaluatorAgent(BaseAgent):
                         top_n=evaluation_params.get("top_n_features", 10),
                     )
                     evaluation_results["feature_importance"] = importance
-                
+
                 # Hyperparameter tuning if requested
                 if evaluation_params.get("tune_hyperparameters", False):
                     training_data = self._prepare_training_data(state)
@@ -114,7 +115,7 @@ class ModelEvaluatorAgent(BaseAgent):
                             cv_folds=evaluation_params.get("cv_folds", 5),
                         )
                         evaluation_results["hyperparameter_tuning"] = tuning_result
-            
+
             # Compare multiple models if available
             if len(trained_models) > 1:
                 comparison = compare_models(
@@ -128,15 +129,15 @@ class ModelEvaluatorAgent(BaseAgent):
                     task_type=task_type,
                 )
                 evaluation_results["model_comparison"] = comparison
-            
+
             # Generate evaluation insights
             insights = self._generate_evaluation_insights(evaluation_results, task_type)
-            
+
             # Update state
             state["model_evaluated"] = True
             state["evaluation_results"] = evaluation_results
             state["evaluation_insights"] = insights
-            
+
             # Add message about evaluation completion
             state["messages"].append({
                 "role": "agent",
@@ -144,9 +145,9 @@ class ModelEvaluatorAgent(BaseAgent):
                 "content": f"Model evaluation completed. Generated {len(insights)} insights.",
                 "timestamp": pd.Timestamp.now().isoformat(),
             })
-            
+
             return state
-            
+
         except Exception as e:
             state["error"] = f"Model evaluation failed: {str(e)}"
             state["model_evaluated"] = False
@@ -157,17 +158,17 @@ class ModelEvaluatorAgent(BaseAgent):
                 "timestamp": pd.Timestamp.now().isoformat(),
             })
             return state
-    
+
     def _get_test_data(
-        self, 
-        state: dict[str, Any], 
+        self,
+        state: dict[str, Any],
         evaluation_params: dict[str, Any]
     ) -> pd.DataFrame | None:
         """Get test data for evaluation."""
         # Check if test data explicitly provided
         if "test_data" in evaluation_params:
             return evaluation_params["test_data"]
-        
+
         # Use analysis results
         analysis_results = state.get("analysis_results", {})
         if "processed_data" in analysis_results:
@@ -176,45 +177,45 @@ class ModelEvaluatorAgent(BaseAgent):
                 # Split data for testing (use last 20%)
                 split_idx = int(len(df) * 0.8)
                 return df[split_idx:]
-        
+
         # Fallback to retrieved price data
         retrieved_data = state.get("retrieved_data", {})
         if "price_data" in retrieved_data and retrieved_data["price_data"]:
             df = pd.DataFrame(retrieved_data["price_data"])
             split_idx = int(len(df) * 0.8)
             return df[split_idx:]
-        
+
         return None
-    
+
     def _prepare_training_data(self, state: dict[str, Any]) -> pd.DataFrame | None:
         """Prepare training data for hyperparameter tuning."""
         analysis_results = state.get("analysis_results", {})
-        
+
         if "processed_data" in analysis_results:
             df = analysis_results["processed_data"]
             if isinstance(df, pd.DataFrame):
                 return df
-        
+
         retrieved_data = state.get("retrieved_data", {})
         if "price_data" in retrieved_data and retrieved_data["price_data"]:
             return pd.DataFrame(retrieved_data["price_data"])
-        
+
         return None
-    
+
     def _infer_target_column(self, task_type: str) -> str:
         """Infer the target column name based on task type."""
         if task_type == "classification":
             return "price_direction"
         else:  # regression
             return "future_price"
-    
+
     def _get_tuning_model_type(self, model_type: str, task_type: str) -> str:
         """Convert model type to tuning compatible format."""
         if task_type == "classification":
             return "random_forest_classifier"
         else:  # regression
             return "random_forest_regressor"
-    
+
     def _generate_evaluation_insights(
         self,
         evaluation_results: dict[str, Any],
@@ -222,15 +223,15 @@ class ModelEvaluatorAgent(BaseAgent):
     ) -> list[str]:
         """Generate human-readable insights from evaluation results."""
         insights = []
-        
+
         # Primary model evaluation insights
         if "primary_model_evaluation" in evaluation_results:
             eval_metrics = evaluation_results["primary_model_evaluation"]["metrics"]
-            
+
             if task_type == "classification":
                 accuracy = eval_metrics.get("accuracy", 0)
                 f1 = eval_metrics.get("f1", 0)
-                
+
                 if accuracy > 0.7:
                     insights.append(
                         f"✓ Model shows strong performance with {accuracy:.1%} accuracy"
@@ -243,7 +244,7 @@ class ModelEvaluatorAgent(BaseAgent):
                     insights.append(
                         f"✗ Model shows poor performance with {accuracy:.1%} accuracy - consider different features or model type"
                     )
-                
+
                 if "roc_auc" in eval_metrics:
                     roc_auc = eval_metrics["roc_auc"]
                     if roc_auc > 0.8:
@@ -254,11 +255,11 @@ class ModelEvaluatorAgent(BaseAgent):
                         insights.append(
                             f"⚠ Weak discriminative ability with ROC-AUC of {roc_auc:.3f}"
                         )
-            
+
             else:  # regression
                 r2 = eval_metrics.get("r2", 0)
                 rmse = eval_metrics.get("rmse", 0)
-                
+
                 if r2 > 0.7:
                     insights.append(
                         f"✓ Model explains {r2:.1%} of price variance"
@@ -271,9 +272,9 @@ class ModelEvaluatorAgent(BaseAgent):
                     insights.append(
                         f"✗ Model explains only {r2:.1%} of price variance - consider more features"
                     )
-                
+
                 insights.append(f"Average prediction error (RMSE): {rmse:.4f}")
-        
+
         # Feature importance insights
         if "feature_importance" in evaluation_results:
             importance_data = evaluation_results["feature_importance"]
@@ -282,7 +283,7 @@ class ModelEvaluatorAgent(BaseAgent):
                 insights.append(
                     f"Top predictive features: {', '.join(top_3)}"
                 )
-        
+
         # Hyperparameter tuning insights
         if "hyperparameter_tuning" in evaluation_results:
             tuning = evaluation_results["hyperparameter_tuning"]
@@ -290,7 +291,7 @@ class ModelEvaluatorAgent(BaseAgent):
             insights.append(
                 f"Hyperparameter tuning achieved best CV score of {abs(best_score):.4f}"
             )
-        
+
         # Model comparison insights
         if "model_comparison" in evaluation_results:
             comparison = evaluation_results["model_comparison"]
@@ -299,5 +300,5 @@ class ModelEvaluatorAgent(BaseAgent):
                 insights.append(
                     f"Best performing model: {best_model}"
                 )
-        
+
         return insights

@@ -5,16 +5,17 @@ Tests for generate_summary, create_comparison_report, generate_recommendations,
 and create_visualizations functions.
 """
 
-import pytest
-from pathlib import Path
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+
+import pytest
 
 from app.services.agent.tools.reporting_tools import (
-    generate_summary,
     create_comparison_report,
-    generate_recommendations,
     create_visualizations,
+    generate_recommendations,
+    generate_summary,
 )
 
 
@@ -106,7 +107,7 @@ class TestGenerateSummary:
             model_results=sample_model_results,
             analysis_results=sample_analysis_results,
         )
-        
+
         assert "Agent Workflow Summary" in summary
         assert "Predict BTC price movement" in summary
         assert "Data Analysis" in summary
@@ -124,7 +125,7 @@ class TestGenerateSummary:
             model_results={},
             analysis_results={},
         )
-        
+
         assert "Agent Workflow Summary" in summary
         assert "No analysis results available" in summary
         assert "No models trained" in summary
@@ -138,7 +139,7 @@ class TestGenerateSummary:
             model_results={},
             analysis_results=sample_analysis_results,
         )
-        
+
         assert "Records Analyzed:** 500" in summary
         assert "No models trained" in summary
 
@@ -154,7 +155,7 @@ class TestCreateComparisonReport:
             evaluation_results=sample_evaluation_results,
             model_results=sample_model_results,
         )
-        
+
         assert "Model Comparison Report" in report
         assert "Performance Comparison" in report
         assert "RandomForestModel_1" in report
@@ -168,7 +169,7 @@ class TestCreateComparisonReport:
             evaluation_results={"evaluations": []},
             model_results=sample_model_results,
         )
-        
+
         assert "No models to compare" in report
 
     def test_comparison_report_feature_importance(
@@ -179,7 +180,7 @@ class TestCreateComparisonReport:
             evaluation_results=sample_evaluation_results,
             model_results=sample_model_results,
         )
-        
+
         assert "Feature Importance" in report
         assert "sma_20" in report
         assert "0.35" in report
@@ -195,14 +196,14 @@ class TestGenerateRecommendations:
                 "price_eda": {"record_count": 50}
             }
         }
-        
+
         recommendations = generate_recommendations(
             user_goal="Test goal",
             evaluation_results={},
             model_results={},
             analysis_results=analysis_results,
         )
-        
+
         assert any("Low sample size" in rec for rec in recommendations)
 
     def test_recommendations_low_accuracy(self, sample_analysis_results, sample_model_results):
@@ -215,14 +216,14 @@ class TestGenerateRecommendations:
                 }
             ]
         }
-        
+
         recommendations = generate_recommendations(
             user_goal="Test goal",
             evaluation_results=evaluation_results,
             model_results=sample_model_results,
             analysis_results=sample_analysis_results,
         )
-        
+
         assert any("Low accuracy" in rec for rec in recommendations)
 
     def test_recommendations_good_accuracy(
@@ -235,7 +236,7 @@ class TestGenerateRecommendations:
             model_results=sample_model_results,
             analysis_results=sample_analysis_results,
         )
-        
+
         assert any("Good accuracy" in rec for rec in recommendations)
 
     def test_recommendations_precision_recall_imbalance(
@@ -250,14 +251,14 @@ class TestGenerateRecommendations:
                 }
             ]
         }
-        
+
         recommendations = generate_recommendations(
             user_goal="Test goal",
             evaluation_results=evaluation_results,
             model_results=sample_model_results,
             analysis_results=sample_analysis_results,
         )
-        
+
         assert any("Precision-Recall Imbalance" in rec for rec in recommendations)
 
     def test_recommendations_missing_sentiment(
@@ -267,14 +268,14 @@ class TestGenerateRecommendations:
         analysis_results = {
             "exploratory_analysis": {"price_eda": {"record_count": 1000}}
         }
-        
+
         recommendations = generate_recommendations(
             user_goal="Test goal",
             evaluation_results=sample_evaluation_results,
             model_results=sample_model_results,
             analysis_results=analysis_results,
         )
-        
+
         assert any("Sentiment analysis not performed" in rec for rec in recommendations)
 
     def test_recommendations_next_steps(
@@ -287,7 +288,7 @@ class TestGenerateRecommendations:
             model_results=sample_model_results,
             analysis_results=sample_analysis_results,
         )
-        
+
         assert any("Next Steps" in rec for rec in recommendations)
 
 
@@ -311,7 +312,7 @@ class TestCreateVisualizations:
             analysis_results=sample_analysis_results,
             output_dir=temp_dir,
         )
-        
+
         assert isinstance(plots, list)
         assert len(plots) > 0
         model_comp_plot = next((p for p in plots if "comparison" in p["title"].lower()), None)
@@ -329,7 +330,7 @@ class TestCreateVisualizations:
             analysis_results=sample_analysis_results,
             output_dir=temp_dir,
         )
-        
+
         assert isinstance(plots, list)
         feature_plot = next((p for p in plots if "feature" in p["title"].lower()), None)
         if feature_plot:  # Only assert if feature importance was generated
@@ -345,7 +346,7 @@ class TestCreateVisualizations:
             analysis_results=sample_analysis_results,
             output_dir=temp_dir,
         )
-        
+
         assert isinstance(plots, list)
         confusion_plot = next((p for p in plots if "confusion" in p["title"].lower()), None)
         if confusion_plot:  # Only assert if confusion matrix was generated
@@ -359,7 +360,7 @@ class TestCreateVisualizations:
             analysis_results={},
             output_dir=temp_dir,
         )
-        
+
         # Should return empty list when no data
         assert isinstance(plots, list)
 
@@ -367,7 +368,7 @@ class TestCreateVisualizations:
         """Test that output directory is created if it doesn't exist."""
         temp_path = Path(tempfile.mkdtemp())
         output_dir = temp_path / "new_subdir"
-        
+
         try:
             plots = create_visualizations(
                 evaluation_results=sample_evaluation_results,
@@ -375,7 +376,7 @@ class TestCreateVisualizations:
                 analysis_results={},
                 output_dir=output_dir,
             )
-            
+
             assert output_dir.exists()
         finally:
             shutil.rmtree(temp_path, ignore_errors=True)

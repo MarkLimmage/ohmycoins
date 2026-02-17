@@ -1,18 +1,18 @@
-import uuid
-from typing import Any
 import datetime
+import uuid
 from datetime import timezone
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
+    Algorithm,
     StrategyPromotion,
     StrategyPromotionCreate,
-    StrategyPromotionUpdate,
     StrategyPromotionPublic,
-    Algorithm
+    StrategyPromotionUpdate,
 )
 
 router = APIRouter()
@@ -31,7 +31,7 @@ def request_promotion(
     algorithm = session.get(Algorithm, promotion_in.algorithm_id)
     if not algorithm:
          raise HTTPException(status_code=404, detail="Algorithm not found")
-    
+
     # Check if user owns the algorithm
     if algorithm.created_by != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough privileges")
@@ -46,7 +46,7 @@ def request_promotion(
         raise HTTPException(status_code=400, detail="A pending promotion request already exists for this algorithm")
 
     promotion = StrategyPromotion.model_validate(
-        promotion_in, 
+        promotion_in,
         update={"created_by": current_user.id}
     )
     session.add(promotion)
@@ -70,7 +70,7 @@ def list_promotions(
         statement = select(StrategyPromotion)
     else:
         statement = select(StrategyPromotion).where(StrategyPromotion.created_by == current_user.id)
-    
+
     if status:
          statement = statement.where(StrategyPromotion.status == status)
 
@@ -91,10 +91,10 @@ def get_promotion(
     promotion = session.get(StrategyPromotion, id)
     if not promotion:
         raise HTTPException(status_code=404, detail="Promotion request not found")
-    
+
     if not current_user.is_superuser and promotion.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough privileges")
-        
+
     return promotion
 
 @router.patch("/{id}", response_model=StrategyPromotionPublic)
@@ -123,17 +123,17 @@ def review_promotion(
     update_data = review_in.model_dump(exclude_unset=True)
     update_data["reviewed_by"] = current_user.id
     update_data["reviewed_at"] = datetime.datetime.now(timezone.utc)
-    
+
     promotion.sqlmodel_update(update_data)
     session.add(promotion)
     session.commit()
     session.refresh(promotion)
-    
+
     # If approved, update the Algorithm status
     if promotion.status == "approved":
         algorithm = session.get(Algorithm, promotion.algorithm_id)
         if algorithm:
-            algorithm.status = "active" 
+            algorithm.status = "active"
             session.add(algorithm)
             session.commit()
 

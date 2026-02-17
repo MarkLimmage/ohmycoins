@@ -8,9 +8,10 @@ These fixtures use the seeding utilities but are optimized for fast test executi
 import os
 import random
 import uuid
+from collections.abc import Generator
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Generator, Any
+from typing import Any
 
 import pytest
 from faker import Faker
@@ -43,7 +44,7 @@ def create_test_user(
     if email is None:
         # Use UUID to ensure uniqueness even with persistent dev data
         email = f"test-{uuid.uuid4()}@example.com"
-    
+
     user = User(
         email=email,
         hashed_password=get_password_hash("TestPassword123!"),
@@ -73,14 +74,14 @@ def create_test_price_data(
     prices = []
     current_time = datetime.now(timezone.utc) - timedelta(hours=count // 12)
     current_price = start_price
-    
+
     for i in range(count):
         # Add some volatility
         change = Decimal(random.uniform(-0.02, 0.02))
         current_price = current_price * (Decimal("1") + change)
-        
+
         spread = current_price * Decimal("0.001")
-        
+
         price_data = PriceData5Min(
             timestamp=current_time,
             coin_type=coin_type,
@@ -91,13 +92,13 @@ def create_test_price_data(
         )
         session.add(price_data)
         prices.append(price_data)
-        
+
         current_time += timedelta(minutes=5)
-    
+
     session.flush()
     for price in prices:
         session.refresh(price)
-    
+
     return prices
 
 
@@ -135,7 +136,7 @@ def create_test_position(
     """Create a test position."""
     quantity = kwargs.get("quantity", Decimal("0.5"))
     avg_price = kwargs.get("average_price", Decimal("65000.00"))
-    
+
     position = Position(
         user_id=user.id,
         coin_type=coin_type,
@@ -160,7 +161,7 @@ def create_test_order(
     """Create a test order."""
     quantity = kwargs.get("quantity", Decimal("0.1"))
     price = kwargs.get("price", Decimal("65000.00"))
-    
+
     order = Order(
         user_id=user.id,
         algorithm_id=kwargs.get("algorithm_id"),

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
 from typing import Any
+
+from fastapi import APIRouter, Depends
 
 from app.api.deps import SessionDep, get_current_active_superuser
 from app.models import User

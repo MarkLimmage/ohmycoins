@@ -42,7 +42,7 @@ class BaseCollector(ABC):
     - Database transaction management
     - Status tracking in collector_runs table
     """
-    
+
     def __init__(self, name: str, ledger: str):
         """
         Initialize the collector.
@@ -58,7 +58,7 @@ class BaseCollector(ABC):
         self.last_run: datetime | None = None
         self.error_count = 0
         self.success_count = 0
-    
+
     @abstractmethod
     async def collect(self) -> list[dict[str, Any]]:
         """
@@ -72,7 +72,7 @@ class BaseCollector(ABC):
             Exception: If data collection fails
         """
         pass
-    
+
     @abstractmethod
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
@@ -88,7 +88,7 @@ class BaseCollector(ABC):
             ValueError: If data validation fails
         """
         pass
-    
+
     @abstractmethod
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
         """
@@ -105,7 +105,7 @@ class BaseCollector(ABC):
             Exception: If database operations fail
         """
         pass
-    
+
     async def run(self) -> bool:
         """
         Execute the complete collection workflow with error handling.
@@ -126,9 +126,9 @@ class BaseCollector(ABC):
         started_at = self.last_run
         run_id = None
         records_collected = 0
-        
+
         logger.info(f"Starting collector: {self.name} (ledger: {self.ledger})")
-        
+
         try:
             with Session(engine) as session:
                 # Create collector run record
@@ -141,43 +141,43 @@ class BaseCollector(ABC):
                 session.commit()
                 session.refresh(collector_run)
                 run_id = collector_run.id
-                
+
                 # Collect data
                 logger.debug(f"{self.name}: Collecting data...")
                 raw_data = await self.collect()
                 logger.debug(f"{self.name}: Collected {len(raw_data)} raw records")
-                
+
                 # Validate data
                 logger.debug(f"{self.name}: Validating data...")
                 validated_data = await self.validate_data(raw_data)
                 logger.debug(f"{self.name}: Validated {len(validated_data)} records")
-                
+
                 # Store data
                 logger.debug(f"{self.name}: Storing data...")
                 records_collected = await self.store_data(validated_data, session)
                 logger.info(
                     f"{self.name}: Successfully stored {records_collected} records"
                 )
-                
+
                 # Update collector run record
                 collector_run.status = CollectorStatus.SUCCESS
                 collector_run.completed_at = datetime.now(timezone.utc)
                 collector_run.records_collected = records_collected
                 session.add(collector_run)
                 session.commit()
-                
+
                 # Update metrics
                 self.status = CollectorStatus.SUCCESS
                 self.success_count += 1
-                
+
                 return True
-                
+
         except Exception as e:
             logger.error(
                 f"{self.name}: Collection failed: {str(e)}",
                 exc_info=True
             )
-            
+
             # Update collector run record with error
             if run_id:
                 try:
@@ -193,13 +193,13 @@ class BaseCollector(ABC):
                     logger.error(
                         f"{self.name}: Failed to update collector run: {str(db_error)}"
                     )
-            
+
             # Update metrics
             self.status = CollectorStatus.FAILED
             self.error_count += 1
-            
+
             return False
-    
+
     def get_status(self) -> dict[str, Any]:
         """
         Get current collector status and metrics.

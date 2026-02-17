@@ -4,19 +4,19 @@ Coinspot API Authentication Utilities
 This module provides utilities for authenticating with the Coinspot private API
 using HMAC-SHA512 signatures.
 """
-import hmac
 import hashlib
+import hmac
 import json
+import logging
 import time
 from typing import Any
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class CoinspotAuthenticator:
     """Handles Coinspot API authentication using HMAC-SHA512"""
-    
+
     def __init__(self, api_key: str, api_secret: str):
         """
         Initialize authenticator with API credentials
@@ -27,7 +27,7 @@ class CoinspotAuthenticator:
         """
         self.api_key = api_key
         self.api_secret = api_secret
-    
+
     def generate_nonce(self) -> int:
         """
         Generate a nonce (number used once) for API requests
@@ -36,7 +36,7 @@ class CoinspotAuthenticator:
             Current timestamp in milliseconds
         """
         return int(time.time() * 1000)
-    
+
     def sign_request(self, payload: dict[str, Any]) -> str:
         """
         Generate HMAC-SHA512 signature for a request payload
@@ -49,16 +49,16 @@ class CoinspotAuthenticator:
         """
         # Convert payload to JSON string
         message = json.dumps(payload, separators=(',', ':')).encode('utf-8')
-        
+
         # Generate HMAC-SHA512 signature
         signature = hmac.new(
             self.api_secret.encode('utf-8'),
             message,
             hashlib.sha512
         ).hexdigest()
-        
+
         return signature
-    
+
     def get_headers(self, payload: dict[str, Any]) -> dict[str, str]:
         """
         Generate complete headers for Coinspot API request
@@ -72,15 +72,15 @@ class CoinspotAuthenticator:
         # Ensure payload has a nonce
         if 'nonce' not in payload:
             payload['nonce'] = self.generate_nonce()
-        
+
         signature = self.sign_request(payload)
-        
+
         return {
             'sign': signature,
             'key': self.api_key,
             'Content-Type': 'application/json'
         }
-    
+
     def prepare_request(self, endpoint_data: dict[str, Any] | None = None) -> tuple[dict[str, str], dict[str, Any]]:
         """
         Prepare headers and payload for a Coinspot API request
@@ -92,12 +92,12 @@ class CoinspotAuthenticator:
             Tuple of (headers, payload)
         """
         payload = {'nonce': self.generate_nonce()}
-        
+
         if endpoint_data:
             payload.update(endpoint_data)
-        
+
         headers = self.get_headers(payload)
-        
+
         return headers, payload
 
 
@@ -119,5 +119,5 @@ def verify_coinspot_signature(payload: dict[str, Any], signature: str, api_secre
         message,
         hashlib.sha512
     ).hexdigest()
-    
+
     return hmac.compare_digest(signature, expected_signature)

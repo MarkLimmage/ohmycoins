@@ -4,18 +4,15 @@ P&L (Profit & Loss) API endpoints
 Provides comprehensive P&L tracking and performance metrics for trading activities.
 """
 from datetime import datetime
-from decimal import Decimal
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import Field
 from sqlmodel import Session
 
 from app.api.deps import CurrentUser, get_db
 from app.api.response_base import APIResponseBase
-from app.services.trading.pnl import get_pnl_engine, PnLEngine, PnLMetrics
-
+from app.services.trading.pnl import PnLMetrics, get_pnl_engine
 
 router = APIRouter()
 
@@ -45,7 +42,7 @@ class PnLSummaryResponse(APIResponseBase):
     sharpe_ratio: float = Field(description="Risk-adjusted return metric")
     total_volume: float = Field(description="Total trading volume")
     total_fees: float = Field(description="Total trading fees paid")
-    
+
     @classmethod
     def from_metrics(cls, metrics: PnLMetrics) -> "PnLSummaryResponse":
         """Create response from PnLMetrics"""
@@ -77,7 +74,7 @@ class PnLByAlgorithmResponse(APIResponseBase):
     realized_pnl: float = Field(description="Realized P&L for this algorithm")
     unrealized_pnl: float = Field(description="Unrealized P&L for this algorithm")
     total_pnl: float = Field(description="Total P&L for this algorithm")
-    
+
     @classmethod
     def from_algorithm_metrics(cls, algorithm_id: UUID, metrics: PnLMetrics) -> "PnLByAlgorithmResponse":
         """Create response from algorithm ID and metrics"""
@@ -95,7 +92,7 @@ class PnLByCoinResponse(APIResponseBase):
     realized_pnl: float = Field(description="Realized P&L for this coin")
     unrealized_pnl: float = Field(description="Unrealized P&L for this coin")
     total_pnl: float = Field(description="Total P&L for this coin")
-    
+
     @classmethod
     def from_coin_metrics(cls, coin_type: str, metrics: PnLMetrics) -> "PnLByCoinResponse":
         """Create response from coin type and metrics"""
@@ -150,16 +147,16 @@ def get_pnl_summary(
     - PnLSummaryResponse with all P&L metrics and statistics
     """
     pnl_engine = get_pnl_engine(session)
-    
+
     try:
         metrics = pnl_engine.get_pnl_summary(
             user_id=current_user.id,
             start_date=start_date,
             end_date=end_date
         )
-        
+
         return PnLSummaryResponse.from_metrics(metrics)
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -187,19 +184,19 @@ def get_pnl_by_algorithm(
     - List of P&L metrics per algorithm
     """
     pnl_engine = get_pnl_engine(session)
-    
+
     try:
         pnl_by_algo = pnl_engine.get_pnl_by_algorithm(
             user_id=current_user.id,
             start_date=start_date,
             end_date=end_date
         )
-        
+
         return [
             PnLByAlgorithmResponse.from_algorithm_metrics(algorithm_id, metrics)
             for algorithm_id, metrics in pnl_by_algo.items()
         ]
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -227,19 +224,19 @@ def get_pnl_by_coin(
     - List of P&L metrics per cryptocurrency
     """
     pnl_engine = get_pnl_engine(session)
-    
+
     try:
         pnl_by_coin = pnl_engine.get_pnl_by_coin(
             user_id=current_user.id,
             start_date=start_date,
             end_date=end_date
         )
-        
+
         return [
             PnLByCoinResponse.from_coin_metrics(coin_type, metrics)
             for coin_type, metrics in pnl_by_coin.items()
         ]
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -275,9 +272,9 @@ def get_historical_pnl(
             status_code=400,
             detail=f"Invalid interval. Must be one of: {', '.join(valid_intervals)}"
         )
-    
+
     pnl_engine = get_pnl_engine(session)
-    
+
     try:
         historical_data = pnl_engine.get_historical_pnl(
             user_id=current_user.id,
@@ -285,7 +282,7 @@ def get_historical_pnl(
             end_date=end_date,
             interval=interval
         )
-        
+
         return [
             HistoricalPnLEntry(
                 timestamp=entry['timestamp'],
@@ -294,7 +291,7 @@ def get_historical_pnl(
             )
             for entry in historical_data
         ]
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -327,7 +324,7 @@ def get_realized_pnl(
     - RealizedPnLResponse with realized_pnl value
     """
     pnl_engine = get_pnl_engine(session)
-    
+
     try:
         realized_pnl = pnl_engine.calculate_realized_pnl(
             user_id=current_user.id,
@@ -336,9 +333,9 @@ def get_realized_pnl(
             algorithm_id=algorithm_id,
             coin_type=coin_type
         )
-        
+
         return RealizedPnLResponse(realized_pnl=float(realized_pnl))
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -365,15 +362,15 @@ def get_unrealized_pnl(
     - UnrealizedPnLResponse with unrealized_pnl value
     """
     pnl_engine = get_pnl_engine(session)
-    
+
     try:
         unrealized_pnl = pnl_engine.calculate_unrealized_pnl(
             user_id=current_user.id,
             coin_type=coin_type
         )
-        
+
         return UnrealizedPnLResponse(unrealized_pnl=float(unrealized_pnl))
-    
+
     except Exception as e:
         raise HTTPException(
             status_code=500,

@@ -25,7 +25,7 @@ class PositionManager:
     - Portfolio value calculation
     - Unrealized P&L calculation
     """
-    
+
     def __init__(self, session: Session):
         """
         Initialize position manager
@@ -34,7 +34,7 @@ class PositionManager:
             session: Database session
         """
         self.session = session
-    
+
     def get_position(self, user_id: UUID, coin_type: str) -> Position | None:
         """
         Get position for a specific user and coin
@@ -51,7 +51,7 @@ class PositionManager:
             Position.coin_type == coin_type
         )
         return self.session.exec(statement).first()
-    
+
     def get_all_positions(self, user_id: UUID) -> list[Position]:
         """
         Get all positions for a user
@@ -64,7 +64,7 @@ class PositionManager:
         """
         statement = select(Position).where(Position.user_id == user_id)
         return list(self.session.exec(statement).all())
-    
+
     async def get_position_with_value(
         self,
         user_id: UUID,
@@ -87,17 +87,17 @@ class PositionManager:
         position = self.get_position(user_id, coin_type)
         if not position:
             return None
-        
+
         # Get current price from Coinspot
         async with CoinspotTradingClient(api_key, api_secret) as client:
             balance_data = await client.get_balance(coin_type)
-        
+
         # Calculate current value (assuming audvalue is provided)
         current_value = Decimal(str(balance_data.get('audvalue', '0')))
-        
+
         # Calculate unrealized P&L
         unrealized_pnl = current_value - position.total_cost
-        
+
         return PositionPublic(
             id=position.id,
             user_id=position.user_id,
@@ -110,7 +110,7 @@ class PositionManager:
             current_value=current_value,
             unrealized_pnl=unrealized_pnl
         )
-    
+
     async def get_all_positions_with_values(
         self,
         user_id: UUID,
@@ -130,20 +130,20 @@ class PositionManager:
         """
         positions = self.get_all_positions(user_id)
         result = []
-        
+
         async with CoinspotTradingClient(api_key, api_secret) as client:
             # Get all balances at once for efficiency
             balances_data = await client.get_balances()
             balances = balances_data.get('balances', {})
-            
+
             for position in positions:
                 # Get balance data for this coin
                 balance = balances.get(position.coin_type, {})
                 current_value = Decimal(str(balance.get('audvalue', '0')))
-                
+
                 # Calculate unrealized P&L
                 unrealized_pnl = current_value - position.total_cost
-                
+
                 result.append(PositionPublic(
                     id=position.id,
                     user_id=position.user_id,
@@ -156,9 +156,9 @@ class PositionManager:
                     current_value=current_value,
                     unrealized_pnl=unrealized_pnl
                 ))
-        
+
         return result
-    
+
     def get_portfolio_summary(self, user_id: UUID) -> dict:
         """
         Get portfolio summary for a user
@@ -170,20 +170,20 @@ class PositionManager:
             Dictionary with portfolio statistics
         """
         positions = self.get_all_positions(user_id)
-        
+
         total_positions = len(positions)
         total_cost = sum(p.total_cost for p in positions)
-        
+
         # Get unique coins
         coins = list(set(p.coin_type for p in positions))
-        
+
         return {
             'user_id': user_id,
             'total_positions': total_positions,
             'total_cost': total_cost,
             'coins': coins
         }
-    
+
     async def get_portfolio_value(
         self,
         user_id: UUID,
@@ -202,14 +202,14 @@ class PositionManager:
             Dictionary with portfolio value and P&L
         """
         positions = await self.get_all_positions_with_values(user_id, api_key, api_secret)
-        
+
         total_cost = sum(p.total_cost for p in positions)
         total_value = sum(p.current_value for p in positions if p.current_value)
         total_unrealized_pnl = sum(p.unrealized_pnl for p in positions if p.unrealized_pnl)
-        
+
         # Calculate return percentage
         return_pct = (total_unrealized_pnl / total_cost * 100) if total_cost > 0 else Decimal('0')
-        
+
         return {
             'user_id': user_id,
             'total_positions': len(positions),

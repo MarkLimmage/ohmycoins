@@ -1,15 +1,14 @@
 import logging
 import sys
-import uuid
 from decimal import Decimal
-from datetime import datetime
+
 from sqlmodel import Session, select
 
 # Add /app to path to allow imports
 sys.path.append('/app')
 
 from app.core.db import engine
-from app.models import User, Algorithm, DeployedAlgorithm
+from app.models import Algorithm, DeployedAlgorithm, User
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +28,7 @@ def seed_live_strategy() -> None:
         # 2. Get or Create Algorithm Definition
         algo_name = "MA Crossover Beta"
         algo = session.exec(select(Algorithm).where(Algorithm.name == algo_name)).first()
-        
+
         if not algo:
             logger.info("Creating Algorithm Definition...")
             algo = Algorithm(
@@ -65,7 +64,7 @@ def seed_live_strategy() -> None:
                 execution_frequency=60, # 1 minute
                 position_limit=Decimal("10.00"),
                 daily_loss_limit=Decimal("5.00"),
-                parameters_json='{"short_window": 5, "long_window": 10, "coin_type": "DOGE"}' 
+                parameters_json='{"short_window": 5, "long_window": 10, "coin_type": "DOGE"}'
             )
             session.add(deployment)
             session.commit()

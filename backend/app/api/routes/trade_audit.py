@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 from fastapi import APIRouter
@@ -19,7 +18,7 @@ def read_trade_audits(
     """
     count_statement = select(func.count()).select_from(TradeAudit)
     count = session.exec(count_statement).one()
-    
+
     trade_audits = crud_trade_audit.get_trade_audits(session=session, skip=skip, limit=limit)
     return TradeAudits(data=trade_audits, count=count)
 

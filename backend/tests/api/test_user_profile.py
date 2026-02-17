@@ -1,9 +1,7 @@
 """
 Tests for user profile management endpoints
 """
-import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
 
 from app.core.config import settings
 

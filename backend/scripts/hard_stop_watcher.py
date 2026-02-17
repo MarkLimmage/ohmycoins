@@ -16,21 +16,11 @@ Rules:
 import asyncio
 import logging
 import sys
-from decimal import Decimal
-from typing import Dict
 from pathlib import Path
-
-from sqlmodel import Session, select
-from sqlalchemy import func
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.db import engine
-from app.models import User, Position, PriceData5Min
-from app.services.trading.safety import TradingSafetyManager
-from app.core.config import settings
-import redis.asyncio as redis
 
 # Setup logging
 logging.basicConfig(

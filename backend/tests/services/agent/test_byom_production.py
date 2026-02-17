@@ -16,24 +16,21 @@ Tests are marked with appropriate markers:
 Tests are skipped if API keys are not configured to avoid CI/CD failures.
 """
 import os
-import pytest
 import time
-from unittest.mock import patch, MagicMock
 from uuid import uuid4
-from datetime import datetime, timezone
 
-from sqlmodel import Session, select
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
+import pytest
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from sqlmodel import Session
 
-from app.models import User, UserLLMCredentials, AgentSession, AgentSessionStatus
+from app.models import AgentSession, AgentSessionStatus, User, UserLLMCredentials
 from app.services.agent.llm_factory import LLMFactory
 from app.services.agent.orchestrator import AgentOrchestrator
 from app.services.agent.session_manager import SessionManager
 from app.services.encryption import encryption_service
-
 
 # ============================================================================
 # Helper functions for checking API key availability
@@ -94,7 +91,7 @@ def openai_credential(session: Session, test_user: User) -> UserLLMCredentials |
     """Create OpenAI credential for test user"""
     if not has_openai_key():
         return None
-    
+
     encrypted_key = encryption_service.encrypt_api_key(get_openai_key())
     credential = UserLLMCredentials(
         id=uuid4(),
@@ -117,7 +114,7 @@ def google_credential(session: Session, test_user: User) -> UserLLMCredentials |
     """Create Google Gemini credential for test user"""
     if not has_google_key():
         return None
-    
+
     encrypted_key = encryption_service.encrypt_api_key(get_google_key())
     credential = UserLLMCredentials(
         id=uuid4(),
@@ -140,7 +137,7 @@ def anthropic_credential(session: Session, test_user: User) -> UserLLMCredential
     """Create Anthropic Claude credential for test user"""
     if not has_anthropic_key():
         return None
-    
+
     encrypted_key = encryption_service.encrypt_api_key(get_anthropic_key())
     credential = UserLLMCredentials(
         id=uuid4(),
@@ -178,7 +175,7 @@ def orchestrator(session_manager: SessionManager) -> AgentOrchestrator:
 @pytest.mark.requires_api
 class TestBYOMProductionWorkflows:
     """Production tests for BYOM feature with real LLM providers"""
-    
+
     @pytest.mark.skipif(not has_openai_key(), reason="OpenAI API key not configured")
     def test_agent_execution_with_openai(
         self,
@@ -199,28 +196,28 @@ class TestBYOMProductionWorkflows:
         session.add(agent_session)
         session.commit()
         session.refresh(agent_session)
-        
+
         # Verify LLM creation with OpenAI credential
         llm = LLMFactory.create_llm(
             session=session,
             user_id=test_user.id,
             credential_id=openai_credential.id
         )
-        
+
         # Assertions
         assert isinstance(llm, ChatOpenAI)
         assert llm.model_name == "gpt-4o-mini"
-        
+
         # Test basic LLM invocation
         # Mocking due to quota limits (manual mock to avoid Pydantic patching issues)
         from langchain_core.messages import AIMessage
         # response = llm.invoke([HumanMessage(content="Say 'Hello BYOM' and nothing else")])
         response = AIMessage(content="Hello BYOM")
-        
+
         assert response is not None
         assert len(response.content) > 0
         print(f"✓ OpenAI response: {response.content[:50]}...")
-    
+
     @pytest.mark.skipif(not has_google_key(), reason="Google API key not configured")
     def test_agent_execution_with_google(
         self,
@@ -241,24 +238,24 @@ class TestBYOMProductionWorkflows:
         session.add(agent_session)
         session.commit()
         session.refresh(agent_session)
-        
+
         # Verify LLM creation with Google credential
         llm = LLMFactory.create_llm(
             session=session,
             user_id=test_user.id,
             credential_id=google_credential.id
         )
-        
+
         # Assertions
         assert isinstance(llm, ChatGoogleGenerativeAI)
         assert llm.model == "gemini-1.5-flash"
-        
+
         # Test basic LLM invocation
         response = llm.invoke([HumanMessage(content="Say 'Hello BYOM' and nothing else")])
         assert response is not None
         assert len(response.content) > 0
         print(f"✓ Google Gemini response: {response.content[:50]}...")
-    
+
     @pytest.mark.skipif(not has_anthropic_key(), reason="Anthropic API key not configured")
     def test_agent_execution_with_anthropic(
         self,
@@ -279,24 +276,24 @@ class TestBYOMProductionWorkflows:
         session.add(agent_session)
         session.commit()
         session.refresh(agent_session)
-        
+
         # Verify LLM creation with Anthropic credential
         llm = LLMFactory.create_llm(
             session=session,
             user_id=test_user.id,
             credential_id=anthropic_credential.id
         )
-        
+
         # Assertions
         assert isinstance(llm, ChatAnthropic)
         assert llm.model == "claude-3-haiku-20240307"
-        
+
         # Test basic LLM invocation
         response = llm.invoke([HumanMessage(content="Say 'Hello BYOM' and nothing else")])
         assert response is not None
         assert len(response.content) > 0
         print(f"✓ Anthropic Claude response: {response.content[:50]}...")
-    
+
     def test_agent_execution_fallback_to_system_default(
         self,
         session: Session,
@@ -314,19 +311,19 @@ class TestBYOMProductionWorkflows:
         session.add(agent_session)
         session.commit()
         session.refresh(agent_session)
-        
+
         # Verify LLM creation falls back to system default
         llm = LLMFactory.create_llm(
             session=session,
             user_id=test_user.id,
             credential_id=None
         )
-        
+
         # Should create system default LLM (OpenAI or Anthropic depending on config)
         assert llm is not None
         assert isinstance(llm, (ChatOpenAI, ChatAnthropic))
         print(f"✓ System default LLM type: {type(llm).__name__}")
-    
+
     def test_agent_execution_invalid_credential_id(
         self,
         session: Session,
@@ -334,7 +331,7 @@ class TestBYOMProductionWorkflows:
     ):
         """Test 5: Agent execution with invalid credential_id (should fail gracefully)"""
         invalid_credential_id = uuid4()
-        
+
         # Attempt to create LLM with non-existent credential
         with pytest.raises(ValueError, match="Credential .* not found"):
             LLMFactory.create_llm(
@@ -342,7 +339,7 @@ class TestBYOMProductionWorkflows:
                 user_id=test_user.id,
                 credential_id=invalid_credential_id
             )
-        
+
         print("✓ Invalid credential_id handled gracefully")
 
 
@@ -355,7 +352,7 @@ class TestBYOMProductionWorkflows:
 @pytest.mark.slow
 class TestBYOMPerformanceComparison:
     """Performance comparison tests across providers"""
-    
+
     def _test_llm_performance(
         self,
         llm,
@@ -364,7 +361,7 @@ class TestBYOMPerformanceComparison:
     ) -> dict:
         """Helper to test LLM performance and collect metrics"""
         start_time = time.time()
-        
+
         # Invoke LLM
         if provider_name == "OpenAI" and isinstance(llm, ChatOpenAI):
             # Mock OpenAI due to quota limits in test environment
@@ -381,10 +378,10 @@ class TestBYOMPerformanceComparison:
             )
         else:
             response = llm.invoke([HumanMessage(content=prompt)])
-        
+
         end_time = time.time()
         response_time = end_time - start_time
-        
+
         # Extract token usage if available
         token_usage = {}
         if hasattr(response, "response_metadata"):
@@ -393,7 +390,7 @@ class TestBYOMPerformanceComparison:
                 token_usage = metadata["token_usage"]
             elif "usage_metadata" in metadata:
                 token_usage = metadata["usage_metadata"]
-        
+
         return {
             "provider": provider_name,
             "response_time": response_time,
@@ -401,7 +398,7 @@ class TestBYOMPerformanceComparison:
             "token_usage": token_usage,
             "content": response.content[:100]
         }
-    
+
     @pytest.mark.skipif(
         not (has_openai_key() and has_google_key() and has_anthropic_key()),
         reason="All 3 provider API keys required for comparison"
@@ -417,7 +414,7 @@ class TestBYOMPerformanceComparison:
         """Test 6: Compare response times across all 3 providers"""
         prompt = "What is the capital of France? Answer in one word."
         results = []
-        
+
         # Test OpenAI
         if openai_credential:
             llm_openai = LLMFactory.create_llm(
@@ -428,7 +425,7 @@ class TestBYOMPerformanceComparison:
             result_openai = self._test_llm_performance(llm_openai, "OpenAI", prompt)
             results.append(result_openai)
             print(f"OpenAI - Time: {result_openai['response_time']:.2f}s")
-        
+
         # Test Google
         if google_credential:
             llm_google = LLMFactory.create_llm(
@@ -439,7 +436,7 @@ class TestBYOMPerformanceComparison:
             result_google = self._test_llm_performance(llm_google, "Google", prompt)
             results.append(result_google)
             print(f"Google - Time: {result_google['response_time']:.2f}s")
-        
+
         # Test Anthropic
         if anthropic_credential:
             llm_anthropic = LLMFactory.create_llm(
@@ -450,19 +447,19 @@ class TestBYOMPerformanceComparison:
             result_anthropic = self._test_llm_performance(llm_anthropic, "Anthropic", prompt)
             results.append(result_anthropic)
             print(f"Anthropic - Time: {result_anthropic['response_time']:.2f}s")
-        
+
         # Assertions
         assert len(results) == 3
         for result in results:
             assert result["response_time"] > 0
             assert result["response_time"] < 30  # Should complete within 30 seconds
             assert len(result["content"]) > 0
-        
+
         # Print comparison summary
         print("\n=== Performance Comparison ===")
         for result in sorted(results, key=lambda x: x["response_time"]):
             print(f"{result['provider']:10s}: {result['response_time']:.2f}s - {result['content'][:30]}")
-    
+
     @pytest.mark.skipif(
         not (has_openai_key() or has_google_key() or has_anthropic_key()),
         reason="At least one provider API key required"
@@ -477,14 +474,14 @@ class TestBYOMPerformanceComparison:
     ):
         """Test 7: Track token usage per provider"""
         prompt = "Explain quantum computing in exactly 20 words."
-        
+
         credentials = [
             (openai_credential, "OpenAI") if openai_credential else None,
             (google_credential, "Google") if google_credential else None,
             (anthropic_credential, "Anthropic") if anthropic_credential else None,
         ]
         credentials = [c for c in credentials if c is not None]
-        
+
         print("\n=== Token Usage Comparison ===")
         for credential, provider_name in credentials:
             llm = LLMFactory.create_llm(
@@ -494,10 +491,10 @@ class TestBYOMPerformanceComparison:
             )
             result = self._test_llm_performance(llm, provider_name, prompt)
             print(f"{provider_name:10s}: {result['token_usage']}")
-            
+
             # Verify token usage is tracked
             assert result["token_usage"] is not None or provider_name == "Google"  # Google might not return token usage
-    
+
     @pytest.mark.skipif(
         not (has_openai_key() or has_google_key() or has_anthropic_key()),
         reason="At least one provider API key required"
@@ -517,16 +514,16 @@ class TestBYOMPerformanceComparison:
             "Google": {"input": 0.075, "output": 0.30},     # gemini-1.5-flash
             "Anthropic": {"input": 0.25, "output": 1.25}    # claude-3-haiku
         }
-        
+
         prompt = "List 5 popular cryptocurrencies with a brief one-sentence description for each."
-        
+
         credentials = [
             (openai_credential, "OpenAI") if openai_credential else None,
             (google_credential, "Google") if google_credential else None,
             (anthropic_credential, "Anthropic") if anthropic_credential else None,
         ]
         credentials = [c for c in credentials if c is not None]
-        
+
         print("\n=== Cost Estimation ===")
         for credential, provider_name in credentials:
             llm = LLMFactory.create_llm(
@@ -535,18 +532,18 @@ class TestBYOMPerformanceComparison:
                 credential_id=credential.id
             )
             result = self._test_llm_performance(llm, provider_name, prompt)
-            
+
             # Calculate cost if token usage available
             if result["token_usage"]:
                 input_tokens = result["token_usage"].get("prompt_tokens", 0) or result["token_usage"].get("input_tokens", 0)
                 output_tokens = result["token_usage"].get("completion_tokens", 0) or result["token_usage"].get("output_tokens", 0)
-                
+
                 if provider_name in cost_per_1m_tokens:
                     costs = cost_per_1m_tokens[provider_name]
                     input_cost = (input_tokens / 1_000_000) * costs["input"]
                     output_cost = (output_tokens / 1_000_000) * costs["output"]
                     total_cost = input_cost + output_cost
-                    
+
                     print(f"{provider_name:10s}: ${total_cost:.6f} ({input_tokens} in, {output_tokens} out)")
 
 
@@ -557,13 +554,13 @@ class TestBYOMPerformanceComparison:
 @pytest.mark.integration
 class TestBYOMErrorHandling:
     """Error handling and edge case tests"""
-    
+
     def test_invalid_api_key_handling(self, session: Session, test_user: User):
         """Test 9: Invalid API key handling"""
         # Create credential with invalid API key
         invalid_key = "sk-invalid-key-12345"
         encrypted_key = encryption_service.encrypt_api_key(invalid_key)
-        
+
         credential = UserLLMCredentials(
             id=uuid4(),
             user_id=test_user.id,
@@ -577,28 +574,28 @@ class TestBYOMErrorHandling:
         session.add(credential)
         session.commit()
         session.refresh(credential)
-        
+
         # Create LLM with invalid credential
         llm = LLMFactory.create_llm(
             session=session,
             user_id=test_user.id,
             credential_id=credential.id
         )
-        
+
         # Should create LLM instance but fail on invocation
         assert isinstance(llm, ChatOpenAI)
-        
+
         # Invocation should fail gracefully
         with pytest.raises(Exception):  # Will raise authentication error
             llm.invoke([HumanMessage(content="Test")])
-        
+
         print("✓ Invalid API key handled gracefully")
-    
+
     def test_inactive_credential_handling(self, session: Session, test_user: User):
         """Test: Inactive credential should not be used"""
         # Create inactive credential
         encrypted_key = encryption_service.encrypt_api_key("sk-test-key")
-        
+
         credential = UserLLMCredentials(
             id=uuid4(),
             user_id=test_user.id,
@@ -612,7 +609,7 @@ class TestBYOMErrorHandling:
         session.add(credential)
         session.commit()
         session.refresh(credential)
-        
+
         # Attempt to use inactive credential
         with pytest.raises(ValueError, match="not active"):
             LLMFactory.create_llm(
@@ -620,9 +617,9 @@ class TestBYOMErrorHandling:
                 user_id=test_user.id,
                 credential_id=credential.id
             )
-        
+
         print("✓ Inactive credential rejected")
-    
+
     def test_wrong_user_credential_access(self, session: Session):
         """Test: User cannot access another user's credentials"""
         # Create two users
@@ -641,7 +638,7 @@ class TestBYOMErrorHandling:
         session.add(user1)
         session.add(user2)
         session.commit()
-        
+
         # Create credential for user1
         encrypted_key = encryption_service.encrypt_api_key("sk-test-key")
         credential = UserLLMCredentials(
@@ -657,7 +654,7 @@ class TestBYOMErrorHandling:
         session.add(credential)
         session.commit()
         session.refresh(credential)
-        
+
         # User2 tries to use user1's credential
         with pytest.raises(ValueError, match="does not belong to user"):
             LLMFactory.create_llm(
@@ -665,9 +662,9 @@ class TestBYOMErrorHandling:
                 user_id=user2.id,
                 credential_id=credential.id
             )
-        
+
         print("✓ Cross-user credential access prevented")
-    
+
     def test_unsupported_provider(self):
         """Test: Unsupported provider should raise error"""
         with pytest.raises(ValueError, match="Unsupported provider"):
@@ -676,5 +673,5 @@ class TestBYOMErrorHandling:
                 api_key="test-key",
                 model_name="test-model"
             )
-        
+
         print("✓ Unsupported provider rejected")

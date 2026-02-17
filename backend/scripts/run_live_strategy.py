@@ -1,19 +1,20 @@
 import asyncio
 import logging
-import sys
 import os
-from decimal import Decimal
+import sys
 from datetime import datetime
+from decimal import Decimal
 
 # Add backend to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sqlmodel import Session, select
+
 from app.core.config import settings
 from app.core.db import engine
-from app.models import User, Order
-from app.services.trading.executor import OrderExecutor
+from app.models import Order, User
 from app.services.trading.client import CoinspotTradingClient
+from app.services.trading.executor import OrderExecutor
 
 # Setup logging
 logging.basicConfig(
@@ -41,7 +42,7 @@ async def main():
         if not user:
             logger.info("Strategist user not found. Creating new user...")
             user = User(
-                email="strategist@omc.local", 
+                email="strategist@omc.local",
                 hashed_password="dummy_password_hash",
                 full_name="The Strategist",
                 timezone="UTC",
@@ -52,7 +53,7 @@ async def main():
             session.commit()
             session.refresh(user)
             logger.info(f"Created user {user.email} ({user.id})")
-        
+
         logger.info(f"Acting as user: {user.email} ({user.id})")
 
         # 2. visual confirmation
@@ -67,14 +68,14 @@ async def main():
             api_key=settings.COINSPOT_API_KEY,
             api_secret=settings.COINSPOT_API_SECRET
         )
-        
+
         # 4. Create a small LIVE Buy Order ($5.00 AUD of DOGE)
         # Using DOGE to bypass potential BTC minimum trade size issues.
         buy_amount = Decimal("5.00")
         coin_type = "DOGE"
-        
+
         logger.info(f"Creating LIVE Buy Order: ${buy_amount} AUD of {coin_type}")
-        
+
         order = Order(
             user_id=user.id,
             coin_type=coin_type,
@@ -88,13 +89,13 @@ async def main():
         session.add(order)
         session.commit()
         session.refresh(order)
-        
+
         logger.info(f"Order created in DB with ID: {order.id}")
-        
+
         # 5. Execute Order
         try:
             logger.info("Attempting execution against CoinSpot API...")
-            
+
             # Start Executor dependencies (Redis/Safety) - Manually connect
             await executor.safety_manager.connect()
 
@@ -119,7 +120,7 @@ async def main():
             # Manually trigger the execution logic (bypassing the queue worker loop for this test)
             # We call the internal method directly to execute this specific order immediately.
             await executor._execute_order(order.id)
-            
+
             logger.info("Execution attempt complete.")
 
         except Exception as e:

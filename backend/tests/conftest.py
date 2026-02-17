@@ -1,5 +1,5 @@
-from collections.abc import Generator
 import os
+from collections.abc import Generator
 
 # Set encryption key BEFORE any app imports
 # This is for testing only - production uses AWS Secrets Manager
@@ -13,34 +13,32 @@ from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
 from app.models import (
-    User,
-    Algorithm,
-    AuditLog,
-    PriceData5Min,
-    Order,
-    Position,
-    CoinspotCredentials,
-    UserLLMCredentials,
+    AgentArtifact,
     AgentSession,
     AgentSessionMessage,
-    AgentArtifact,
+    Algorithm,
+    AuditLog,
     CatalystEvents,
-    NewsSentiment,
+    CoinspotCredentials,
     DeployedAlgorithm,
-    StrategyPromotion,
+    NewsSentiment,
+    Order,
+    Position,
+    PriceData5Min,
     SmartMoneyFlow,
+    StrategyPromotion,
+    User,
+    UserLLMCredentials,
 )
-from tests.utils.user import authentication_token_from_email
-from tests.utils.utils import get_superuser_token_headers
 
 # Import test fixtures for use across tests
 from app.utils.test_fixtures import (
-    create_test_user,
     create_test_algorithm,
-    create_test_position,
-    create_test_order,
     create_test_price_data,
+    create_test_user,
 )
+from tests.utils.user import authentication_token_from_email
+from tests.utils.utils import get_superuser_token_headers
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -55,20 +53,20 @@ def db() -> Generator[Session, None, None]:
             session.execute(delete(AgentArtifact))
             session.execute(delete(AgentSessionMessage))
             session.execute(delete(AgentSession))
-            
+
             # Delete trading-related data
             session.execute(delete(Order))
             session.execute(delete(Position))
             session.execute(delete(DeployedAlgorithm))
             session.execute(delete(StrategyPromotion))
-            
+
             # Delete algorithms
             session.execute(delete(Algorithm))
-            
+
             # Delete credentials
             session.execute(delete(CoinspotCredentials))
             session.execute(delete(UserLLMCredentials))
-            
+
             # Delete ledger data
             session.execute(delete(CatalystEvents))
             session.execute(delete(NewsSentiment))
@@ -76,10 +74,10 @@ def db() -> Generator[Session, None, None]:
 
             # Delete audit logs
             session.execute(delete(AuditLog))
-            
+
             # Finally delete users
             session.execute(delete(User))
-            
+
             session.commit()
         except Exception as e:
             session.rollback()
@@ -104,7 +102,7 @@ def session(db: Session) -> Generator[Session, None, None]:
             # Close and create a new session
             db.close()
             pass
-        
+
         # Additional cleanup: explicitly delete test-created price data
         # to ensure test isolation (savepoint rollback doesn't always work properly
         # for PriceData5Min, likely due to timestamp/cascade behavior)

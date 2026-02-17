@@ -1,23 +1,28 @@
 # mypy: ignore-errors
 import asyncio
-import sentry_sdk
 from contextlib import asynccontextmanager
+
+import sentry_sdk
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from fastapi.routing import APIRoute
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from sqlmodel import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
-from sqlmodel import Session
 
 from app.api.main import api_router
 from app.api.middleware import RateLimitMiddleware
 from app.api.routes import websockets
 from app.core.config import settings
 from app.core.db import engine
+from app.services.collectors.config import (
+    setup_collectors,
+    start_collection,
+    stop_collection,
+)
 from app.services.scheduler import start_scheduler, stop_scheduler
-from app.services.collectors.config import setup_collectors, start_collection, stop_collection
 from app.services.trading.executor import get_order_queue
 from app.services.trading.scheduler import get_execution_scheduler
 
@@ -31,11 +36,11 @@ async def lifespan(app: FastAPI):
     # Startup: Start Phase 2.5 Data Collectors
     setup_collectors()
     start_collection()
-    
+
     # Initialize and start Order Queue
     executor_session = Session(engine)
     queue = get_order_queue()
-    # Use system settings for keys. In a multi-user system, the executor should 
+    # Use system settings for keys. In a multi-user system, the executor should
     # resolve credentials per order, but for now we initialize with system/default keys.
     queue.initialize(
         session=executor_session,
@@ -43,7 +48,7 @@ async def lifespan(app: FastAPI):
         api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode"
     )
     queue_task = asyncio.create_task(queue.start())
-    
+
     # Initialize and start Execution Scheduler (Strategies)
     # Using the same session as the queue for now (or create another if needed)
     execution_scheduler = get_execution_scheduler(
@@ -51,24 +56,24 @@ async def lifespan(app: FastAPI):
         api_key=settings.COINSPOT_API_KEY,
         api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode"
     )
-    
+
     # Start scheduler FIRST so it can accept jobs
     execution_scheduler.start()
-    
+
     # Load any active "Live" algorithms from the database
     execution_scheduler.load_deployed_algorithms()
-    
+
     yield
-    
+
     # Shutdown: Stop Phase 2.5 Collectors
     stop_collection()
 
     # Shutdown: Stop the scheduler gracefully
     await stop_scheduler()
-    
+
     # Stop Execution Scheduler
     execution_scheduler.stop()
-    
+
     # Stop Order Queue
     await queue.stop()
     executor_session.close()
@@ -121,11 +126,11 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             status_code=exc.status_code,
             content=exc.detail,
         )
-    
+
     # Map common status codes to user messages per API_CONTRACTS.md
     user_message = "An unexpected error occurred."
     error_code = f"HTTP_{exc.status_code}"
-    
+
     if exc.status_code == 400:
         user_message = "Invalid request. Please check your input."
         error_code = "BAD_REQUEST"
@@ -144,7 +149,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     elif exc.status_code >= 500:
         user_message = "Something went wrong. Please try again later."
         error_code = "SERVER_ERROR"
-        
+
     return JSONResponse(
         status_code=exc.status_code,
         content={

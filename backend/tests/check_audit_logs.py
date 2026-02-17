@@ -1,6 +1,7 @@
-from sqlmodel import Session, select, create_engine
-from app.models import AuditLog
+from sqlmodel import Session, create_engine, select
+
 from app.core.config import settings
+from app.models import AuditLog
 
 # Adjust DB URI if running as script inside container if specific tweaks needed, but settings should load env
 # Ensure we are using the internal DB URL
@@ -10,7 +11,7 @@ def check_logs():
     engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
     with Session(engine) as session:
         logs = session.exec(select(AuditLog).order_by(AuditLog.timestamp.desc()).limit(5)).all()
-        print(f"\n--- Checking Last 5 Audit Logs ---")
+        print("\n--- Checking Last 5 Audit Logs ---")
         for log in logs:
             print(f"[{log.timestamp}] ACTION: {log.action} | SEVERITY: {log.severity}")
             print(f"Actor: {log.actor_id}")

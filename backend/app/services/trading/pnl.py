@@ -13,13 +13,13 @@ Features:
 - P&L aggregation by algorithm, coin, and time period
 """
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, select, func, and_, or_
 from sqlalchemy import desc
+from sqlmodel import Session, select
 
 from app.models import Order, Position, PriceData5Min
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class PnLMetrics:
     """Container for P&L metrics and performance statistics"""
-    
+
     def __init__(
         self,
         realized_pnl: Decimal = Decimal('0'),
@@ -77,7 +77,7 @@ class PnLMetrics:
         self.sharpe_ratio = sharpe_ratio if sharpe_ratio is not None else Decimal('0')
         self.total_volume = total_volume
         self.total_fees = total_fees
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary"""
         return {
@@ -109,7 +109,7 @@ class PnLEngine:
     Calculates realized and unrealized P&L, tracks performance metrics,
     and provides historical P&L data aggregation.
     """
-    
+
     def __init__(self, session: Session):
         """
         Initialize P&L engine
@@ -118,7 +118,7 @@ class PnLEngine:
             session: Database session
         """
         self.session = session
-    
+
     def calculate_realized_pnl(
         self,
         user_id: UUID,
@@ -148,9 +148,9 @@ class PnLEngine:
             Order.user_id == user_id,
             Order.status == 'filled'
         )
-        
+
         # Apply filters
-        # Note: We don't filter by start_date in the query because we need 
+        # Note: We don't filter by start_date in the query because we need
         # historical buy orders to correctly calculate cost basis (FIFO).
         # Filtering by start_date happens in memory during accumulation.
         if end_date:
@@ -159,16 +159,16 @@ class PnLEngine:
             query = query.where(Order.algorithm_id == algorithm_id)
         if coin_type:
             query = query.where(Order.coin_type == coin_type)
-        
+
         # Order by filled_at to process trades chronologically
         query = query.order_by(Order.filled_at)
-        
+
         orders = self.session.exec(query).all()
-        
+
         # Calculate P&L using FIFO (First In, First Out) method
         realized_pnl = Decimal('0')
         positions_tracker: dict[str, list[tuple[Decimal, Decimal]]] = {}  # coin -> [(quantity, price)]
-        
+
         for order in orders:
             if order.side == 'buy':
                 # Add to position tracker
@@ -177,7 +177,7 @@ class PnLEngine:
                 positions_tracker[order.coin_type].append(
                     (order.filled_quantity, order.price or Decimal('0'))
                 )
-            
+
             elif order.side == 'sell':
                 # Calculate realized P&L from sell
                 if order.coin_type not in positions_tracker or not positions_tracker[order.coin_type]:
@@ -186,36 +186,36 @@ class PnLEngine:
                         f"Sell order {order.id} has no matching buy positions for {order.coin_type}"
                     )
                     continue
-                
+
                 sell_quantity = order.filled_quantity
                 sell_price = order.price or Decimal('0')
-                
+
                 # Match sells against buys using FIFO
                 while sell_quantity > 0 and positions_tracker[order.coin_type]:
                     buy_quantity, buy_price = positions_tracker[order.coin_type][0]
-                    
+
                     # Calculate how much we can match
                     match_quantity = min(sell_quantity, buy_quantity)
-                    
+
                     # Calculate P&L for this match
                     trade_pnl = match_quantity * (sell_price - buy_price)
-                    
+
                     # Only calculate/add P&L if within the requested window
                     if not start_date or order.filled_at >= start_date:
                         realized_pnl += trade_pnl
-                    
+
                     # Update quantities
                     sell_quantity -= match_quantity
                     buy_quantity -= match_quantity
-                    
+
                     # Update or remove buy position
                     if buy_quantity > 0:
                         positions_tracker[order.coin_type][0] = (buy_quantity, buy_price)
                     else:
                         positions_tracker[order.coin_type].pop(0)
-        
+
         return realized_pnl
-    
+
     def calculate_unrealized_pnl(
         self,
         user_id: UUID,
@@ -236,31 +236,31 @@ class PnLEngine:
         """
         # Get current positions
         query = select(Position).where(Position.user_id == user_id)
-        
+
         if coin_type:
             query = query.where(Position.coin_type == coin_type)
-        
+
         positions = self.session.exec(query).all()
-        
+
         unrealized_pnl = Decimal('0')
-        
+
         for position in positions:
             # Get current price for this coin
             current_price = self._get_current_price(position.coin_type)
-            
+
             if current_price is None:
                 logger.warning(f"No price data for {position.coin_type}, skipping unrealized P&L")
                 continue
-            
+
             # Calculate current value
             current_value = position.quantity * current_price
-            
+
             # Calculate unrealized P&L
             position_pnl = current_value - position.total_cost
             unrealized_pnl += position_pnl
-        
+
         return unrealized_pnl
-    
+
     def get_pnl_summary(
         self,
         user_id: UUID,
@@ -281,20 +281,20 @@ class PnLEngine:
         # Calculate realized and unrealized P&L
         realized_pnl = self.calculate_realized_pnl(user_id, start_date, end_date)
         unrealized_pnl = self.calculate_unrealized_pnl(user_id)
-        
+
         # Get trade statistics
         query = select(Order).where(
             Order.user_id == user_id,
             Order.status == 'filled'
         )
-        
+
         if start_date:
             query = query.where(Order.filled_at >= start_date)
         if end_date:
             query = query.where(Order.filled_at <= end_date)
-        
+
         orders = self.session.exec(query).all()
-        
+
         # Calculate trade metrics
         total_trades = 0
         winning_trades = 0
@@ -304,10 +304,10 @@ class PnLEngine:
         largest_win = Decimal('0')
         largest_loss = Decimal('0')
         total_volume = Decimal('0')
-        
+
         # Track positions for P&L calculation per trade
         positions_tracker: dict[str, list[tuple[Decimal, Decimal]]] = {}
-        
+
         for order in orders:
             if order.side == 'buy':
                 # Track buy positions
@@ -317,36 +317,36 @@ class PnLEngine:
                     (order.filled_quantity, order.price or Decimal('0'))
                 )
                 total_volume += order.filled_quantity * (order.price or Decimal('0'))
-            
+
             elif order.side == 'sell':
                 # Calculate P&L for this sell
                 if order.coin_type not in positions_tracker or not positions_tracker[order.coin_type]:
                     continue
-                
+
                 sell_quantity = order.filled_quantity
                 sell_price = order.price or Decimal('0')
                 trade_pnl = Decimal('0')
-                
+
                 # Match against buys
                 while sell_quantity > 0 and positions_tracker[order.coin_type]:
                     buy_quantity, buy_price = positions_tracker[order.coin_type][0]
                     match_quantity = min(sell_quantity, buy_quantity)
-                    
+
                     pnl = match_quantity * (sell_price - buy_price)
                     trade_pnl += pnl
-                    
+
                     sell_quantity -= match_quantity
                     buy_quantity -= match_quantity
-                    
+
                     if buy_quantity > 0:
                         positions_tracker[order.coin_type][0] = (buy_quantity, buy_price)
                     else:
                         positions_tracker[order.coin_type].pop(0)
-                
+
                 # Update statistics
                 total_trades += 1
                 total_volume += order.filled_quantity * sell_price
-                
+
                 if trade_pnl > 0:
                     winning_trades += 1
                     total_profit += trade_pnl
@@ -355,7 +355,7 @@ class PnLEngine:
                     losing_trades += 1
                     total_loss += trade_pnl
                     largest_loss = min(largest_loss, trade_pnl)
-        
+
         return PnLMetrics(
             realized_pnl=realized_pnl,
             unrealized_pnl=unrealized_pnl,
@@ -368,7 +368,7 @@ class PnLEngine:
             largest_loss=largest_loss,
             total_volume=total_volume
         )
-    
+
     def get_pnl_by_algorithm(
         self,
         user_id: UUID,
@@ -392,14 +392,14 @@ class PnLEngine:
             Order.algorithm_id.isnot(None),
             Order.status == 'filled'
         ).distinct()
-        
+
         if start_date:
             query = query.where(Order.filled_at >= start_date)
         if end_date:
             query = query.where(Order.filled_at <= end_date)
-        
+
         algorithm_ids = self.session.exec(query).all()
-        
+
         result = {}
         for algo_id in algorithm_ids:
             realized_pnl = self.calculate_realized_pnl(
@@ -407,9 +407,9 @@ class PnLEngine:
             )
             # Note: Unrealized P&L not split by algorithm as positions don't track algorithm
             result[algo_id] = PnLMetrics(realized_pnl=realized_pnl)
-        
+
         return result
-    
+
     def get_pnl_by_coin(
         self,
         user_id: UUID,
@@ -432,14 +432,14 @@ class PnLEngine:
             Order.user_id == user_id,
             Order.status == 'filled'
         ).distinct()
-        
+
         if start_date:
             query = query.where(Order.filled_at >= start_date)
         if end_date:
             query = query.where(Order.filled_at <= end_date)
-        
+
         coin_types = self.session.exec(query).all()
-        
+
         result = {}
         for coin_type in coin_types:
             realized_pnl = self.calculate_realized_pnl(
@@ -450,9 +450,9 @@ class PnLEngine:
                 realized_pnl=realized_pnl,
                 unrealized_pnl=unrealized_pnl
             )
-        
+
         return result
-    
+
     def get_historical_pnl(
         self,
         user_id: UUID,
@@ -483,30 +483,30 @@ class PnLEngine:
             delta = timedelta(days=30)  # Approximate
         else:
             raise ValueError(f"Invalid interval: {interval}")
-        
+
         result = []
         current_date = start_date
-        
+
         while current_date <= end_date:
             next_date = current_date + delta
-            
+
             # Calculate P&L for this time bucket
             realized_pnl = self.calculate_realized_pnl(
                 user_id,
                 start_date=current_date,
                 end_date=next_date
             )
-            
+
             result.append({
                 'timestamp': current_date.isoformat(),
                 'realized_pnl': float(realized_pnl),
                 'interval': interval
             })
-            
+
             current_date = next_date
-        
+
         return result
-    
+
     def _get_current_price(self, coin_type: str) -> Decimal | None:
         """
         Get the most recent price for a cryptocurrency
@@ -521,9 +521,9 @@ class PnLEngine:
         query = select(PriceData5Min).where(
             PriceData5Min.coin_type == coin_type
         ).order_by(desc(PriceData5Min.timestamp)).limit(1)
-        
+
         price_data = self.session.exec(query).first()
-        
+
         if price_data:
             # Use last price (most recent trade price)
             logger.debug(
@@ -531,7 +531,7 @@ class PnLEngine:
                 f"(timestamp: {price_data.timestamp})"
             )
             return price_data.last
-        
+
         logger.debug(f"No price data found for {coin_type}")
         return None
 

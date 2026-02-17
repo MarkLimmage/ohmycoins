@@ -8,10 +8,10 @@ Week 11: New ReportingAgent
 """
 
 from .base import BaseAgent
-from .data_retrieval import DataRetrievalAgent
 from .data_analyst import DataAnalystAgent
-from .model_training import ModelTrainingAgent
+from .data_retrieval import DataRetrievalAgent
 from .model_evaluator import ModelEvaluatorAgent
+from .model_training import ModelTrainingAgent
 from .reporting import ReportingAgent
 
 __all__ = [

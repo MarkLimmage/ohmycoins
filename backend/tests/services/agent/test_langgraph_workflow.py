@@ -5,9 +5,11 @@ Week 1-2: Basic workflow tests with mock agents.
 Week 3-4: Enhanced tests for DataAnalystAgent node.
 """
 
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
-from app.services.agent.langgraph_workflow import LangGraphWorkflow, AgentState
+
+from app.services.agent.langgraph_workflow import AgentState, LangGraphWorkflow
 
 
 @pytest.fixture
@@ -31,7 +33,7 @@ async def test_workflow_initialization():
 async def test_workflow_execute_basic(mock_db_session):
     """Test basic workflow execution."""
     workflow = LangGraphWorkflow(session=mock_db_session)
-    
+
     # Prepare initial state
     initial_state: AgentState = {
         "session_id": "test-session-123",
@@ -50,10 +52,10 @@ async def test_workflow_execute_basic(mock_db_session):
         "retrieval_params": {},
         "analysis_params": {},
     }
-    
+
     # Execute workflow
     final_state = await workflow.execute(initial_state)
-    
+
     # Verify final state
     assert final_state is not None
     assert final_state["status"] == "completed"
@@ -68,7 +70,7 @@ async def test_workflow_execute_basic(mock_db_session):
 async def test_workflow_state_progression(mock_db_session):
     """Test that workflow progresses through all states."""
     workflow = LangGraphWorkflow(session=mock_db_session)
-    
+
     initial_state: AgentState = {
         "session_id": "test-session-456",
         "user_goal": "Test workflow progression",
@@ -86,9 +88,9 @@ async def test_workflow_state_progression(mock_db_session):
         "retrieval_params": {},
         "analysis_params": {},
     }
-    
+
     final_state = await workflow.execute(initial_state)
-    
+
     # Check that we went through expected steps
     messages = final_state["messages"]
     assert any("initialized" in msg["content"].lower() for msg in messages)
@@ -101,7 +103,7 @@ async def test_workflow_state_progression(mock_db_session):
 async def test_initialize_node():
     """Test the initialize node directly."""
     workflow = LangGraphWorkflow()
-    
+
     state: AgentState = {
         "session_id": "test",
         "user_goal": "Test",
@@ -119,9 +121,9 @@ async def test_initialize_node():
         "retrieval_params": {},
         "analysis_params": {},
     }
-    
+
     updated_state = await workflow._initialize_node(state)
-    
+
     assert updated_state["current_step"] == "initialization"
     assert len(updated_state["messages"]) > 0
     assert updated_state["messages"][0]["role"] == "system"
@@ -132,7 +134,7 @@ async def test_initialize_node():
 async def test_retrieve_data_node(mock_db_session):
     """Test the data retrieval node directly."""
     workflow = LangGraphWorkflow(session=mock_db_session)
-    
+
     state: AgentState = {
         "session_id": "test",
         "user_goal": "Test",
@@ -150,9 +152,9 @@ async def test_retrieve_data_node(mock_db_session):
         "retrieval_params": {},
         "analysis_params": {},
     }
-    
+
     updated_state = await workflow._retrieve_data_node(state)
-    
+
     assert updated_state["current_step"] == "data_retrieval"
     # Note: data_retrieved will be False without proper DB, but node should execute
     assert any("retrieval" in msg["content"].lower() for msg in updated_state["messages"])
@@ -162,7 +164,7 @@ async def test_retrieve_data_node(mock_db_session):
 async def test_analyze_data_node():
     """Test the data analysis node directly."""
     workflow = LangGraphWorkflow()
-    
+
     state: AgentState = {
         "session_id": "test",
         "user_goal": "Test analysis",
@@ -183,9 +185,9 @@ async def test_analyze_data_node():
         "retrieval_params": {},
         "analysis_params": {},
     }
-    
+
     updated_state = await workflow._analyze_data_node(state)
-    
+
     assert updated_state["current_step"] == "data_analysis"
     assert any("analysis" in msg["content"].lower() for msg in updated_state["messages"])
 
@@ -194,7 +196,7 @@ async def test_analyze_data_node():
 async def test_finalize_node():
     """Test the finalize node directly."""
     workflow = LangGraphWorkflow()
-    
+
     state: AgentState = {
         "session_id": "test",
         "user_goal": "Test",
@@ -212,9 +214,9 @@ async def test_finalize_node():
         "retrieval_params": {},
         "analysis_params": {},
     }
-    
+
     updated_state = await workflow._finalize_node(state)
-    
+
     assert updated_state["current_step"] == "finalization"
     assert updated_state["status"] == "completed"
     assert updated_state["result"] is not None
@@ -227,13 +229,13 @@ async def test_finalize_node():
 async def test_workflow_with_different_goals(mock_db_session):
     """Test workflow with different user goals."""
     workflow = LangGraphWorkflow(session=mock_db_session)
-    
+
     goals = [
         "Analyze Ethereum price trends",
         "Predict Bitcoin volatility",
         "Compare top 10 cryptocurrencies",
     ]
-    
+
     for goal in goals:
         initial_state: AgentState = {
             "session_id": f"test-{goal[:10]}",
@@ -252,9 +254,9 @@ async def test_workflow_with_different_goals(mock_db_session):
             "retrieval_params": {},
             "analysis_params": {},
         }
-        
+
         final_state = await workflow.execute(initial_state)
-        
+
         assert final_state["status"] == "completed"
         assert final_state["user_goal"] == goal
 
@@ -263,26 +265,26 @@ async def test_workflow_with_different_goals(mock_db_session):
 @pytest.mark.asyncio
 async def test_workflow_initialization_with_user_id():
     """Test that workflow initializes with BYOM user context (Sprint 2.9)."""
-    from uuid import uuid4
     from unittest.mock import MagicMock, patch
-    
+    from uuid import uuid4
+
     user_id = uuid4()
     mock_session = MagicMock()
-    
+
     # Mock LLMFactory to return a mock LLM
     with patch('app.services.agent.langgraph_workflow.LLMFactory') as mock_factory:
         mock_llm = MagicMock()
         mock_factory.create_llm.return_value = mock_llm
-        
+
         workflow = LangGraphWorkflow(session=mock_session, user_id=user_id)
-        
+
         # Verify factory was called with correct parameters
         mock_factory.create_llm.assert_called_once_with(
             session=mock_session,
             user_id=user_id,
             credential_id=None
         )
-        
+
         # Verify LLM was set
         assert workflow.llm == mock_llm
         assert workflow.user_id == user_id
@@ -291,30 +293,30 @@ async def test_workflow_initialization_with_user_id():
 @pytest.mark.asyncio
 async def test_workflow_initialization_with_credential_id():
     """Test that workflow initializes with specific credential (Sprint 2.9)."""
-    from uuid import uuid4
     from unittest.mock import MagicMock, patch
-    
+    from uuid import uuid4
+
     user_id = uuid4()
     credential_id = uuid4()
     mock_session = MagicMock()
-    
+
     with patch('app.services.agent.langgraph_workflow.LLMFactory') as mock_factory:
         mock_llm = MagicMock()
         mock_factory.create_llm.return_value = mock_llm
-        
+
         workflow = LangGraphWorkflow(
             session=mock_session,
             user_id=user_id,
             credential_id=credential_id
         )
-        
+
         # Verify factory was called with credential_id
         mock_factory.create_llm.assert_called_once_with(
             session=mock_session,
             user_id=user_id,
             credential_id=credential_id
         )
-        
+
         assert workflow.llm == mock_llm
         assert workflow.credential_id == credential_id
 
@@ -322,28 +324,28 @@ async def test_workflow_initialization_with_credential_id():
 @pytest.mark.asyncio
 async def test_workflow_fallback_to_system_default():
     """Test that workflow falls back to system default if BYOM fails (Sprint 2.9)."""
-    from uuid import uuid4
-    from unittest.mock import MagicMock, patch
     import os
-    
+    from unittest.mock import MagicMock, patch
+    from uuid import uuid4
+
     user_id = uuid4()
     mock_session = MagicMock()
-    
+
     # Set OpenAI API key for fallback
     original_key = os.environ.get('OPENAI_API_KEY')
     os.environ['OPENAI_API_KEY'] = 'sk-test-key'
-    
+
     try:
         with patch('app.services.agent.langgraph_workflow.LLMFactory') as mock_factory:
             # Make factory raise an exception
             mock_factory.create_llm.side_effect = Exception("BYOM failed")
-            
+
             with patch('app.services.agent.langgraph_workflow.ChatOpenAI') as mock_openai:
                 mock_llm = MagicMock()
                 mock_openai.return_value = mock_llm
-                
+
                 workflow = LangGraphWorkflow(session=mock_session, user_id=user_id)
-                
+
                 # Verify fallback to ChatOpenAI was used
                 mock_openai.assert_called_once()
                 assert workflow.llm == mock_llm
@@ -355,23 +357,23 @@ async def test_workflow_fallback_to_system_default():
             del os.environ['OPENAI_API_KEY']
 
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 async def test_workflow_initialization_without_byom():
     """Test that workflow still works without BYOM context (backward compatibility)."""
-    from unittest.mock import patch
     import os
-    
+    from unittest.mock import patch
+
     # Set OpenAI API key for system default
     original_key = os.environ.get('OPENAI_API_KEY')
     os.environ['OPENAI_API_KEY'] = 'sk-test-key'
-    
+
     try:
         with patch('app.services.agent.langgraph_workflow.ChatOpenAI') as mock_openai:
             mock_llm = MagicMock()
             mock_openai.return_value = mock_llm
-            
+
             workflow = LangGraphWorkflow()  # No session or user_id
-            
+
             # Verify system default was used
             mock_openai.assert_called_once()
             assert workflow.llm == mock_llm

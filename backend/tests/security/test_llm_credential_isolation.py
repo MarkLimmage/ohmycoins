@@ -15,23 +15,23 @@ OWASP References:
 - A01:2021 – Broken Access Control
 - A07:2021 – Identification and Authentication Failures
 """
-import pytest
 from uuid import uuid4
 
-from sqlmodel import Session, select
+import pytest
 from fastapi.testclient import TestClient
+from sqlmodel import Session, select
 
-from app.models import User, UserLLMCredentials, AgentSession, AgentSessionStatus
-from app.services.encryption import encryption_service
-from app.services.agent.llm_factory import LLMFactory
-from app.core.security import get_password_hash
 from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models import AgentSession, AgentSessionStatus, User, UserLLMCredentials
+from app.services.agent.llm_factory import LLMFactory
+from app.services.encryption import encryption_service
 
 
 @pytest.mark.security
 class TestUserCredentialIsolation:
     """Test that users cannot access each other's credentials"""
-    
+
     @pytest.fixture
     def user_a(self, session: Session) -> User:
         """Create test user A"""
@@ -44,7 +44,7 @@ class TestUserCredentialIsolation:
         session.commit()
         session.refresh(user)
         return user
-    
+
     @pytest.fixture
     def user_b(self, session: Session) -> User:
         """Create test user B"""
@@ -57,7 +57,7 @@ class TestUserCredentialIsolation:
         session.commit()
         session.refresh(user)
         return user
-    
+
     @pytest.fixture
     def user_a_credential(self, session: Session, user_a: User) -> UserLLMCredentials:
         """Create credential for user A"""
@@ -74,7 +74,7 @@ class TestUserCredentialIsolation:
         session.commit()
         session.refresh(credential)
         return credential
-    
+
     @pytest.fixture
     def user_b_credential(self, session: Session, user_b: User) -> UserLLMCredentials:
         """Create credential for user B"""
@@ -91,7 +91,7 @@ class TestUserCredentialIsolation:
         session.commit()
         session.refresh(credential)
         return credential
-    
+
     def test_user_cannot_access_other_users_credentials(
         self,
         client: TestClient,
@@ -115,25 +115,25 @@ class TestUserCredentialIsolation:
         assert login_response.status_code == 200
         user_a_token = login_response.json()["access_token"]
         user_a_headers = {"Authorization": f"Bearer {user_a_token}"}
-        
+
         # Get credentials as user A
         response = client.get(
             "/api/v1/users/me/llm-credentials",
             headers=user_a_headers
         )
-        
+
         assert response.status_code == 200
         credentials = response.json()
-        
+
         # Should only see user A's credentials
         assert len(credentials) == 1
         assert credentials[0]["id"] == str(user_a_credential.id)
         assert credentials[0]["provider"] == "openai"
-        
+
         # Should NOT see user B's credentials
         credential_ids = [c["id"] for c in credentials]
         assert str(user_b_credential.id) not in credential_ids
-    
+
     def test_user_cannot_set_other_users_credential_as_default(
         self,
         client: TestClient,
@@ -156,21 +156,21 @@ class TestUserCredentialIsolation:
         )
         user_a_token = login_response.json()["access_token"]
         user_a_headers = {"Authorization": f"Bearer {user_a_token}"}
-        
+
         # Try to set user B's credential as default
         response = client.patch(
             f"/api/v1/users/me/llm-credentials/{user_b_credential.id}/set-default",
             headers=user_a_headers
         )
-        
+
         # Should fail (either 404 or 403)
         assert response.status_code in [403, 404]
-        
+
         # Verify user B's credential is still their default
         db_credential = session.get(UserLLMCredentials, user_b_credential.id)
         assert db_credential.user_id == user_b.id
         assert db_credential.is_default == True
-    
+
     def test_user_cannot_delete_other_users_credentials(
         self,
         client: TestClient,
@@ -193,22 +193,22 @@ class TestUserCredentialIsolation:
         )
         user_a_token = login_response.json()["access_token"]
         user_a_headers = {"Authorization": f"Bearer {user_a_token}"}
-        
+
         # Try to delete user B's credential
         response = client.delete(
             f"/api/v1/users/me/llm-credentials/{user_b_credential.id}",
             headers=user_a_headers
         )
-        
+
         # Should fail
         assert response.status_code in [403, 404]
-        
+
         # Verify user B's credential still exists
         db_credential = session.get(UserLLMCredentials, user_b_credential.id)
         assert db_credential is not None
         assert db_credential.is_active == True
         assert db_credential.user_id == user_b.id
-    
+
     def test_database_queries_filter_by_user_id(
         self,
         session: Session,
@@ -229,10 +229,10 @@ class TestUserCredentialIsolation:
                 UserLLMCredentials.is_active == True
             )
         ).all()
-        
+
         # Should get both credentials
         assert len(all_credentials) >= 2
-        
+
         # Query user A's credentials (GOOD - with user_id filter)
         user_a_credentials = session.exec(
             select(UserLLMCredentials).where(
@@ -240,12 +240,12 @@ class TestUserCredentialIsolation:
                 UserLLMCredentials.is_active == True
             )
         ).all()
-        
+
         # Should only get user A's credential
         assert len(user_a_credentials) == 1
         assert user_a_credentials[0].id == user_a_credential.id
         assert user_a_credentials[0].user_id == user_a.id
-        
+
         # Query user B's credentials (GOOD - with user_id filter)
         user_b_credentials = session.exec(
             select(UserLLMCredentials).where(
@@ -253,12 +253,12 @@ class TestUserCredentialIsolation:
                 UserLLMCredentials.is_active == True
             )
         ).all()
-        
+
         # Should only get user B's credential
         assert len(user_b_credentials) == 1
         assert user_b_credentials[0].id == user_b_credential.id
         assert user_b_credentials[0].user_id == user_b.id
-    
+
     def test_llm_factory_enforces_user_id_ownership(
         self,
         session: Session,
@@ -280,7 +280,7 @@ class TestUserCredentialIsolation:
             credential_id=user_a_credential.id
         )
         assert llm is not None
-        
+
         # User A tries to use user B's credential - SHOULD FAIL
         with pytest.raises(ValueError, match="does not belong to user"):
             LLMFactory.create_llm(
@@ -288,7 +288,7 @@ class TestUserCredentialIsolation:
                 user_id=user_a.id,
                 credential_id=user_b_credential.id  # Wrong user!
             )
-        
+
         # User B tries to use their own credential - SHOULD WORK
         llm = LLMFactory.create_llm(
             session=session,
@@ -301,7 +301,7 @@ class TestUserCredentialIsolation:
 @pytest.mark.security
 class TestAgentSessionIsolation:
     """Test that agent sessions don't leak credentials between users"""
-    
+
     def test_no_credential_leakage_in_agent_sessions(
         self,
         session: Session,
@@ -325,7 +325,7 @@ class TestAgentSessionIsolation:
         )
         session.add(credential)
         session.commit()
-        
+
         # Create agent session
         agent_session = AgentSession(
             user_id=normal_user.id,
@@ -338,14 +338,14 @@ class TestAgentSessionIsolation:
         session.add(agent_session)
         session.commit()
         session.refresh(agent_session)
-        
+
         # Verify session doesn't contain raw API key
         assert not hasattr(agent_session, 'api_key')
         assert not hasattr(agent_session, 'encrypted_api_key')
-        
+
         # Only credential ID should be stored
         assert agent_session.llm_credential_id == credential.id
-        
+
         # To get API key, must explicitly decrypt via credential
         # (which should only be done in secure context)
 
@@ -353,12 +353,12 @@ class TestAgentSessionIsolation:
 @pytest.mark.security
 class TestAuthorizationChecks:
     """Test authorization checks are present on all endpoints"""
-    
+
     def test_list_credentials_requires_authentication(self, client: TestClient):
         """Test that listing credentials requires authentication"""
         response = client.get("/api/v1/users/me/llm-credentials")
         assert response.status_code == 401  # Unauthorized
-    
+
     def test_create_credential_requires_authentication(self, client: TestClient):
         """Test that creating credentials requires authentication"""
         credential_data = {
@@ -372,13 +372,13 @@ class TestAuthorizationChecks:
             json=credential_data
         )
         assert response.status_code == 401  # Unauthorized
-    
+
     def test_delete_credential_requires_authentication(self, client: TestClient):
         """Test that deleting credentials requires authentication"""
         fake_id = uuid4()
         response = client.delete(f"/api/v1/users/me/llm-credentials/{fake_id}")
         assert response.status_code == 401  # Unauthorized
-    
+
     def test_cannot_access_credentials_with_expired_token(
         self,
         client: TestClient,
@@ -387,7 +387,7 @@ class TestAuthorizationChecks:
         """Test that expired tokens are rejected"""
         # Use an obviously invalid/expired token
         expired_headers = {"Authorization": "Bearer expired.token.here"}
-        
+
         response = client.get(
             "/api/v1/users/me/llm-credentials",
             headers=expired_headers
@@ -398,7 +398,7 @@ class TestAuthorizationChecks:
 @pytest.mark.security
 class TestDirectDatabaseAccessPrevention:
     """Test that direct database access is properly controlled"""
-    
+
     def test_cannot_query_credentials_without_user_context(self, session: Session):
         """
         Test that application code requires user context for queries.
@@ -408,7 +408,7 @@ class TestDirectDatabaseAccessPrevention:
         """
         # This test documents the CORRECT pattern:
         # Always require user_id when querying credentials
-        
+
         def get_user_credentials_correct(session: Session, user_id):
             """CORRECT: Requires user_id parameter"""
             return session.exec(
@@ -417,7 +417,7 @@ class TestDirectDatabaseAccessPrevention:
                     UserLLMCredentials.is_active == True
                 )
             ).all()
-        
+
         def get_user_credentials_wrong(session: Session):
             """WRONG: No user_id requirement - NEVER DO THIS"""
             return session.exec(
@@ -425,20 +425,20 @@ class TestDirectDatabaseAccessPrevention:
                     UserLLMCredentials.is_active == True
                 )
             ).all()
-        
+
         # The correct function signature enforces user_id requirement
         # This is enforced by code review and linting, not at runtime
-        
+
         # Verify the correct function works
         test_user_id = uuid4()
         credentials = get_user_credentials_correct(session, test_user_id)
         assert isinstance(credentials, list)
 
 
-@pytest.mark.security  
+@pytest.mark.security
 class TestSoftDeleteIsolation:
     """Test that soft-deleted credentials are properly isolated"""
-    
+
     def test_inactive_credentials_not_returned(
         self,
         client: TestClient,
@@ -454,7 +454,7 @@ class TestSoftDeleteIsolation:
         """
         # Get the user corresponding to the token
         user = session.exec(select(User).where(User.email == settings.EMAIL_TEST_USER)).first()
-        
+
         # Create two credentials
         encrypted1 = encryption_service.encrypt_api_key("sk-active-key-12345")
         credential1 = UserLLMCredentials(
@@ -465,7 +465,7 @@ class TestSoftDeleteIsolation:
             is_default=True,
             is_active=True  # Active
         )
-        
+
         encrypted2 = encryption_service.encrypt_api_key("sk-deleted-key-67890")
         credential2 = UserLLMCredentials(
             user_id=user.id,
@@ -475,29 +475,29 @@ class TestSoftDeleteIsolation:
             is_default=False,
             is_active=False  # Soft deleted
         )
-        
+
         session.add(credential1)
         session.add(credential2)
         session.commit()
-        
+
         # Query via API
         response = client.get(
             "/api/v1/users/me/llm-credentials",
             headers=normal_user_token_headers
         )
-        
+
         assert response.status_code == 200
         credentials = response.json()
-        
+
         # Should only return active credential
         assert len(credentials) == 1
         assert credentials[0]["id"] == str(credential1.id)
         assert credentials[0]["is_active"] == True
-        
+
         # Should not return inactive credential
         credential_ids = [c["id"] for c in credentials]
         assert str(credential2.id) not in credential_ids
-    
+
     def test_cannot_use_inactive_credentials_with_llm_factory(
         self,
         session: Session,
@@ -522,7 +522,7 @@ class TestSoftDeleteIsolation:
         session.add(credential)
         session.commit()
         session.refresh(credential)
-        
+
         # Try to use inactive credential
         with pytest.raises(ValueError, match="is not active"):
             LLMFactory.create_llm(

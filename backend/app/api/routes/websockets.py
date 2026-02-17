@@ -6,14 +6,22 @@ from datetime import datetime
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, status, WebSocketException
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    WebSocketException,
+    status,
+)
 from jwt.exceptions import InvalidTokenError
-from pydantic import ValidationError, BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlmodel import Session
 
+from app.api.deps import get_current_active_superuser, get_db
 from app.core import security
 from app.core.config import settings
-from app.api.deps import get_db, get_current_active_superuser
 from app.models import TokenPayload, User
 from app.services.websocket_manager import manager
 
@@ -46,14 +54,14 @@ async def get_websocket_user(
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
-        
+
     user = session.get(User, token_data.sub)
     if not user:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="User not found")
-        
+
     if not user.is_active:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Inactive user")
-        
+
     return user
 
 @router.websocket("/catalyst/live")
@@ -147,7 +155,7 @@ async def websocket_floor_pnl(
     """
     channel_id = "floor_pnl"
     await manager.connect(websocket, channel_id)
-    
+
     # Start a background task for mock data (for DEMO/Integration purposes)
     async def send_mock_data():
         try:
@@ -164,7 +172,7 @@ async def websocket_floor_pnl(
                    }
                 }
                 await websocket.send_text(json.dumps(ticker))
-                
+
                 # Send algos
                 algos = {
                     "type": "algorithms",

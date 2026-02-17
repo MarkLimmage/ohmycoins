@@ -5,15 +5,16 @@ Artifact Management System - Week 11 Implementation
 Service for managing agent-generated artifacts (models, plots, reports).
 """
 
+import json
+import shutil
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-import uuid
-import shutil
-import json
 
 from sqlmodel import Session, select
-from app.models import AgentArtifact, AgentSession
+
+from app.models import AgentArtifact
 
 
 class ArtifactManager:
@@ -64,23 +65,23 @@ class ArtifactManager:
             Created AgentArtifact instance
         """
         file_path = Path(file_path)
-        
+
         # Validate file exists
         if not file_path.exists():
             raise FileNotFoundError(f"Artifact file not found: {file_path}")
-        
+
         # Create session directory
         session_dir = self.base_dir / str(session_id)
         session_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Copy file to managed location
         dest_path = session_dir / file_path.name
         shutil.copy2(file_path, dest_path)
-        
+
         # Get file metadata
         file_size = dest_path.stat().st_size
         mime_type = self._get_mime_type(dest_path)
-        
+
         # Create database record
         artifact = AgentArtifact(
             session_id=session_id,
@@ -92,12 +93,12 @@ class ArtifactManager:
             size_bytes=file_size,
             metadata_json=json.dumps(metadata) if metadata else None,
         )
-        
+
         if db_session:
             db_session.add(artifact)
             db_session.commit()
             db_session.refresh(artifact)
-        
+
         return artifact
 
     def get_artifact(
@@ -137,12 +138,12 @@ class ArtifactManager:
         """
         if not db_session:
             return []
-        
+
         statement = select(AgentArtifact).where(AgentArtifact.session_id == session_id)
-        
+
         if artifact_type:
             statement = statement.where(AgentArtifact.artifact_type == artifact_type)
-        
+
         artifacts = db_session.exec(statement).all()
         return list(artifacts)
 
@@ -162,10 +163,10 @@ class ArtifactManager:
             True if deleted, False if not found
         """
         artifact = self.get_artifact(artifact_id, db_session)
-        
+
         if not artifact:
             return False
-        
+
         # Delete file if it exists
         if artifact.file_path:
             file_path = Path(artifact.file_path)
@@ -174,11 +175,11 @@ class ArtifactManager:
                     file_path.unlink()
                 except Exception:
                     pass  # Continue even if file deletion fails
-        
+
         # Delete database record
         db_session.delete(artifact)
         db_session.commit()
-        
+
         return True
 
     def cleanup_session_artifacts(
@@ -198,11 +199,11 @@ class ArtifactManager:
         """
         artifacts = self.list_artifacts(session_id, db_session=db_session)
         count = 0
-        
+
         for artifact in artifacts:
             if self.delete_artifact(artifact.id, db_session):
                 count += 1
-        
+
         # Delete session directory
         session_dir = self.base_dir / str(session_id)
         if session_dir.exists():
@@ -210,7 +211,7 @@ class ArtifactManager:
                 shutil.rmtree(session_dir)
             except Exception:
                 pass  # Continue even if directory deletion fails
-        
+
         return count
 
     def cleanup_old_artifacts(
@@ -230,20 +231,20 @@ class ArtifactManager:
         """
         if not db_session:
             return 0
-        
+
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-        
+
         # Find old artifacts
         statement = select(AgentArtifact).where(
             AgentArtifact.created_at < cutoff_date
         )
         old_artifacts = db_session.exec(statement).all()
-        
+
         count = 0
         for artifact in old_artifacts:
             if self.delete_artifact(artifact.id, db_session):
                 count += 1
-        
+
         return count
 
     def get_storage_stats(self, db_session: Session | None = None) -> dict[str, Any]:
@@ -262,21 +263,21 @@ class ArtifactManager:
             "artifacts_by_type": {},
             "artifacts_by_session": {},
         }
-        
+
         if not db_session:
             return stats
-        
+
         # Get all artifacts
         statement = select(AgentArtifact)
         artifacts = db_session.exec(statement).all()
-        
+
         stats["total_artifacts"] = len(artifacts)
-        
+
         for artifact in artifacts:
             # Total size
             if artifact.size_bytes:
                 stats["total_size_bytes"] += artifact.size_bytes
-            
+
             # By type
             if artifact.artifact_type not in stats["artifacts_by_type"]:
                 stats["artifacts_by_type"][artifact.artifact_type] = {
@@ -286,7 +287,7 @@ class ArtifactManager:
             stats["artifacts_by_type"][artifact.artifact_type]["count"] += 1
             if artifact.size_bytes:
                 stats["artifacts_by_type"][artifact.artifact_type]["total_size_bytes"] += artifact.size_bytes
-            
+
             # By session
             session_key = str(artifact.session_id)
             if session_key not in stats["artifacts_by_session"]:
@@ -297,7 +298,7 @@ class ArtifactManager:
             stats["artifacts_by_session"][session_key]["count"] += 1
             if artifact.size_bytes:
                 stats["artifacts_by_session"][session_key]["total_size_bytes"] += artifact.size_bytes
-        
+
         return stats
 
     def _get_mime_type(self, file_path: Path) -> str:
@@ -311,7 +312,7 @@ class ArtifactManager:
             MIME type string
         """
         extension = file_path.suffix.lower()
-        
+
         mime_types = {
             ".pkl": "application/octet-stream",
             ".joblib": "application/octet-stream",
@@ -326,7 +327,7 @@ class ArtifactManager:
             ".json": "application/json",
             ".txt": "text/plain",
         }
-        
+
         return mime_types.get(extension, "application/octet-stream")
 
     def export_session_artifacts(
@@ -348,16 +349,16 @@ class ArtifactManager:
         """
         export_dir = Path(export_dir)
         export_dir.mkdir(parents=True, exist_ok=True)
-        
+
         artifacts = self.list_artifacts(session_id, db_session=db_session)
-        
+
         for artifact in artifacts:
             if artifact.file_path:
                 src_path = Path(artifact.file_path)
                 if src_path.exists():
                     dest_path = export_dir / src_path.name
                     shutil.copy2(src_path, dest_path)
-        
+
         # Create metadata file
         metadata = {
             "session_id": str(session_id),
@@ -375,8 +376,8 @@ class ArtifactManager:
                 for artifact in artifacts
             ],
         }
-        
+
         metadata_path = export_dir / "metadata.json"
         metadata_path.write_text(json.dumps(metadata, indent=2))
-        
+
         return export_dir

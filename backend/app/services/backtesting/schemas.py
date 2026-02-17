@@ -13,7 +13,7 @@ class BacktestConfig(BaseModel):
     end_date: datetime
     initial_capital: Decimal = Decimal("10000.0")
     parameters: dict[str, Any] = {}
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -29,5 +29,5 @@ class BacktestResult(BaseModel):
     total_trades: int
     trades: list[dict[str, Any]] = []
     equity_curve: list[dict[str, Any]] = []
-    
+
     model_config = ConfigDict(from_attributes=True)

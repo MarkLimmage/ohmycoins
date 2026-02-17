@@ -8,21 +8,21 @@ This script benchmarks the latency of the TradingSafetyManager.validate_trade me
 Goal: Ensure <200ms overhead.
 """
 import asyncio
-import time
-import sys
 import logging
-from pathlib import Path
+import sys
+import time
 from decimal import Decimal
+from pathlib import Path
 from uuid import uuid4
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlmodel import Session, create_engine, select
-from app.core.config import settings
-from app.services.trading.safety import TradingSafetyManager
-from app.models import User, Position, Order, RiskRule
+from sqlmodel import Session, select
+
 from app.core.db import engine
+from app.models import Position, User
+from app.services.trading.safety import TradingSafetyManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,11 +33,11 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 async def run_benchmark() -> None:
     logger.info("Initializing Safety Benchmark...")
-    
+
     # Create a dedicated session
     # We use a separate engine/session or the standard one
     # Assuming running in container where DB is accessible
-    
+
     with Session(engine) as session:
         # Create Dummy User
         test_user_id = uuid4()
@@ -48,7 +48,7 @@ async def run_benchmark() -> None:
             is_active=True
         )
         session.add(user)
-        
+
         # Create positions (Portfolio Value ~10,000)
         p1 = Position(
             user_id=test_user_id,
@@ -67,7 +67,7 @@ async def run_benchmark() -> None:
         session.add(p1)
         session.add(p2)
         session.commit()
-        
+
         logger.info(f"Created test user {test_user_id} with portfolio ~10k")
 
         # Initialize Safety Manager
@@ -88,11 +88,11 @@ async def run_benchmark() -> None:
         latencies = []
 
         logger.info(f"Running {ITERATIONS} iterations...")
-        
+
         try:
             for i in range(ITERATIONS):
                 start = time.perf_counter()
-                
+
                 await manager.validate_trade(
                     user_id=test_user_id,
                     coin_type="SOL",
@@ -100,7 +100,7 @@ async def run_benchmark() -> None:
                     quantity=Decimal("10"),
                     estimated_price=Decimal("100") # 1000 AUD, well within 20% limit
                 )
-                
+
                 end = time.perf_counter()
                 latencies.append((end - start) * 1000) # ms
 
@@ -120,7 +120,7 @@ async def run_benchmark() -> None:
             print(f"Min Latency:     {min_latency:.2f} ms")
             print(f"Max Latency:     {max_latency:.2f} ms")
             print("="*40)
-            
+
             if avg_latency < 200:
                 print("✅ PASS: Average Latency < 200ms")
             else:

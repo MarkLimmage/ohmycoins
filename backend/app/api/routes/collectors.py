@@ -7,11 +7,12 @@ Provides endpoints for:
 - Collection status and metrics
 """
 
-from fastapi import APIRouter, HTTPException
 from typing import Any
 
-from app.services.collectors.orchestrator import get_orchestrator
+from fastapi import APIRouter, HTTPException
+
 from app.models import Message
+from app.services.collectors.orchestrator import get_orchestrator
 
 router = APIRouter()
 
@@ -47,7 +48,7 @@ def get_collector_status(collector_name: str) -> dict[str, Any]:
         HTTPException: If collector not found
     """
     orchestrator = get_orchestrator()
-    
+
     try:
         return orchestrator.get_collector_status(collector_name)
     except KeyError:
@@ -72,10 +73,10 @@ async def trigger_collector(collector_name: str) -> Message:
         HTTPException: If collector not found or execution fails
     """
     orchestrator = get_orchestrator()
-    
+
     try:
         success = await orchestrator.trigger_manual(collector_name)
-        
+
         if success:
             return Message(message=f"Collector '{collector_name}' executed successfully")
         else:
@@ -83,7 +84,7 @@ async def trigger_collector(collector_name: str) -> Message:
                 status_code=500,
                 detail=f"Collector '{collector_name}' execution failed. Check logs for details."
             )
-            
+
     except KeyError:
         raise HTTPException(
             status_code=404,

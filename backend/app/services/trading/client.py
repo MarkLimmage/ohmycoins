@@ -6,13 +6,13 @@ This module provides a client for executing trades on the Coinspot exchange.
 It handles buy/sell orders, order status, and balance queries.
 """
 import logging
-from typing import Any
 from decimal import Decimal
+from typing import Any
 
 import aiohttp
 
 from app.services.coinspot_auth import CoinspotAuthenticator
-from app.services.trading.exceptions import CoinspotTradingError, CoinspotAPIError
+from app.services.trading.exceptions import CoinspotAPIError, CoinspotTradingError
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,9 @@ class CoinspotTradingClient:
     - Balance queries
     - Order management
     """
-    
+
     BASE_URL = "https://www.coinspot.com.au/api/v2"
-    
+
     def __init__(self, api_key: str, api_secret: str):
         """
         Initialize Coinspot trading client
@@ -40,18 +40,18 @@ class CoinspotTradingClient:
         """
         self.authenticator = CoinspotAuthenticator(api_key, api_secret)
         self._session: aiohttp.ClientSession | None = None
-    
+
     async def __aenter__(self):
         """Async context manager entry"""
         self._session = aiohttp.ClientSession()
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""
         if self._session:
             await self._session.close()
             self._session = None
-    
+
     async def _make_request(
         self,
         endpoint: str,
@@ -72,27 +72,27 @@ class CoinspotTradingClient:
         """
         if not self._session:
             raise CoinspotTradingError("Client must be used as async context manager")
-        
+
         headers, payload = self.authenticator.prepare_request(data)
         url = f"{self.BASE_URL}{endpoint}"
-        
+
         logger.debug(f"Making request to {url}")
-        
+
         try:
             async with self._session.post(url, headers=headers, json=payload) as response:
                 response_data = await response.json()
-                
+
                 # Check for API errors
                 if response_data.get('status') != 'ok':
                     error_msg = response_data.get('message', 'Unknown error')
                     logger.error(f"Coinspot API error: {error_msg}")
                     raise CoinspotAPIError(f"API error: {error_msg}")
-                
+
                 return response_data
         except aiohttp.ClientError as e:
             logger.error(f"HTTP error making request to {url}: {e}")
             raise CoinspotTradingError(f"HTTP error: {e}")
-    
+
     async def _get_public_price(self, coin_type: str, side: str = 'buy') -> Decimal | None:
         """Fetch current price from public API"""
         try:
@@ -102,16 +102,16 @@ class CoinspotTradingClient:
                     if response.status != 200:
                         return None
                     data = await response.json()
-                    
+
                     coin_data = data.get('prices', {}).get(coin_type.lower())
                     if not coin_data:
                         return None
-                    
+
                     # For buying, we want the 'ask' price (what sellers are asking)
                     # For selling, we want the 'bid' price (what buyers are bidding)
                     price_key = 'ask' if side == 'buy' else 'bid'
                     price_str = coin_data.get(price_key) or coin_data.get('last')
-                    
+
                     if price_str:
                         return Decimal(str(price_str))
                     return None
@@ -133,7 +133,7 @@ class CoinspotTradingClient:
             'cointype': coin_type,
             'amount': str(amount_aud)
         }
-        
+
         try:
             logger.debug(f"Fetching quote for {coin_type} buy...")
             # Try /quote/buy endpoint (standard v2)
@@ -141,18 +141,18 @@ class CoinspotTradingClient:
             rate = quote_response.get('rate')
         except Exception:
             pass
-            
+
         if not rate:
              # Fallback to public API
              logger.info("Quote failed, using public API price")
              rate = await self._get_public_price(coin_type, 'buy')
-             
+
              # If we have a public rate, add 5% slippage tolerance for the "limit"
              if rate:
                  original_rate = rate
-                 rate = rate * Decimal("1.05") 
+                 rate = rate * Decimal("1.05")
                  logger.info(f"Using public rate {original_rate} + 5% leniency: {rate}")
-        
+
         # FINAL FALLBACK: Hardcoded safety net for BTC/ETH to allow test trades if APIs fail
         if not rate:
             if coin_type == 'BTC':
@@ -172,13 +172,13 @@ class CoinspotTradingClient:
         if rate:
             data['rate'] = str(rate)
             logger.info(f"Using quoted rate: {rate}")
-        
+
         logger.info(f"Placing market buy order: {amount_aud} AUD worth of {coin_type}")
         response = await self._make_request('/my/buy', data)
-        
+
         logger.info(f"Buy order placed successfully: {response.get('id')}")
         return response
-    
+
     async def market_sell(
         self,
         coin_type: str,
@@ -201,10 +201,10 @@ class CoinspotTradingClient:
             'cointype': coin_type,
             'amount': str(amount)
         }
-        
+
         logger.info(f"Placing market sell order: {amount} {coin_type}")
         response = await self._make_request('/my/sell', data)
-        
+
         logger.info(f"Sell order placed successfully: {response.get('id')}")
         return response
 
@@ -233,10 +233,10 @@ class CoinspotTradingClient:
             'amount': str(amount_aud),
             'rate': str(rate)
         }
-        
+
         logger.info(f"Placing limit buy order: {amount_aud} AUD worth of {coin_type} @ {rate}")
         response = await self._make_request('/my/buy', data)
-        
+
         logger.info(f"Limit buy order placed successfully: {response.get('id')}")
         return response
 
@@ -265,13 +265,13 @@ class CoinspotTradingClient:
             'amount': str(amount),
             'rate': str(rate)
         }
-        
+
         logger.info(f"Placing limit sell order: {amount} {coin_type} @ {rate}")
         response = await self._make_request('/my/sell', data)
-        
+
         logger.info(f"Limit sell order placed successfully: {response.get('id')}")
         return response
-    
+
     async def get_orders(
         self,
         coin_type: str | None = None
@@ -288,12 +288,12 @@ class CoinspotTradingClient:
         data = {}
         if coin_type:
             data['cointype'] = coin_type
-        
+
         logger.debug(f"Fetching orders for {coin_type or 'all coins'}")
         response = await self._make_request('/ro/my/orders', data)
-        
+
         return response
-    
+
     async def get_order_history(
         self,
         coin_type: str | None = None,
@@ -314,12 +314,12 @@ class CoinspotTradingClient:
             data['cointype'] = coin_type
         if limit:
             data['limit'] = limit
-        
+
         logger.debug(f"Fetching order history for {coin_type or 'all coins'}, limit={limit}")
         response = await self._make_request('/my/orders/history', data)
-        
+
         return response
-    
+
     async def cancel_buy_order(self, order_id: str) -> dict[str, Any]:
         """
         Cancel a buy order
@@ -331,13 +331,13 @@ class CoinspotTradingClient:
             Cancellation response
         """
         data = {'id': order_id}
-        
+
         logger.info(f"Cancelling buy order: {order_id}")
         response = await self._make_request('/my/buy/cancel', data)
-        
+
         logger.info(f"Buy order cancelled successfully: {order_id}")
         return response
-    
+
     async def cancel_sell_order(self, order_id: str) -> dict[str, Any]:
         """
         Cancel a sell order
@@ -349,13 +349,13 @@ class CoinspotTradingClient:
             Cancellation response
         """
         data = {'id': order_id}
-        
+
         logger.info(f"Cancelling sell order: {order_id}")
         response = await self._make_request('/my/sell/cancel', data)
-        
+
         logger.info(f"Sell order cancelled successfully: {order_id}")
         return response
-    
+
     async def get_balances(self) -> dict[str, Any]:
         """
         Get account balances for all coins
@@ -365,9 +365,9 @@ class CoinspotTradingClient:
         """
         logger.debug("Fetching account balances")
         response = await self._make_request('/my/balances')
-        
+
         return response
-    
+
     async def get_balance(self, coin_type: str) -> dict[str, Any]:
         """
         Get balance for a specific coin

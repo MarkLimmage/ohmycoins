@@ -27,7 +27,7 @@ class ScraperCollector(BaseCollector):
     - scrape_static() for static HTML scraping (BeautifulSoup)
     - scrape_dynamic() for dynamic content scraping (Playwright)
     """
-    
+
     def __init__(
         self,
         name: str,
@@ -47,7 +47,7 @@ class ScraperCollector(BaseCollector):
         super().__init__(name, ledger)
         self.url = url
         self.use_playwright = use_playwright
-    
+
     async def collect(self) -> list[dict[str, Any]]:
         """
         Collect data by scraping the target URL.
@@ -59,12 +59,12 @@ class ScraperCollector(BaseCollector):
             Exception: If scraping fails
         """
         logger.debug(f"{self.name}: Scraping {self.url}")
-        
+
         if self.use_playwright:
             return await self.scrape_dynamic()
         else:
             return await self.scrape_static()
-    
+
     @abstractmethod
     async def scrape_static(self) -> list[dict[str, Any]]:
         """
@@ -77,7 +77,7 @@ class ScraperCollector(BaseCollector):
             Exception: If scraping fails
         """
         pass
-    
+
     @abstractmethod
     async def scrape_dynamic(self) -> list[dict[str, Any]]:
         """

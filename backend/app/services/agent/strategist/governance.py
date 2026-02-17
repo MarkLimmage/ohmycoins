@@ -1,6 +1,8 @@
-from typing import List, Optional
+
 from pydantic import BaseModel
+
 from app.services.backtesting.schemas import BacktestResult
+
 
 class GovernanceConfig(BaseModel):
     min_sharpe_ratio: float = 1.2
@@ -10,19 +12,19 @@ class GovernanceConfig(BaseModel):
 
 class GovernanceDecision(BaseModel):
     approved: bool
-    rejection_reasons: List[str]
+    rejection_reasons: list[str]
     score: float
 
 class GovernanceEvaluator:
     """
     Evaluates trading strategies against safety and performance 'Golden Rules'.
     """
-    def __init__(self, config: Optional[GovernanceConfig] = None):
+    def __init__(self, config: GovernanceConfig | None = None):
         self.config = config or GovernanceConfig()
 
     def evaluate(self, result: BacktestResult) -> GovernanceDecision:
         reasons = []
-        
+
         # 1. Sharpe Ratio Check
         if result.sharpe_ratio < self.config.min_sharpe_ratio:
             reasons.append(f"Sharpe Ratio {result.sharpe_ratio:.2f} < Minimum {self.config.min_sharpe_ratio}")
@@ -40,13 +42,13 @@ class GovernanceEvaluator:
         # 4. Statistical Significance
         if result.total_trades < self.config.min_trades:
             reasons.append(f"Not enough trades ({result.total_trades}) to be statistically significant (Min {self.config.min_trades})")
-            
+
         is_approved = len(reasons) == 0
-        
+
         # Simple Score: Weighted average of key metrics normalized
         # This is arbitrary for now, but useful for ranking
         score = (result.sharpe_ratio * 10) + (result.total_return_percent * 100)
-        
+
         return GovernanceDecision(
             approved=is_approved,
             rejection_reasons=reasons,

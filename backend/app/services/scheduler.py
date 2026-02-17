@@ -65,9 +65,9 @@ class CollectorScheduler:
         try:
             logger.info(f"Starting scheduled collection at {start_time}")
             records_stored = await run_collector()
-            
+
             elapsed_seconds = (datetime.now() - start_time).total_seconds()
-            
+
             if records_stored > 0:
                 logger.info(
                     f"Scheduled collection completed successfully: "
@@ -78,7 +78,7 @@ class CollectorScheduler:
                     f"Scheduled collection completed with no records stored "
                     f"(duration: {elapsed_seconds:.2f}s)"
                 )
-                
+
         except Exception as e:
             elapsed_seconds = (datetime.now() - start_time).total_seconds()
             logger.error(
@@ -124,10 +124,10 @@ if __name__ == "__main__":
     async def test_scheduler():
         scheduler = CollectorScheduler()
         scheduler.start()
-        
+
         # Run immediately for testing
         await scheduler.run_now()
-        
+
         # Keep running for 15 minutes to see scheduled executions
         logger.info("Scheduler running. Will collect data every 5 minutes. Press Ctrl+C to stop.")
         try:

@@ -6,13 +6,13 @@ session creation, status updates, and state persistence.
 """
 
 import uuid
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+from unittest.mock import AsyncMock
 
 import pytest
 from sqlmodel import Session
 
-from app.models import AgentSession, AgentSessionCreate, AgentSessionStatus, User
+from app.models import AgentSessionCreate, AgentSessionStatus, User
 from app.services.agent.session_manager import SessionManager
 
 
@@ -54,9 +54,9 @@ async def test_create_session(db: Session, session_manager: SessionManager, user
     session_data = AgentSessionCreate(
         user_goal="Predict Bitcoin price movements"
     )
-    
+
     session = await session_manager.create_session(db, user_id, session_data)
-    
+
     assert session.id is not None
     assert session.user_id == user_id
     assert session.user_goal == "Predict Bitcoin price movements"
@@ -73,10 +73,10 @@ async def test_get_session(db: Session, session_manager: SessionManager, user_id
     # Create a session first
     session_data = AgentSessionCreate(user_goal="Test goal")
     created_session = await session_manager.create_session(db, user_id, session_data)
-    
+
     # Retrieve the session
     retrieved_session = await session_manager.get_session(db, created_session.id)
-    
+
     assert retrieved_session is not None
     assert retrieved_session.id == created_session.id
     assert retrieved_session.user_goal == "Test goal"
@@ -96,12 +96,12 @@ async def test_update_session_status(db: Session, session_manager: SessionManage
     # Create a session
     session_data = AgentSessionCreate(user_goal="Test goal")
     session = await session_manager.create_session(db, user_id, session_data)
-    
+
     # Update status to running
     await session_manager.update_session_status(
         db, session.id, AgentSessionStatus.RUNNING
     )
-    
+
     # Verify update
     updated_session = await session_manager.get_session(db, session.id)
     assert updated_session is not None
@@ -115,13 +115,13 @@ async def test_update_session_status_with_error(db: Session, session_manager: Se
     # Create a session
     session_data = AgentSessionCreate(user_goal="Test goal")
     session = await session_manager.create_session(db, user_id, session_data)
-    
+
     # Update status to failed with error
     error_msg = "Test error occurred"
     await session_manager.update_session_status(
         db, session.id, AgentSessionStatus.FAILED, error_message=error_msg
     )
-    
+
     # Verify update
     updated_session = await session_manager.get_session(db, session.id)
     assert updated_session is not None
@@ -136,13 +136,13 @@ async def test_update_session_status_with_result(db: Session, session_manager: S
     # Create a session
     session_data = AgentSessionCreate(user_goal="Test goal")
     session = await session_manager.create_session(db, user_id, session_data)
-    
+
     # Update status to completed with result
     result_summary = "Model trained successfully with 95% accuracy"
     await session_manager.update_session_status(
         db, session.id, AgentSessionStatus.COMPLETED, result_summary=result_summary
     )
-    
+
     # Verify update
     updated_session = await session_manager.get_session(db, session.id)
     assert updated_session is not None
@@ -157,7 +157,7 @@ async def test_add_message(db: Session, session_manager: SessionManager, user_id
     # Create a session
     session_data = AgentSessionCreate(user_goal="Test goal")
     session = await session_manager.create_session(db, user_id, session_data)
-    
+
     # Add a message
     message = await session_manager.add_message(
         db,
@@ -166,7 +166,7 @@ async def test_add_message(db: Session, session_manager: SessionManager, user_id
         content="This is a test message",
         agent_name="TestAgent",
     )
-    
+
     assert message.id is not None
     assert message.session_id == session.id
     assert message.role == "user"
@@ -185,20 +185,20 @@ async def test_session_state_persistence(session_manager: SessionManager):
         "iteration": 3,
         "data": {"test": "value"},
     }
-    
+
     # Mock Redis client
     mock_redis = AsyncMock()
     session_manager.redis_client = mock_redis
-    
+
     # Test saving state
     await session_manager.save_session_state(session_id, test_state)
     mock_redis.setex.assert_called_once()
-    
+
     # Test retrieving state
     import json
     mock_redis.get.return_value = json.dumps(test_state)
     retrieved_state = await session_manager.get_session_state(session_id)
-    
+
     assert retrieved_state == test_state
     mock_redis.get.assert_called_once()
 
@@ -207,11 +207,11 @@ async def test_session_state_persistence(session_manager: SessionManager):
 async def test_delete_session_state(session_manager: SessionManager):
     """Test deleting session state from Redis."""
     session_id = uuid.uuid4()
-    
+
     # Mock Redis client
     mock_redis = AsyncMock()
     session_manager.redis_client = mock_redis
-    
+
     # Test deleting state
     await session_manager.delete_session_state(session_id)
     mock_redis.delete.assert_called_once()

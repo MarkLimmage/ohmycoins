@@ -8,15 +8,15 @@ This is the main entry point for the agentic data science system.
 import uuid
 from typing import Any
 
-from sqlmodel import Session
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_anthropic import ChatAnthropic
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from sqlmodel import Session
 
 from app.models import AgentSessionStatus
 
+from .langgraph_workflow import AgentState, LangGraphWorkflow
 from .session_manager import SessionManager
-from .langgraph_workflow import LangGraphWorkflow, AgentState
 
 
 class AgentOrchestrator:
@@ -108,13 +108,13 @@ class AgentOrchestrator:
 
         # Check if this is the first iteration - if so, run the full workflow
         iteration = state.get("iteration", 0)
-        
+
         if iteration == 0:
             # First iteration - execute the full LangGraph workflow
             session = await self.session_manager.get_session(db, session_id)
             if not session:
                 raise ValueError(f"Session {session_id} not found")
-            
+
             # Create workflow with BYOM support (Sprint 2.9)
             # Note: We create a new workflow instance per execution (vs reusing self.workflow)
             # because each session may use different user credentials/LLM providers.
@@ -124,13 +124,13 @@ class AgentOrchestrator:
                 user_id=session.user_id,
                 credential_id=session.llm_credential_id
             )
-            
+
             # Track which LLM was selected by the factory
             if workflow.llm:
                 # Extract provider and model info from the LLM instance
                 llm_provider = None
                 llm_model = None
-                
+
                 if isinstance(workflow.llm, ChatOpenAI):
                     llm_provider = "openai"
                     llm_model = workflow.llm.model_name
@@ -140,7 +140,7 @@ class AgentOrchestrator:
                 elif isinstance(workflow.llm, ChatAnthropic):
                     llm_provider = "anthropic"
                     llm_model = workflow.llm.model
-                
+
                 # Update session with LLM tracking info
                 if llm_provider and llm_model:
                     session.llm_provider = llm_provider
@@ -149,7 +149,7 @@ class AgentOrchestrator:
                     db.add(session)
                     db.commit()
                     db.refresh(session)
-            
+
             # Prepare initial state for LangGraph
             langgraph_state: AgentState = {
                 "session_id": str(session_id),
@@ -187,14 +187,14 @@ class AgentOrchestrator:
                 "needs_more_data": False,
                 "quality_checks": {},
             }
-            
+
             # Execute the workflow
             final_state = await workflow.execute(langgraph_state)
-            
+
             # Update session state with results
             state.update(final_state)
             await self.session_manager.save_session_state(session_id, state)
-            
+
             # Add messages from workflow to session
             for msg in final_state.get("messages", []):
                 await self.session_manager.add_message(
@@ -203,7 +203,7 @@ class AgentOrchestrator:
                     role=msg["role"],
                     content=msg["content"],
                 )
-            
+
             # Update session status
             if final_state.get("status") == "completed":
                 await self.session_manager.update_session_status(
@@ -259,7 +259,7 @@ class AgentOrchestrator:
             "status": AgentSessionStatus.CANCELLED,
             "message": "Session cancelled successfully",
         }
-    
+
     def get_session_state(self, db: Session | uuid.UUID, session_id: uuid.UUID = None) -> dict[str, Any] | None:
         """
         Get the current state of a session synchronously.
@@ -279,7 +279,7 @@ class AgentOrchestrator:
             Session state dictionary or None if not found
         """
         import asyncio
-        
+
         # Handle both calling conventions with type checking for robustness
         if session_id is None:
             # Called with just session_id (legacy style)
@@ -294,7 +294,7 @@ class AgentOrchestrator:
         else:
             # Called with db, session_id (test style)
             actual_session_id = session_id
-        
+
         # Check if we're already in an async context (e.g., from async tests)
         try:
             asyncio.get_running_loop()
@@ -316,7 +316,7 @@ class AgentOrchestrator:
                 )
             finally:
                 loop.close()
-    
+
     def update_session_state(
         self, session_id: uuid.UUID, state: dict[str, Any]
     ) -> None:
@@ -328,19 +328,19 @@ class AgentOrchestrator:
             state: Updated state dictionary
         """
         import asyncio
-        
+
         # Get or create event loop
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         # Run the async method
         loop.run_until_complete(
             self.session_manager.save_session_state(session_id, state)
         )
-    
+
     async def resume_session(
         self, db: Session, session_id: uuid.UUID
     ) -> dict[str, Any]:
@@ -358,19 +358,19 @@ class AgentOrchestrator:
         """
         # Get current state
         state = await self.session_manager.get_session_state(session_id)
-        
+
         if not state:
             raise ValueError(f"Session {session_id} state not found")
-        
+
         # Update status to running if it was paused
         if state.get("status") != AgentSessionStatus.RUNNING:
             state["status"] = AgentSessionStatus.RUNNING
             await self.session_manager.save_session_state(session_id, state)
-            
+
             await self.session_manager.update_session_status(
                 db, session_id, AgentSessionStatus.RUNNING
             )
-        
+
         # Add message about resumption
         await self.session_manager.add_message(
             db,
@@ -378,17 +378,17 @@ class AgentOrchestrator:
             role="system",
             content=f"Workflow resumed from {state.get('current_step', 'unknown')} step",
         )
-        
+
         # The workflow will continue from its current state
         # In a full implementation, this would trigger the next workflow step
-        
+
         return {
             "session_id": str(session_id),
             "status": AgentSessionStatus.RUNNING,
             "message": "Session resumed successfully",
             "current_step": state.get("current_step"),
         }
-    
+
     async def run_workflow(
         self, db: Session, session_id: uuid.UUID
     ) -> dict[str, Any]:
@@ -412,16 +412,16 @@ class AgentOrchestrator:
 
         # Start the session
         await self.start_session(db, session_id)
-        
+
         # Execute the workflow step
         result = await self.execute_step(db, session_id)
-        
+
         # Build response with execution result
         response = {
             "session_id": str(session_id),
             "status": result.get("status", "completed"),
         }
-        
+
         # Merge workflow state fields, preserving response's session_id and status
         workflow_state = result.get("workflow_state", {})
         if workflow_state:
@@ -429,5 +429,5 @@ class AgentOrchestrator:
             for key, value in workflow_state.items():
                 if key not in ("session_id", "status"):
                     response[key] = value
-        
+
         return response

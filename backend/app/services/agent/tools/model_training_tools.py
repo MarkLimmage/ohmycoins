@@ -5,18 +5,31 @@ Model Training Tools - Week 5-6 Implementation
 Tools for ModelTrainingAgent to train machine learning models on cryptocurrency data.
 """
 
-from datetime import datetime
 from typing import Any, Literal
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+from sklearn.ensemble import (
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.svm import SVC, SVR
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.svm import SVC, SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 def train_classification_model(
@@ -24,9 +37,9 @@ def train_classification_model(
     target_column: str,
     feature_columns: list[str] | None = None,
     model_type: Literal[
-        "random_forest", 
-        "logistic_regression", 
-        "decision_tree", 
+        "random_forest",
+        "logistic_regression",
+        "decision_tree",
         "gradient_boosting",
         "svm"
     ] = "random_forest",
@@ -60,18 +73,18 @@ def train_classification_model(
     # Prepare features and target
     if feature_columns is None:
         feature_columns = [col for col in training_data.columns if col != target_column]
-    
+
     X = training_data[feature_columns].copy()
     y = training_data[target_column].copy()
-    
+
     # Handle missing values
     X = X.fillna(X.mean())
-    
+
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
-    
+
     # Scale features if requested
     scaler = None
     if scale_features:
@@ -86,10 +99,10 @@ def train_classification_model(
             columns=feature_columns,
             index=X_test.index
         )
-    
+
     # Initialize model with hyperparameters
     hyperparams = hyperparameters or {}
-    
+
     if model_type == "random_forest":
         model = RandomForestClassifier(
             random_state=random_state,
@@ -135,21 +148,21 @@ def train_classification_model(
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
-    
+
     # Train model
     model.fit(X_train, y_train)
-    
+
     # Make predictions
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
-    
+
     # Get probability predictions for ROC-AUC (if binary classification)
     try:
         y_pred_proba_test = model.predict_proba(X_test)[:, 1]
         roc_auc = roc_auc_score(y_test, y_pred_proba_test)
     except (AttributeError, IndexError):
         roc_auc = None
-    
+
     # Calculate metrics
     metrics = {
         "train": {
@@ -165,10 +178,10 @@ def train_classification_model(
             "f1": float(f1_score(y_test, y_pred_test, average="weighted", zero_division=0)),
         },
     }
-    
+
     if roc_auc is not None:
         metrics["test"]["roc_auc"] = float(roc_auc)
-    
+
     return {
         "model": model,
         "scaler": scaler,
@@ -224,19 +237,19 @@ def train_regression_model(
     # Prepare features and target
     if feature_columns is None:
         feature_columns = [col for col in training_data.columns if col != target_column]
-    
+
     X = training_data[feature_columns].copy()
     y = training_data[target_column].copy()
-    
+
     # Handle missing values
     X = X.fillna(X.mean())
     y = y.fillna(y.mean())
-    
+
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state
     )
-    
+
     # Scale features if requested
     scaler = None
     if scale_features:
@@ -251,10 +264,10 @@ def train_regression_model(
             columns=feature_columns,
             index=X_test.index
         )
-    
+
     # Initialize model with hyperparameters
     hyperparams = hyperparameters or {}
-    
+
     if model_type == "random_forest":
         model = RandomForestRegressor(
             random_state=random_state,
@@ -307,14 +320,14 @@ def train_regression_model(
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
-    
+
     # Train model
     model.fit(X_train, y_train)
-    
+
     # Make predictions
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
-    
+
     # Calculate metrics
     metrics = {
         "train": {
@@ -330,7 +343,7 @@ def train_regression_model(
             "r2": float(r2_score(y_test, y_pred_test)),
         },
     }
-    
+
     return {
         "model": model,
         "scaler": scaler,
@@ -382,15 +395,15 @@ def cross_validate_model(
     # Prepare features and target
     if feature_columns is None:
         feature_columns = [col for col in training_data.columns if col != target_column]
-    
+
     X = training_data[feature_columns].copy()
     y = training_data[target_column].copy()
-    
+
     # Handle missing values
     X = X.fillna(X.mean())
     if "regressor" in model_type or model_type == "linear_regression":
         y = y.fillna(y.mean())
-    
+
     # Scale features if requested
     if scale_features:
         scaler = StandardScaler()
@@ -399,7 +412,7 @@ def cross_validate_model(
             columns=feature_columns,
             index=X.index
         )
-    
+
     # Initialize model
     if model_type == "random_forest_classifier":
         model = RandomForestClassifier(random_state=random_state, n_estimators=100)
@@ -415,12 +428,12 @@ def cross_validate_model(
         default_scoring = "neg_mean_squared_error"
     else:
         raise ValueError(f"Unknown model type: {model_type}")
-    
+
     scoring = scoring or default_scoring
-    
+
     # Perform cross-validation
     scores = cross_val_score(model, X, y, cv=cv_folds, scoring=scoring)
-    
+
     return {
         "scores": scores.tolist(),
         "mean_score": float(np.mean(scores)),

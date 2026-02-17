@@ -4,20 +4,18 @@ Roadmap Status Validation Tests
 These tests validate the current state of the project against the ROADMAP.md claims.
 They check for the existence and basic functionality of key components from each phase.
 """
-import os
 from pathlib import Path
+
 import pytest
-from sqlmodel import select, Session
-from app.core.db import engine
+
 from app.models import (
-    User,
-    PriceData5Min,
-    CoinspotCredentials,
-    ProtocolFundamentals,
-    NewsSentiment,
-    SocialSentiment,
-    CatalystEvents,
     AgentSession,
+    CatalystEvents,
+    CoinspotCredentials,
+    NewsSentiment,
+    PriceData5Min,
+    ProtocolFundamentals,
+    SocialSentiment,
 )
 
 
@@ -37,7 +35,7 @@ class TestPhase1Validation:
         """Verify collector service file exists"""
         collector_path = Path(__file__).parent.parent / "app" / "services" / "collector.py"
         assert collector_path.exists()
-        
+
     def test_scheduler_service_exists(self):
         """Verify scheduler service file exists"""
         scheduler_path = Path(__file__).parent.parent / "app" / "services" / "scheduler.py"
@@ -45,7 +43,11 @@ class TestPhase1Validation:
 
     def test_collector_has_retry_logic(self):
         """Verify collector has retry configuration"""
-        from app.services.collector import MAX_RETRIES, RETRY_DELAY_SECONDS, REQUEST_TIMEOUT
+        from app.services.collector import (
+            MAX_RETRIES,
+            REQUEST_TIMEOUT,
+            RETRY_DELAY_SECONDS,
+        )
         assert MAX_RETRIES == 3
         assert RETRY_DELAY_SECONDS == 5
         assert REQUEST_TIMEOUT == 30.0
@@ -70,7 +72,7 @@ class TestPhase1Validation:
         """Verify key Phase 1 migrations exist"""
         migrations_path = Path(__file__).parent.parent / "app" / "alembic" / "versions"
         migration_files = [f.name for f in migrations_path.glob("*.py")]
-        
+
         # Check for price_data_5min migration
         assert any("price_data_5min" in name.lower() for name in migration_files), \
             "price_data_5min migration not found"
@@ -82,11 +84,11 @@ class TestPhase2Validation:
     def test_user_model_has_profile_fields(self):
         """Verify User model has OMC-specific profile fields"""
         from app.models import UserBase
-        
+
         # Check that UserBase has the required fields
         assert hasattr(UserBase, '__annotations__')
         annotations = UserBase.__annotations__
-        
+
         assert 'timezone' in annotations
         assert 'preferred_currency' in annotations
         assert 'risk_tolerance' in annotations
@@ -111,9 +113,10 @@ class TestPhase2Validation:
 
     def test_encryption_service_has_aes256(self):
         """Verify encryption service uses Fernet (AES-256)"""
-        from app.services.encryption import EncryptionService
         from cryptography.fernet import Fernet
-        
+
+        from app.services.encryption import EncryptionService
+
         # Verify EncryptionService uses Fernet
         service = EncryptionService()
         assert isinstance(service.fernet, Fernet)
@@ -121,7 +124,7 @@ class TestPhase2Validation:
     def test_coinspot_authenticator_has_hmac(self):
         """Verify Coinspot authenticator uses HMAC-SHA512"""
         from app.services.coinspot_auth import CoinspotAuthenticator
-        
+
         # Verify authenticator exists and has required methods
         assert hasattr(CoinspotAuthenticator, 'sign_request')
         assert hasattr(CoinspotAuthenticator, 'generate_nonce')
@@ -149,7 +152,7 @@ class TestPhase25Validation:
         assert hasattr(NewsSentiment, 'title')
         assert hasattr(NewsSentiment, 'source')
         assert hasattr(NewsSentiment, 'sentiment')
-        
+
         assert SocialSentiment is not None
         assert hasattr(SocialSentiment, 'platform')
         assert hasattr(SocialSentiment, 'content')
@@ -188,7 +191,7 @@ class TestPhase25Validation:
         """Verify Phase 2.5 migration exists"""
         migrations_path = Path(__file__).parent.parent / "app" / "alembic" / "versions"
         migration_files = [f.name for f in migrations_path.glob("*.py")]
-        
+
         # Check for comprehensive data tables migration
         assert any("comprehensive_data" in name.lower() or "phase_2_5" in name.lower() for name in migration_files), \
             "Phase 2.5 migration not found"
@@ -232,7 +235,7 @@ class TestPhase3Validation:
         """Verify agent session migration exists"""
         migrations_path = Path(__file__).parent.parent / "app" / "alembic" / "versions"
         migration_files = [f.name for f in migrations_path.glob("*.py")]
-        
+
         # Check for agent session tables migration
         assert any("agent_session" in name.lower() for name in migration_files), \
             "Agent session migration not found"
@@ -314,21 +317,21 @@ def test_roadmap_status_summary(capsys):
     print("\n" + "="*80)
     print("ROADMAP VALIDATION SUMMARY")
     print("="*80)
-    
+
     print("\n✅ Phase 1: Foundation & Data Collection Service")
     print("   Status: COMPLETE (100%)")
     print("   - Data collector service implemented")
     print("   - Database schema created")
     print("   - Scheduler configured")
     print("   - Tests passing")
-    
+
     print("\n✅ Phase 2: User Authentication & API Credential Management")
     print("   Status: COMPLETE (100%)")
     print("   - User profile fields added")
     print("   - Credential storage with encryption")
     print("   - Coinspot API authentication")
     print("   - Tests passing")
-    
+
     print("\n🔄 Phase 2.5: Comprehensive Data Collection - The 4 Ledgers")
     print("   Status: PARTIALLY COMPLETE (~40%)")
     print("   ✅ Database schema (all 4 ledgers)")
@@ -337,7 +340,7 @@ def test_roadmap_status_summary(capsys):
     print("   ✅ CryptoPanic collector (Human Ledger)")
     print("   ❌ Additional scrapers needed")
     print("   ❌ Complete catalyst ledger")
-    
+
     print("\n🔄 Phase 3: The Lab - Agentic Data Science")
     print("   Status: FOUNDATION ONLY (~15%)")
     print("   ✅ Database schema")
@@ -346,7 +349,7 @@ def test_roadmap_status_summary(capsys):
     print("   ❌ Complete agent implementations")
     print("   ❌ LangGraph integration")
     print("   ❌ ReAct loop")
-    
+
     print("\n" + "="*80)
     print("RECOMMENDATION: Update ROADMAP.md to reflect actual completion status")
     print("="*80 + "\n")

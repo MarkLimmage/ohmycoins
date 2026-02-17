@@ -4,12 +4,12 @@ Tests for ReportingAgent - Week 11 Implementation
 Tests for the ReportingAgent class and its workflow integration.
 """
 
-import pytest
-from pathlib import Path
-import tempfile
 import shutil
-from datetime import datetime
+import tempfile
 import uuid
+from pathlib import Path
+
+import pytest
 
 from app.services.agent.agents.reporting import ReportingAgent
 
@@ -97,7 +97,7 @@ class TestReportingAgentInitialization:
     def test_init_with_default_dir(self):
         """Test initialization with default artifacts directory."""
         agent = ReportingAgent()
-        
+
         assert agent.name == "ReportingAgent"
         assert agent.description == "Generates comprehensive reports and visualizations from workflow results"
         assert agent.artifacts_dir == Path("/tmp/agent_artifacts")
@@ -105,7 +105,7 @@ class TestReportingAgentInitialization:
     def test_init_with_custom_dir(self, temp_artifacts_dir):
         """Test initialization with custom artifacts directory."""
         agent = ReportingAgent(artifacts_dir=str(temp_artifacts_dir))
-        
+
         assert agent.artifacts_dir == temp_artifacts_dir
         assert temp_artifacts_dir.exists()
 
@@ -117,12 +117,12 @@ class TestReportingAgentExecute:
     async def test_execute_complete_workflow(self, reporting_agent, sample_state_complete, temp_artifacts_dir):
         """Test execute with complete workflow results."""
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         # Check state updates
         assert state["reporting_completed"] is True
         assert state["error"] is None
         assert "reporting_results" in state
-        
+
         # Check reporting results structure
         results = state["reporting_results"]
         assert "summary" in results
@@ -132,7 +132,7 @@ class TestReportingAgentExecute:
         assert "artifacts_dir" in results
         assert "timestamp" in results
         assert "complete_report_path" in results
-        
+
         # Check files were created
         session_dir = temp_artifacts_dir / sample_state_complete["session_id"]
         assert session_dir.exists()
@@ -140,7 +140,7 @@ class TestReportingAgentExecute:
         assert (session_dir / "model_comparison.md").exists()
         assert (session_dir / "recommendations.md").exists()
         assert (session_dir / "complete_report.md").exists()
-        
+
         # Check summary content
         assert "Agent Workflow Summary" in results["summary"]
         assert "Predict BTC price movement" in results["summary"]
@@ -149,12 +149,12 @@ class TestReportingAgentExecute:
     async def test_execute_minimal_workflow(self, reporting_agent, sample_state_minimal, temp_artifacts_dir):
         """Test execute with minimal workflow results."""
         state = await reporting_agent.execute(sample_state_minimal)
-        
+
         # Check state updates
         assert state["reporting_completed"] is True
         assert state["error"] is None
         assert "reporting_results" in state
-        
+
         # Check files were created even with minimal data
         session_dir = temp_artifacts_dir / sample_state_minimal["session_id"]
         assert session_dir.exists()
@@ -165,9 +165,9 @@ class TestReportingAgentExecute:
     async def test_execute_creates_session_dir(self, reporting_agent, sample_state_complete, temp_artifacts_dir):
         """Test that execute creates session-specific directory."""
         session_id = sample_state_complete["session_id"]
-        
+
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         session_dir = temp_artifacts_dir / session_id
         assert session_dir.exists()
         assert session_dir.is_dir()
@@ -176,10 +176,10 @@ class TestReportingAgentExecute:
     async def test_execute_adds_message(self, reporting_agent, sample_state_complete):
         """Test that execute adds message to state."""
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         assert "messages" in state
         assert len(state["messages"]) > 0
-        
+
         last_message = state["messages"][-1]
         assert last_message["role"] == "agent"
         assert last_message["agent_name"] == "ReportingAgent"
@@ -192,9 +192,9 @@ class TestReportingAgentExecute:
         sample_state_complete["messages"] = [
             {"role": "user", "content": "Test message"}
         ]
-        
+
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         assert len(state["messages"]) == 2
         assert state["messages"][0]["content"] == "Test message"
 
@@ -202,7 +202,7 @@ class TestReportingAgentExecute:
     async def test_execute_recommendations_generated(self, reporting_agent, sample_state_complete):
         """Test that recommendations are generated."""
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         results = state["reporting_results"]
         assert len(results["recommendations"]) > 0
         assert isinstance(results["recommendations"], list)
@@ -211,10 +211,10 @@ class TestReportingAgentExecute:
     async def test_execute_visualizations_created(self, reporting_agent, sample_state_complete, temp_artifacts_dir):
         """Test that visualizations are created."""
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         results = state["reporting_results"]
         session_dir = temp_artifacts_dir / sample_state_complete["session_id"]
-        
+
         # Check visualization files exist
         for plot_name, plot_path in results["visualizations"].items():
             assert Path(plot_path).exists()
@@ -224,12 +224,12 @@ class TestReportingAgentExecute:
     async def test_execute_complete_report_structure(self, reporting_agent, sample_state_complete, temp_artifacts_dir):
         """Test complete report has proper structure."""
         state = await reporting_agent.execute(sample_state_complete)
-        
+
         session_dir = temp_artifacts_dir / sample_state_complete["session_id"]
         complete_report_path = session_dir / "complete_report.md"
-        
+
         assert complete_report_path.exists()
-        
+
         report_content = complete_report_path.read_text()
         assert "Oh My Coins - Agentic Workflow Complete Report" in report_content
         assert "Agent Workflow Summary" in report_content
@@ -245,9 +245,9 @@ class TestReportingAgentErrorHandling:
         """Test execute handles invalid state gracefully."""
         # State without required keys
         invalid_state = {}
-        
+
         state = await reporting_agent.execute(invalid_state)
-        
+
         # Should fail gracefully with error
         assert state["report_generated"] is False
         assert state["error"] is not None
@@ -266,14 +266,14 @@ class TestCreateCompleteReport:
             "model_comparison": "/tmp/model_comparison.png",
             "feature_importance": "/tmp/feature_importance.png",
         }
-        
+
         report = reporting_agent._create_complete_report(
             summary=summary,
             comparison_report=comparison,
             recommendations=recommendations,
             visualizations=visualizations,
         )
-        
+
         assert "Oh My Coins - Agentic Workflow Complete Report" in report
         assert "Test Summary" in report
         assert "Test Comparison" in report
@@ -290,7 +290,7 @@ class TestCreateCompleteReport:
             recommendations=[],
             visualizations={},
         )
-        
+
         assert "Oh My Coins - Agentic Workflow Complete Report" in report
         assert "Minimal" in report
         assert "About This Report" in report

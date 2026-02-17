@@ -1,10 +1,10 @@
 # mypy: ignore-errors
+import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional
-import uuid
 
 from pydantic import BaseModel, Field
+
 
 class ExecutionEvent(BaseModel):
     """
@@ -27,15 +27,15 @@ class ExecutionReport(BaseModel):
     arrival_mid_price: Decimal
     avg_fill_price: Decimal
     slippage_bps: float
-    market_impact_bps: Optional[float] = None
-    execution_timeline: List[ExecutionEvent] = []
+    market_impact_bps: float | None = None
+    execution_timeline: list[ExecutionEvent] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class SlippageCalculator:
     """
     Calculates execution quality metrics.
     """
-    
+
     @staticmethod
     def calculate_slippage_bps(avg_fill_price: Decimal, arrival_mid_price: Decimal) -> float:
         """
@@ -51,7 +51,7 @@ class SlippageCalculator:
         """
         if arrival_mid_price == 0:
             return 0.0
-        
+
         slippage = (avg_fill_price - arrival_mid_price) / arrival_mid_price
         return float(slippage * 10000)
 
@@ -62,24 +62,24 @@ class SlippageCalculator:
         side: str,
         quantity: Decimal,
         arrival_mid_price: Decimal,
-        execution_events: List[ExecutionEvent]
+        execution_events: list[ExecutionEvent]
     ) -> ExecutionReport:
         """
         Generates a full execution report from a list of execution events.
         """
-        
+
         fill_events = [e for e in execution_events if e.event_type == "fill"]
         total_volume = sum(e.volume for e in fill_events)
-        
+
         if total_volume == 0:
              # If no fills, assume avg_fill_price is 0 or same as arrival (no trade)?
              # Ideally this shouldn't happen for a "completed" trade report.
              avg_fill_price = Decimal(0)
         else:
              avg_fill_price = sum(e.price * e.volume for e in fill_events) / total_volume
-             
+
         slippage_bps = SlippageCalculator.calculate_slippage_bps(avg_fill_price, arrival_mid_price)
-        
+
         return ExecutionReport(
             id=f"rep-{uuid.uuid4()}",
             trade_id=trade_id,

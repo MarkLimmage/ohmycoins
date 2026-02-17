@@ -9,18 +9,22 @@ Phase 6 Components:
 - Weeks 5-6: P&L calculation and APIs
 """
 
-from app.services.trading.client import CoinspotTradingClient
-from app.services.trading.executor import OrderExecutor, OrderQueue, get_order_queue
-from app.services.trading.positions import PositionManager, get_position_manager
-from app.services.trading.safety import TradingSafetyManager, get_safety_manager, SafetyViolation
-from app.services.trading.recorder import TradeRecorder, get_trade_recorder
 from app.services.trading.algorithm_executor import (
     AlgorithmExecutor,
     TradingAlgorithm,
-    get_algorithm_executor
+    get_algorithm_executor,
+)
+from app.services.trading.client import CoinspotTradingClient
+from app.services.trading.executor import OrderExecutor, OrderQueue, get_order_queue
+from app.services.trading.pnl import PnLEngine, PnLMetrics, get_pnl_engine
+from app.services.trading.positions import PositionManager, get_position_manager
+from app.services.trading.recorder import TradeRecorder, get_trade_recorder
+from app.services.trading.safety import (
+    SafetyViolation,
+    TradingSafetyManager,
+    get_safety_manager,
 )
 from app.services.trading.scheduler import ExecutionScheduler, get_execution_scheduler
-from app.services.trading.pnl import PnLEngine, PnLMetrics, get_pnl_engine
 
 __all__ = [
     # Weeks 1-2: Core trading infrastructure

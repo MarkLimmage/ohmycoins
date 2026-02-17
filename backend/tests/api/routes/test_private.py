@@ -1,6 +1,7 @@
+import uuid
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
-import uuid
 
 from app.core.config import settings
 from app.models import User

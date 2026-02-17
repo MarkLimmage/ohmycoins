@@ -1,7 +1,8 @@
 # mypy: ignore-errors
 from abc import ABC, abstractmethod
-from typing import Any
 from decimal import Decimal
+from typing import Any
+
 
 class BaseExchange(ABC):
     """
@@ -12,7 +13,7 @@ class BaseExchange(ABC):
     async def __aenter__(self):
         """Async context manager entry"""
         pass
-    
+
     @abstractmethod
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""
@@ -87,7 +88,7 @@ class BaseExchange(ABC):
     async def get_balances(self) -> dict[str, Any]:
         """Get account balances for all coins"""
         pass
-    
+
     @abstractmethod
     async def get_balance(self, coin_type: str) -> dict[str, Any]:
         """Get balance for a specific coin"""

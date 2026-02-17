@@ -1,5 +1,7 @@
 import logging
+
 import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -12,7 +14,7 @@ async def send_slack_alert(message: str) -> bool:
     if not settings.SLACK_WEBHOOK_URL:
         logger.warning("Slack webhook URL not configured. Skipping alert.")
         return False
-        
+
     try:
         async with httpx.AsyncClient() as client:
             payload = {"text": message}

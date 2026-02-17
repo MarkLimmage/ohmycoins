@@ -5,9 +5,10 @@ Encryption Service for Coinspot API Credentials
 This module provides utilities for encrypting and decrypting sensitive credentials
 using Fernet (AES-256) symmetric encryption.
 """
-import os
-from cryptography.fernet import Fernet
 import logging
+import os
+
+from cryptography.fernet import Fernet
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ if not ENCRYPTION_KEY:
 
 class EncryptionService:
     """Service for encrypting and decrypting sensitive data"""
-    
+
     def __init__(self, key: str | None = None):
         """
         Initialize the encryption service
@@ -37,7 +38,7 @@ class EncryptionService:
         if isinstance(self.key, str):
             self.key = self.key.encode()
         self.fernet = Fernet(self.key)
-    
+
     def encrypt(self, plaintext: str) -> bytes:
         """
         Encrypt a plaintext string
@@ -50,11 +51,11 @@ class EncryptionService:
         """
         if not plaintext:
             raise ValueError("Cannot encrypt empty string")
-        
+
         plaintext_bytes = plaintext.encode('utf-8')
         encrypted = self.fernet.encrypt(plaintext_bytes)
         return encrypted
-    
+
     def decrypt(self, encrypted: bytes) -> str:
         """
         Decrypt encrypted bytes to string
@@ -67,10 +68,10 @@ class EncryptionService:
         """
         if not encrypted:
             raise ValueError("Cannot decrypt empty bytes")
-        
+
         decrypted_bytes = self.fernet.decrypt(encrypted)
         return decrypted_bytes.decode('utf-8')
-    
+
     def mask_api_key(self, api_key: str) -> str:
         """
         Mask an API key for display, showing only last 4 characters
@@ -83,18 +84,18 @@ class EncryptionService:
         """
         if not api_key:
             return "****"
-        
+
         if len(api_key) < 4:
             return "*" * len(api_key)
-        
+
         visible_chars = 4
         masked_length = len(api_key) - visible_chars
         return "*" * masked_length + api_key[-visible_chars:]
-    
+
     # ============================================================================
     # BYOM (Bring Your Own Model) - LLM API Key Methods (Sprint 2.8)
     # ============================================================================
-    
+
     def encrypt_api_key(self, api_key: str) -> bytes:
         """
         Encrypt an LLM API key for secure storage (BYOM feature)
@@ -112,7 +113,7 @@ class EncryptionService:
             ValueError: If api_key is empty
         """
         return self.encrypt(api_key)
-    
+
     def decrypt_api_key(self, encrypted_api_key: bytes) -> str:
         """
         Decrypt an LLM API key from storage (BYOM feature)

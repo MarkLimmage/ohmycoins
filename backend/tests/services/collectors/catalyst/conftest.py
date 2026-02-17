@@ -1,7 +1,9 @@
 # Add this file to override the default database fixture
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from sqlmodel import Session
+
 
 @pytest.fixture(scope="session", autouse=True)
 def db():

@@ -1,8 +1,11 @@
 # mypy: ignore-errors
-from typing import Sequence
 import uuid
+from collections.abc import Sequence
+
 from sqlmodel import Session, select
+
 from app.models import TradeAudit, TradeAuditCreate
+
 
 def create_trade_audit(*, session: Session, trade_audit_create: TradeAuditCreate) -> TradeAudit:
     db_obj = TradeAudit.model_validate(trade_audit_create)

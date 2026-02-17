@@ -8,15 +8,14 @@ from sqlmodel import func, select
 from app import crud_risk
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.models import (
+    AuditLogs,
+    Message,
     RiskRule,
     RiskRuleCreate,
     RiskRulePublic,
     RiskRules,
     RiskRuleUpdate,
-    AuditLogPublic,
-    AuditLogs,
     SystemSettingPublic,
-    Message,
 )
 
 router = APIRouter()
@@ -34,10 +33,10 @@ def read_risk_rules(
     """
     # Verify superuser for now? Or just authenticated?
     # get_current_active_superuser(current_user)
-    
+
     count_statement = select(func.count()).select_from(RiskRule)
     count = session.exec(count_statement).one()
-    
+
     rules = crud_risk.get_risk_rules(session=session, skip=skip, limit=limit)
     return RiskRules(data=rules, count=count)
 
@@ -117,7 +116,7 @@ def set_kill_switch(
         value={"active": active},
         description="Global Kill Switch - Halts all trading when active"
     )
-    
+
     # Log audit
     crud_risk.create_audit_log(
         session=session,
@@ -128,7 +127,7 @@ def set_kill_switch(
             user_id=current_user.id
         )
     )
-    
+
     return setting
 
 
@@ -144,10 +143,10 @@ def read_audit_logs(
     """
     get_current_active_superuser(current_user)
     logs = crud_risk.get_audit_logs(session=session, skip=skip, limit=limit, event_type=event_type)
-    
+
     count_statement = select(func.count()).select_from(crud_risk.AuditLog)
     if event_type:
         count_statement = count_statement.where(crud_risk.AuditLog.event_type == event_type)
     count = session.exec(count_statement).one()
-    
+
     return AuditLogs(data=logs, count=count)
