@@ -1,43 +1,39 @@
-# Current Sprint - Sprint 2.27 (Autonomous Beta Launch)
+# Sprint 2.27: MyPy Technical Debt Remediation
 
-**Status:** 🏗️ PLANNING
-**Overall Goal:** Deploy the "Autonomous Beta" to the production server (`192.168.0.241`) and monitor the first live trades, while expanding the "Living Documentation" system.
+**Goal**: Eliminate 100% of the `# mypy: ignore-errors` directives from the codebase to enforce strict typing across the entire application.
 
----
+## 📅 Timeline
+*   **Start Date**: Feb 17, 2026
+*   **Duration**: 1 Week (Technical Debt Focus)
 
-## 🎯 Sprint 2.27 Objectives
+## 🎯 Objectives
+1.  **Strict Mode Compliance**: Ensure `mypy --strict` passes without any file-level ignores.
+2.  **Type Safety**: Replace `Any` with specific types (`TypedDict`, `Pydantic Models`, `Optional`, etc.).
+3.  **Runtime Safety**: Verify that type changes do not break runtime behavior (tests must pass).
 
-### 1. Production Deployment (The Architect)
-*   **Goal**: Bring `jupiter` (192.168.0.241) to full parity with `main`.
-*   **Tasks**:
-    *   **Deploy**: Execute `git pull && docker compose up --build` on the production server.
-    *   **Verify**: Ensure `populate_secrets.sh` correctly injects the live keys.
-    *   **Monitor**: Watch the logs for the first autonomous trade execution.
+## 🛤️ Execution Tracks (Parallelized)
 
-### 2. The Strategist - Live Optimizations (Track B)
-*   **Goal**: Refine the MA Crossover strategy based on live data.
-*   **Tasks**:
-    *   **Analyze**: Review the first 48 hours of trade data.
-    *   **Tune**: Adjust parameters if slippage is higher than expected.
+### 🟢 Track A: Scripts & Utilities (Agent A)
+*Status: Ready*
+*   **Focus**: Standalone scripts (`backend/scripts/`) and utility modules (`backend/app/utils/`).
+*   **Complexity**: Low. Mostly missing return annotations (`-> None`) and simple argument types.
+*   **Port Range**: 8010-8019
 
-### 3. The Guard - Safety Checks (Track A)
-*   **Goal**: Validate the `HardStopWatcher` in a live environment.
-*   **Tasks**:
-    *   **Simulate**: Trigger a "psuedo-drawdown" event to ensure the safety clamps activate correctly.
+### 🟡 Track B: Data Collectors (Agent B)
+*Status: Ready*
+*   **Focus**: The Data Ingestion Layer (`backend/app/services/collectors/`).
+*   **Complexity**: Medium. Involves class inheritance (`BaseCollector` -> `APICollector`) and external API schemas.
+*   **Strategy**: Fix `base.py` first, then `api_collector.py` then specific collectors.
+*   **Port Range**: 8020-8029
 
-### 4. The Interface - Dashboard Polish (Track C)
-*   **Goal**: Enhance the "Live Beta" dashboard for better visibility.
-*   **Tasks**:
-    *   **Alerts**: Add visual indicators for "Risk Limit Reached" or "Strategy Paused".
+### 🔴 Track C: Core Agents & Trading (Agent C)
+*Status: Ready*
+*   **Focus**: The Service Layer (`backend/app/services/agent/`, `backend/app/services/trading/`).
+*   **Complexity**: High. Involves LangChain/LangGraph state, SQLAlchemy models, and financial calculations.
+*   **Strategy**: Start with leaf nodes (`tools/`), then `nodes/`, then `agents/` and `orchestrator.py`.
+*   **Port Range**: 8030-8039
 
----
-
-## 📦 Deliverables
-
-1.  **Production Deployment**: `jupiter` running the latest `main` commit.
-2.  **Live Trade Logs**: Successfull execution of autonomous trades.
-3.  **Risk Audit**: Logged evidence of risk checks passing/failing correctly.
-
----
-
-**Last Updated:** Feb 15, 2026
+## 📝 Success Criteria
+*   `backend/MYPY_DEBT.md` is empty or deleted.
+*   `mypy .` runs successfully without any `ignore-errors` directives.
+*   All tests pass.
