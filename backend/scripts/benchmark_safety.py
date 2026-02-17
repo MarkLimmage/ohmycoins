@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 #!/usr/bin/env python3
 """
 Safety Mechanism Performance Benchmark
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Suppress other logs
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
-async def run_benchmark():
+async def run_benchmark() -> None:
     logger.info("Initializing Safety Benchmark...")
     
     # Create a dedicated session

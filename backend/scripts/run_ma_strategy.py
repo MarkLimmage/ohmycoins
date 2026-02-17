@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 import asyncio
 import logging
 import random
@@ -34,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Force Paper Mode
 settings.TRADING_MODE = 'paper'
 
-async def main():
+async def main() -> None:
     logger.info("Starting Strategy Loop (Paper Trading) - 24h Mode")
     
     with Session(engine) as session:

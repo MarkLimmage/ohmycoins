@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 #!/usr/bin/env python3
 """
 Hard Stop Watcher (The Guard)
@@ -46,6 +45,6 @@ if __name__ == "__main__":
         from app.services.trading.watcher import HardStopWatcher
         # We can pass config if needed, but defaults are fine for now
         watcher = HardStopWatcher()
-        asyncio.run(watcher.start())
+        asyncio.run(watcher.start()) # type: ignore
     except KeyboardInterrupt:
         logger.info("Hard Stop Watcher Stopped.")

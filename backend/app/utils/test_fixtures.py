@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Test fixtures for Oh My Coins.
 
@@ -11,7 +10,7 @@ import random
 import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Generator
+from typing import Generator, Any
 
 import pytest
 from faker import Faker
@@ -38,7 +37,7 @@ def create_test_user(
     session: Session,
     email: str | None = None,
     is_superuser: bool = False,
-    **kwargs
+    **kwargs: Any
 ) -> User:
     """Create a test user with sensible defaults."""
     if email is None:
@@ -105,7 +104,7 @@ def create_test_price_data(
 def create_test_algorithm(
     session: Session,
     user: User,
-    **kwargs
+    **kwargs: Any
 ) -> Algorithm:
     """Create a test algorithm."""
     algorithm = Algorithm(
@@ -131,7 +130,7 @@ def create_test_position(
     session: Session,
     user: User,
     coin_type: str = "BTC",
-    **kwargs
+    **kwargs: Any
 ) -> Position:
     """Create a test position."""
     quantity = kwargs.get("quantity", Decimal("0.5"))
@@ -156,7 +155,7 @@ def create_test_order(
     session: Session,
     user: User,
     coin_type: str = "BTC",
-    **kwargs
+    **kwargs: Any
 ) -> Order:
     """Create a test order."""
     quantity = kwargs.get("quantity", Decimal("0.1"))
@@ -172,7 +171,7 @@ def create_test_order(
         price=price,
         filled_quantity=kwargs.get("filled_quantity", quantity),
         status=kwargs.get("status", "filled"),
-        coinspot_order_id=kwargs.get("coinspot_order_id", f"CS{fake.uuid4()[:8]}"),
+        coinspot_order_id=kwargs.get("coinspot_order_id", f"CS{str(fake.uuid4())[:8]}"),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
