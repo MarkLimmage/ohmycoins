@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Synthetic data generation for Oh My Coins development environment.
 
@@ -390,7 +389,7 @@ def generate_agent_sessions(session: Session, users: list[User], count: int = 20
                     artifact_type=artifact_type,
                     name=f"{artifact_type}_{fake.word()}.{extension}",
                     description=fake.sentence(),
-                    file_path=f"/artifacts/{agent_session.id}/{artifact_type}_{fake.uuid4()}.{extension}",
+                    file_path=f"/artifacts/{agent_session.id}/{artifact_type}_{str(fake.uuid4())}.{extension}",
                     mime_type=mime_type,
                     size_bytes=random.randint(1024, 1024000),
                     created_at=agent_session.completed_at,
@@ -453,7 +452,7 @@ def generate_positions_and_orders(
         result = session.exec(
             select(PriceData5Min)
             .where(PriceData5Min.coin_type == coin)
-            .order_by(PriceData5Min.timestamp.desc())
+            .order_by(PriceData5Min.timestamp.desc()) # type: ignore
             .limit(1)
         ).first()
         if result:
@@ -501,7 +500,7 @@ def generate_positions_and_orders(
                     price=order_price,
                     filled_quantity=order_quantity if random.random() < 0.9 else Decimal("0"),
                     status=random.choice(["filled", "filled", "filled", "cancelled", "failed"]),
-                    coinspot_order_id=f"CS{fake.uuid4()[:8]}",
+                    coinspot_order_id=f"CS{str(fake.uuid4())[:8]}",
                     created_at=datetime.now(timezone.utc) - timedelta(hours=random.randint(1, 2160)),
                     updated_at=datetime.now(timezone.utc),
                 )
@@ -578,11 +577,11 @@ def clear_all_data(session: Session, commit: bool = True) -> None:
     ]
     
     for table in tables:
-        session.exec(delete(table))
+        session.exec(delete(table)) # type: ignore
         logger.info(f"Cleared {table.__tablename__}")
     
     # Clear users except superuser
-    session.exec(delete(User).where(User.email != settings.FIRST_SUPERUSER))
+    session.exec(delete(User).where(User.email != settings.FIRST_SUPERUSER)) # type: ignore
     logger.info("Cleared users (except superuser)")
     
     if commit:

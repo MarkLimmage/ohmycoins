@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 #!/usr/bin/env python3
 """
 BYOM Performance Benchmark Script
@@ -94,25 +93,29 @@ def check_api_keys() -> Dict[str, bool]:
     }
 
 
-def create_llm_for_provider(provider: str):
+def create_llm_for_provider(provider: str) -> Any:
     """Create LLM instance for a provider using direct API key"""
-    api_keys = {
+    api_keys: dict[str, str | None] = {
         "openai": os.getenv("OPENAI_API_KEY"),
         "google": os.getenv("GOOGLE_API_KEY"),
         "anthropic": os.getenv("ANTHROPIC_API_KEY")
     }
     
-    if not api_keys[provider]:
+    api_key = api_keys.get(provider)
+    if not api_key:
         return None
     
+    # Cast cost model to str to satisfy mypy
+    model_name = str(COST_PER_1M_TOKENS[provider]["model"])
+
     return LLMFactory.create_llm_from_api_key(
         provider=provider,
-        api_key=api_keys[provider],
-        model_name=COST_PER_1M_TOKENS[provider]["model"]
+        api_key=api_key,
+        model_name=model_name
     )
 
 
-def benchmark_llm(llm, provider: str, prompt: str) -> Dict[str, Any]:
+def benchmark_llm(llm: Any, provider: str, prompt: str) -> Dict[str, Any]:
     """Run benchmark for a single LLM"""
     print(f"  Testing {provider}...", end=" ", flush=True)
     
@@ -147,8 +150,8 @@ def benchmark_llm(llm, provider: str, prompt: str) -> Dict[str, Any]:
         
         # Calculate cost
         costs = COST_PER_1M_TOKENS[provider]
-        input_cost = (input_tokens / 1_000_000) * costs["input"]
-        output_cost = (output_tokens / 1_000_000) * costs["output"]
+        input_cost = (input_tokens / 1_000_000) * float(costs["input"]) # type: ignore
+        output_cost = (output_tokens / 1_000_000) * float(costs["output"]) # type: ignore
         total_cost = input_cost + output_cost
         
         print(f"✓ ({response_time:.2f}s)")
@@ -183,7 +186,7 @@ def benchmark_llm(llm, provider: str, prompt: str) -> Dict[str, Any]:
         }
 
 
-def print_comparison_table(results: List[Dict[str, Any]], prompt_name: str):
+def print_comparison_table(results: List[Dict[str, Any]], prompt_name: str) -> None:
     """Print formatted comparison table"""
     print(f"\n{'='*80}")
     print(f"Benchmark: {prompt_name}")
@@ -218,7 +221,7 @@ def print_comparison_table(results: List[Dict[str, Any]], prompt_name: str):
         print(f"  {result['response_preview']}...")
 
 
-def save_results(all_results: Dict[str, List[Dict[str, Any]]], output_file: str):
+def save_results(all_results: Dict[str, List[Dict[str, Any]]], output_file: str) -> None:
     """Save results to JSON file"""
     with open(output_file, 'w') as f:
         json.dump({
@@ -233,7 +236,7 @@ def save_results(all_results: Dict[str, List[Dict[str, Any]]], output_file: str)
 # Main Benchmark Function
 # ============================================================================
 
-def run_benchmark():
+def run_benchmark() -> None:
     """Run the complete benchmark suite"""
     print("\n" + "="*80)
     print("BYOM Performance Benchmark")
@@ -268,8 +271,8 @@ def run_benchmark():
     all_results = {}
     
     for benchmark in BENCHMARK_PROMPTS:
-        prompt_name = benchmark["name"]
-        prompt = benchmark["prompt"]
+        prompt_name = str(benchmark["name"])
+        prompt = str(benchmark["prompt"])
         
         print(f"\n{'-'*80}")
         print(f"Running benchmark: {prompt_name}")

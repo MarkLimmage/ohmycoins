@@ -1,5 +1,3 @@
-# mypy: ignore-errors
-
 import logging
 import sys
 import uuid
@@ -17,7 +15,7 @@ from app.models import User, Algorithm, DeployedAlgorithm
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def seed_live_strategy():
+def seed_live_strategy() -> None:
     session = Session(engine)
     try:
         # 1. Get Strategist User
