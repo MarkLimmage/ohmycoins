@@ -1,8 +1,8 @@
 import type { ButtonProps } from "@chakra-ui/react"
 
 export interface SafetyButtonProps extends Omit<ButtonProps, "action"> {
-  action: "kill" | "confirm" | "stop"
-  onConfirm: () => Promise<void>
+  action: string
+  onConfirm: () => Promise<void> | void
   requireConfirmation: boolean
   confirmationText?: string
   isDisabled?: boolean
@@ -16,7 +16,7 @@ export interface SafetyButtonProps extends Omit<ButtonProps, "action"> {
 
 export interface AuditLogEntry {
   timestamp: string
-  action: "kill" | "confirm" | "stop"
+  action: string
   user: string
   component: string
 }

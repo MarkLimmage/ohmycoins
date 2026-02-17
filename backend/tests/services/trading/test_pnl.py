@@ -745,7 +745,7 @@ def test_get_historical_pnl_daily(
     assert all('interval' in entry for entry in historical)
 
 
-def test_pnl_metrics_to_dict(session: Session):
+def test_pnl_metrics_to_dict(_: Session):
     """Test PnLMetrics conversion to dictionary"""
     metrics = PnLMetrics(
         realized_pnl=Decimal('1000.00'),

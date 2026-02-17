@@ -217,5 +217,5 @@ class TestEncryptionServiceBYOM:
         encrypted = service1.encrypt_api_key(api_key)
 
         # Attempting to decrypt with different key should raise error
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidToken):
             service2.decrypt_api_key(encrypted)
