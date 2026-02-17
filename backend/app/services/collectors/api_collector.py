@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 API collector base class for HTTP API-based data sources.
 
@@ -8,7 +7,7 @@ with built-in retry logic, rate limiting, and error handling.
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 from tenacity import (
@@ -125,7 +124,7 @@ class APICollector(BaseCollector):
                             f"{self.name}: Successfully fetched data from {url}"
                         )
                         
-                        return data
+                        return cast(dict[str, Any] | list[Any], data)
         
         # This should never be reached due to reraise=True, but satisfy type checker
         raise RuntimeError("Retry logic failed unexpectedly")
