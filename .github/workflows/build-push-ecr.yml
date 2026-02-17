@@ -52,14 +52,14 @@ jobs:
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        if: secrets.AWS_ROLE_TO_ASSUME != ''
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Login to Amazon ECR
         id: login-ecr
-        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        if: secrets.AWS_ROLE_TO_ASSUME != ''
         uses: aws-actions/amazon-ecr-login@v2
       
       - name: Extract metadata
@@ -110,7 +110,7 @@ jobs:
       
       - name: Push to ECR
         id: push
-        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        if: secrets.AWS_ROLE_TO_ASSUME != ''
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_BACKEND_REPO }}:${{ steps.meta.outputs.version }}
           echo "image-uri=${{ env.ECR_REGISTRY }}/${{ env.ECR_BACKEND_REPO }}:${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
@@ -139,14 +139,14 @@ jobs:
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        if: secrets.AWS_ROLE_TO_ASSUME != ''
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Login to Amazon ECR
         id: login-ecr
-        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        if: secrets.AWS_ROLE_TO_ASSUME != ''
         uses: aws-actions/amazon-ecr-login@v2
       
       - name: Extract metadata
@@ -197,7 +197,7 @@ jobs:
       
       - name: Push to ECR
         id: push
-        if: ${{ secrets.AWS_ROLE_TO_ASSUME != '' }}
+        if: secrets.AWS_ROLE_TO_ASSUME != ''
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_FRONTEND_REPO }}:${{ steps.meta.outputs.version }}
           echo "image-uri=${{ env.ECR_REGISTRY }}/${{ env.ECR_FRONTEND_REPO }}:${{ steps.meta.outputs.version }}" >> $GITHUB_OUTPUT
