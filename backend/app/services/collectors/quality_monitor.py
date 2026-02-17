@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Data Quality Monitor for Phase 2.5 collectors.
 
@@ -8,9 +7,10 @@ including completeness, timeliness, and accuracy checks.
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, cast
 
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, col
+from sqlalchemy import desc
 
 from app.models import (
     PriceData5Min,
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class QualityMetrics:
     """Container for quality check results."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.completeness_score: float = 0.0
         self.timeliness_score: float = 0.0
         self.accuracy_score: float = 0.0
@@ -58,7 +58,7 @@ class DataQualityMonitor:
     3. Accuracy: Validates data integrity and consistency
     """
     
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the quality monitor."""
         self.name = "data_quality_monitor"
     
@@ -136,7 +136,7 @@ class DataQualityMonitor:
         
         # Check Exchange Ledger (Price Data)
         price_count = session.exec(
-            select(func.count(PriceData5Min.id))
+            select(func.count(col(PriceData5Min.id)))
         ).one()
         
         if price_count > 0:
@@ -148,7 +148,7 @@ class DataQualityMonitor:
         
         # Check Human Ledger (Sentiment Data)
         sentiment_count = session.exec(
-            select(func.count(NewsSentiment.id))
+            select(func.count(col(NewsSentiment.id)))
         ).one()
         
         if sentiment_count > 0:
@@ -160,7 +160,7 @@ class DataQualityMonitor:
         
         # Check Catalyst Ledger (Events)
         catalyst_count = session.exec(
-            select(func.count(CatalystEvents.id))
+            select(func.count(col(CatalystEvents.id)))
         ).one()
         
         if catalyst_count > 0:
@@ -172,7 +172,7 @@ class DataQualityMonitor:
         
         # Check Glass Ledger (Protocol Fundamentals)
         protocol_count = session.exec(
-            select(func.count(ProtocolFundamentals.id))
+            select(func.count(col(ProtocolFundamentals.id)))
         ).one()
         
         if protocol_count > 0:
@@ -214,7 +214,7 @@ class DataQualityMonitor:
         # Check price data freshness (should be within 10 minutes)
         recent_price = session.exec(
             select(PriceData5Min)
-            .order_by(PriceData5Min.timestamp.desc())
+            .order_by(desc(col(PriceData5Min.timestamp)))
             .limit(1)
         ).first()
         
@@ -242,7 +242,7 @@ class DataQualityMonitor:
         # Check sentiment data freshness (should be within 30 minutes)
         recent_sentiment = session.exec(
             select(NewsSentiment)
-            .order_by(NewsSentiment.collected_at.desc())
+            .order_by(desc(col(NewsSentiment.collected_at)))
             .limit(1)
         ).first()
         
@@ -270,7 +270,7 @@ class DataQualityMonitor:
         # Check catalyst events freshness (should be within 24 hours)
         recent_catalyst = session.exec(
             select(CatalystEvents)
-            .order_by(CatalystEvents.collected_at.desc())
+            .order_by(desc(col(CatalystEvents.collected_at)))
             .limit(1)
         ).first()
         
@@ -326,15 +326,15 @@ class DataQualityMonitor:
         
         # Check price data validity
         invalid_prices = session.exec(
-            select(func.count(PriceData5Min.id))
+            select(func.count(col(PriceData5Min.id)))
             .where(
-                (PriceData5Min.last <= 0) |
-                (PriceData5Min.last == None)
+                (col(PriceData5Min.last) <= 0) |
+                (col(PriceData5Min.last) == None)
             )
         ).one()
         
         total_prices = session.exec(
-            select(func.count(PriceData5Min.id))
+            select(func.count(col(PriceData5Min.id)))
         ).one()
         
         if total_prices > 0:
@@ -350,15 +350,15 @@ class DataQualityMonitor:
         
         # Check sentiment score validity (-1 to 1 range)
         invalid_sentiment = session.exec(
-            select(func.count(NewsSentiment.id))
+            select(func.count(col(NewsSentiment.id)))
             .where(
-                (NewsSentiment.sentiment_score < -1) |
-                (NewsSentiment.sentiment_score > 1)
+                (col(NewsSentiment.sentiment_score) < -1) |
+                (col(NewsSentiment.sentiment_score) > 1)
             )
         ).one()
         
         total_sentiment = session.exec(
-            select(func.count(NewsSentiment.id))
+            select(func.count(col(NewsSentiment.id)))
         ).one()
         
         if total_sentiment > 0:
@@ -374,15 +374,15 @@ class DataQualityMonitor:
         
         # Check catalyst events have required fields
         invalid_catalysts = session.exec(
-            select(func.count(CatalystEvents.id))
+            select(func.count(col(CatalystEvents.id)))
             .where(
-                (CatalystEvents.event_type == None) |
-                (CatalystEvents.detected_at == None)
+                (col(CatalystEvents.event_type) == None) |
+                (col(CatalystEvents.detected_at) == None)
             )
         ).one()
         
         total_catalysts = session.exec(
-            select(func.count(CatalystEvents.id))
+            select(func.count(col(CatalystEvents.id)))
         ).one()
         
         if total_catalysts > 0:
