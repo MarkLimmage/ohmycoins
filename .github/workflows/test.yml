@@ -23,7 +23,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -77,6 +77,7 @@ jobs:
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./backend/coverage.xml
           flags: backend
           name: backend-coverage
@@ -109,7 +110,10 @@ jobs:
         working-directory: ./frontend
         run: npm run type-check
       
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+      
       - name: Run tests
         working-directory: ./frontend
         run: npm run test:unit
-        continue-on-error: true  # Frontend tests may not be implemented yet
