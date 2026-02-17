@@ -121,6 +121,26 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ---
 
+## 7. Upcoming Sprints
+
+### Sprint 2.27 - Autonomous Beta Launch (ACTIVE)
+*   **Goal**: Full production deployment and live trading on `jupiter` (192.168.0.241).
+*   **Status**: Active
+
+### Sprint 2.28 - Collector Uplift (Break-In)
+*   **Goal**: Revolutionize data collection management by moving it from code to Admin UI.
+*   **Motivation**: Simplify addition/modification of new data sources and improve operational visibility.
+*   **Key Features**:
+    *   **Management UI**: Create, update, pause/resume collectors.
+    *   **Web Scraper Logic**: Edit CSS/XPath selectors for critical data points directly in the UI.
+    *   **Dashboard**: Real-time health monitoring and execution stats.
+*   **Integration**: Direct linkage to **The 4 Ledgers**.
+
+### Sprint 3.0 - The Lab (v3) - Agentic Evolution
+*   **Goal**: Introduce advanced multi-agent workflows for deeper market analysis.
+
+---
+
 ## 3. Documentation & Governance
 
 ### Living Documentation System

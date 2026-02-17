@@ -132,6 +132,9 @@ def setup_collectors() -> None:
     # ✓ Newscatcher - Implemented and registered (Tier 2)
     # ✓ Nansen - Implemented and registered (Tier 2)
     
+    # Load dynamic collectors from DB
+    orchestrator.load_collectors_from_db()
+    
     logger.info("Phase 2.5 collectors setup complete")
 
 

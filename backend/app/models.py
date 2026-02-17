@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from typing import Any # Added import
+
 from pydantic import EmailStr, field_validator
 from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel, Column
@@ -237,6 +239,55 @@ class PriceData5MinList(SQLModel):
 
 
 # ============================================================================
+# Collector Management API (Track A) - Sprint 2.28
+# ============================================================================
+
+class CollectorBase(SQLModel):
+    name: str = Field(index=True, max_length=255)
+    type: str = Field(max_length=50) # API, Scraper
+    config: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    is_active: bool = Field(default=True)
+    schedule: str | None = Field(default=None, max_length=100) # Cron-like or descriptive
+
+class Collector(CollectorBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    last_run_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    last_status: str | None = Field(default=None, max_length=50) # success, failed
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+class CollectorCreate(CollectorBase):
+    pass
+
+class CollectorUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=255)
+    type: str | None = Field(default=None, max_length=50)
+    config: dict | None = Field(default=None, sa_column=Column(JSON))
+    is_active: bool | None = Field(default=None)
+    schedule: str | None = Field(default=None, max_length=100)
+
+class CollectorPublic(CollectorBase):
+    id: uuid.UUID
+    last_run_at: datetime | None
+    last_status: str | None
+    created_at: datetime
+    updated_at: datetime
+
+class CollectorsPublic(SQLModel):
+    data: list[CollectorPublic]
+    count: int
+
+
+# ============================================================================
 # Coinspot Credentials Models (Phase 2)
 # ============================================================================
 
@@ -441,7 +492,7 @@ class ProtocolFundamentals(SQLModel, table=True):
         # Unique constraint: one entry per protocol per day
         Index('uq_protocol_fundamentals_protocol_date', 
               'protocol', 
-              sa.text("(collected_at::date)"),
+              sa.text("((collected_at AT TIME ZONE 'UTC')::date)"),
               unique=True),
     )
 
@@ -616,6 +667,8 @@ class CatalystEvents(SQLModel, table=True):
     __table_args__ = (
         Index('ix_catalyst_events_type_detected', 'event_type', 'detected_at'),
     )
+
+
 
 
 # Collector Metadata

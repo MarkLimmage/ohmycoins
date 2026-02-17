@@ -38,8 +38,11 @@ fi
 
 # Define port allocations based on track folder name
 # Default ports to avoid collision
-STACK="dev-$(date +%s)"
+if [ -z "$STACK" ]; then
+    STACK="dev-$(date +%s)"
+fi
 BACKEND_PORT=8000
+
 DB_PORT=5432
 FRONTEND_PORT=5173
 
