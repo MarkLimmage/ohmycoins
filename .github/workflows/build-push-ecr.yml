@@ -67,7 +67,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPO }}
+          images: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPO }}
+            ghcr.io/${{ github.repository }}/backend
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -156,7 +158,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPO }}
+          images: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPO }}
+            ghcr.io/${{ github.repository }}/frontend
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
