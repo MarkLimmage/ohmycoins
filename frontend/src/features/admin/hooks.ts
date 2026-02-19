@@ -65,7 +65,7 @@ export const useCollectors = () => {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       return await CollectorsService.deleteInstance({
-        instanceId: Number(id)
+        id: Number(id)
       })
     },
     onSuccess: () => {
@@ -77,8 +77,7 @@ export const useCollectors = () => {
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       return await CollectorsService.toggleInstance({
-        instanceId: Number(id),
-        enable: is_active
+        id: Number(id)
       })
     },
     onSuccess: () => {

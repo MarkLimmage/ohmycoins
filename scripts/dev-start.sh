@@ -73,8 +73,8 @@ docker compose exec backend alembic upgrade head || {
       -e POSTGRES_PORT=5432 \
       -e POSTGRES_DB=app \
       -e POSTGRES_USER=postgres \
-      -e POSTGRES_PASSWORD=changethis \
-      -e SECRET_KEY=changethis \
+      -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres} \
+      -e SECRET_KEY=${SECRET_KEY:-changethis} \
       -e FIRST_SUPERUSER=admin@example.com \
       -e FIRST_SUPERUSER_PASSWORD=changethis \
       backend:latest alembic upgrade head
@@ -90,8 +90,8 @@ docker compose exec backend python app/initial_data.py || {
       -e POSTGRES_PORT=5432 \
       -e POSTGRES_DB=app \
       -e POSTGRES_USER=postgres \
-      -e POSTGRES_PASSWORD=changethis \
-      -e SECRET_KEY=changethis \
+      -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres} \
+      -e SECRET_KEY=${SECRET_KEY:-changethis} \
       -e FIRST_SUPERUSER=admin@example.com \
       -e FIRST_SUPERUSER_PASSWORD=changethis \
       backend:latest python app/initial_data.py

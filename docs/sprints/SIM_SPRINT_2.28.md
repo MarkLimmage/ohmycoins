@@ -59,10 +59,18 @@ Ensure that each track's `.env` uses unique ports (as defined below) and that de
 **Provisioning Script Commands:**
 - [ ] `mkdir -p ../omc-data`
 - [ ] `git worktree add ../omc-track-a feat/REQ-COLL-PLUGIN`
+- [ ] `cp .env ../omc-track-a/.env`
+- [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-a/' ../omc-track-a/.env`
+- [ ] `echo -e "\nPOSTGRES_PORT=5433\nREDIS_PORT=6380\n" >> ../omc-track-a/.env`
 - [ ] `mkdir -p ../omc-track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../omc-track-a/.vscode/settings.json`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8010:80\"" > ../omc-track-a/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../omc-data/agent-a --new-window ../omc-track-a`
 - [ ] `git worktree add ../omc-track-b feat/REQ-COLL-UI`
+- [ ] `cp .env ../omc-track-b/.env`
+- [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-b/' ../omc-track-b/.env`
+- [ ] `echo -e "\nPOSTGRES_PORT=5434\nREDIS_PORT=6381\n" >> ../omc-track-b/.env`
 - [ ] `mkdir -p ../omc-track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#c83737","titleBar.activeForeground":"#ffffff"}}' > ../omc-track-b/.vscode/settings.json`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8020:80\"" > ../omc-track-b/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../omc-data/agent-b --new-window ../omc-track-b`
 
 **Teardown Protocol (CRITICAL):**
@@ -76,20 +84,97 @@ At the end of the sprint (or when a track is complete), the Dockmaster MUST:
 ### Track Objectives
 
 #### **Track A: Backend & Plugin System (Protocol Droid)**
-*   **Goal**: robust plugin infrastructure.
-*   **Key Files**:
-    *   `backend/app/core/collectors/base.py`: Abstract Base Class `ICollector`.
-    *   `backend/app/core/collectors/registry.py`: Discovery logic.
-    *   `backend/app/collectors/strategies/news_coindesk.py`: Ported scraper.
-    *   `backend/app/models/collector.py`: SQLModel for persistent configuration.
-*   **Requirements**: `REQ-COLL-ARCH-001` (Interface), `REQ-COLL-EVT-001` (Registration).
+
+**Agent**: The Protocol Droid (Backend Specialist)
+**Requirements**: REQ-COLL-ARCH-001, REQ-COLL-EVT-001
+**Estimated Effort**: 5 days
+
+#### Context Injection Prompt
+
+```markdown
+CONTEXT: Sprint 2.28 - Track A: Collector Plugin System
+PROJECT: Oh My Coins - Autonomous Trading Platform
+ROLE: The Protocol Droid
+
+WORKSPACE ANCHOR:
+  ROOT_PATH: ../omc-track-a (Relative to original repo clone)
+  INSTANCE_PORT: 8010
+  CONTAINER_PREFIX: track-a
+  STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path.
+
+ENVIRONMENT SETUP:
+  The Dockmaster has already provisioned your environment:
+  1. `docker-compose.override.yml` maps port 8010 to container 80.
+  2. `.env` sets `COMPOSE_PROJECT_NAME=track-a` (containers will be `track-a-backend-1` etc).
+  3. DB Port: 5433, Redis Port: 6380 (mapped to avoid conflicts).
+
+  **Startup Command**:
+  `docker compose up -d --build` -> Access at http://localhost:8010
+
+MISSION:
+Create a robust plugin infrastructure for data collection.
+
+SPECIFIC OBJECTIVES:
+1. **Interface**: Define `ICollector` abstract base class in `backend/app/core/collectors/base.py`.
+2. **Registry**: Implement `CollectorRegistry` in `backend/app/core/collectors/registry.py` to auto-discover plugins.
+3. **Migration**: Port `CoinDesk` scraper to `backend/app/collectors/strategies/news_coindesk.py`.
+4. **Persistence**: Update `Collector` SQLModel to store plugin configuration.
+
+CONSTRAINTS:
+  - **Environment**: NO LOCAL VENVS. Testing must occur within the project's Docker containers (`docker compose run backend pytest`).
+  - **Type Safety**: New code must pass `mypy --strict`.
+  - **No Conflict**: Do NOT edit `docker-compose.yml` (shared). Only `docker-compose.override.yml` (local).
+
+DELIVERABLES:
+  - Working `ICollector` interface and `CollectorRegistry`.
+  - One reference plugin (CoinDesk) operational.
+  - Unit tests passing inside container.
+```
 
 #### **Track B: Frontend Dynamic Forms (UI/UX Agent)**
-*   **Goal**: Render configuration forms based on plugin schemas.
-*   **Key Files**:
-    *   `frontend/src/features/admin/CollectorForm.tsx`: Schema-driven form builder.
-    *   `frontend/src/features/admin/CollectorDashboard.tsx`: Instance management.
-*   **Requirements**: `REQ-COLL-ARCH-002` (Dynamic UI), `REQ-COLL-ST-001` (Health Monitoring).
+
+**Agent**: The UI/UX Agent (Frontend Specialist)
+**Requirements**: REQ-COLL-ARCH-002, REQ-COLL-ST-001
+**Estimated Effort**: 5 days
+
+#### Context Injection Prompt
+
+```markdown
+CONTEXT: Sprint 2.28 - Track B: Collector Admin UI
+PROJECT: Oh My Coins - Autonomous Trading Platform
+ROLE: The UI/UX Agent
+
+WORKSPACE ANCHOR:
+  ROOT_PATH: ../omc-track-b (Relative to original repo clone)
+  INSTANCE_PORT: 8020
+  CONTAINER_PREFIX: track-b
+  STRICT_SCOPE: You are locked to this directory.
+
+ENVIRONMENT SETUP:
+  The Dockmaster has already provisioned your environment:
+  1. `docker-compose.override.yml` maps port 8020 to container 80.
+  2. `.env` sets `COMPOSE_PROJECT_NAME=track-b`.
+  3. DB Port: 5434, Redis Port: 6381.
+
+  **Startup Command**:
+  `docker compose up -d --build` -> Access at http://localhost:8020
+
+MISSION:
+Render configuration forms based on plugin schemas.
+
+SPECIFIC OBJECTIVES:
+1. **Dynamic Forms**: Create `CollectorForm.tsx` to render inputs from JSON schema.
+2. **Dashboard**: Update `CollectorDashboard.tsx` to show instance status.
+3. **Form Validation**: Ensure client-side validation matches schema.
+
+CONSTRAINTS:
+  - **Environment**: Run frontend tests in container or check strictly against API specs.
+  - **Design**: Follow existing UI component library (Shadcn/UI).
+
+DELIVERABLES:
+  - Admin page capable of configuring the CoinDesk plugin.
+  - Status indicators for health monitoring.
+```
 
 ---
 
