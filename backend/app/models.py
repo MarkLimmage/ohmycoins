@@ -1,6 +1,7 @@
 # mypy: ignore-errors
 from __future__ import annotations
 
+from typing import List
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -758,6 +759,25 @@ class AgentSession(AgentSessionBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
+    messages: List["AgentSessionMessage"] = Relationship(
+        sa_relationship=sa.orm.relationship(
+            "AgentSessionMessage",
+            primaryjoin="AgentSession.id==AgentSessionMessage.session_id",
+            lazy="selectin",
+            cascade="all, delete-orphan",
+            back_populates="session",
+        ),
+    )
+    artifacts: List["AgentArtifact"] = Relationship(
+        sa_relationship=sa.orm.relationship(
+            "AgentArtifact",
+            primaryjoin="AgentSession.id==AgentArtifact.session_id",
+            lazy="selectin",
+            cascade="all, delete-orphan",
+            back_populates="session",
+        ),
+    )
+
 
 class AgentSessionMessage(SQLModel, table=True):
     """Database model for agent session messages (conversation history)"""
@@ -774,8 +794,8 @@ class AgentSessionMessage(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
-    # Relationship to session (one-way, query from AgentSession)
-    session: AgentSession = Relationship()
+    # Relationship to session
+    session: AgentSession = Relationship(back_populates="messages")
 
 
 class AgentArtifact(SQLModel, table=True):
@@ -796,8 +816,8 @@ class AgentArtifact(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
 
-    # Relationship to session (one-way, query from AgentSession)
-    session: AgentSession = Relationship()
+    # Relationship to session
+    session: AgentSession = Relationship(back_populates="artifacts")
 
 
 # API response models for agent sessions

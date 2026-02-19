@@ -1,4 +1,4 @@
-# mypy: ignore-errors
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -13,7 +13,7 @@ class ControlResponse(BaseModel):
     message: str
 
 @router.post("/algorithms/{algorithm_id}/pause", response_model=ControlResponse)
-def pause_algorithm(algorithm_id: UUID, _current_user: CurrentUser):
+def pause_algorithm(algorithm_id: UUID, _current_user: CurrentUser) -> Any:
     """
     Pause a running algorithm.
     """
@@ -21,7 +21,7 @@ def pause_algorithm(algorithm_id: UUID, _current_user: CurrentUser):
     return {"status": "success", "message": f"Algorithm {algorithm_id} paused"}
 
 @router.post("/algorithms/{algorithm_id}/resume", response_model=ControlResponse)
-def resume_algorithm(algorithm_id: UUID, _current_user: CurrentUser):
+def resume_algorithm(algorithm_id: UUID, _current_user: CurrentUser) -> Any:
     """
     Resume a paused algorithm.
     """
@@ -29,7 +29,7 @@ def resume_algorithm(algorithm_id: UUID, _current_user: CurrentUser):
     return {"status": "success", "message": f"Algorithm {algorithm_id} resumed"}
 
 @router.post("/algorithms/{algorithm_id}/stop", response_model=ControlResponse)
-def stop_algorithm(algorithm_id: UUID, _current_user: CurrentUser):
+def stop_algorithm(algorithm_id: UUID, _current_user: CurrentUser) -> Any:
     """
     Stop a running algorithm.
     """
@@ -37,7 +37,7 @@ def stop_algorithm(algorithm_id: UUID, _current_user: CurrentUser):
     return {"status": "success", "message": f"Algorithm {algorithm_id} stopped"}
 
 @router.post("/emergency-stop", response_model=ControlResponse)
-def emergency_stop(_current_user: CurrentUser):
+def emergency_stop(_current_user: CurrentUser) -> Any:
     """
     Trigger emergency stop for ALL algorithms.
     """

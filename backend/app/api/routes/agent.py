@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 API routes for Agent Sessions (Phase 3 - Agentic Data Science).
 
@@ -690,7 +689,7 @@ async def download_artifact(
     Raises:
         HTTPException: If artifact not found, user doesn't have access, or file not found
     """
-    artifact = artifact_manager.get_artifact(db, artifact_id)
+    artifact = artifact_manager.get_artifact(artifact_id, db)
 
     if not artifact:
         raise HTTPException(status_code=404, detail="Artifact not found")
@@ -733,7 +732,7 @@ async def delete_artifact(
     Raises:
         HTTPException: If artifact not found or user doesn't have access
     """
-    artifact = artifact_manager.get_artifact(db, artifact_id)
+    artifact = artifact_manager.get_artifact(artifact_id, db)
 
     if not artifact:
         raise HTTPException(status_code=404, detail="Artifact not found")
@@ -744,7 +743,7 @@ async def delete_artifact(
         raise HTTPException(status_code=403, detail="Not authorized to delete this artifact")
 
     # Delete artifact
-    if not artifact_manager.delete_artifact(db, artifact_id):
+    if not artifact_manager.delete_artifact(artifact_id, db):
         raise HTTPException(status_code=500, detail="Failed to delete artifact")
 
     return {"message": "Artifact deleted successfully"}

@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 from typing import Annotated
 from uuid import UUID
 
@@ -23,7 +22,7 @@ async def place_order(
     session: Annotated[Session, Depends(get_db)],
     user: CurrentUser,
     order_in: OrderRequest,
-):
+) -> Order:
     """
     Place a new trading order.
     """
@@ -62,20 +61,21 @@ def read_orders(
     user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
-):
+) -> list[Order]:
     """
     Retrieve orders.
     """
     statement = select(Order).where(Order.user_id == user.id).order_by(desc(Order.created_at)).offset(skip).limit(limit)
     orders = session.exec(statement).all()
-    return orders
+    # SQLModel returns Sequence, but list is compatible in Python > 3.9
+    return list(orders)
 
 @router.delete("/orders/{order_id}", response_model=OrderPublic)
 def cancel_order(
     session: Annotated[Session, Depends(get_db)],
     user: CurrentUser,
     order_id: UUID,
-):
+) -> Order:
     """
     Cancel an order.
     """
@@ -101,10 +101,11 @@ def cancel_order(
 def read_positions(
     session: Annotated[Session, Depends(get_db)],
     user: CurrentUser,
-):
+) -> list[Position]:
     """
     Retrieve positions.
     """
     statement = select(Position).where(Position.user_id == user.id)
     positions = session.exec(statement).all()
-    return positions
+    # SQLModel returns Sequence, but list is compatible in Python > 3.9
+    return list(positions)

@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 import uuid
 from typing import Any
 
@@ -8,6 +7,8 @@ from sqlmodel import func, select
 from app import crud_risk
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.models import (
+    AuditLog,
+    AuditLogCreate,
     AuditLogs,
     Message,
     RiskRule,
@@ -120,7 +121,7 @@ def set_kill_switch(
     # Log audit
     crud_risk.create_audit_log(
         session=session,
-        audit_log_create=crud_risk.AuditLogCreate(
+        audit_log_create=AuditLogCreate(
             event_type="kill_switch_toggle",
             severity="critical",
             details={"active": active},
@@ -144,9 +145,9 @@ def read_audit_logs(
     get_current_active_superuser(current_user)
     logs = crud_risk.get_audit_logs(session=session, skip=skip, limit=limit, event_type=event_type)
 
-    count_statement = select(func.count()).select_from(crud_risk.AuditLog)
+    count_statement = select(func.count()).select_from(AuditLog)
     if event_type:
-        count_statement = count_statement.where(crud_risk.AuditLog.event_type == event_type)
+        count_statement = count_statement.where(AuditLog.event_type == event_type)
     count = session.exec(count_statement).one()
 
     return AuditLogs(data=logs, count=count)

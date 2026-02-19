@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Mock API endpoints for Storybook and UI development.
 Available only in non-production environments.
@@ -6,6 +5,8 @@ Available only in non-production environments.
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
+
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import Field
@@ -23,7 +24,7 @@ router = APIRouter()
 # ============================================================================
 
 @router.get("/ledgers/{ledger_type}", response_model=PnLSummaryResponse)
-async def get_mock_ledger_data(_ledger_type: str, state: str = "success") -> PnLSummaryResponse:
+async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLSummaryResponse:
     """
     Get mock data for LedgerCard component.
 
@@ -44,7 +45,7 @@ async def get_mock_ledger_data(_ledger_type: str, state: str = "success") -> PnL
     is_loading = (state == "loading")
 
     # Base mock data
-    mock_data = {
+    mock_data: dict[str, Any] = {
         "realized_pnl": 1250.50 if state != "empty" else 0.0,
         "unrealized_pnl": -320.25 if state != "empty" else 0.0,
         "total_pnl": 930.25 if state != "empty" else 0.0,
@@ -112,7 +113,7 @@ class SafetyStatusResponse(APIResponseBase):
     triggered_by: str | None = Field(default=None, description="User or system that triggered it")
 
 @router.post("/safety/{action_type}", response_model=SafetyStatusResponse)
-async def trigger_mock_safety_action(_action_type: str, confirm: bool = False) -> SafetyStatusResponse:
+async def trigger_mock_safety_action(action_type: str, confirm: bool = False) -> SafetyStatusResponse:
     """
     Mock endpoint for SafetyButton actions.
 

@@ -4,6 +4,9 @@ from collections.abc import Generator
 # Set encryption key BEFORE any app imports
 # This is for testing only - production uses AWS Secrets Manager
 os.environ["ENCRYPTION_KEY"] = "_KLoPGOzT2wEFRDU1Rmb7-85GIDf4QJUVGPzkTKRTis="
+# Set dummy OpenAI API key for testing to bypass configuration checks
+# Actual LLM calls should be mocked in tests
+os.environ["OPENAI_API_KEY"] = "sk-test-dummy-key-for-unit-tests"
 
 import pytest
 from fastapi.testclient import TestClient

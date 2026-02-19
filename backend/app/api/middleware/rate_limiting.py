@@ -1,4 +1,3 @@
-# mypy: ignore-errors
 """
 Rate Limiting Middleware
 
@@ -16,13 +15,14 @@ Security Features:
 """
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Awaitable
+from typing import Any
 
 import jwt
 import redis
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.core.config import settings
 
@@ -38,13 +38,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Rate limits are tied to user_id (not IP or token) to prevent bypass.
     """
 
-    def __init__(self, app, redis_url: str = None):
+    def __init__(self, app: Any, redis_url: str | None = None) -> None:
         super().__init__(app)
         self.redis_url = redis_url or settings.REDIS_URL
-        self.redis_client = redis.from_url(self.redis_url, decode_responses=True)
+        # mypy assumes redis.from_url returns Any or untyped, we can hint it or ignore
+        self.redis_client = redis.from_url(self.redis_url, decode_responses=True)  # type: ignore[no-untyped-call]
 
         # Rate limit configuration from settings
-        self.normal_user_limits = {
+        self.normal_user_limits: dict[str, int] = {
             "minute": settings.RATE_LIMIT_PER_MINUTE,
             "hour": settings.RATE_LIMIT_PER_HOUR,
         }
@@ -74,7 +75,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         except (jwt.DecodeError, jwt.ExpiredSignatureError, KeyError):
             return None, False
 
-    def get_rate_limits(self, is_superuser: bool) -> dict:
+    def get_rate_limits(self, is_superuser: bool) -> dict[str, int]:
         """Get rate limits based on user role."""
         if is_superuser:
             return {
@@ -137,7 +138,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # Log error in production
             return True, limit, reset_time
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Process request with rate limiting."""
 
         # Skip rate limiting for health check and docs endpoints

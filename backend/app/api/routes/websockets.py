@@ -1,9 +1,8 @@
-# mypy: ignore-errors
 import asyncio
 import json
 import random
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 import jwt
 from fastapi import (
@@ -29,13 +28,13 @@ router = APIRouter()
 
 class BroadcastMessage(BaseModel):
     channel: str
-    message: dict
+    message: dict[str, Any]
 
 @router.post("/broadcast", include_in_schema=False)
 async def broadcast_message(
     body: BroadcastMessage,
     _user: Annotated[User, Depends(get_current_active_superuser)]
-):
+) -> dict[str, str]:
     """
     Internal endpoint to test WebSocket broadcasts.
     """
@@ -68,7 +67,7 @@ async def get_websocket_user(
 async def websocket_catalyst_live(
     websocket: WebSocket,
     _user: Annotated[User, Depends(get_websocket_user)],
-):
+) -> None:
     """
     Real-time feed for Catalyst Ledger (events).
     """
@@ -84,7 +83,7 @@ async def websocket_catalyst_live(
 async def websocket_glass_live(
     websocket: WebSocket,
     _user: Annotated[User, Depends(get_websocket_user)],
-):
+) -> None:
     """
     Real-time feed for Glass Ledger (TVL/Fees).
     """
@@ -100,7 +99,7 @@ async def websocket_glass_live(
 async def websocket_human_live(
     websocket: WebSocket,
     _user: Annotated[User, Depends(get_websocket_user)],
-):
+) -> None:
     """
     Real-time feed for Human Ledger (Sentiment).
     """
@@ -116,7 +115,7 @@ async def websocket_human_live(
 async def websocket_exchange_live(
     websocket: WebSocket,
     _user: Annotated[User, Depends(get_websocket_user)],
-):
+) -> None:
     """
     Real-time feed for Exchange Ledger (Prices).
     """
@@ -132,7 +131,7 @@ async def websocket_exchange_live(
 async def websocket_trading_live(
     websocket: WebSocket,
     user: Annotated[User, Depends(get_websocket_user)],
-):
+) -> None:
     """
     Real-time feed for Trading updates (Orders, Positions).
     Channel ID is unique to the user: 'trading_{user_id}'
@@ -149,7 +148,7 @@ async def websocket_trading_live(
 async def websocket_floor_pnl(
     websocket: WebSocket,
     _user: Annotated[User, Depends(get_websocket_user)],
-):
+) -> None:
     """
     Real-time feed for The Floor (P&L and Algorithm Status).
     """
@@ -157,7 +156,7 @@ async def websocket_floor_pnl(
     await manager.connect(websocket, channel_id)
 
     # Start a background task for mock data (for DEMO/Integration purposes)
-    async def send_mock_data():
+    async def send_mock_data() -> None:
         try:
             while True:
                 await asyncio.sleep(2)
