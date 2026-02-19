@@ -603,6 +603,90 @@ export const CoinspotCredentialsUpdateSchema = {
     description: 'Schema for updating Coinspot credentials'
 } as const;
 
+export const CollectorSchema = {
+    properties: {
+        id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Id'
+        },
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        plugin_name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Plugin Name'
+        },
+        is_enabled: {
+            type: 'boolean',
+            title: 'Is Enabled',
+            default: false
+        },
+        schedule_cron: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Schedule Cron',
+            default: '*/15 * * * *'
+        },
+        config: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Config',
+            default: {}
+        },
+        last_run_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Run At'
+        },
+        status: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Status',
+            default: 'idle'
+        }
+    },
+    type: 'object',
+    required: ['name', 'plugin_name'],
+    title: 'Collector',
+    description: 'Configuration and state for a collector plugin instance.'
+} as const;
+
 export const ControlResponseSchema = {
     properties: {
         status: {

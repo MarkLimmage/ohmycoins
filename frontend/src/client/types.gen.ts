@@ -267,6 +267,23 @@ export type CoinspotCredentialsUpdate = {
     api_secret?: (string | null);
 };
 
+/**
+ * Configuration and state for a collector plugin instance.
+ */
+export type Collector = {
+    id?: (number | null);
+    name: string;
+    description?: (string | null);
+    plugin_name: string;
+    is_enabled?: boolean;
+    schedule_cron?: (string | null);
+    config?: {
+        [key: string]: unknown;
+    };
+    last_run_at?: (string | null);
+    status?: string;
+};
+
 export type ControlResponse = {
     status: string;
     message: string;
@@ -1254,6 +1271,49 @@ export type AuditCreateTradeAuditData = {
 };
 
 export type AuditCreateTradeAuditResponse = (TradeAuditPublic);
+
+export type CollectorsListPluginsResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
+export type CollectorsListInstancesResponse = (Array<Collector>);
+
+export type CollectorsCreateInstanceData = {
+    requestBody: Collector;
+};
+
+export type CollectorsCreateInstanceResponse = (Collector);
+
+export type CollectorsGetInstanceData = {
+    id: number;
+};
+
+export type CollectorsGetInstanceResponse = (Collector);
+
+export type CollectorsUpdateInstanceData = {
+    id: number;
+    requestBody: Collector;
+};
+
+export type CollectorsUpdateInstanceResponse = (Collector);
+
+export type CollectorsDeleteInstanceData = {
+    id: number;
+};
+
+export type CollectorsDeleteInstanceResponse = (Message);
+
+export type CollectorsToggleInstanceData = {
+    id: number;
+};
+
+export type CollectorsToggleInstanceResponse = (Collector);
+
+export type CollectorsTriggerInstanceData = {
+    id: number;
+};
+
+export type CollectorsTriggerInstanceResponse = (Message);
 
 export type CredentialsGetCredentialsResponse = (CoinspotCredentialsPublic);
 
