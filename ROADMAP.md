@@ -121,6 +121,26 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ---
 
+## 7. Upcoming Sprints
+
+### Sprint 2.27 - Autonomous Beta Launch (ACTIVE)
+*   **Goal**: Full production deployment and live trading on `jupiter` (192.168.0.241).
+*   **Status**: Active
+
+### Sprint 2.28 - Collector Uplift (Break-In)
+*   **Goal**: Revolutionize data collection management by implementing a **Plugin-Based Architecture**.
+*   **Motivation**: Simplify addition/modification of new data sources via standardized modules and UI configuration.
+*   **Key Features**:
+    *   **Plugin System**: `ICollector` interface and `CollectorRegistry` for auto-discovery.
+    *   **Admin UI**: Dashboard to Activate, Configure, and Monitor plugins.
+    *   **Reference Porting**: Integrate `CoinDesk` and `Yahoo` scrapers as standard plugins.
+*   **Integration**: Direct linkage to **The 4 Ledgers**.
+
+### Sprint 3.0 - The Lab (v3) - Agentic Evolution
+*   **Goal**: Introduce advanced multi-agent workflows for deeper market analysis.
+
+---
+
 ## 3. Documentation & Governance
 
 ### Living Documentation System

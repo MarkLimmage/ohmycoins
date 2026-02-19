@@ -1,39 +1,43 @@
-# Sprint 2.27: MyPy Technical Debt Remediation
+# Current Sprint - Sprint 2.28 (Collector Uplift)
 
-**Goal**: Eliminate 100% of the `# mypy: ignore-errors` directives from the codebase to enforce strict typing across the entire application.
+**Status:** 🚀 ACTIVE
+**Overall Goal:** Revolutionize data collection management by implementing a **Plugin-Based Architecture** allowing Admins to manage standard data sources via the UI.
+**SIM**: [docs/sprints/SIM_SPRINT_2.28.md](docs/sprints/SIM_SPRINT_2.28.md)
 
-## 📅 Timeline
-*   **Start Date**: Feb 17, 2026
-*   **Duration**: 1 Week (Technical Debt Focus)
+---
 
-## 🎯 Objectives
-1.  **Strict Mode Compliance**: Ensure `mypy --strict` passes without any file-level ignores.
-2.  **Type Safety**: Replace `Any` with specific types (`TypedDict`, `Pydantic Models`, `Optional`, etc.).
-3.  **Runtime Safety**: Verify that type changes do not break runtime behavior (tests must pass).
+## 🎯 Sprint 2.28 Objectives
 
-## 🛤️ Execution Tracks (Parallelized)
+### 1. Collector Plugin System (Track A)
+*   **Goal**: Create a robust, extensible backend for data collection.
+*   **Tasks**:
+    *   **Registry**: Build `CollectorRegistry` to auto-discover strategies in `backend/app/collectors/strategies/`.
+    *   **Interface**: Define `ICollector` protocol for all plugins (Collect, Config Schema, Test Connection).
+    *   **Migration**: Port current price collectors to the new plugin format.
+    *   **Reference**: Port `CoinDesk`, `Yahoo`, and `CryptoPanic` scrapers as standard plugins.
 
-### 🟢 Track A: Scripts & Utilities (Agent A)
-*Status: Ready*
-*   **Focus**: Standalone scripts (`backend/scripts/`) and utility modules (`backend/app/utils/`).
-*   **Complexity**: Low. Mostly missing return annotations (`-> None`) and simple argument types.
-*   **Port Range**: 8010-8019
+### 2. Admin UI Dashboard (Track B)
+*   **Goal**: Build the "Control Center" for data collection strategies.
+*   **Tasks**:
+    *   **Dynamic Forms**: Render configuration inputs (API Keys, Intervals, Symbols) based on plugin JSON schemas.
+    *   **Dashboard**: Visualize collector health (Green/Red indicators), last run time, and success rate.
+    *   **Actions**: "Run Now", "Pause", "Resume", "Delete" instance controls.
 
-### 🟡 Track B: Data Collectors (Agent B)
-*Status: Ready*
-*   **Focus**: The Data Ingestion Layer (`backend/app/services/collectors/`).
-*   **Complexity**: Medium. Involves class inheritance (`BaseCollector` -> `APICollector`) and external API schemas.
-*   **Strategy**: Fix `base.py` first, then `api_collector.py` then specific collectors.
-*   **Port Range**: 8020-8029
+### 3. Signal Pipeline (Track A)
+*   **Goal**: Standardize the output of all collectors.
+*   **Tasks**:
+    *   **Models**: Create `Signal`, `NewsItem`, and `SentimentScore` DB models.
+    *   **Ingestion**: Build a service to normalize plugin output into these models.
 
-### 🔴 Track C: Core Agents & Trading (Agent C)
-*Status: Ready*
-*   **Focus**: The Service Layer (`backend/app/services/agent/`, `backend/app/services/trading/`).
-*   **Complexity**: High. Involves LangChain/LangGraph state, SQLAlchemy models, and financial calculations.
-*   **Strategy**: Start with leaf nodes (`tools/`), then `nodes/`, then `agents/` and `orchestrator.py`.
-*   **Port Range**: 8030-8039
+---
 
-## 📝 Success Criteria
-*   `backend/MYPY_DEBT.md` is empty or deleted.
-*   `mypy .` runs successfully without any `ignore-errors` directives.
-*   All tests pass.
+## 📦 Deliverables
+
+1.  **Collector Registry**: Backend system that loads strategies from `backend/app/collectors/strategies/`.
+2.  **Plugin Library**: At least 3 working plugins (Price, CoinDesk, Yahoo).
+3.  **Dynamic UI**: Admin panel that adapts to the configuration needs of each plugin.
+4.  **Documentation**: Updated Architecture and User Journeys reflecting the Plugin model.
+
+---
+
+**Last Updated:** Feb 19, 2026

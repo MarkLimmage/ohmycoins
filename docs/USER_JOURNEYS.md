@@ -16,6 +16,7 @@ This document defines the end-to-end user journeys across the Oh My Coins platfo
 - The Lab (Agentic Data Science)
 - The Floor (Algorithmic Trading)
 - BYOM (Bring Your Own Model)
+- Collector Management (Admin Only)
 
 ---
 
@@ -1050,6 +1051,56 @@ Risk Assessment: ✅ APPROVED
 - Coverage target: 100% of happy paths, 80% of error cases
 - Run frequency: On every PR to main
 - Mocking strategy: WebSocket messages, CoinSpot API responses, LLM responses
+
+---
+
+## Journey 5: Collector Management (Admin Only)
+
+**Goal**: Full lifecycle control over data collection plugins, from installation to monitoring and configuration.
+
+### J-COLL-001: Register & Activate Collector Plugin
+**Persona:** Administrator (Superuser)  
+**Precondition:** Admin is logged in.
+
+**Steps:**
+1.  Admin navigates to **Data Sources > Collectors** dashboard.
+2.  Clicks **"Available Plugins"** to see discovered modules.
+3.  Selects a **Plugin Strategy** (e.g., `coindesk.news`, `coinmarketcap.price`).
+4.  Fills out **Configuration Parameters**:
+    *   **Poll Interval**: `3600` (Seconds)
+    *   **Target Symbols**: `[BTC, ETH]` (List)
+    *   **API Key**: `...` (Secure Field)
+5.  Clicks **"Test Connection"** (Backend executes `plugin.test_connection(config)`).
+6.  Clicks **"Install & Activate"**.
+7.  **Result**: A new Collector instance is registered and scheduled based on the interval.
+
+### J-COLL-002: Monitor Health & Update Settings
+**Persona:** Administrator (Superuser)  
+**Precondition:** At least one collector is active.
+
+**Steps:**
+1.  Admin navigates to **Data Sources > Collectors**.
+2.  Views the **Collection Dashboard**:
+    *   Status indicators (Green/Red) for each instance.
+    *   "Last Run" timestamp and success metrics.
+3.  Identifies a degraded collector (marked **Red**).
+4.  Clicks **"Logs"** to inspect the error (e.g., `429 Too Many Requests`).
+5.  Updates the configuration:
+    *   Increases **Poll Interval** to `7200`.
+6.  Clicks **"Save Changes"**.
+7.  Manually triggers a run via **"Run Now"** to verify the fix.
+8.  **Result**: Execution succeeds, status updates to **Healthy**.
+
+### J-COLL-003: Pause & Remove Collector
+**Persona:** Administrator (Superuser)  
+**Precondition:** Collector is running.
+
+**Steps:**
+1.  Admin navigates to **Data Sources > Collectors**.
+2.  Locates an active collector.
+3.  Clicks the **"Pause"** toggle.
+4.  **Result**: Status updates to **PAUSED**. No further scheduled executions occur.
+5.  (Optional) Admin clicks **"Delete"** to remove the configuration permanently.
 
 ---
 
