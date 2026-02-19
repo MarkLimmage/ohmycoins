@@ -37,13 +37,18 @@
 **Responsibilities**:
 - [ ] Provisioning: Execute `git worktree` setup for Tracks A, B, and C.
 - [ ] Initialization: Launch VS Code instances with unique `--user-data-dir`.
+- [ ] **Instruction Injection**: Inject track-specific settings (ports, container names) into Agent Instructions to ensure isolation.
 - [ ] Synchronization: Periodically rebase Track branches with `main` to prevent drift.
 - [ ] Teardown: Clean up worktrees and archive logs upon Track completion.
 - [ ] **Container Hygiene**: Ensure all track-specific containers (e.g., `track-a-db-1`) are stopped and removed before closing the sprint.
+- [ ] **Environment Isolation**: Verify that `.env` configurations from tracks do not leak into the main branch or other tracks.
 
 ## Workspace Orchestration (Dockmaster Only)
 
 The Dockmaster Agent must execute the following `git worktree` and environment setups before activating Track A, B, and C.
+
+**Container Isolation Policy:**
+Ensure that each track's `.env` uses unique ports (as defined below) and that developers are instructed to run tests ONLY within their track's container (e.g., `docker compose -f docker-compose.track-a.yml run backend pytest`).
 
 | Track | Branch Name | Worktree Path | VS Code Data Dir | Assigned Port | Color Code | Container Prefix |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -176,8 +181,10 @@ COMMIT PATTERN:
    - Integration tests: `tests/integration/[service]/test_[module].py`
 
 3. **Validation** (Tests)
-   - Unit test coverage: > 80%
-   - All tests passing
+   - Unit test coverage: > 80% (validated via `pytest --cov`)
+   - All tests passing within the containerized environment
+   - Type Checking: `mypy --strict .` passes without errors
+   - Security: `trivy fs .` passes for any new dependencies
    - OpenAPI schema validated
 
 ---
