@@ -618,6 +618,28 @@ class CatalystEvents(SQLModel, table=True):
     )
 
 
+class Collector(SQLModel, table=True):
+    """
+    Configuration and state for a collector plugin instance.
+    """
+    __tablename__ = "collector"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    plugin_name: str = Field(max_length=100, nullable=False) # e.g. "news_coindesk"
+    is_enabled: bool = Field(default=False)
+    schedule_cron: str | None = Field(default="*/15 * * * *", max_length=50)
+    config: dict = Field(default={}, sa_column=Column(JSON))
+    last_run_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    status: str = Field(default="idle", max_length=20) # idle, running, error
+    
+    # Relationships could go here in future, e.g. runs
+
+
 # Collector Metadata
 class CollectorRuns(SQLModel, table=True):
     """
@@ -640,6 +662,63 @@ class CollectorRuns(SQLModel, table=True):
 
     __table_args__ = (
         Index('ix_collector_runs_name_started', 'collector_name', 'started_at'),
+    )
+
+
+class NewsItem(SQLModel, table=True):
+    """
+    Standardized news item from collectors.
+    """
+    __tablename__ = "news_item"
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str = Field(max_length=500, nullable=False)
+    link: str = Field(max_length=1000, nullable=False, unique=True, index=True)
+    published_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    summary: str | None = Field(default=None, sa_column=Column(sa.Text))
+    source: str = Field(max_length=100, index=True)
+    
+    sentiment_score: float | None = Field(default=None)
+    sentiment_label: str | None = Field(default=None, max_length=20) # positive, negative, neutral
+    
+    collected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+class Signal(SQLModel, table=True):
+    """
+    Standardized trading signal.
+    """
+    __tablename__ = "signal"
+
+    id: int | None = Field(default=None, primary_key=True)
+    type: str = Field(max_length=20, nullable=False) # buy, sell, neutral
+    asset: str = Field(max_length=20, nullable=False, index=True)
+    strength: float = Field(default=0.0) # 0 to 1
+    generated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    source: str = Field(max_length=100)
+    context: dict = Field(default={}, sa_column=Column(JSON))
+
+
+class SentimentScore(SQLModel, table=True):
+    """
+    Consolidated sentiment score for an asset from a specific source.
+    """
+    __tablename__ = "sentiment_score"
+
+    id: int | None = Field(default=None, primary_key=True)
+    asset: str = Field(max_length=20, nullable=False, index=True)
+    source: str = Field(max_length=100, index=True)
+    score: float = Field(default=0.0) # -1 to 1
+    magnitude: float | None = Field(default=None) # confidence/volume
+    raw_data: dict = Field(default={}, sa_column=Column(JSON))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
     )
 
 

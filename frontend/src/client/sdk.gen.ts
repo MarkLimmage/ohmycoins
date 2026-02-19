@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -600,6 +600,162 @@ export class AuditService {
     }
 }
 
+export class CollectorsService {
+    /**
+     * List Plugins
+     * List all available collector plugins (strategies).
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static listPlugins(): CancelablePromise<CollectorsListPluginsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/plugins'
+        });
+    }
+    
+    /**
+     * List Instances
+     * List all configured collector instances.
+     * @returns Collector Successful Response
+     * @throws ApiError
+     */
+    public static listInstances(): CancelablePromise<CollectorsListInstancesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/'
+        });
+    }
+    
+    /**
+     * Create Instance
+     * Create a new collector instance.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns Collector Successful Response
+     * @throws ApiError
+     */
+    public static createInstance(data: CollectorsCreateInstanceData): CancelablePromise<CollectorsCreateInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/collectors/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Instance
+     * Get a specific collector instance.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Collector Successful Response
+     * @throws ApiError
+     */
+    public static getInstance(data: CollectorsGetInstanceData): CancelablePromise<CollectorsGetInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Instance
+     * Update a collector instance.
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns Collector Successful Response
+     * @throws ApiError
+     */
+    public static updateInstance(data: CollectorsUpdateInstanceData): CancelablePromise<CollectorsUpdateInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/collectors/{id}',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Instance
+     * Delete a collector instance.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteInstance(data: CollectorsDeleteInstanceData): CancelablePromise<CollectorsDeleteInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/collectors/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Toggle Instance
+     * Toggle the enabled status of a collector instance.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Collector Successful Response
+     * @throws ApiError
+     */
+    public static toggleInstance(data: CollectorsToggleInstanceData): CancelablePromise<CollectorsToggleInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/collectors/{id}/toggle',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Trigger Instance
+     * Trigger a manual run for a specific collector instance.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static triggerInstance(data: CollectorsTriggerInstanceData): CancelablePromise<CollectorsTriggerInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/collectors/{id}/trigger',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class CredentialsService {
     /**
      * Get Credentials
@@ -910,7 +1066,7 @@ export class MockService {
                 session_id: data.sessionId
             },
             query: {
-                stream: data.stream
+                _stream: data.stream
             },
             errors: {
                 422: 'Validation Error'
