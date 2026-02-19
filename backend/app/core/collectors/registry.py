@@ -47,17 +47,22 @@ class CollectorRegistry:
             # /app/backend/app/collectors/strategies -> strategies folder
             
             # Using importlib to find the package path
+            logging.error(f"Discovering strategies in: {package_path}")
             module = importlib.import_module(package_path)
             path = module.__path__
+            logging.error(f"Package path: {path}")
             
             for _, name, _ in pkgutil.iter_modules(path):
+                logging.error(f"Found module: {name}")
                 # Import the module so the class definitions are executed
                 importlib.import_module(f"{package_path}.{name}")
                 
         except ImportError as e:
             logging.error(f"Failed to discover strategies in {package_path}: {e}")
+            logging.error(f"ImportError: {e}")
         except Exception as e:
             logging.error(f"Error during strategy discovery: {e}")
+            logging.error(f"Exception: {e}")
 
     @classmethod
     def get_strategy_instance(cls, name: str) -> ICollector | None:
