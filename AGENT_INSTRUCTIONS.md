@@ -24,84 +24,59 @@ This document defines the persistent instructions for all autonomous agents oper
 
 ## 🔒 Environment Isolation Standards (Mandatory)
 
-To prevent port conflicts and state leakage between agents running simultaneously:
+To prevent port conflicts and state leakage between agents running simultaneously, use the following **Port Calculation Formula**:
 
-| Parameter | Track A | Track B | Track C |
-| :--- | :--- | :--- | :--- |
-| **Worktree** | `../omc-track-a` | `../omc-track-b` | `../omc-track-c` |
-| **Port (HTTP)** | `8010` | `8020` | `8030` |
-| **Port (DB)** | `5433` | `5434` | `5435` |
-| **Port (Redis)**| `6380` | `6381` | `6382` |
-| **Container** | `track-a-*` | `track-b-*` | `track-c-*` |
-| **Color** | Blue (`#3771c8`) | Red (`#c83737`) | Green (`#2b9e3e`) |
+*   **Track Index (N)**: A=1, B=2, C=3, D=4, etc.
+*   **HTTP Port**: `8000 + (N * 10)`
+*   **DB Port**: `5432 + N`
+*   **Redis Port**: `6379 + N`
+
+| Parameter | Track A (N=1) | Track B (N=2) | Track C (N=3) | Track D (N=4) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Worktree** | `../omc-track-a` | `../omc-track-b` | `../omc-track-c` | `../omc-track-d` |
+| **Port (HTTP)** | `8010` | `8020` | `8030` | `8040` |
+| **Port (DB)** | `5433` | `5434` | `5435` | `5436` |
+| **Port (Redis)**| `6380` | `6381` | `6382` | `6383` |
+| **Container** | `track-a-*` | `track-b-*` | `track-c-*` | `track-d-*` |
 
 ---
 
 ## 📝 Dockmaster Instructions: Context Injection
 
-When initializing a sub-agent (e.g., "Track A"), the Dockmaster **MUST** inject the following instructions into the agent's context window.
+When initializing a sub-agent, the Dockmaster **MUST** inject the following generic template, replacing `[PLACEHOLDERS]` with the calculated values for that track.
 
-### Template: Track A (Backend Focus)
+### Generic Context Template
 
 ```markdown
-CONTEXT: Sprint [X.XX] - Track A: [Feature Name]
+CONTEXT: Sprint [SPRINT_ID] - Track [TRACK_ID]: [FEATURE_NAME]
 PROJECT: Oh My Coins - Autonomous Trading Platform
-ROLE: The Protocol Droid (Backend Specialist)
+ROLE: [AGENT_PERSONA]
 
 WORKSPACE ANCHOR:
-  ROOT_PATH: ../omc-track-a
-  INSTANCE_PORT: 8010
-  CONTAINER_PREFIX: track-a
+  ROOT_PATH: ../omc-track-[TRACK_ID_LOWER]
+  INSTANCE_PORT: [HTTP_PORT]
+  CONTAINER_PREFIX: track-[TRACK_ID_LOWER]
   STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path.
 
 ENVIRONMENT SETUP:
   The Dockmaster has provisioned your environment:
-  1. `docker-compose.override.yml` maps port 8010 to container 80.
-  2. `.env` sets `COMPOSE_PROJECT_NAME=track-a` (containers will be `track-a-backend-1` etc).
-  3. DB Port: 5433, Redis Port: 6380.
+  1. `docker-compose.override.yml` maps host port [HTTP_PORT] to container 80.
+  2. `.env` sets `COMPOSE_PROJECT_NAME=track-[TRACK_ID_LOWER]` (containers will be `track-[TRACK_ID_LOWER]-backend-1` etc).
+  3. DB Port: [DB_PORT], Redis Port: [REDIS_PORT].
 
   **Startup Command**:
-  `docker compose up -d --build` -> Access at http://localhost:8010
+  `docker compose up -d --build` -> Access at http://localhost:[HTTP_PORT]
 
 MISSION:
-[Insert Mission/Objective Here]
+[INSERT MISSION OBJECTIVE]
 
 CONSTRAINTS:
   - **Environment**: NO LOCAL VENVS. Testing must occur within the project's Docker containers (`docker compose run backend pytest`).
   - **Type Safety**: New code must pass `mypy --strict`.
   - **Security**: No hardcoded secrets. Use environment variables.
   - **Infrastructure**: Do NOT edit root `docker-compose.yml`. Use `docker-compose.override.yml`.
-```
-
-### Template: Track B (Frontend Focus)
-
-```markdown
-CONTEXT: Sprint [X.XX] - Track B: [Feature Name]
-PROJECT: Oh My Coins - Autonomous Trading Platform
-ROLE: The UI/UX Agent (Frontend Specialist)
-
-WORKSPACE ANCHOR:
-  ROOT_PATH: ../omc-track-b
-  INSTANCE_PORT: 8020
-  CONTAINER_PREFIX: track-b
-  STRICT_SCOPE: You are locked to this directory.
-
-ENVIRONMENT SETUP:
-  The Dockmaster has provisioned your environment:
-  1. `docker-compose.override.yml` maps port 8020 to container 80.
-  2. `.env` sets `COMPOSE_PROJECT_NAME=track-b`.
-  3. DB Port: 5434, Redis Port: 6381.
-
-  **Startup Command**:
-  `docker compose up -d --build` -> Access at http://localhost:8020
-
-MISSION:
-[Insert Mission/Objective Here]
-
-CONSTRAINTS:
-  - **Environment**: Run frontend tests in container or check strictly against API specs.
-  - **Design System**: Use existing Shadcn/UI components.
-  - **State**: Use TanStack Query for data fetching.
+  - **Frontend (If Applicable)**: Use Shadcn/UI and TanStack Query.
+  - **Backend (If Applicable)**: Use FastAPI, SQLModel, and Pydantic.
 ```
 
 ---
