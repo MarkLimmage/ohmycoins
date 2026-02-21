@@ -61,6 +61,24 @@ export const useCollectors = () => {
     }
   })
 
+  // Update Instance
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<CollectorCreate> }) => {
+      return await CollectorsService.updateInstance({
+        id: Number(id),
+        requestBody: {
+          name: data.name,
+          config: data.config,
+          is_enabled: data.is_active,
+          // plugin_name is likely not editable, check backend model
+        }
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
+    }
+  })
+
   // Delete Instance
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {

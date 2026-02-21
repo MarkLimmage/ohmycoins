@@ -40,11 +40,14 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         py={2}
         _hover={{
           background: "gray.subtle",
+          color: "ui.main",
         }}
         alignItems="center"
         fontSize="sm"
+        fontWeight="medium"
+        color="inherit"
       >
-        <Icon as={icon} alignSelf="center" />
+        <Icon as={icon} alignSelf="center" boxSize={4} />
         <Text ml={2}>{title}</Text>
       </Flex>
     </RouterLink>
