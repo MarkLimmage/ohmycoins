@@ -1,15 +1,11 @@
-# Current Sprint: CLOSED
+# Current Sprint: 2.32
 
-## Sprint 2.30 (Archived)
-**Status**: Completed & Closed
-**Date**: 2024-05-22
+**Status**: ACTIVE
+**Role**: Track D (DevOps / Dockmaster)
+**Objective**: Docker DX Remediation
+**Reference**: docs/sprints/SIM_SPRINT_2.32.md
 
-### Summary
-Sprint 2.30 implemented the "Governance Supervisor" system.
-- Drastic improvement in agent observability (Log Hub).
-- Drift detection active via `supervisor.py`.
-
-All artifacts archived in `docs/sprints/archive/sprint-2.30/`.
-
-## Active Context
-System is IDLE. Awaiting Sprint 2.31 initialization.
+## Tasks
+1. **Refactor Dockerfile**: Introduce 'dev' stage with node/npm.
+2. **Update Compose**: Map 'dev' target in docker-compose.override.yml.
+3. **Cache Busting**: Ensure new code is picked up.
