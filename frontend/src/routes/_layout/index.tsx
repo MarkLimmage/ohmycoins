@@ -20,6 +20,9 @@ import { FiActivity, FiPause, FiPlay, FiTrendingUp } from "react-icons/fi"
 import { FloorService, MockService, PnlService } from "@/client"
 import useAuth from "@/hooks/useAuth"
 
+import { ActiveSignals } from "@/components/Signals/ActiveSignals"
+import { CollectorThroughput } from "@/components/Dashboard/CollectorThroughput"
+
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
 })
@@ -108,24 +111,37 @@ function Dashboard() {
             gap={6}
             mb={8}
           >
-            <StatCard
-              label="Total Realized P&L"
-              value={livePnl?.realized_pnl}
-              type="currency"
-              isLoading={liveLoading}
-            />
-            <StatCard
-              label="Unrealized P&L"
-              value={livePnl?.unrealized_pnl}
-              type="currency"
-              isLoading={liveLoading}
-            />
-            <StatCard
-              label="Win Rate"
-              value={livePnl?.win_rate}
-              type="percent"
-              isLoading={liveLoading}
-            />
+            <Box gridColumn="span 2">
+                <Heading size="md" mb={4}>Live Simulator Status</Heading>
+                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                    <StatCard
+                      label="Total Realized P&L"
+                      value={livePnl?.realized_pnl}
+                      type="currency"
+                      isLoading={liveLoading}
+                    />
+                    <StatCard
+                      label="Unrealized P&L"
+                      value={livePnl?.unrealized_pnl}
+                      type="currency"
+                      isLoading={liveLoading}
+                    />
+                </Grid>
+                <Box mt={4}>
+                    <ActiveSignals />
+                </Box>
+            </Box>
+            <Box>
+                <Grid gap={4}>
+                  <StatCard
+                    label="Win Rate"
+                    value={livePnl?.win_rate}
+                    type="percent"
+                    isLoading={liveLoading}
+                  />
+                  <CollectorThroughput />
+                </Grid>
+            </Box>
           </Grid>
 
           <Heading size="md" mb={4}>

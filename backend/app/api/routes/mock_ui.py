@@ -15,6 +15,7 @@ from app.api.response_base import APIResponseBase
 from app.api.routes.pnl import PnLSummaryResponse
 from app.models import (
     AgentSessionMessagePublic,
+    Signal,
 )
 
 router = APIRouter()
@@ -138,3 +139,65 @@ async def trigger_mock_safety_action(action_type: str, confirm: bool = False) ->
         last_updated=datetime.now(timezone.utc),
         data_staleness_seconds=0.0
     )
+
+# ============================================================================
+# Active Signals Mocks
+# ============================================================================
+
+@router.get("/signals/active", response_model=list[Signal])
+async def get_mock_active_signals() -> list[Signal]:
+    """Get mock active signals for Dashboard."""
+    return [
+        Signal(
+            id=1,
+            type="buy",
+            asset="BTC/USDT",
+            strength=0.85,
+            generated_at=datetime.now(timezone.utc),
+            source="MovingAverageCrossover",
+            context={"short_window": 50, "long_window": 200, "reason": "Golden Cross confirmed"}
+        ),
+        Signal(
+            id=2,
+            type="sell",
+            asset="ETH/USDT",
+            strength=0.72,
+            generated_at=datetime.now(timezone.utc) - timedelta(minutes=15),
+            source="RSIOverbought",
+            context={"period": 14, "current_rsi": 82.5}
+        ),
+        Signal(
+            id=3,
+            type="neutral",
+            asset="SOL/USDT",
+            strength=0.30,
+            generated_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            source="NewsSentiment",
+            context={"news_count": 5, "sentiment_score": 0.1}
+        )
+    ]
+
+# ============================================================================
+# Collector Stats Mocks
+# ============================================================================
+
+from pydantic import BaseModel
+
+class CollectorStat(BaseModel):
+    timestamp: datetime
+    records_collected: int
+
+@router.get("/collectors/stats", response_model=list[CollectorStat])
+async def get_mock_collector_stats() -> list[CollectorStat]:
+    """Get mock collector execution stats for Dashboard sparkline."""
+    stats = []
+    now = datetime.now(timezone.utc)
+    # Generate data for the last 60 minutes
+    for i in range(60):
+        t = now - timedelta(minutes=60-i)
+        # Random data with some spikes
+        count = random.randint(5, 50)
+        if i % 15 == 0:
+            count += 100 # Simulate a burst
+        stats.append(CollectorStat(timestamp=t, records_collected=count))
+    return stats
