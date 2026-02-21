@@ -83,7 +83,11 @@ def scan_worktrees(registry: Dict[str, Any]) -> list:
             # Check Stagnation
             last_update_str = status.get("last_update", "")
             try:
+                # Handle possible offset issues by forcing both to naive
                 last_update = datetime.fromisoformat(last_update_str)
+                if last_update.tzinfo is not None:
+                    last_update = last_update.replace(tzinfo=None)
+                
                 delta = (datetime.now() - last_update).total_seconds()
                 
                 if delta > STALE_THRESHOLD_SECONDS:
