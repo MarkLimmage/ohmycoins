@@ -64,21 +64,21 @@ Ensure that each track's `.env` uses unique ports (as defined below) and that de
 - [ ] `git worktree add ../sprint-X.XX/track-a feat/REQ-XX-001`
 - [ ] `cp .env ../sprint-X.XX/track-a/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-a/' ../sprint-X.XX/track-a/.env`
-- [ ] `echo -e "\nPOSTGRES_PORT=5433\nREDIS_PORT=6380\n" >> ../sprint-X.XX/track-a/.env`
+- [ ] `echo -e "\nPOSTGRES_PORT=5433\nREDIS_PORT=6380\nDOCKER_IMAGE_BACKEND=backend\nTAG=latest\n" >> ../sprint-X.XX/track-a/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-a/.vscode/settings.json`
 - [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8001:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-a/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-a --new-window ../sprint-X.XX/track-a`
 - [ ] `git worktree add ../sprint-X.XX/track-b feat/REQ-UX-XXX`
 - [ ] `cp .env ../sprint-X.XX/track-b/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-b/' ../sprint-X.XX/track-b/.env`
-- [ ] `echo -e "\nPOSTGRES_PORT=5434\nREDIS_PORT=6381\n" >> ../sprint-X.XX/track-b/.env`
+- [ ] `echo -e "\nPOSTGRES_PORT=5434\nREDIS_PORT=6381\nDOCKER_IMAGE_BACKEND=backend\nTAG=latest\n" >> ../sprint-X.XX/track-b/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#2b9e3e","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-b/.vscode/settings.json`
 - [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"3001:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-b/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-b --new-window ../sprint-X.XX/track-b`
 - [ ] `git worktree add ../sprint-X.XX/track-c feat/IR-XX-YYY`
 - [ ] `cp .env ../sprint-X.XX/track-c/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-c/' ../sprint-X.XX/track-c/.env`
-- [ ] `echo -e "\nPOSTGRES_PORT=5435\nREDIS_PORT=6382\n" >> ../sprint-X.XX/track-c/.env`
+- [ ] `echo -e "\nPOSTGRES_PORT=5435\nREDIS_PORT=6382\nDOCKER_IMAGE_BACKEND=backend\nTAG=latest\n" >> ../sprint-X.XX/track-c/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-c/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#d15715","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-c/.vscode/settings.json`
 - [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8002:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-c/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-c --new-window ../sprint-X.XX/track-c`
@@ -90,6 +90,24 @@ At the end of the sprint (or when a track is complete), the Dockmaster MUST:
 3.  **Prune Networks**: `docker network prune -f`
 4.  **Remove Worktrees**: `git worktree remove ../sprint-X.XX/track-a --force` (Repeat for B/C)
 5.  **Verify Clean Slate**: Run `docker ps` to ensure only the main project containers remain.
+
+## Execution Strategy
+
+**Parallelism & Dependencies:**
+The Architect must define the inter-track dependency graph below.
+*   **Sequential**: Track B cannot start until Track A completes specific deliverables (e.g., API Specs).
+*   **Concurrent (Mocked)**: Track B starts immediately using Mock Data, then integrates Track A's work at a "Convergence Point".
+
+| Dependent Track | Blocking Track | Dependency Artifact | Convergence Strategy |
+| :--- | :--- | :--- | :--- |
+| **Track B (Frontend)** | **Track A (Backend)** | OpenAPI Spec (`openapi.json`) | **Contract-First**: Track A defines API specs on Day 1. Track B generates client SDK from specs. Integration testing occurs on Day 4. |
+| **Track C** | **None** | N/A | **Independent**: Runs fully parallel. |
+
+**Critical Path:**
+1.  [Day 1] Track A creates `ICollector` interface.
+2.  [Day 2] Track A publishes `openapi.json` for new endpoints.
+3.  [Day 2] Track B generates `client` SDK from `openapi.json`.
+4.  [Day 4] Track B integrates real API calls (removing mocks).
 
 ### Track A: [Feature Name]
 
