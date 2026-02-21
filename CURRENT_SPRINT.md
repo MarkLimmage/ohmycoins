@@ -1,15 +1,11 @@
-# Current Sprint: CLOSED
+# Current Sprint: 2.32
 
-## Sprint 2.30 (Archived)
-**Status**: Completed & Closed
-**Date**: 2024-05-22
+**Status**: ACTIVE
+**Role**: Track B (UI/UX Verification)
+**Objective**: Verification & Polish of Visualization
+**Reference**: docs/sprints/SIM_SPRINT_2.32.md
 
-### Summary
-Sprint 2.30 implemented the "Governance Supervisor" system.
-- Drastic improvement in agent observability (Log Hub).
-- Drift detection active via `supervisor.py`.
-
-All artifacts archived in `docs/sprints/archive/sprint-2.30/`.
-
-## Active Context
-System is IDLE. Awaiting Sprint 2.31 initialization.
+## Tasks
+1. **Wait for Docker Fix**: Do not attempt to run tests until Track D confirms the 'dev' container is ready.
+2. **Verify Visualization**: Confirm Sparklines render correctly.
+3. **Test Coverage**: Write missing unit tests for CollectorCard.
