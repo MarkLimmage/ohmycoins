@@ -12,12 +12,12 @@
 Revolutionize data collection management by implementing a **Plugin-Based Architecture**. Refactor the collector system to use standardized modules (`ICollector`), typically auto-discovered by a `CollectorRegistry`. This allows Admins to activate, configure, and monitor powerful Python-based strategies via the UI without exposing raw code execution risks.
 
 ### Success Criteria
-- [x] **Architecture**: `ICollector` interface defined and enforced for all plugins.
-- [x] **Registry**: `CollectorRegistry` implemented to scan and register valid plugins at startup.
-- [x] **Data Model**: `Collector` table updated to store plugin configuration (JSON) and state.
-- [x] **Plugins**: Ported 3+ reference scrapers (e.g., CoinDesk, Yahoo, CryptoPanic) to the new plugin format.
+- [ ] **Architecture**: `ICollector` interface defined and enforced for all plugins.
+- [ ] **Registry**: `CollectorRegistry` implemented to scan and register valid plugins at startup.
+- [ ] **Data Model**: `Collector` table updated to store plugin configuration (JSON) and state.
+- [ ] **Plugins**: Ported 3+ reference scrapers (e.g., CoinDesk, Yahoo, CryptoPanic) to the new plugin format.
 - [ ] **Frontend**: Dynamic Admin UI forms generated from plugin JSON schemas.
-- [x] **Backend**: Scheduler refactored to execute plugin instances with stored config.
+- [ ] **Backend**: Scheduler refactored to execute plugin instances with stored config.
 
 ---
 
@@ -44,6 +44,7 @@ Revolutionize data collection management by implementing a **Plugin-Based Archit
 - [ ] Teardown: Clean up worktrees and archive logs upon Track completion.
 - [ ] **Container Hygiene**: Ensure all track-specific containers (e.g., `track-a-db-1`) are stopped and removed before closing the sprint.
 - [ ] **Environment Isolation**: Verify that `.env` configurations from tracks do not leak into the main branch or other tracks.
+- [ ] **Friction Log Collection**: At the end of the sprint, query all active agents for "workflow friction points" (e.g., permission errors, confusing context, missing tools) and save them to `docs/sprints/archive/sprint-2.28/RETROSPECTIVE.md`.
 
 ## Workspace Orchestration (Dockmaster Only)
 
