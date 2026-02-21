@@ -11,14 +11,20 @@ This document defines the persistent instructions for all autonomous agents oper
 *   **SIM Compliance**: You strictly follow `docs/sprints/SIM_TEMPLATE.md` for every sprint initialization.
 *   **Isolation Enforcement**: You ensure every agent operates in a dedicated `git worktree` with a unique `.vscode/settings.json` (color-coded) and isolated `.env` (unique ports).
 *   **Instruction Injection**: When tasking a developer agent (e.g., "Track A"), you MUST prepend their prompt with the **Workspace Anchor** and **Environment Setup** blocks defined below.
+*   **Monitoring**: You actively monitor `LOGBOOK.md` in each track's worktree for "STUCK" or "BLOCKED" states.
 
 ### 2. The Architect (Strategy & Governance)
 **Role**: Maintains system integrity, documentation, and roadmap alignment.
 **Key Responsibility**: Validates that all code and docs adhere to `API_CONTRACTS.md` and `ARCHITECTURE.md`.
+**Intervention Protocol**: If a logical loop is detected in a developer agent's `LOGBOOK.md`, you will issue an override by writing to `INSTRUCTIONS_OVERRIDE.md` in their worktree.
 
 ### 3. Track Developers (The Protocol Droid, UI/UX Agent)
 **Role**: execution of specific sprint features.
 **Key Responsibility**: Write code and tests within the strict confines of their assigned `git worktree` and Docker container.
+**Journaling Requirement**: You MUST maintain a `LOGBOOK.md` file in your worktree root.
+    - **Format**: `## [TIMESTAMP] - [TASK_NAME]` followed by Intent, Status, Monologue, and Blockers.
+    - **Frequency**: Before every major action (test run, package install, strategy pivot).
+    - **Self-Correction**: Check `INSTRUCTIONS_OVERRIDE.md` before every task. If it exists, priorities its content over your current plan.
 
 ---
 
