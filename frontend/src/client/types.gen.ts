@@ -1315,6 +1315,18 @@ export type CollectorsTriggerInstanceData = {
 
 export type CollectorsTriggerInstanceResponse = (Message);
 
+export type CollectorsGetStatsData = {
+    id: number;
+    /**
+     * Time range for stats (e.g., 1h, 24h, 7d)
+     */
+    range?: string;
+};
+
+export type CollectorsGetStatsResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
 export type CredentialsGetCredentialsResponse = (CoinspotCredentialsPublic);
 
 export type CredentialsUpdateCredentialsData = {
