@@ -200,3 +200,15 @@ DELIVERABLES:
 
 **generated-by**: GitHub Copilot
 **date**: 2026-02-19
+
+## Friction Log
+
+### Docker Compose Port Isolation vs Internal Configuration
+- **Issue**: Instructions specified using different ports (e.g., 5434) for isolation in `.env`, but `docker-compose.override.yml` setups often hardcoded the internal port (5432).
+- **Impact**: Agents struggled to distinguish between the *host mapping* (external) and the *container service* (internal) port. Modifying `.env` to fix the host conflict often broke the internal service connection because the same variable name (`POSTGRES_PORT`) was used for both contexts or blindly overridden.
+- **Resolution**: Clarify in future SIM templates that `POSTGRES_PORT` in `.env` typically controls the *external* mapping, while internal services should rely on the standard `5432` or a separate explicitly named variable if redirection is needed. Operations should verify `docker-compose.yml` variable substitution usage before editing `.env`.
+
+### Permission Issues with Docker-Generated Files
+- **Issue**: `git worktree` pruning and cleanup failed because `__pycache__` directories created inside containers were owned by `root`, preventing `rm -rf` by the host user.
+- **Impact**: Required a "nuclear" manual cleanup (using `sudo` or docker-based removal) and delayed sprint start.
+- **Resolution**: Ensure all Dockerfiles or docker-compose runs map the container user to the host user (UID/GID) or include a `make clean` / `cleanup.sh` script that runs *inside* docker to delete artifacts before tearing down the environment.
