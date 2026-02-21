@@ -54,7 +54,7 @@ def list_plugins() -> Any:
                     "schema": schema,
                 }
             )
-        except Exception as e:
+        except Exception:
             # print(f"Error loading plugin {name}: {e}")
             continue
 

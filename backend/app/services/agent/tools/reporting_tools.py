@@ -286,7 +286,7 @@ def create_comparison_report(
 
 
 def generate_recommendations(
-    user_goal: str,
+    user_goal: str,  # noqa: ARG001
     evaluation_results: dict[str, Any],
     model_results: dict[str, Any],
     analysis_results: dict[str, Any],
@@ -449,7 +449,7 @@ def generate_recommendations(
 
 def create_visualizations(
     evaluation_results: dict[str, Any],
-    model_results: dict[str, Any],
+    model_results: dict[str, Any],  # noqa: ARG001
     analysis_results: dict[str, Any],
     output_dir: Path,
 ) -> list[dict[str, str]]:

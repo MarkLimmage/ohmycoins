@@ -78,7 +78,7 @@ class CoinDeskCollector(ICollector):
                     }
                 )
 
-        except Exception as e:
+        except Exception:
             # In a real plugin we might log this error properly
             # print(f"Error collecting from CoinDesk: {e}")
             pass

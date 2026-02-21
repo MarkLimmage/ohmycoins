@@ -63,7 +63,7 @@ class DataIngestionService:
             return False
 
         # Basic date parsing placeholder
-        published = data.get("published")
+        _published = data.get("published")
         # In real scenario, parse published which is likely a string
 
         news = NewsItem(

@@ -26,7 +26,7 @@ router = APIRouter()
 
 @router.get("/ledgers/{ledger_type}", response_model=PnLSummaryResponse)
 async def get_mock_ledger_data(
-    ledger_type: str, state: str = "success"
+    ledger_type: str, state: str = "success"  # noqa: ARG001
 ) -> PnLSummaryResponse:
     """
     Get mock data for LedgerCard component.
@@ -131,7 +131,7 @@ class SafetyStatusResponse(APIResponseBase):
 
 @router.post("/safety/{action_type}", response_model=SafetyStatusResponse)
 async def trigger_mock_safety_action(
-    action_type: str, confirm: bool = False
+    action_type: str, confirm: bool = False  # noqa: ARG001
 ) -> SafetyStatusResponse:
     """
     Mock endpoint for SafetyButton actions.
