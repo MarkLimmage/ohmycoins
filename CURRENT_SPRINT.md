@@ -1,8 +1,8 @@
-# Current Sprint - Sprint 2.29 (Collector UI & Signal Standardization)
+# Current Sprint - Sprint 2.29 (Closed)
 
-**Status:** 🚀 ACTIVE
+**Status:** 🏁 CLOSED
 **Overall Goal:** Complete the **Collector Management System** by finalizing the Admin UI (Dynamic Forms & Dashboard) and standardizing all collector outputs into a unified **Signal Pipeline**.
-**SIM**: [docs/sprints/SIM_SPRINT_2.29.md](docs/sprints/SIM_SPRINT_2.29.md)
+**SIM**: [docs/sprints/archive/sprint-2.29/SIM_SPRINT_2.29.md](docs/sprints/archive/sprint-2.29/SIM_SPRINT_2.29.md)
 
 ---
 
