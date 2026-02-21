@@ -30,6 +30,7 @@
 - [ ] **Test Alignment**: Run the full test suite (`bash scripts/test.sh`) at the end of the sprint to maintain alignment between the test suite and delivered work.
 - [ ] **Merge Safety**: Verify that all transient environment changes (e.g., port mappings in `docker-compose.override.yml`) have been reverted in PRs before merging.
 - [ ] **Next Sprint Planning**: Create the next SIM using `docs/sprints/SIM_TEMPLATE.md`, ensuring **zero drift** from the template structure.
+- [ ] **Template Evolution**: Review `RETROSPECTIVE.md` from the previous sprint. If specific workflow issues were identified (e.g., "git worktree existing directory error"), update `docs/sprints/SIM_TEMPLATE.md` with mitigation steps *before* generating the next SIM.
 - [ ] **Sprint Documentation Cleanup**: At the end of the sprint, move all sprint artifacts (SIM, reports, logs) to `docs/sprints/archive/sprint-X.XX/` to keep the active directory clean.
 
 ### Track D: The Dockmaster (Orchestration)
@@ -43,6 +44,7 @@
 - [ ] Teardown: Clean up worktrees and archive logs upon Track completion.
 - [ ] **Container Hygiene**: Ensure all track-specific containers (e.g., `track-a-db-1`) are stopped and removed before closing the sprint.
 - [ ] **Environment Isolation**: Verify that `.env` configurations from tracks do not leak into the main branch or other tracks.
+- [ ] **Friction Log Collection**: At the end of the sprint, query all active agents for "workflow friction points" (e.g., permission errors, confusing context, missing tools) and save them to `docs/sprints/archive/sprint-X.XX/RETROSPECTIVE.md`.
 
 ## Workspace Orchestration (Dockmaster Only)
 
@@ -507,3 +509,20 @@ Identify risks for next sprint:
 **Created By**: [Agent Persona]  
 **Approved By**: Tech Lead  
 **Related Docs**: DOCS_GOVERNANCE.md, DOCUMENTATION_STRATEGY.md
+
+## Continuous Improvement Protocol
+
+**Objective**: Prevent recurring dev experience issues by institutionalizing lessons learned.
+
+### 1. The Friction Log (Dockmaster)
+At the conclusion of the sprint, the Dockmaster must collect a "Friction Log" from all active tracks.
+*   **Command**: `echo "## Friction Log" > docs/sprints/archive/sprint-X.XX/RETROSPECTIVE.md`
+*   **Query**: Ask each Track Agent: *"What was the most frustrating part of your workflow this sprint? Did you encounter permission errors, port conflicts, or unclear instructions?"*
+*   **Action**: Compile answers into the Retrospective file.
+
+### 2. The Mitigation Commit (Architect)
+Before initializing the *next* sprint, the Architect must:
+1.  Read the `RETROSPECTIVE.md` from the just-finished sprint.
+2.  Identify systemic issues (not just one-off bugs).
+3.  **Edit `docs/sprints/SIM_TEMPLATE.md`** to include specific preventive instructions (e.g., adding a `sudo rm -rf` cleanup step if permission errors were reported).
+4.  Commit the template update with the message: `docs: update SIM template with sprint X.XX learnings`.
