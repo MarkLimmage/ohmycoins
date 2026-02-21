@@ -12,12 +12,12 @@
 Revolutionize data collection management by implementing a **Plugin-Based Architecture**. Refactor the collector system to use standardized modules (`ICollector`), typically auto-discovered by a `CollectorRegistry`. This allows Admins to activate, configure, and monitor powerful Python-based strategies via the UI without exposing raw code execution risks.
 
 ### Success Criteria
-- [ ] **Architecture**: `ICollector` interface defined and enforced for all plugins.
-- [ ] **Registry**: `CollectorRegistry` implemented to scan and register valid plugins at startup.
-- [ ] **Data Model**: `Collector` table updated to store plugin configuration (JSON) and state.
-- [ ] **Plugins**: Ported 3+ reference scrapers (e.g., CoinDesk, Yahoo, CryptoPanic) to the new plugin format.
+- [x] **Architecture**: `ICollector` interface defined and enforced for all plugins.
+- [x] **Registry**: `CollectorRegistry` implemented to scan and register valid plugins at startup.
+- [x] **Data Model**: `Collector` table updated to store plugin configuration (JSON) and state.
+- [x] **Plugins**: Ported 3+ reference scrapers (e.g., CoinDesk, Yahoo, CryptoPanic) to the new plugin format.
 - [ ] **Frontend**: Dynamic Admin UI forms generated from plugin JSON schemas.
-- [ ] **Backend**: Scheduler refactored to execute plugin instances with stored config.
+- [x] **Backend**: Scheduler refactored to execute plugin instances with stored config.
 
 ---
 
@@ -212,3 +212,8 @@ DELIVERABLES:
 - **Issue**: `git worktree` pruning and cleanup failed because `__pycache__` directories created inside containers were owned by `root`, preventing `rm -rf` by the host user.
 - **Impact**: Required a "nuclear" manual cleanup (using `sudo` or docker-based removal) and delayed sprint start.
 - **Resolution**: Ensure all Dockerfiles or docker-compose runs map the container user to the host user (UID/GID) or include a `make clean` / `cleanup.sh` script that runs *inside* docker to delete artifacts before tearing down the environment.
+
+### Git Worktree Isolation
+- **Issue**: Merging work from Track A into Main while Track B is active can cause confusion if Track B is not immediately rebased.
+- **Impact**: Track B might be working against stale contracts or failing CI due to missing dependencies added by Track A.
+- **Resolution**: Use the new "Parallelism & Dependencies" section in SIM Template to explicitly schedule "Convergence Points" where Track B *must* rebase onto Main to pick up Track A's changes (e.g., after OpenAPI spec is published).
