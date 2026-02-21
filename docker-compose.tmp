@@ -11,7 +11,6 @@ services:
     ports:
       - "8098:80"
       - "8099:8080"
-    volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - traefik-public
@@ -31,7 +30,6 @@ services:
       timeout: 10s
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
     env_file:
       - .env
@@ -50,7 +48,6 @@ services:
       retries: 5
       start_period: 30s
       timeout: 5s
-    volumes:
       - app-redis-data:/data
     command: redis-server --appendonly yes
 
@@ -254,37 +251,4 @@ services:
       # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
       # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
       # - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
-
-  celery_worker:
-    build:
-      context: ./backend
-      args:
-        INSTALL_DEV: ${INSTALL_DEV-true}
-    image: ${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    environment:
-      - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - REDIS_HOST=redis
-      - REDIS_PORT=${REDIS_PORT}
-    networks:
-      - default
-
-volumes:
-  app-db-data:
-  app-redis-data:
-
-networks:
-  traefik-public:
-    # Allow setting it to false for testing
-    external: true
 

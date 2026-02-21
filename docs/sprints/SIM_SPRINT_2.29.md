@@ -214,3 +214,11 @@ SUCCESS CRITERIA:
 *   **Resolution**: Proceeded with standard window isolation.
 *   **SIM Template Action Item**:
     - Update **Workspace Orchestration** to remove the `--user-data-dir` requirement if running in a remote container environment, or specify it as "Local Only".
+
+### 4. Malformed YAML Injection
+*   **Issue**: The fix for the missing `celery_worker` service was applied by appending the block to the end of `docker-compose.yml`. This placed the service definition **inside or after** the `networks` block, rather than correctly indented under `services`.
+*   **Impact**: Docker Compose validation failed with "additional properties not allowed" or nesting errors. Agents were forced to manually move the block.
+*   **Resolution**: Manually corrected the indentation in `main` (Requires follow-up action: `docker-compose.yml` in `main` must be verified for correct nesting).
+*   **SIM Template Action Item**:
+    - Avoid using `cat >>` for complex YAML injections. Use a proper Python script or `yq` if available to merge YAML structures safely.
+    - If using pure shell, explicitly direct injections to a temporary file and construct the final YAML by concatenating parts: `head -n X base.yml > new.yml && echo "  service:" >> new.yml && tail -n Y base.yml >> new.yml`.
