@@ -2,7 +2,7 @@
 
 **Version**: 4.1
 **Last Updated**: Feb 15, 2026
-**Current Phase**: Sprint 2.28 (Collector Uplift & Infrastructure Hardening)
+**Current Phase**: Sprint 2.27 (Autonomous Beta Launch)
 **Status**: Active Development - Live Beta
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -89,7 +89,8 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 **Deliverables**:
 - ✅ **RiskCheckService**: Hard-coded safety layer for all orders
-- ✅ **Circuit Breakers**: "Kill Switch" functionality- 📋 **Collector Uplift**: Plugin-based architecture for data source reliability (Sprint 2.28)- ✅ **Audit Logging**: Immutable logs for all execution attempts
+- ✅ **Circuit Breakers**: "Kill Switch" functionality
+- ✅ **Audit Logging**: Immutable logs for all execution attempts
 - ✅ **Local Monitoring**: Docker-based health checks and alert system
 
 ---
@@ -249,7 +250,7 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 **See**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md) for detailed sprint tracking, objectives, deliverables, and progress metrics.
 
 ### Sprint Archive
-**See**: [docs/sprints/archive/](docs/sprints/archive/) for historical sprint retrospectives and completion reports.
+**See**: [docs/archive/history/sprints/](docs/archive/history/sprints/) for historical sprint retrospectives and completion reports.
 
 ### Sprint Workflow
 1. **Initialization**: Create Sprint Initialization Manifest (SIM) from [template](docs/sprints/SIM_TEMPLATE.md)
