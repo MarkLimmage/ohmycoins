@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 from sqlmodel import Session, select
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models import NewsItem, Signal, SentimentScore
 import logging
 
@@ -23,7 +23,7 @@ class DataIngestionService:
         for item in data:
             try:
                 # Basic heuristic
-                if "title" in item and "link" in item:
+                if "title" in item and ("link" in item or "url" in item):
                     # Likely a News Item
                     if self._save_news_item(collector_name, item):
                         count += 1
@@ -51,23 +51,34 @@ class DataIngestionService:
         return count
 
     def _save_news_item(self, source: str, data: Dict[str, Any]) -> bool:
+        link = data.get("link") or data.get("url")
+        if not link:
+            return False
+
         # Check for duplicates using link
-        query = select(NewsItem).where(NewsItem.link == data["link"])
+        query = select(NewsItem).where(NewsItem.link == link)
         existing = self.session.exec(query).first()
         if existing:
             return False
             
-        # Basic date parsing placeholder
-        published = data.get("published")
-        # In real scenario, parse published which is likely a string
+        published_at = data.get("published_at")
+        if isinstance(published_at, str):
+            try:
+                published_at = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+            except ValueError:
+                published_at = datetime.now(timezone.utc)
+        elif not isinstance(published_at, datetime):
+            published_at = datetime.now(timezone.utc)
         
         news = NewsItem(
             title=data.get("title"),
-            link=data.get("link"),
-            # published_at=published, # Assume pre-parsed or valid type for now
+            link=link,
+            published_at=published_at,
             summary=data.get("summary"),
             source=source,
-            collected_at=datetime.utcnow()
+            collected_at=datetime.now(timezone.utc),
+            sentiment_score=data.get("sentiment_score"),
+            sentiment_label=data.get("sentiment_label")
         )
         self.session.add(news)
         return True
@@ -79,7 +90,7 @@ class DataIngestionService:
             strength=data.get("strength"),
             source=source,
             context=data.get("context", {}),
-            generated_at=datetime.utcnow()
+            generated_at=datetime.now(timezone.utc)
         )
         self.session.add(signal)
         return True
@@ -91,7 +102,7 @@ class DataIngestionService:
             score=data.get("score"),
             magnitude=data.get("magnitude"),
             raw_data=data.get("raw_data", {}),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         self.session.add(sentiment)
         return True

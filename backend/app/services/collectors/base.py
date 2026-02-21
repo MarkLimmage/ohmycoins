@@ -152,13 +152,23 @@ class BaseCollector(ABC):
                 validated_data = await self.validate_data(raw_data)
                 logger.debug(f"{self.name}: Validated {len(validated_data)} records")
 
-                # Store data
+                # Store data (Legacy/Specific Tables)
                 logger.debug(f"{self.name}: Storing data...")
                 records_collected = await self.store_data(validated_data, session)
                 logger.info(
-                    f"{self.name}: Successfully stored {records_collected} records"
+                    f"{self.name}: Successfully stored {records_collected} legacy records"
                 )
-
+                
+                # --- PHASE 2.5: Ingestion/Normalization (Signal Pipeline) ---
+                try:
+                    from app.services.collectors.ingestion import DataIngestionService
+                    ingestion = DataIngestionService(session)
+                    ingested_count = ingestion.ingest(self.name, validated_data)
+                    logger.info(f"{self.name}: Ingested {ingested_count} normalized items (NewsItem/Signal)")
+                except Exception as ingest_error:
+                    logger.error(f"{self.name}: Ingestion failed: {ingest_error}", exc_info=True)
+                    # Don't fail the whole run if ingestion fails, just log it
+                
                 # Update collector run record
                 collector_run.status = CollectorStatus.SUCCESS
                 collector_run.completed_at = datetime.now(timezone.utc)
