@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 from sqlmodel import Session, select
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models import NewsItem, Signal, SentimentScore
 import logging
 
@@ -50,48 +50,68 @@ class DataIngestionService:
             
         return count
 
+
+
     def _save_news_item(self, source: str, data: Dict[str, Any]) -> bool:
         # Check for duplicates using link
-        query = select(NewsItem).where(NewsItem.link == data["link"])
-        existing = self.session.exec(query).first()
+        url = data.get("link") or data.get("url")
+        if not url:
+            return False
+            
+        try:
+            statement = select(NewsItem).where(NewsItem.link == url)
+            existing = self.session.exec(statement).first()
+        except Exception:
+            # Fallback if link is not link
+            return False
+            
         if existing:
             return False
             
         # Basic date parsing placeholder
         published = data.get("published")
-        # In real scenario, parse published which is likely a string
-        
+        if isinstance(published, str):
+            try:
+                published_dt = datetime.fromisoformat(published.replace("Z", "+00:00"))
+            except ValueError:
+                published_dt = datetime.now(timezone.utc)
+        else:
+            published_dt = datetime.now(timezone.utc)
+            
         news = NewsItem(
-            title=data.get("title"),
-            link=data.get("link"),
-            # published_at=published, # Assume pre-parsed or valid type for now
-            summary=data.get("summary"),
+            title=data.get("title", "Untitled"),
+            link=url,
+            summary=data.get("summary") or data.get("content", ""),
             source=source,
-            collected_at=datetime.utcnow()
+            published_at=published_dt,
+            collected_at=datetime.now(timezone.utc)
+            # author not in existing model
         )
         self.session.add(news)
         return True
 
     def _save_signal(self, source: str, data: Dict[str, Any]) -> bool:
         signal = Signal(
-            type=data.get("type"),
-            asset=data.get("asset"),
-            strength=data.get("strength"),
+            type=data.get("type", "unknown"),
+            asset=data.get("asset") or data.get("symbol", "unknown"),
+            strength=float(data.get("strength", 0.0)),
             source=source,
-            context=data.get("context", {}),
-            generated_at=datetime.utcnow()
+            context=data,  # Store full raw data in generic json field
+            generated_at=datetime.now(timezone.utc)
+            # symbol -> asset
         )
         self.session.add(signal)
         return True
 
     def _save_sentiment(self, source: str, data: Dict[str, Any]) -> bool:
         sentiment = SentimentScore(
-            asset=data.get("asset"),
+            asset=data.get("asset") or data.get("symbol", "unknown"),
+            score=float(data.get("score", 0.0)),
+            magnitude=float(data.get("magnitude", 0.0)),
+            timestamp=datetime.now(timezone.utc),
             source=source,
-            score=data.get("score"),
-            magnitude=data.get("magnitude"),
-            raw_data=data.get("raw_data", {}),
-            timestamp=datetime.utcnow()
+            raw_data=data
         )
         self.session.add(sentiment)
         return True
+

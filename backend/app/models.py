@@ -1588,3 +1588,6 @@ class SystemSettingPublic(SystemSettingBase):
 class SystemSettings(SQLModel):
     data: list[SystemSettingPublic]
     count: int
+
+
+
