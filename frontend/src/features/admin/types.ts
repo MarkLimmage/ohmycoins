@@ -33,3 +33,10 @@ export interface CollectorUpdate {
   config?: Record<string, any>
   is_active?: boolean
 }
+
+export interface CollectorStats {
+  collector_id: string
+  throughput: { timestamp: string; items_collected: number }[]
+  status: CollectorStatus
+  last_success: string | null
+}

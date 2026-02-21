@@ -11,6 +11,7 @@ import { useForm, Controller } from "react-hook-form"
 import { CollectorPlugin, CollectorCreate } from "./types"
 import { useCollectors } from "./hooks"
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Field } from "@/components/ui/field"
 
 interface CollectorPluginFormProps {
@@ -99,26 +100,55 @@ export const CollectorPluginForm = ({ plugins, onCancel, onSuccess }: CollectorP
                     />
                   )}
 
+                  {/* Handle Boolean */}
+                  {prop.type === "boolean" && (
+                    <Controller
+                        control={control}
+                        name={`config.${key}`}
+                        defaultValue={prop.default}
+                        render={({ field: { value, onChange, ...field } }) => (
+                            <Checkbox 
+                                checked={!!value} 
+                                onCheckedChange={(e) => onChange(!!e.checked)}
+                                {...field}
+                            >
+                                {prop.title || key}
+                            </Checkbox>
+                        )}
+                    />
+                  )}
+
+                  {/* Handle Enum Selection */}
+                  {prop.enum && (
+
+                  {/* Handle Enum Selection */}
                   {prop.enum && (
                     <Controller
                         control={control}
                         name={`config.${key}`}
-                        render={({ field }) => (
+                        render={({ field }) => {
+                          const collection = createListCollection({
+                            items: prop.enum.map((e: string) => ({ label: e, value: e }))
+                          })
+                          return (
                             <SelectRoot
-                                onValueChange={(e) => field.onChange(e.value[0])}
+                                collection={collection}
                                 value={field.value ? [field.value] : []}
-                                collection={createListCollection({items: prop.enum.map((e: string) => ({label: e, value: e}))})}
+                                onValueChange={(e) => field.onChange(e.value[0])}
                             >
                                 <SelectTrigger>
-                                  <SelectValueText placeholder={`Select ${key}`} />
+                                  <SelectValueText placeholder={`Select ${prop.title || key}...`} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {prop.enum.map((opt: string) => (
-                                        <SelectItem item={opt} key={opt}>{opt}</SelectItem>
+                                    {collection.items.map((opt: any) => (
+                                        <SelectItem item={opt} key={opt.value}>
+                                          {opt.label}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </SelectRoot>
-                        )}
+                          )
+                        }}
                     />
                   )}
                   

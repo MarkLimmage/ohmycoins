@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { CollectorsService } from "@/client"
-import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorStatus } from "./types"
+import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorStatus, CollectorStats } from "./types"
 
 // Adapter function to convert API Collector to Frontend CollectorInstance
 const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
@@ -8,7 +8,7 @@ const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
     id: String(apiCollector.id),
     name: apiCollector.name,
     plugin_id: apiCollector.plugin_name, // Map backend 'plugin_name' to frontend 'plugin_id'
-    status: (apiCollector.status as CollectorStatus) || "idle",
+    status: (apiCollector.is_enabled ? "running" : "idle"), // Derive status from is_enabled for now
     config: apiCollector.config || {},
     last_run: apiCollector.last_run_at || null,
     next_run: null, // Not provided by API yet
@@ -17,6 +17,39 @@ const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
     success_count: 0, // Not provided by API yet
   }
 }
+
+// Mock collector stats until Track A is ready
+const mockCollectorStats = (collectorId: string): CollectorStats => {
+  const now = new Date();
+  const throughput = Array.from({ length: 60 }, (_, i) => ({
+    // Last hour of data points (every minute)
+    timestamp: new Date(now.getTime() - (59 - i) * 60000).toISOString(),
+    // Random throughput between 0 and 100 items
+    items_collected: Math.floor(Math.random() * 100)
+  }));
+  
+  return {
+    collector_id: collectorId,
+    throughput,
+    status: Math.random() > 0.9 ? 'failed' : 'success', // Mostly successful
+    last_success: new Date(now.getTime() - Math.floor(Math.random() * 300000)).toISOString() // Random time in last 5 mins
+  };
+};
+
+export const useCollectorStats = (collectorId: string) => {
+  return useQuery({
+    queryKey: ['collector-stats', collectorId],
+    queryFn: async (): Promise<CollectorStats> => {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return mockCollectorStats(collectorId);
+    },
+    // Poll every 5 seconds to update stats
+    refetchInterval: 5000,
+    // Keep previous data while fetching new data to avoid flickering
+    placeholderData: (previousData) => previousData
+  });
+};
 
 export const useCollectors = () => {
   const queryClient = useQueryClient()
