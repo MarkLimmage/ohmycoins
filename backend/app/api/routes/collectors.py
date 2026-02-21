@@ -7,14 +7,15 @@ Provides endpoints for:
 - Monitoring status and triggering runs
 """
 
+from datetime import datetime, timedelta, timezone
 from typing import Any, List
 
-from fastapi import APIRouter, HTTPException
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, Query
+from sqlmodel import Session, select, func
 
 from app.api.deps import SessionDep
 from app.core.collectors.registry import CollectorRegistry
-from app.models import Collector, Message
+from app.models import Collector, Message, CollectorRuns
 from app.services.collectors.orchestrator import get_orchestrator # Keep existing orchestrator logic if needed, or implement new
 
 router = APIRouter()
@@ -177,6 +178,47 @@ async def trigger_instance(
     # await orchestrator.run_collector_instance(instance) # Assuming such method exists
     
     return Message(message=f"Collector '{instance.name}' triggered successfully")
+
+
+@router.get("/{id}/stats", response_model=List[dict])
+def get_stats(
+    id: int,
+    session: SessionDep,
+    range: str = Query("1h", description="Time range for stats (e.g., 1h, 24h, 7d)")
+) -> Any:
+    """
+    Get statistical data (records collected) for a collector over time.
+    """
+    collector = session.get(Collector, id)
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+    # Parse range (basic)
+    now = datetime.now(timezone.utc)
+    delta = timedelta(hours=1)
+    if range == "24h":
+        delta = timedelta(hours=24)
+    elif range == "7d":
+        delta = timedelta(days=7)
+    
+    start_time = now - delta
+
+    statement = (
+        select(CollectorRuns)
+        .where(CollectorRuns.collector_name == collector.name)
+        .where(CollectorRuns.started_at >= start_time)
+        .order_by(CollectorRuns.started_at)
+    )
+    runs = session.exec(statement).all()
+    
+    return [
+        {
+            "timestamp": run.started_at,
+            "count": run.records_collected or 0
+        }
+        for run in runs
+    ]
+
 
 # Keep existing endpoints for backward compatibility or direct access if needed
 # ... (Or remove them if they conflict)
