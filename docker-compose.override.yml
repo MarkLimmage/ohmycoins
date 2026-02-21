@@ -91,6 +91,7 @@ services:
       - ./backend/tests:/app/tests
       - ./backend/alembic.ini:/app/alembic.ini
       - ./backend/htmlcov:/app/htmlcov
+      - /home/mark/omc/logs/hub:/var/log/omc-agents
     develop:
       watch:
         - path: ./backend
@@ -219,6 +220,12 @@ services:
       - ./frontend/test-results:/app/test-results
     ports:
       - 9322:9323
+
+  celery_worker:
+    environment:
+      - POSTGRES_PORT=5432
+    volumes:
+      - /home/mark/omc/logs/hub:/var/log/omc-agents
 
 networks:
   traefik-public:
