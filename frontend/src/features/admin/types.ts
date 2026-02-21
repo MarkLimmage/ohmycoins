@@ -21,6 +21,11 @@ export interface CollectorInstance {
   success_count: number
 }
 
+export interface CollectorStatsPoint {
+  timestamp: string
+  count: number
+}
+
 export interface CollectorCreate {
   name: string
   plugin_id: string

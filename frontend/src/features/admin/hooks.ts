@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { CollectorsService } from "@/client"
-import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorStatus } from "./types"
+import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorStatus, CollectorStatsPoint } from "./types"
 
 // Adapter function to convert API Collector to Frontend CollectorInstance
 const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
@@ -64,13 +64,17 @@ export const useCollectors = () => {
   // Update Instance
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<CollectorCreate> }) => {
+      // The API requires name, but we might only be updating config.
+      // However, CollectorForm always sends the full object.
+      // If we support partial updates in the future, we need to handle this.
+      // For now, defaulting to empty string if undefined (though it should be present from form)
       return await CollectorsService.updateInstance({
         id: Number(id),
         requestBody: {
-          name: data.name,
+          name: data.name!, 
+          plugin_name: data.plugin_id!,
           config: data.config,
           is_enabled: data.is_active,
-          // plugin_name is likely not editable, check backend model
         }
       })
     },
@@ -90,10 +94,12 @@ export const useCollectors = () => {
       queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
     }
   })
-
+// is_active is used for optimistic updates or if the API supports setting state directly.
+      // Currently the toggle endpoint just flips the state.
+      
   // Toggle Instance
   const toggleMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({ id }: { id: string; is_active: boolean }) => {
       return await CollectorsService.toggleInstance({
         id: Number(id)
       })
@@ -107,8 +113,29 @@ export const useCollectors = () => {
     plugins: pluginsQuery,
     instances: instancesQuery,
     createInstance: createMutation,
+    updateInstance: updateMutation,
     deleteInstance: deleteMutation,
     toggleInstance: toggleMutation
   }
+}
+
+export const useCollectorStats = (id: string, enabled = true) => {
+  return useQuery({
+    queryKey: ["collector-stats", id],
+    queryFn: async (): Promise<CollectorStatsPoint[]> => {
+      // Mock data: Generate 24h history
+      const points: CollectorStatsPoint[] = [];
+      const now = new Date();
+      for (let i = 24; i >= 0; i--) {
+        points.push({
+          timestamp: new Date(now.getTime() - i * 3600000).toISOString(),
+          count: Math.floor(Math.random() * 50) + 10 
+        });
+      }
+      return points;
+    },
+    enabled: enabled,
+    staleTime: 60000 // Cache for 1 min
+  })
 }
 
