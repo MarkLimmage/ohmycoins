@@ -544,3 +544,26 @@ Before initializing the *next* sprint, the Architect must:
 2.  Identify systemic issues (not just one-off bugs).
 3.  **Edit `docs/sprints/SIM_TEMPLATE.md`** to include specific preventive instructions (e.g., adding a `sudo rm -rf` cleanup step if permission errors were reported).
 4.  Commit the template update with the message: `docs: update SIM template with sprint X.XX learnings`.
+
+---
+
+## Governance Protocol (Heartbeat Requirement)
+
+All active agents (Tracks A, B, C) MUST maintain a `status.json` file in the root of their worktree.
+This file serves as a **Semantic Heartbeat** for the Architect.
+
+**Update Frequency**: At the start of every major task or at least once per 10 minutes.
+**File Location**: `<worktree_root>/status.json`
+
+**Format**:
+```json
+{
+  "agent": "Track A (Backend)",
+  "state": "working",  // thinking, working, waiting, error
+  "current_task": "Implementing [REQ-ID] - User Login Service",
+  "blocker": "Waiting for DB migration to complete...",
+  "last_update": "2026-02-21T16:50:00"
+}
+```
+
+**Tools**: `scripts/governance/supervisor.py` will scan these files. If your heartbeat stops or you drift from your authorized task, the Architect will intervene.

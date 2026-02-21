@@ -1,0 +1,20 @@
+{
+    "track-a": {
+        "status": "idle",
+        "current_task": "None",
+        "last_update": "2026-02-21T00:00:00.000000",
+        "authorized_task": "REQ-SIG-001"
+    },
+    "track-b": {
+        "status": "idle",
+        "current_task": "None",
+        "last_update": "2026-02-21T00:00:00.000000",
+        "authorized_task": "REQ-COLL-DASH"
+    },
+    "track-c": {
+        "status": "idle",
+        "current_task": "None",
+        "last_update": "2026-02-21T00:00:00.000000",
+        "authorized_task": "Infrastructure Setup"
+    }
+}
