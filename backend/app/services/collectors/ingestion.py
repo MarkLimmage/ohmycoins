@@ -1,7 +1,8 @@
 from typing import Any, Dict, List
 from sqlmodel import Session, select
 from datetime import datetime
-from app.models import NewsItem, Signal, SentimentScore
+from decimal import Decimal
+from app.models import NewsItem, Signal, SentimentScore, PriceData5Min
 import logging
 
 class DataIngestionService:
@@ -22,8 +23,13 @@ class DataIngestionService:
         count = 0
         for item in data:
             try:
-                # Basic heuristic
-                if "title" in item and "link" in item:
+                # Determine item type
+                item_type = item.get("type", "unknown")
+                
+                if item_type == "price":
+                    if self._save_price_data(item):
+                        count += 1
+                elif "title" in item and "link" in item:
                     # Likely a News Item
                     if self._save_news_item(collector_name, item):
                         count += 1
@@ -49,6 +55,38 @@ class DataIngestionService:
             return 0
             
         return count
+        
+    def _save_price_data(self, data: Dict[str, Any]) -> bool:
+        """Save price data to PriceData5Min table."""
+        coin_type = data.get("coin_type")
+        timestamp_str = data.get("timestamp")
+        
+        if not coin_type or not timestamp_str:
+            return False
+            
+        try:
+            timestamp = datetime.fromisoformat(timestamp_str)
+            # Check for existing record
+            statement = select(PriceData5Min).where(
+                PriceData5Min.coin_type == coin_type,
+                PriceData5Min.timestamp == timestamp
+            )
+            existing = self.session.exec(statement).first()
+            if existing:
+                return False
+                
+            price_record = PriceData5Min(
+                coin_type=coin_type,
+                bid=Decimal(str(data.get("bid"))),
+                ask=Decimal(str(data.get("ask"))),
+                last=Decimal(str(data.get("last"))),
+                timestamp=timestamp
+            )
+            self.session.add(price_record)
+            return True
+        except Exception as e:
+            logging.error(f"Error saving price data for {coin_type}: {e}")
+            return False
 
     def _save_news_item(self, source: str, data: Dict[str, Any]) -> bool:
         # Check for duplicates using link

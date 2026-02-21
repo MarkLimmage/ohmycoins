@@ -12,7 +12,13 @@ from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from app.services.collector import run_collector
+from sqlmodel import Session
+from app.core.db import engine
+from app.core.config import settings
+from app.core.collectors.registry import CollectorRegistry
+from app.services.collectors.ingestion import DataIngestionService
+# Ensure strategy is registered
+import app.collectors.strategies.market_coinspot 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +31,9 @@ class CollectorScheduler:
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
         self.is_running = False
+        # Optional: verify registry has the strategy
+        if not CollectorRegistry.get_strategy("market_coinspot"):
+            logger.warning("market_coinspot strategy not found in registry (yet)")
 
     def start(self):
         """Start the scheduler with a 5-minute cron job"""
@@ -62,9 +71,31 @@ class CollectorScheduler:
         This is called by the scheduler
         """
         start_time = datetime.now()
+        records_stored = 0
+        
         try:
             logger.info(f"Starting scheduled collection at {start_time}")
-            records_stored = await run_collector()
+            
+            # Use the new Plugin System
+            collector_cls = CollectorRegistry.get_strategy("market_coinspot")
+            if not collector_cls:
+                logger.error("market_coinspot strategy not found in registry")
+                return
+                
+            collector = collector_cls()
+            # Default config, maybe from settings in real app
+            config = {
+                "use_web_scraping": getattr(settings, "COINSPOT_USE_WEB_SCRAPING", True),
+                "request_timeout": 30
+            }
+            
+            # Collect
+            data = await collector.collect(config)
+            
+            # Ingest
+            with Session(engine) as session:
+                service = DataIngestionService(session)
+                records_stored = service.ingest("market_coinspot", data)
 
             elapsed_seconds = (datetime.now() - start_time).total_seconds()
 
