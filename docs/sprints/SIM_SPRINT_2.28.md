@@ -168,6 +168,11 @@ SPECIFIC OBJECTIVES:
 2. **Dashboard**: Update `CollectorDashboard.tsx` to show instance status.
 3. **Edit Instance Workflow**: Implement full CRUD for instance configuration (Edit/Update existing instances).
 4. **Dynamic Configuration Options**: Ensure Admin UI exposes all specific settings defined in the plugin schema (e.g., API keys, schedules) similar to a "Valves Config" pattern.
+5. **Central Collector Dashboard**: Create a new dashboard view that visualizes data acquisition metrics:
+    - Active streams (running plugins)
+    - Volume (items collected)
+    - Rate (items/minute)
+    - Error rates and health status
 
 CONSTRAINTS:
   - **Environment**: Run frontend tests in container or check strictly against API specs.

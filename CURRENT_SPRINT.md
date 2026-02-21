@@ -20,8 +20,9 @@
 *   **Goal**: Build the "Control Center" for data collection strategies.
 *   **Tasks**:
     *   **Dynamic Forms**: Render configuration inputs (API Keys, Intervals, Symbols) based on plugin JSON schemas.
-    *   **Dashboard**: Visualize collector health (Green/Red indicators), last run time, and success rate.
-    *   **Actions**: "Run Now", "Pause", "Resume", "Delete" instance controls.
+    *   **Actionable Dashboard**: Visualize collector health (Green/Red indicators), last run time, and success rate.
+    *   **Central Metrics**: New dashboard view for active streams, volume, rate, and error analytics.
+    *   **Actions**: "Run Now", "Pause", "Resume", "Delete", "Edit" instance controls.
 
 ### 3. Signal Pipeline (Track A)
 *   **Goal**: Standardize the output of all collectors.
