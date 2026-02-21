@@ -66,21 +66,21 @@ Ensure that each track's `.env` uses unique ports (as defined below) and that de
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-a/' ../sprint-X.XX/track-a/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5433\nREDIS_PORT=6380\nDOCKER_IMAGE_BACKEND=backend\nTAG=latest\n" >> ../sprint-X.XX/track-a/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-a/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8001:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-a/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8001:80\"\n  backend:\n    volumes:\n      - /home/mark/omc/logs/hub:/var/log/omc-agents\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    volumes:\n      - /home/mark/omc/logs/hub:/var/log/omc-agents\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-a/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-a --new-window ../sprint-X.XX/track-a`
 - [ ] `git worktree add ../sprint-X.XX/track-b feat/REQ-UX-XXX`
 - [ ] `cp .env ../sprint-X.XX/track-b/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-b/' ../sprint-X.XX/track-b/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5434\nREDIS_PORT=6381\nDOCKER_IMAGE_BACKEND=backend\nTAG=latest\n" >> ../sprint-X.XX/track-b/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#2b9e3e","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-b/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"3001:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-b/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"3001:80\"\n  backend:\n    volumes:\n      - /home/mark/omc/logs/hub:/var/log/omc-agents\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    volumes:\n      - /home/mark/omc/logs/hub:/var/log/omc-agents\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-b/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-b --new-window ../sprint-X.XX/track-b`
 - [ ] `git worktree add ../sprint-X.XX/track-c feat/IR-XX-YYY`
 - [ ] `cp .env ../sprint-X.XX/track-c/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-c/' ../sprint-X.XX/track-c/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5435\nREDIS_PORT=6382\nDOCKER_IMAGE_BACKEND=backend\nTAG=latest\n" >> ../sprint-X.XX/track-c/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-c/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#d15715","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-c/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8002:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-c/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8002:80\"\n  backend:\n    volumes:\n      - /home/mark/omc/logs/hub:/var/log/omc-agents\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    volumes:\n      - /home/mark/omc/logs/hub:/var/log/omc-agents\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-c/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-c --new-window ../sprint-X.XX/track-c`
 
 **Teardown Protocol (CRITICAL):**

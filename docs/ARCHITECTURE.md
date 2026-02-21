@@ -1476,3 +1476,12 @@ test('configure Google Gemini credentials', async ({ page }) => {
 **Cost Optimization Recommendations:**
 - Suggest switching to cheaper models based on usage patterns
 - "Your queries could run on Gemini 1.5 Flash for 80% less cost"
+
+## 8. DevOps & Monitoring (Governance)
+
+### 8.1 Centralized Log Hub
+To facilitate observability across multiple development tracks (Git Worktrees), the architecture mandates a **Centralized Log Hub**.
+*   **Host Path**: `~/omc/logs/hub` (Outside Git).
+*   **Container Path**: `/var/log/omc-agents` (Mounted Read-Write).
+*   **Mechanism**: All agents and containers write structured logs to this volume.
+*   **Tooling**: `scripts/governance/watchdog.py` and `agent-monitor.sh` aggregate these logs for the Architect.
