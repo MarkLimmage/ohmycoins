@@ -1,26 +1,16 @@
 {
-    "track-a": {
-        "status": "idle",
-        "current_task": "None",
-        "last_update": "2026-02-21T00:00:00.000000",
-        "authorized_task": "REQ-SIG-001"
-    },
-    "track-b": {
-        "status": "idle",
-        "current_task": "None",
-        "last_update": "2026-02-21T00:00:00.000000",
-        "authorized_task": "REQ-COLL-DASH"
-    },
-    "track-c": {
-        "status": "idle",
-        "current_task": "None",
-        "last_update": "2026-02-21T00:00:00.000000",
-        "authorized_task": "Infrastructure Setup"
-    },
-    "Dockmaster": {
-        "status": "active",
-        "current_task": "Initializing Sprint 2.30",
-        "last_update": "2026-02-21T00:00:00.000000",
-        "authorized_task": "Sprint 2.30 Initialization"
+    "sprint_id": "idle",
+    "status": "standby",
+    "agents": {
+        "architect": {
+            "authorized_task": "system_idle",
+            "working_directory": ".",
+            "last_heartbeat": "2024-05-22T00:00:00Z"
+        },
+        "dockmaster": {
+            "authorized_task": "system_idle",
+            "working_directory": ".",
+            "last_heartbeat": "2024-05-22T00:00:00Z"
+        }
     }
 }
