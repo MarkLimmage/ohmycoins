@@ -30,6 +30,7 @@
 - [ ] **Test Alignment**: Run the full test suite (`bash scripts/test.sh`) at the end of the sprint to maintain alignment between the test suite and delivered work.
 - [ ] **Merge Safety**: Verify that all transient environment changes (e.g., port mappings in `docker-compose.override.yml`) have been reverted in PRs before merging.
 - [ ] **Next Sprint Planning**: Create the next SIM using `docs/sprints/SIM_TEMPLATE.md`, ensuring **zero drift** from the template structure.
+- [ ] **Sprint Documentation Cleanup**: At the end of the sprint, move all sprint artifacts (SIM, reports, logs) to `docs/sprints/archive/sprint-X.XX/` to keep the active directory clean.
 
 ### Track D: The Dockmaster (Orchestration)
 
@@ -63,17 +64,21 @@ Ensure that each track's `.env` uses unique ports (as defined below) and that de
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-a/' ../sprint-X.XX/track-a/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5433\nREDIS_PORT=6380\n" >> ../sprint-X.XX/track-a/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-a/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8001:80\"" > ../sprint-X.XX/track-a/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8001:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-a/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-a --new-window ../sprint-X.XX/track-a`
 - [ ] `git worktree add ../sprint-X.XX/track-b feat/REQ-UX-XXX`
 - [ ] `cp .env ../sprint-X.XX/track-b/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-b/' ../sprint-X.XX/track-b/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5434\nREDIS_PORT=6381\n" >> ../sprint-X.XX/track-b/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#2b9e3e","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-b/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"3001:80\"" > ../sprint-X.XX/track-b/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"3001:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-b/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-b --new-window ../sprint-X.XX/track-b`
 - [ ] `git worktree add ../sprint-X.XX/track-c feat/IR-XX-YYY`
+- [ ] `cp .env ../sprint-X.XX/track-c/.env`
+- [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-c/' ../sprint-X.XX/track-c/.env`
+- [ ] `echo -e "\nPOSTGRES_PORT=5435\nREDIS_PORT=6382\n" >> ../sprint-X.XX/track-c/.env`
 - [ ] `mkdir -p ../sprint-X.XX/track-c/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#d15715","titleBar.activeForeground":"#ffffff"}}' > ../sprint-X.XX/track-c/.vscode/settings.json`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8002:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../sprint-X.XX/track-c/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../sprint-X.XX/data/agent-c --new-window ../sprint-X.XX/track-c`
 
 **Teardown Protocol (CRITICAL):**
@@ -102,11 +107,11 @@ WORKSPACE ANCHOR:
   INSTANCE_PORT: 8001
   STRICT_SCOPE: You are locked to this directory. Do not attempt to modify files outside of this path. All relative paths in documentation refer to this worktree root.
 
-ENVIRONMENT SETUP (TRANSIENT):
-  To prevent port conflicts with other active agents:
-  1. Modify `docker-compose.override.yml` to map host ports to your INSTANCE_PORT (e.g., change "8092:80" to "8001:80").
-  2. If using multiple services, increment ports from your INSTANCE_PORT (e.g., 8001, 8002, 8003).
-  3. CRITICAL: Revert these `docker-compose.override.yml` changes before submitting your Pull Request. The CI/CD pipeline expects standard ports.
+ENVIRONMENT SETUP (MANAGED):
+  Your environment has been pre-configured by the Dockmaster.
+  - **Review Only**: `docker-compose.override.yml` is already set to map ports for your track (e.g., 8001:80).
+  - **Do Not Modify**: Do not change port mappings or project names in `.env` or `docker-compose.yml`.
+  - **Verify**: Run `grep COMPOSE_PROJECT_NAME .env` to confirm you are in the correct track.
 
 TIERED ACCESS:
   READ ONLY:
@@ -145,7 +150,10 @@ DOC-GATE REQUIREMENTS:
     - [ ] Update OpenAPI docs (/docs endpoint)
 
 CONSTRAINTS:
-  - **Environment**: NO LOCAL VENVS. Testing must occur within the project's Docker containers (`docker compose run backend pytest`).
+  - **Environment**: NO LOCAL VENVS. NO HOST-SIDE TESTING.
+  - **Testing Protocol**: All tests must be executed inside the track-specific containers to ensure isolation.
+    - Command: `docker compose run --rm backend pytest`
+    - Verify: Ensure you are running against YOUR track's database (e.g., `track-a-db` on port 5433).
   - Use EARS syntax for any new requirements (Ubiquitous, Event-driven, State-driven, Optional, Unwanted)
   - Follow API_CONTRACTS.md patterns for:
     - Authentication (JWT token handling)

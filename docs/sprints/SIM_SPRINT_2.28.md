@@ -32,6 +32,7 @@ Revolutionize data collection management by implementing a **Plugin-Based Archit
 - [ ] **Test Alignment**: Run the full test suite (`bash scripts/test.sh`) at the end of the sprint to maintain alignment between the test suite and delivered work.
 - [ ] **Merge Safety**: Verify that all transient environment changes (e.g., port mappings in `docker-compose.override.yml`) have been reverted in PRs before merging.
 - [ ] **Next Sprint Planning**: Create the next SIM using `docs/sprints/SIM_TEMPLATE.md`, ensuring **zero drift** from the template structure.
+- [ ] **Sprint Documentation Cleanup**: At the end of the sprint, move all sprint artifacts (SIM, reports, logs) to `docs/sprints/archive/sprint-2.28/` to keep the active directory clean.
 
 ### Track D: The Dockmaster (Orchestration)
 **Agent**: The Infrastructure/DevOps Agent
@@ -63,14 +64,14 @@ Ensure that each track's `.env` uses unique ports (as defined below) and that de
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-a/' ../omc-track-a/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5433\nREDIS_PORT=6380\n" >> ../omc-track-a/.env`
 - [ ] `mkdir -p ../omc-track-a/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#3771c8","titleBar.activeForeground":"#ffffff"}}' > ../omc-track-a/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8010:80\"" > ../omc-track-a/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8010:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../omc-track-a/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../omc-data/agent-a --new-window ../omc-track-a`
 - [ ] `git worktree add ../omc-track-b feat/REQ-COLL-UI`
 - [ ] `cp .env ../omc-track-b/.env`
 - [ ] `sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=track-b/' ../omc-track-b/.env`
 - [ ] `echo -e "\nPOSTGRES_PORT=5434\nREDIS_PORT=6381\n" >> ../omc-track-b/.env`
 - [ ] `mkdir -p ../omc-track-b/.vscode && echo '{"workbench.colorCustomizations":{"titleBar.activeBackground":"#c83737","titleBar.activeForeground":"#ffffff"}}' > ../omc-track-b/.vscode/settings.json`
-- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8020:80\"" > ../omc-track-b/docker-compose.override.yml`
+- [ ] `echo -e "services:\n  proxy:\n    ports:\n      - \"8020:80\"\n  backend:\n    environment:\n      - POSTGRES_PORT=5432\n  celery_worker:\n    environment:\n      - POSTGRES_PORT=5432\n  prestart:\n    environment:\n      - POSTGRES_PORT=5432" > ../omc-track-b/docker-compose.override.yml`
 - [ ] `code --user-data-dir ../omc-data/agent-b --new-window ../omc-track-b`
 
 **Teardown Protocol (CRITICAL):**
@@ -134,7 +135,7 @@ DELIVERABLES:
 #### **Track B: Frontend Dynamic Forms (UI/UX Agent)**
 
 **Agent**: The UI/UX Agent (Frontend Specialist)
-**Requirements**: REQ-COLL-ARCH-002, REQ-COLL-ST-001
+**Requirements**: REQ-COLL-ARCH-002, REQ-COLL-ST-001, REQ-COLL-CFG-001
 **Estimated Effort**: 5 days
 
 #### Context Injection Prompt
@@ -165,14 +166,15 @@ Render configuration forms based on plugin schemas.
 SPECIFIC OBJECTIVES:
 1. **Dynamic Forms**: Create `CollectorForm.tsx` to render inputs from JSON schema.
 2. **Dashboard**: Update `CollectorDashboard.tsx` to show instance status.
-3. **Form Validation**: Ensure client-side validation matches schema.
+3. **Edit Instance Workflow**: Implement full CRUD for instance configuration (Edit/Update existing instances).
+4. **Dynamic Configuration Options**: Ensure Admin UI exposes all specific settings defined in the plugin schema (e.g., API keys, schedules) similar to a "Valves Config" pattern.
 
 CONSTRAINTS:
   - **Environment**: Run frontend tests in container or check strictly against API specs.
   - **Design**: Follow existing UI component library (Shadcn/UI).
 
 DELIVERABLES:
-  - Admin page capable of configuring the CoinDesk plugin.
+  - Admin page capable of configuring AND EDITING the CoinDesk plugin.
   - Status indicators for health monitoring.
 ```
 
