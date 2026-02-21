@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 class BacktestConfig(BaseModel):
     """Configuration for a backtest run"""
+
     strategy_name: str
     coin_type: str
     start_date: datetime
@@ -19,6 +20,7 @@ class BacktestConfig(BaseModel):
 
 class BacktestResult(BaseModel):
     """Results of a backtest run"""
+
     strategy_name: str
     coin_type: str
     total_return: float

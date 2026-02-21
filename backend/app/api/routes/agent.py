@@ -64,9 +64,7 @@ async def create_agent_session(
         Created agent session
     """
     # Create session in database
-    session = await session_manager.create_session(
-        db, current_user.id, session_in
-    )
+    session = await session_manager.create_session(db, current_user.id, session_in)
 
     # Start the agent workflow asynchronously
     # TODO: Use background tasks or celery for production
@@ -110,9 +108,8 @@ async def list_agent_sessions(
     )
     sessions = db.exec(statement).all()
 
-    count_statement = (
-        select(AgentSession)
-        .where(AgentSession.user_id == current_user.id)
+    count_statement = select(AgentSession).where(
+        AgentSession.user_id == current_user.id
     )
     count = len(db.exec(count_statement).all())
 
@@ -146,7 +143,9 @@ async def get_agent_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this session"
+        )
 
     return session
 
@@ -180,7 +179,9 @@ async def delete_agent_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this session")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this session"
+        )
 
     # Cancel if running
     if session.status == "running":
@@ -193,7 +194,9 @@ async def delete_agent_session(
     return {"message": "Session deleted successfully"}
 
 
-@router.get("/sessions/{session_id}/messages", response_model=list[AgentSessionMessagePublic])
+@router.get(
+    "/sessions/{session_id}/messages", response_model=list[AgentSessionMessagePublic]
+)
 async def get_session_messages(
     *,
     session_id: uuid.UUID,
@@ -220,12 +223,16 @@ async def get_session_messages(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this session"
+        )
 
     return session.messages
 
 
-@router.get("/sessions/{session_id}/artifacts", response_model=list[AgentArtifactPublic])
+@router.get(
+    "/sessions/{session_id}/artifacts", response_model=list[AgentArtifactPublic]
+)
 async def get_session_artifacts(
     *,
     session_id: uuid.UUID,
@@ -252,7 +259,9 @@ async def get_session_artifacts(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this session"
+        )
 
     return session.artifacts
 
@@ -284,7 +293,9 @@ async def cancel_agent_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     if session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to cancel this session")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to cancel this session"
+        )
 
     if session.status not in ["pending", "running"]:
         raise HTTPException(status_code=400, detail="Session is not active")
@@ -298,25 +309,30 @@ async def cancel_agent_session(
 # Human-in-the-Loop (HiTL) Endpoints - Week 9-10
 # ============================================================================
 
+
 # Pydantic models for HiTL requests/responses
 class ClarificationResponse(BaseModel):
     """User responses to clarification questions."""
+
     responses: dict[str, str]
 
 
 class ChoiceSelection(BaseModel):
     """User selection from available choices."""
+
     selected_model: str
 
 
 class ApprovalDecision(BaseModel):
     """User approval or rejection."""
+
     approved: bool
     reason: str | None = None
 
 
 class OverrideRequest(BaseModel):
     """User override request."""
+
     override_type: str
     override_data: dict[str, Any]
 
@@ -385,8 +401,7 @@ async def provide_clarifications(
 
     if not state or not state.get("awaiting_clarification"):
         raise HTTPException(
-            status_code=400,
-            detail="Session is not awaiting clarification"
+            status_code=400, detail="Session is not awaiting clarification"
         )
 
     # Apply clarifications
@@ -464,10 +479,7 @@ async def select_choice(
     state = orchestrator.get_session_state(session_id)
 
     if not state or not state.get("awaiting_choice"):
-        raise HTTPException(
-            status_code=400,
-            detail="Session is not awaiting choice"
-        )
+        raise HTTPException(status_code=400, detail="Session is not awaiting choice")
 
     # Apply selection
     updated_state = handle_choice_selection(state, selection.selected_model)
@@ -544,18 +556,12 @@ async def approve_request(
     state = orchestrator.get_session_state(session_id)
 
     if not state or not state.get("approval_needed"):
-        raise HTTPException(
-            status_code=400,
-            detail="Session is not awaiting approval"
-        )
+        raise HTTPException(status_code=400, detail="Session is not awaiting approval")
 
     # Get approval type from pending approvals
     pending_approvals = state.get("pending_approvals", [])
     if not pending_approvals:
-        raise HTTPException(
-            status_code=400,
-            detail="No pending approvals found"
-        )
+        raise HTTPException(status_code=400, detail="No pending approvals found")
 
     approval_type = pending_approvals[0].get("approval_type")
 
@@ -639,23 +645,15 @@ async def apply_override(
     state = orchestrator.get_session_state(session_id)
 
     if not state:
-        raise HTTPException(
-            status_code=400,
-            detail="Session state not found"
-        )
+        raise HTTPException(status_code=400, detail="Session state not found")
 
     # Apply override
     try:
         updated_state = apply_user_override(
-            state,
-            override_request.override_type,
-            override_request.override_data
+            state, override_request.override_type, override_request.override_data
         )
     except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid override: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid override: {str(e)}")
 
     # Update state and resume workflow
     orchestrator.update_session_state(session_id, updated_state)
@@ -697,7 +695,9 @@ async def download_artifact(
     # Verify user has access to this artifact's session
     session = await session_manager.get_session(db, artifact.session_id)
     if not session or session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this artifact")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this artifact"
+        )
 
     # Get file path
     file_path = artifact.file_path
@@ -740,7 +740,9 @@ async def delete_artifact(
     # Verify user has access to this artifact's session
     session = await session_manager.get_session(db, artifact.session_id)
     if not session or session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this artifact")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this artifact"
+        )
 
     # Delete artifact
     if not artifact_manager.delete_artifact(artifact_id, db):

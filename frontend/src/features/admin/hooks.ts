@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { CollectorsService } from "@/client"
-import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorStatus } from "./types"
+import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorUpdate, CollectorStatus } from "./types"
 
 // Adapter function to convert API Collector to Frontend CollectorInstance
 const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
@@ -75,7 +75,7 @@ export const useCollectors = () => {
 
   // Toggle Instance
   const toggleMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({ id }: { id: string }) => {
       return await CollectorsService.toggleInstance({
         id: Number(id)
       })
@@ -85,12 +85,52 @@ export const useCollectors = () => {
     }
   })
 
+  // Update Instance
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CollectorUpdate }) => {
+       const cachedInstances = queryClient.getQueryData<CollectorInstance[]>(["collector-instances"])
+       const currentInstance = cachedInstances?.find(i => i.id === id);
+       
+       if (!currentInstance) throw new Error("Instance not found in cache");
+
+       return await CollectorsService.updateInstance({
+         id: Number(id),
+         requestBody: {
+           id: Number(id),
+           name: data.name || currentInstance.name,
+           plugin_name: currentInstance.plugin_id,
+           config: data.config ? { ...currentInstance.config, ...data.config } : currentInstance.config,
+           is_enabled: data.is_active !== undefined ? data.is_active : currentInstance.is_active,
+           schedule_cron: "*/15 * * * *", 
+           status: currentInstance.status
+         } as any
+       })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
+    }
+  })
+
+  // Trigger Run Manually
+  const triggerMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await CollectorsService.triggerInstance({
+        id: Number(id)
+      })
+    },
+    onSuccess: () => {
+       queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
+    }
+  })
+
   return {
     plugins: pluginsQuery,
     instances: instancesQuery,
     createInstance: createMutation,
+    updateInstance: updateMutation,
     deleteInstance: deleteMutation,
-    toggleInstance: toggleMutation
+    toggleInstance: toggleMutation,
+    triggerInstance: triggerMutation
   }
 }
 

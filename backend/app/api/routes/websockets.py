@@ -26,20 +26,23 @@ from app.services.websocket_manager import manager
 
 router = APIRouter()
 
+
 class BroadcastMessage(BaseModel):
     channel: str
     message: dict[str, Any]
 
+
 @router.post("/broadcast", include_in_schema=False)
 async def broadcast_message(
     body: BroadcastMessage,
-    _user: Annotated[User, Depends(get_current_active_superuser)]
+    _user: Annotated[User, Depends(get_current_active_superuser)],
 ) -> dict[str, str]:
     """
     Internal endpoint to test WebSocket broadcasts.
     """
     await manager.broadcast_json(body.message, body.channel)
     return {"status": "ok"}
+
 
 async def get_websocket_user(
     token: Annotated[str, Query()],
@@ -49,19 +52,28 @@ async def get_websocket_user(
     Authenticate WebSocket connection using JWT token in query parameter.
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token"
+        )
 
     user = session.get(User, token_data.sub)
     if not user:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="User not found")
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="User not found"
+        )
 
     if not user.is_active:
-        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Inactive user")
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Inactive user"
+        )
 
     return user
+
 
 @router.websocket("/catalyst/live")
 async def websocket_catalyst_live(
@@ -79,6 +91,7 @@ async def websocket_catalyst_live(
     except WebSocketDisconnect:
         manager.disconnect(websocket, channel_id)
 
+
 @router.websocket("/glass/live")
 async def websocket_glass_live(
     websocket: WebSocket,
@@ -94,6 +107,7 @@ async def websocket_glass_live(
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, channel_id)
+
 
 @router.websocket("/human/live")
 async def websocket_human_live(
@@ -111,6 +125,7 @@ async def websocket_human_live(
     except WebSocketDisconnect:
         manager.disconnect(websocket, channel_id)
 
+
 @router.websocket("/exchange/live")
 async def websocket_exchange_live(
     websocket: WebSocket,
@@ -126,6 +141,7 @@ async def websocket_exchange_live(
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, channel_id)
+
 
 @router.websocket("/trading/live")
 async def websocket_trading_live(
@@ -144,6 +160,7 @@ async def websocket_trading_live(
     except WebSocketDisconnect:
         manager.disconnect(websocket, channel_id)
 
+
 @router.websocket("/floor/pnl")
 async def websocket_floor_pnl(
     websocket: WebSocket,
@@ -161,14 +178,14 @@ async def websocket_floor_pnl(
             while True:
                 await asyncio.sleep(2)
                 ticker = {
-                   "type": "ticker",
-                   "payload": {
-                       "total_pnl": 1234.56 + random.uniform(-10, 10),
-                       "pnl_percentage": 0.023,
-                       "active_count": 3,
-                       "paused_count": 1,
-                       "last_update": datetime.now().isoformat()
-                   }
+                    "type": "ticker",
+                    "payload": {
+                        "total_pnl": 1234.56 + random.uniform(-10, 10),
+                        "pnl_percentage": 0.023,
+                        "active_count": 3,
+                        "paused_count": 1,
+                        "last_update": datetime.now().isoformat(),
+                    },
                 }
                 await websocket.send_text(json.dumps(ticker))
 
@@ -185,9 +202,9 @@ async def websocket_floor_pnl(
                             "trade_count": 12,
                             "win_count": 8,
                             "loss_count": 4,
-                            "status": "active"
+                            "status": "active",
                         },
-                         {
+                        {
                             "id": "2",
                             "name": "ETH Grid",
                             "pnl_amount": 320.50,
@@ -196,9 +213,9 @@ async def websocket_floor_pnl(
                             "trade_count": 45,
                             "win_count": 30,
                             "loss_count": 15,
-                            "status": "active"
+                            "status": "active",
                         },
-                         {
+                        {
                             "id": "3",
                             "name": "SOL MeanRev",
                             "pnl_amount": 371.76,
@@ -207,9 +224,9 @@ async def websocket_floor_pnl(
                             "trade_count": 5,
                             "win_count": 3,
                             "loss_count": 2,
-                            "status": "paused"
-                        }
-                    ]
+                            "status": "paused",
+                        },
+                    ],
                 }
                 await websocket.send_text(json.dumps(algos))
         except Exception:

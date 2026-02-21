@@ -145,7 +145,9 @@ def read_user_profile(session: SessionDep, current_user: CurrentUser) -> Any:
     from app.models import CoinspotCredentials
 
     credentials = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     return UserProfilePublic(
@@ -155,7 +157,7 @@ def read_user_profile(session: SessionDep, current_user: CurrentUser) -> Any:
         preferred_currency=current_user.preferred_currency or "AUD",
         risk_tolerance=current_user.risk_tolerance or "medium",
         trading_experience=current_user.trading_experience or "beginner",
-        has_coinspot_credentials=credentials is not None
+        has_coinspot_credentials=credentials is not None,
     )
 
 
@@ -177,7 +179,9 @@ def update_user_profile(
     from app.models import CoinspotCredentials
 
     credentials = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     return UserProfilePublic(
@@ -187,7 +191,7 @@ def update_user_profile(
         preferred_currency=current_user.preferred_currency or "AUD",
         risk_tolerance=current_user.risk_tolerance or "medium",
         trading_experience=current_user.trading_experience or "beginner",
-        has_coinspot_credentials=credentials is not None
+        has_coinspot_credentials=credentials is not None,
     )
 
 
@@ -313,14 +317,14 @@ def create_llm_credentials(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
             UserLLMCredentials.provider == credentials_in.provider.lower(),
-            UserLLMCredentials.is_active is True
+            UserLLMCredentials.is_active is True,
         )
     ).first()
 
     if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"Active {credentials_in.provider} credentials already exist. Use PUT to update or DELETE first."
+            detail=f"Active {credentials_in.provider} credentials already exist. Use PUT to update or DELETE first.",
         )
 
     # Encrypt API key
@@ -328,17 +332,14 @@ def create_llm_credentials(
         encrypted_api_key = encryption_service.encrypt_api_key(credentials_in.api_key)
     except Exception as e:
         logger.error(f"Failed to encrypt API key: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to encrypt API key"
-        )
+        raise HTTPException(status_code=500, detail="Failed to encrypt API key")
 
     # If this should be default, unset any existing defaults
     if credentials_in.is_default:
         existing_defaults = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == current_user.id,
-                UserLLMCredentials.is_default is True
+                UserLLMCredentials.is_default is True,
             )
         ).all()
         for cred in existing_defaults:
@@ -353,7 +354,7 @@ def create_llm_credentials(
         encrypted_api_key=encrypted_api_key,
         encryption_key_id="default",
         is_default=credentials_in.is_default,
-        is_active=True
+        is_active=True,
     )
 
     session.add(db_credentials)
@@ -373,7 +374,7 @@ def create_llm_credentials(
         is_active=db_credentials.is_active,
         last_validated_at=db_credentials.last_validated_at,
         created_at=db_credentials.created_at,
-        updated_at=db_credentials.updated_at
+        updated_at=db_credentials.updated_at,
     )
 
 
@@ -392,7 +393,7 @@ def list_llm_credentials(
     credentials_list = session.exec(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.is_active is True
+            UserLLMCredentials.is_active is True,
         )
     ).all()
 
@@ -406,23 +407,28 @@ def list_llm_credentials(
             logger.error(f"Failed to decrypt API key for masking: {e}")
             api_key_masked = "****"
 
-        result.append(UserLLMCredentialsPublic(
-            id=cred.id,
-            user_id=cred.user_id,
-            provider=cred.provider,
-            model_name=cred.model_name,
-            api_key_masked=api_key_masked,
-            is_default=cred.is_default,
-            is_active=cred.is_active,
-            last_validated_at=cred.last_validated_at,
-            created_at=cred.created_at,
-            updated_at=cred.updated_at
-        ))
+        result.append(
+            UserLLMCredentialsPublic(
+                id=cred.id,
+                user_id=cred.user_id,
+                provider=cred.provider,
+                model_name=cred.model_name,
+                api_key_masked=api_key_masked,
+                is_default=cred.is_default,
+                is_active=cred.is_active,
+                last_validated_at=cred.last_validated_at,
+                created_at=cred.created_at,
+                updated_at=cred.updated_at,
+            )
+        )
 
     return result
 
 
-@router.put("/me/llm-credentials/{credential_id}/default", response_model=UserLLMCredentialsPublic)
+@router.put(
+    "/me/llm-credentials/{credential_id}/default",
+    response_model=UserLLMCredentialsPublic,
+)
 def set_default_llm_credential(
     *,
     session: SessionDep,
@@ -440,16 +446,20 @@ def set_default_llm_credential(
         raise HTTPException(status_code=404, detail="Credential not found")
 
     if credential.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this credential")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to modify this credential"
+        )
 
     if not credential.is_active:
-        raise HTTPException(status_code=400, detail="Cannot set inactive credential as default")
+        raise HTTPException(
+            status_code=400, detail="Cannot set inactive credential as default"
+        )
 
     # Unset any existing defaults
     existing_defaults = session.exec(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.is_default is True
+            UserLLMCredentials.is_default is True,
         )
     ).all()
     for cred in existing_defaults:
@@ -480,7 +490,7 @@ def set_default_llm_credential(
         is_active=credential.is_active,
         last_validated_at=credential.last_validated_at,
         created_at=credential.created_at,
-        updated_at=credential.updated_at
+        updated_at=credential.updated_at,
     )
 
 
@@ -502,7 +512,9 @@ def delete_llm_credential(
         raise HTTPException(status_code=404, detail="Credential not found")
 
     if credential.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this credential")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this credential"
+        )
 
     # Soft delete
     credential.is_active = False
@@ -513,7 +525,9 @@ def delete_llm_credential(
     return Message(message=f"{credential.provider} credentials deleted successfully")
 
 
-@router.post("/me/llm-credentials/validate", response_model=UserLLMCredentialsValidationResult)
+@router.post(
+    "/me/llm-credentials/validate", response_model=UserLLMCredentialsValidationResult
+)
 async def validate_llm_credential(
     *,
     _session: SessionDep,
@@ -533,38 +547,50 @@ async def validate_llm_credential(
     try:
         # Create LLM instance to test the API key
         llm = LLMFactory.create_llm_from_api_key(
-            provider=provider,
-            api_key=api_key,
-            model_name=model_name
+            provider=provider, api_key=api_key, model_name=model_name
         )
 
         # Test with a simple message
-        test_message = HumanMessage(content="Hello, this is a test. Please respond with 'OK'.")
+        test_message = HumanMessage(
+            content="Hello, this is a test. Please respond with 'OK'."
+        )
 
         # Invoke the LLM (this will fail if API key is invalid)
         response = await llm.ainvoke([test_message])
 
         # If we got here, the API key works
-        logger.info(f"Successfully validated {provider} API key for user {current_user.id}")
+        logger.info(
+            f"Successfully validated {provider} API key for user {current_user.id}"
+        )
 
         return UserLLMCredentialsValidationResult(
             is_valid=True,
             provider=provider,
             model_name=model_name or LLMFactory.get_provider_default_models()[provider],
             error_message=None,
-            details={"message": "API key validated successfully", "test_response_length": len(response.content)}
+            details={
+                "message": "API key validated successfully",
+                "test_response_length": len(response.content),
+            },
         )
 
     except Exception as e:
         logger.warning(f"Failed to validate {provider} API key: {e}")
 
         error_message = str(e)
-        if "authentication" in error_message.lower() or "unauthorized" in error_message.lower():
+        if (
+            "authentication" in error_message.lower()
+            or "unauthorized" in error_message.lower()
+        ):
             error_message = "Invalid API key. Please check your credentials."
         elif "not found" in error_message.lower():
-            error_message = f"Model '{model_name}' not found. Please check the model name."
+            error_message = (
+                f"Model '{model_name}' not found. Please check the model name."
+            )
         elif "quota" in error_message.lower() or "rate limit" in error_message.lower():
-            error_message = "API quota exceeded or rate limit reached. Please try again later."
+            error_message = (
+                "API quota exceeded or rate limit reached. Please try again later."
+            )
         else:
             error_message = f"Validation failed: {error_message}"
 
@@ -573,5 +599,5 @@ async def validate_llm_credential(
             provider=provider,
             model_name=model_name,
             error_message=error_message,
-            details={"raw_error": str(e)}
+            details={"raw_error": str(e)},
         )

@@ -149,9 +149,7 @@ class Settings(BaseSettings):
 
     # Access Control
     EMAIL_WHITELIST_ENABLED: bool = False
-    EMAIL_WHITELIST: Annotated[
-        list[EmailStr] | str, BeforeValidator(parse_cors)
-    ] = []
+    EMAIL_WHITELIST: Annotated[list[EmailStr] | str, BeforeValidator(parse_cors)] = []
 
     # Notification Configuration
     SLACK_WEBHOOK_URL: HttpUrl | None = None

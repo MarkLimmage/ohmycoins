@@ -100,18 +100,29 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
         start_index = 0  # Create superuser as first user
 
     for i in range(start_index, count):
-        is_superuser = i == 0 and not existing_superuser  # First user is superuser only if doesn't exist
+        is_superuser = (
+            i == 0 and not existing_superuser
+        )  # First user is superuser only if doesn't exist
         user = User(
-            email=f"user{i}_{uuid.uuid4()}@example.com" if not is_superuser else settings.FIRST_SUPERUSER,
-            hashed_password=get_password_hash("TestPassword123!" if not is_superuser else settings.FIRST_SUPERUSER_PASSWORD),
+            email=f"user{i}_{uuid.uuid4()}@example.com"
+            if not is_superuser
+            else settings.FIRST_SUPERUSER,
+            hashed_password=get_password_hash(
+                "TestPassword123!"
+                if not is_superuser
+                else settings.FIRST_SUPERUSER_PASSWORD
+            ),
             full_name=fake.name(),
             is_active=True,
             is_superuser=is_superuser,
-            timezone=random.choice(["UTC", "Australia/Sydney", "America/New_York", "Europe/London"]),
+            timezone=random.choice(
+                ["UTC", "Australia/Sydney", "America/New_York", "Europe/London"]
+            ),
             preferred_currency=random.choice(["AUD", "USD", "EUR", "BTC"]),
             risk_tolerance=random.choice(["low", "medium", "high"]),
             trading_experience=random.choice(["beginner", "intermediate", "advanced"]),
-            created_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 365)),
+            created_at=datetime.now(timezone.utc)
+            - timedelta(days=random.randint(1, 365)),
             updated_at=datetime.now(timezone.utc),
         )
         session.add(user)
@@ -121,7 +132,9 @@ def generate_users(session: Session, count: int = 10) -> list[User]:
     for user in users:
         session.refresh(user)
 
-    logger.info(f"Created {len(users) - (1 if existing_superuser else 0)} new users (total: {len(users)})")
+    logger.info(
+        f"Created {len(users) - (1 if existing_superuser else 0)} new users (total: {len(users)})"
+    )
     return users
 
 
@@ -140,7 +153,9 @@ async def collect_real_price_data(session: Session, _hours: int = 24) -> int:
 
     try:
         async with aiohttp.ClientSession() as client_session:
-            async with client_session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+            async with client_session.get(
+                url, timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
                 if response.status == 200:
                     data = await response.json()
 
@@ -169,15 +184,21 @@ async def collect_real_price_data(session: Session, _hours: int = 24) -> int:
                                     session.add(price_record)
                                     count += 1
                             except (ValueError, KeyError, TypeError) as e:
-                                logger.warning(f"Failed to process price for {coin_type}: {e}")
+                                logger.warning(
+                                    f"Failed to process price for {coin_type}: {e}"
+                                )
                                 continue
 
                         session.commit()
-                        logger.info(f"✅ Collected {count} real price records from Coinspot")
+                        logger.info(
+                            f"✅ Collected {count} real price records from Coinspot"
+                        )
                     else:
                         logger.error(f"Invalid response from Coinspot API: {data}")
                 else:
-                    logger.error(f"Failed to fetch prices from Coinspot: HTTP {response.status}")
+                    logger.error(
+                        f"Failed to fetch prices from Coinspot: HTTP {response.status}"
+                    )
 
     except Exception as e:
         logger.error(f"Error collecting real price data: {e}")
@@ -197,13 +218,17 @@ async def collect_real_defi_data(session: Session) -> int:
 
     try:
         async with aiohttp.ClientSession() as client_session:
-            async with client_session.get(protocols_url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+            async with client_session.get(
+                protocols_url, timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
                 if response.status == 200:
                     protocols = await response.json()
                     current_time = datetime.now(timezone.utc)
 
                     # Get top 10 protocols by TVL
-                    top_protocols = sorted(protocols, key=lambda x: x.get("tvl", 0), reverse=True)[:10]
+                    top_protocols = sorted(
+                        protocols, key=lambda x: x.get("tvl", 0), reverse=True
+                    )[:10]
 
                     for protocol_data in top_protocols:
                         try:
@@ -260,7 +285,9 @@ async def collect_real_news_data(session: Session, days: int = 7) -> int:
 
     try:
         async with aiohttp.ClientSession() as client_session:
-            async with client_session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=30)) as response:
+            async with client_session.get(
+                url, params=params, timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
                 if response.status == 200:
                     data = await response.json()
 
@@ -270,11 +297,19 @@ async def collect_real_news_data(session: Session, days: int = 7) -> int:
                                 # Extract currencies mentioned
                                 currencies = []
                                 if "currencies" in article:
-                                    currencies = [c["code"] for c in article["currencies"]]
+                                    currencies = [
+                                        c["code"] for c in article["currencies"]
+                                    ]
 
                                 # Parse published time
                                 published_str = article.get("published_at")
-                                published_at = datetime.fromisoformat(published_str.replace("Z", "+00:00")) if published_str else None
+                                published_at = (
+                                    datetime.fromisoformat(
+                                        published_str.replace("Z", "+00:00")
+                                    )
+                                    if published_str
+                                    else None
+                                )
 
                                 # Map votes to sentiment
                                 votes = article.get("votes", {})
@@ -283,7 +318,9 @@ async def collect_real_news_data(session: Session, days: int = 7) -> int:
                                 total_votes = positive + negative
 
                                 if total_votes > 0:
-                                    sentiment_score = Decimal((positive - negative) / total_votes)
+                                    sentiment_score = Decimal(
+                                        (positive - negative) / total_votes
+                                    )
                                     if sentiment_score > 0.2:
                                         sentiment = "positive"
                                     elif sentiment_score < -0.2:
@@ -296,7 +333,9 @@ async def collect_real_news_data(session: Session, days: int = 7) -> int:
 
                                 news = NewsSentiment(
                                     title=article.get("title", ""),
-                                    source=article.get("source", {}).get("title", "CryptoPanic"),
+                                    source=article.get("source", {}).get(
+                                        "title", "CryptoPanic"
+                                    ),
                                     url=article.get("url", ""),
                                     published_at=published_at,
                                     sentiment=sentiment,
@@ -324,7 +363,9 @@ async def collect_real_news_data(session: Session, days: int = 7) -> int:
     return count
 
 
-def generate_agent_sessions(session: Session, users: list[User], count: int = 20) -> int:
+def generate_agent_sessions(
+    session: Session, users: list[User], count: int = 20
+) -> int:
     """Generate synthetic agent session data (user-specific, cannot be collected)."""
     logger.info(f"Generating {count} agent sessions...")
 
@@ -339,25 +380,35 @@ def generate_agent_sessions(session: Session, users: list[User], count: int = 20
     created_count = 0
     for _ in range(count):
         user = random.choice(users)
-        status = random.choice([
-            AgentSessionStatus.COMPLETED,
-            AgentSessionStatus.COMPLETED,
-            AgentSessionStatus.COMPLETED,
-            AgentSessionStatus.FAILED,
-            AgentSessionStatus.RUNNING,
-        ])
+        status = random.choice(
+            [
+                AgentSessionStatus.COMPLETED,
+                AgentSessionStatus.COMPLETED,
+                AgentSessionStatus.COMPLETED,
+                AgentSessionStatus.FAILED,
+                AgentSessionStatus.RUNNING,
+            ]
+        )
 
-        created_at = datetime.now(timezone.utc) - timedelta(hours=random.randint(1, 720))
+        created_at = datetime.now(timezone.utc) - timedelta(
+            hours=random.randint(1, 720)
+        )
 
         agent_session = AgentSession(
             user_id=user.id,
             user_goal=random.choice(goals),
             status=status,
-            error_message=fake.sentence() if status == AgentSessionStatus.FAILED else None,
-            result_summary=fake.text(max_nb_chars=200) if status == AgentSessionStatus.COMPLETED else None,
+            error_message=fake.sentence()
+            if status == AgentSessionStatus.FAILED
+            else None,
+            result_summary=fake.text(max_nb_chars=200)
+            if status == AgentSessionStatus.COMPLETED
+            else None,
             created_at=created_at,
             updated_at=datetime.now(timezone.utc),
-            completed_at=created_at + timedelta(minutes=random.randint(5, 60)) if status == AgentSessionStatus.COMPLETED else None,
+            completed_at=created_at + timedelta(minutes=random.randint(5, 60))
+            if status == AgentSessionStatus.COMPLETED
+            else None,
         )
         session.add(agent_session)
         session.flush()
@@ -369,7 +420,9 @@ def generate_agent_sessions(session: Session, users: list[User], count: int = 20
                     session_id=agent_session.id,
                     role=random.choice(["user", "assistant", "system"]),
                     content=fake.sentence(nb_words=15),
-                    agent_name=random.choice(["data_retrieval", "data_analyst", "model_trainer", "evaluator"]),
+                    agent_name=random.choice(
+                        ["data_retrieval", "data_analyst", "model_trainer", "evaluator"]
+                    ),
                     created_at=created_at + timedelta(minutes=i),
                 )
                 session.add(message)
@@ -377,7 +430,11 @@ def generate_agent_sessions(session: Session, users: list[User], count: int = 20
         # Add artifacts for completed sessions
         if status == AgentSessionStatus.COMPLETED:
             artifact_extensions = {"model": "pkl", "plot": "png", "report": "html"}
-            artifact_mimes = {"model": "application/octet-stream", "plot": "image/png", "report": "text/html"}
+            artifact_mimes = {
+                "model": "application/octet-stream",
+                "plot": "image/png",
+                "report": "text/html",
+            }
 
             for artifact_type in ["model", "plot", "report"]:
                 extension = artifact_extensions[artifact_type]
@@ -402,7 +459,9 @@ def generate_agent_sessions(session: Session, users: list[User], count: int = 20
     return created_count
 
 
-def generate_algorithms(session: Session, users: list[User], count: int = 15) -> list[Algorithm]:
+def generate_algorithms(
+    session: Session, users: list[User], count: int = 15
+) -> list[Algorithm]:
     """Generate synthetic trading algorithms (user-specific)."""
     logger.info(f"Generating {count} algorithms...")
 
@@ -425,7 +484,8 @@ def generate_algorithms(session: Session, users: list[User], count: int = 15) ->
             default_execution_frequency=random.choice([60, 300, 900, 3600]),
             default_position_limit=Decimal(random.randint(1000, 10000)),
             performance_metrics_json='{"sharpe_ratio": 1.5, "max_drawdown": 0.15, "win_rate": 0.65}',
-            created_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 180)),
+            created_at=datetime.now(timezone.utc)
+            - timedelta(days=random.randint(1, 180)),
             updated_at=datetime.now(timezone.utc),
         )
         session.add(algorithm)
@@ -451,7 +511,7 @@ def generate_positions_and_orders(
         result = session.exec(
             select(PriceData5Min)
             .where(PriceData5Min.coin_type == coin)
-            .order_by(PriceData5Min.timestamp.desc()) # type: ignore
+            .order_by(PriceData5Min.timestamp.desc())  # type: ignore
             .limit(1)
         ).first()
         if result:
@@ -465,7 +525,9 @@ def generate_positions_and_orders(
 
     for user in users[:5]:  # Only first 5 users have positions
         # Generate 2-5 positions per user
-        user_coins = random.sample([c for c in COINS if c in latest_prices], k=min(5, len(latest_prices)))
+        user_coins = random.sample(
+            [c for c in COINS if c in latest_prices], k=min(5, len(latest_prices))
+        )
 
         for coin in user_coins:
             quantity = Decimal(random.uniform(0.01, 10))
@@ -477,7 +539,8 @@ def generate_positions_and_orders(
                 quantity=quantity,
                 average_price=avg_price,
                 total_cost=quantity * avg_price,
-                created_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 90)),
+                created_at=datetime.now(timezone.utc)
+                - timedelta(days=random.randint(1, 90)),
                 updated_at=datetime.now(timezone.utc),
             )
             session.add(position)
@@ -491,16 +554,23 @@ def generate_positions_and_orders(
 
                 order = Order(
                     user_id=user.id,
-                    algorithm_id=random.choice(algorithms).id if algorithms and random.random() < 0.7 else None,
+                    algorithm_id=random.choice(algorithms).id
+                    if algorithms and random.random() < 0.7
+                    else None,
                     coin_type=coin,
                     side=order_side,
                     order_type=random.choice(["market", "limit"]),
                     quantity=order_quantity,
                     price=order_price,
-                    filled_quantity=order_quantity if random.random() < 0.9 else Decimal("0"),
-                    status=random.choice(["filled", "filled", "filled", "cancelled", "failed"]),
+                    filled_quantity=order_quantity
+                    if random.random() < 0.9
+                    else Decimal("0"),
+                    status=random.choice(
+                        ["filled", "filled", "filled", "cancelled", "failed"]
+                    ),
                     coinspot_order_id=f"CS{str(fake.uuid4())[:8]}",
-                    created_at=datetime.now(timezone.utc) - timedelta(hours=random.randint(1, 2160)),
+                    created_at=datetime.now(timezone.utc)
+                    - timedelta(hours=random.randint(1, 2160)),
                     updated_at=datetime.now(timezone.utc),
                 )
                 session.add(order)
@@ -536,9 +606,11 @@ def generate_deployed_algorithms(
             position_limit=algorithm.default_position_limit,
             daily_loss_limit=Decimal(random.randint(500, 5000)),
             parameters_json='{"custom_param": 123}',
-            created_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 60)),
+            created_at=datetime.now(timezone.utc)
+            - timedelta(days=random.randint(1, 60)),
             updated_at=datetime.now(timezone.utc),
-            activated_at=datetime.now(timezone.utc) - timedelta(days=random.randint(0, 30)),
+            activated_at=datetime.now(timezone.utc)
+            - timedelta(days=random.randint(0, 30)),
             total_profit_loss=Decimal(random.uniform(-1000, 5000)),
             total_trades=random.randint(10, 500),
         )
@@ -576,11 +648,11 @@ def clear_all_data(session: Session, commit: bool = True) -> None:
     ]
 
     for table in tables:
-        session.exec(delete(table)) # type: ignore
+        session.exec(delete(table))  # type: ignore
         logger.info(f"Cleared {table.__tablename__}")
 
     # Clear users except superuser
-    session.exec(delete(User).where(User.email != settings.FIRST_SUPERUSER)) # type: ignore
+    session.exec(delete(User).where(User.email != settings.FIRST_SUPERUSER))  # type: ignore
     logger.info("Cleared users (except superuser)")
 
     if commit:
@@ -627,10 +699,18 @@ def main() -> None:
     )
     parser.add_argument("--all", action="store_true", help="Generate all data types")
     parser.add_argument("--clear", action="store_true", help="Clear all data")
-    parser.add_argument("--users", type=int, default=10, help="Number of users to generate")
-    parser.add_argument("--no-real-data", action="store_true", help="Skip collecting real data")
-    parser.add_argument("--algorithms", type=int, default=15, help="Number of algorithms")
-    parser.add_argument("--agent-sessions", type=int, default=20, help="Number of agent sessions")
+    parser.add_argument(
+        "--users", type=int, default=10, help="Number of users to generate"
+    )
+    parser.add_argument(
+        "--no-real-data", action="store_true", help="Skip collecting real data"
+    )
+    parser.add_argument(
+        "--algorithms", type=int, default=15, help="Number of algorithms"
+    )
+    parser.add_argument(
+        "--agent-sessions", type=int, default=20, help="Number of agent sessions"
+    )
 
     args = parser.parse_args()
 
@@ -640,13 +720,15 @@ def main() -> None:
             return
 
         # Run async seeding
-        asyncio.run(seed_all_async(
-            session,
-            user_count=args.users,
-            collect_real_data=not args.no_real_data,
-            agent_session_count=args.agent_sessions,
-            algorithm_count=args.algorithms,
-        ))
+        asyncio.run(
+            seed_all_async(
+                session,
+                user_count=args.users,
+                collect_real_data=not args.no_real_data,
+                agent_session_count=args.agent_sessions,
+                algorithm_count=args.algorithms,
+            )
+        )
 
 
 if __name__ == "__main__":

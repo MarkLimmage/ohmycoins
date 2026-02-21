@@ -57,15 +57,41 @@ class RedditCollector(APICollector):
 
     # Sentiment keywords for basic sentiment analysis
     BULLISH_KEYWORDS = [
-        "moon", "bullish", "pump", "rally", "surge", "breakout",
-        "buy", "long", "hold", "hodl", "gem", "undervalued",
-        "adoption", "institutional", "partnership", "breakthrough",
+        "moon",
+        "bullish",
+        "pump",
+        "rally",
+        "surge",
+        "breakout",
+        "buy",
+        "long",
+        "hold",
+        "hodl",
+        "gem",
+        "undervalued",
+        "adoption",
+        "institutional",
+        "partnership",
+        "breakthrough",
     ]
 
     BEARISH_KEYWORDS = [
-        "crash", "dump", "bearish", "short", "sell", "drop",
-        "decline", "plunge", "collapse", "scam", "rug", "bear",
-        "overvalued", "bubble", "dead", "fail",
+        "crash",
+        "dump",
+        "bearish",
+        "short",
+        "sell",
+        "drop",
+        "decline",
+        "plunge",
+        "collapse",
+        "scam",
+        "rug",
+        "bear",
+        "overvalued",
+        "bubble",
+        "dead",
+        "fail",
     ]
 
     def __init__(self):
@@ -112,9 +138,7 @@ class RedditCollector(APICollector):
                 }
 
                 response = await self.fetch_json(
-                    f"/r/{subreddit}/hot.json",
-                    params=params,
-                    headers=headers
+                    f"/r/{subreddit}/hot.json", params=params, headers=headers
                 )
 
                 if not response or "data" not in response:
@@ -154,7 +178,9 @@ class RedditCollector(APICollector):
         logger.info(f"{self.name}: Collected {len(all_posts)} posts total")
         return all_posts
 
-    def _extract_post_data(self, post: dict[str, Any], subreddit: str) -> dict[str, Any] | None:
+    def _extract_post_data(
+        self, post: dict[str, Any], subreddit: str
+    ) -> dict[str, Any] | None:
         """
         Extract structured data from a Reddit post.
 
@@ -195,7 +221,9 @@ class RedditCollector(APICollector):
 
             # Determine sentiment
             sentiment = self._determine_sentiment(full_text, score)
-            sentiment_score = self._calculate_sentiment_score(full_text, score, num_comments)
+            sentiment_score = self._calculate_sentiment_score(
+                full_text, score, num_comments
+            )
 
             # Extract mentioned cryptocurrencies
             currencies = self._extract_currencies(title, selftext)
@@ -216,7 +244,7 @@ class RedditCollector(APICollector):
                     "score": score,
                     "num_comments": num_comments,
                     "post_id": post_id,
-                }
+                },
             }
 
         except Exception as e:
@@ -286,6 +314,7 @@ class RedditCollector(APICollector):
         if score > 0:
             # Normalize score (logarithmic scale)
             import math
+
             engagement_score = min(math.log10(score + 1) / 4.0, 1.0)  # Max at 10k score
 
         # Combine: 70% keywords, 30% engagement

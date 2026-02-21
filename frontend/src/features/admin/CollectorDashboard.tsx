@@ -7,9 +7,10 @@ import {
   Table, 
   Text, 
   Badge,
-  IconButton
+  IconButton,
+  SimpleGrid
 } from "@chakra-ui/react"
-import { FiPlay, FiPause, FiTrash2 } from "react-icons/fi"
+import { FiPlay, FiPause, FiTrash2, FiEdit2, FiRefreshCw } from "react-icons/fi"
 import { useCollectors } from "./hooks"
 import { CollectorInstance } from "./types"
 import { CollectorPluginForm } from "./CollectorForm"
@@ -18,8 +19,9 @@ import { DialogBody, DialogContent, DialogHeader, DialogRoot, DialogTrigger, Dia
 import { Tooltip } from "@/components/ui/tooltip"
 
 export const CollectorDashboard = () => {
-  const { instances, plugins, deleteInstance, toggleInstance } = useCollectors()
+  const { instances, plugins, deleteInstance, toggleInstance, triggerInstance } = useCollectors()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedInstance, setSelectedInstance] = useState<CollectorInstance | undefined>(undefined)
 
   if (instances.isLoading || plugins.isLoading) {
     return <Text>Loading collectors...</Text>
@@ -32,27 +34,77 @@ export const CollectorDashboard = () => {
   }
 
   const handleToggle = (instance: CollectorInstance) => {
-    toggleInstance.mutate({ id: instance.id, is_active: !instance.is_active })
+    toggleInstance.mutate({ id: instance.id })
   }
+
+  const handleRunNow = (id: string) => {
+      triggerInstance.mutate(id)
+  }
+
+  const handleEdit = (instance: CollectorInstance) => {
+      setSelectedInstance(instance)
+      setIsDialogOpen(true)
+  }
+  
+  const closeDialog = () => {
+      setIsDialogOpen(false)
+      setSelectedInstance(undefined)
+  }
+
+  const activeCount = instances.data?.filter(i => i.is_active).length || 0
+  const errorCount = instances.data?.filter(i => i.status === 'failed').length || 0
+  const totalCount = instances.data?.length || 0
 
   return (
     <Container maxW="container.xl" py={8}>
+      
+      {/* Metrics Overview */}
+      <SimpleGrid columns={{ base: 1, md: 3 }} gap={4} mb={8}>
+        <Card.Root>
+          <Card.Body>
+             <Text fontSize="sm" color="gray.500">Active Collectors</Text>
+             <Heading size="2xl">{activeCount} / {totalCount}</Heading>
+          </Card.Body>
+        </Card.Root>
+        <Card.Root>
+          <Card.Body>
+             <Text fontSize="sm" color="gray.500">System Health</Text>
+             <Heading size="2xl" color={errorCount > 0 ? "red.500" : "green.500"}>
+                {errorCount === 0 ? "Healthy" : `${errorCount} Errors`}
+             </Heading>
+          </Card.Body>
+        </Card.Root>
+        <Card.Root>
+          <Card.Body>
+             <Text fontSize="sm" color="gray.500">Plugins Available</Text>
+             <Heading size="2xl">{plugins.data?.length || 0}</Heading>
+          </Card.Body>
+        </Card.Root>
+      </SimpleGrid>
+
       <Flex justify="space-between" align="center" mb={8}>
         <Heading size="lg">Data Collectors</Heading>
-        <DialogRoot open={isDialogOpen} onOpenChange={(e) => setIsDialogOpen(e.open)}>
+        <DialogRoot 
+            open={isDialogOpen} 
+            onOpenChange={(e) => {
+                if (!e.open) closeDialog()
+                else setIsDialogOpen(true)
+            }}
+        >
           <DialogTrigger asChild>
             <Button colorScheme="blue" onClick={() => setIsDialogOpen(true)}>
               + Add Collector
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>Add New Collector</DialogHeader>
+            <DialogHeader>{selectedInstance ? "Edit Collector" : "Add New Collector"}</DialogHeader>
             <DialogCloseTrigger />
             <DialogBody>
               <CollectorPluginForm 
                 plugins={plugins.data || []} 
-                onCancel={() => setIsDialogOpen(false)} 
-                onSuccess={() => setIsDialogOpen(false)}
+                initialData={selectedInstance}
+                onCancel={closeDialog} 
+                onSuccess={closeDialog}
               /> 
             </DialogBody>
           </DialogContent>
@@ -97,7 +149,29 @@ export const CollectorDashboard = () => {
                     <Text color="red.500" as="span">{instance.error_count}</Text>
                   </Table.Cell>
                   <Table.Cell textAlign="right">
-                    <Flex justify="flex-end" gap={2}>
+                    <Flex justify="flex-end" gap={1}>
+                      <Tooltip content="Run Now">
+                         <IconButton
+                            aria-label="Run Now"
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="blue"
+                            onClick={() => handleRunNow(instance.id)}
+                            loading={triggerInstance.isPending} 
+                         >
+                            <FiRefreshCw />
+                         </IconButton>
+                      </Tooltip>
+                      <Tooltip content="Edit">
+                        <IconButton
+                            aria-label="Edit"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(instance)}
+                        >
+                            <FiEdit2 />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip content={instance.is_active ? "Pause" : "Resume"}>
                         <IconButton 
                           aria-label={instance.is_active ? "Pause" : "Resume"}

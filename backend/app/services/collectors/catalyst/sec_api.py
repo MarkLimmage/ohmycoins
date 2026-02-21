@@ -119,8 +119,7 @@ class SECAPICollector(APICollector):
                 }
 
                 response = await self.fetch_json(
-                    f"/submissions/CIK{cik_padded}.json",
-                    headers=headers
+                    f"/submissions/CIK{cik_padded}.json", headers=headers
                 )
 
                 # Check if response is a dict and has 'filings'
@@ -157,7 +156,9 @@ class SECAPICollector(APICollector):
                         filing_date = datetime.strptime(filing_date_str, "%Y-%m-%d")
                         filing_date = filing_date.replace(tzinfo=timezone.utc)
                     except Exception as e:
-                        logger.debug(f"{self.name}: Failed to parse date {filing_date_str}: {e}")
+                        logger.debug(
+                            f"{self.name}: Failed to parse date {filing_date_str}: {e}"
+                        )
                         continue
 
                     # Skip old filings
@@ -166,7 +167,9 @@ class SECAPICollector(APICollector):
 
                     filing_info = self.FILING_TYPES[form_type]
                     accession_number = accession_numbers[i]
-                    primary_doc = primary_documents[i] if i < len(primary_documents) else ""
+                    primary_doc = (
+                        primary_documents[i] if i < len(primary_documents) else ""
+                    )
 
                     # Build filing URL
                     # Format: https://www.sec.gov/Archives/edgar/data/CIK/ACCESSION/DOCUMENT
@@ -242,7 +245,11 @@ class SECAPICollector(APICollector):
                 # Validate impact score
                 impact_score = item.get("impact_score")
                 if impact_score is not None:
-                    if not isinstance(impact_score, int) or impact_score < 1 or impact_score > 10:
+                    if (
+                        not isinstance(impact_score, int)
+                        or impact_score < 1
+                        or impact_score > 10
+                    ):
                         logger.warning(
                             f"{self.name}: Invalid impact score {impact_score}, setting to 5"
                         )

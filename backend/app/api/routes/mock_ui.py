@@ -2,10 +2,10 @@
 Mock API endpoints for Storybook and UI development.
 Available only in non-production environments.
 """
+
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
-
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
@@ -23,8 +23,11 @@ router = APIRouter()
 # LedgerCard Mocks
 # ============================================================================
 
+
 @router.get("/ledgers/{ledger_type}", response_model=PnLSummaryResponse)
-async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLSummaryResponse:
+async def get_mock_ledger_data(
+    ledger_type: str, state: str = "success"
+) -> PnLSummaryResponse:
     """
     Get mock data for LedgerCard component.
 
@@ -38,11 +41,11 @@ async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLS
             detail={
                 "message": "Failed to load ledger data",
                 "detail": "Connection to data provider timed out after 5000ms",
-                "error_code": "DATA_PROVIDER_TIMEOUT"
-            }
+                "error_code": "DATA_PROVIDER_TIMEOUT",
+            },
         )
 
-    is_loading = (state == "loading")
+    is_loading = state == "loading"
 
     # Base mock data
     mock_data: dict[str, Any] = {
@@ -67,17 +70,24 @@ async def get_mock_ledger_data(ledger_type: str, state: str = "success") -> PnLS
         # API Response Base
         "is_loading": is_loading,
         "last_updated": datetime.now(timezone.utc),
-        "data_staleness_seconds": 0.0
+        "data_staleness_seconds": 0.0,
     }
 
     return PnLSummaryResponse(**mock_data)
+
 
 # ============================================================================
 # AgentTerminal Mocks
 # ============================================================================
 
-@router.get("/agent/sessions/{session_id}/messages", response_model=list[AgentSessionMessagePublic])
-async def get_mock_agent_messages(session_id: uuid.UUID, _stream: bool = False) -> list[AgentSessionMessagePublic]:
+
+@router.get(
+    "/agent/sessions/{session_id}/messages",
+    response_model=list[AgentSessionMessagePublic],
+)
+async def get_mock_agent_messages(
+    session_id: uuid.UUID, _stream: bool = False
+) -> list[AgentSessionMessagePublic]:
     """Get mock messages for AgentTerminal."""
 
     agents = ["ResearchAgent", "StrategyAgent", "ExecutionAgent", "RiskAgent"]
@@ -94,26 +104,35 @@ async def get_mock_agent_messages(session_id: uuid.UUID, _stream: bool = False) 
             role=role,
             content=f"Mock message {i+1} content... Analysing market data for BTC/USDT.",
             agent_name=agent_name,
-            created_at=datetime.now(timezone.utc) - timedelta(minutes=10-i),
+            created_at=datetime.now(timezone.utc) - timedelta(minutes=10 - i),
             is_loading=False,
             last_updated=datetime.now(timezone.utc),
-            data_staleness_seconds=0.0
+            data_staleness_seconds=0.0,
         )
         messages.append(msg)
 
     return messages
 
+
 # ============================================================================
 # SafetyButton Mocks
 # ============================================================================
 
+
 class SafetyStatusResponse(APIResponseBase):
     status: str = Field(description="Safety system status: active, triggered, disabled")
-    triggered_at: datetime | None = Field(default=None, description="When the safety mechanism was triggered")
-    triggered_by: str | None = Field(default=None, description="User or system that triggered it")
+    triggered_at: datetime | None = Field(
+        default=None, description="When the safety mechanism was triggered"
+    )
+    triggered_by: str | None = Field(
+        default=None, description="User or system that triggered it"
+    )
+
 
 @router.post("/safety/{action_type}", response_model=SafetyStatusResponse)
-async def trigger_mock_safety_action(action_type: str, confirm: bool = False) -> SafetyStatusResponse:
+async def trigger_mock_safety_action(
+    action_type: str, confirm: bool = False
+) -> SafetyStatusResponse:
     """
     Mock endpoint for SafetyButton actions.
 
@@ -121,13 +140,13 @@ async def trigger_mock_safety_action(action_type: str, confirm: bool = False) ->
         action_type: 'kill-switch', 'confirm-trade', 'emergency-stop'
     """
     if not confirm:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "message": "Confirmation required",
                 "detail": "Action requires explicit confirmation.",
-                "error_code": "MISSING_CONFIRMATION"
-            }
+                "error_code": "MISSING_CONFIRMATION",
+            },
         )
 
     return SafetyStatusResponse(
@@ -136,5 +155,5 @@ async def trigger_mock_safety_action(action_type: str, confirm: bool = False) ->
         triggered_by="current_user",
         is_loading=False,
         last_updated=datetime.now(timezone.utc),
-        data_staleness_seconds=0.0
+        data_staleness_seconds=0.0,
     )

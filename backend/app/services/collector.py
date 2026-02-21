@@ -13,6 +13,7 @@ To enable web scraping mode, set COINSPOT_USE_WEB_SCRAPING=true in environment v
 Note: The authenticated API endpoints don't provide all coin prices, so we scrape the public
 tradecoins page which displays buy/sell prices for all 538+ coins available on the exchange.
 """
+
 import asyncio
 import logging
 import math
@@ -79,7 +80,9 @@ class CoinspotCollector:
                     return prices
 
             except Exception as e:
-                logger.error(f"Unexpected error on attempt {attempt}/{MAX_RETRIES}: {type(e).__name__}: {e}")
+                logger.error(
+                    f"Unexpected error on attempt {attempt}/{MAX_RETRIES}: {type(e).__name__}: {e}"
+                )
                 if attempt < MAX_RETRIES:
                     logger.info(f"Retrying in {RETRY_DELAY_SECONDS} seconds...")
                     await asyncio.sleep(RETRY_DELAY_SECONDS)
@@ -91,7 +94,9 @@ class CoinspotCollector:
         """Fetch prices from public API endpoint (17 major coins)"""
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-                logger.info(f"Fetching from public API (attempt {attempt}/{MAX_RETRIES})")
+                logger.info(
+                    f"Fetching from public API (attempt {attempt}/{MAX_RETRIES})"
+                )
                 response = await client.get(COINSPOT_PUBLIC_API_URL)
                 response.raise_for_status()
                 data = response.json()
@@ -99,10 +104,14 @@ class CoinspotCollector:
                 if data.get("status") == "ok":
                     prices = data.get("prices", {})
                     total_coins = len(prices)
-                    logger.info(f"Successfully fetched prices for {total_coins} coins from public API")
+                    logger.info(
+                        f"Successfully fetched prices for {total_coins} coins from public API"
+                    )
 
                     if total_coins > 0:
-                        logger.debug(f"Coins fetched: {', '.join(sorted(prices.keys()))}")
+                        logger.debug(
+                            f"Coins fetched: {', '.join(sorted(prices.keys()))}"
+                        )
                     return prices
                 else:
                     logger.error(f"API returned non-ok status: {data.get('status')}")
@@ -116,7 +125,9 @@ class CoinspotCollector:
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP status error on attempt {attempt}/{MAX_RETRIES}: {e.response.status_code}")
+            logger.error(
+                f"HTTP status error on attempt {attempt}/{MAX_RETRIES}: {e.response.status_code}"
+            )
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
         except httpx.RequestError as e:
@@ -144,7 +155,9 @@ class CoinspotCollector:
         """
         try:
             async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-                logger.info(f"Fetching from tradecoins page (attempt {attempt}/{MAX_RETRIES})")
+                logger.info(
+                    f"Fetching from tradecoins page (attempt {attempt}/{MAX_RETRIES})"
+                )
 
                 # Fetch the HTML page
                 response = await client.get(COINSPOT_TRADECOINS_URL)
@@ -152,20 +165,20 @@ class CoinspotCollector:
                 html_content = response.text
 
                 # Parse with BeautifulSoup
-                soup = BeautifulSoup(html_content, 'html.parser')
+                soup = BeautifulSoup(html_content, "html.parser")
 
                 # Find all coin rows: <tr data-coin="BTC">
-                coin_rows = soup.find_all('tr', attrs={'data-coin': True})
+                coin_rows = soup.find_all("tr", attrs={"data-coin": True})
 
                 prices = {}
                 for row in coin_rows:
-                    coin_symbol = row.get('data-coin', '').upper()
-                    if not coin_symbol or coin_symbol == 'AUD':
+                    coin_symbol = row.get("data-coin", "").upper()
+                    if not coin_symbol or coin_symbol == "AUD":
                         continue
 
                     try:
                         # Get all td elements
-                        tds = row.find_all('td')
+                        tds = row.find_all("td")
 
                         if len(tds) >= 4:
                             # TD index 2: Buy price (data-value attribute)
@@ -173,8 +186,8 @@ class CoinspotCollector:
                             buy_td = tds[2]
                             sell_td = tds[3]
 
-                            buy_value = buy_td.get('data-value')
-                            sell_value = sell_td.get('data-value')
+                            buy_value = buy_td.get("data-value")
+                            sell_value = sell_td.get("data-value")
 
                             if buy_value and sell_value:
                                 buy_price = float(buy_value)
@@ -187,21 +200,25 @@ class CoinspotCollector:
                                     prices[coin_symbol.lower()] = {
                                         "bid": str(buy_price),
                                         "ask": str(sell_price),
-                                        "last": str(last_price)
+                                        "last": str(last_price),
                                     }
                     except (ValueError, AttributeError, IndexError) as e:
                         logger.debug(f"Failed to parse prices for {coin_symbol}: {e}")
                         continue
 
                 total_coins = len(prices)
-                logger.info(f"Successfully scraped prices for {total_coins} coins from tradecoins page")
+                logger.info(
+                    f"Successfully scraped prices for {total_coins} coins from tradecoins page"
+                )
 
                 if total_coins > 0:
                     sample_coins = sorted(prices.keys())[:10]
                     logger.debug(f"Sample coins: {', '.join(sample_coins)}")
                     return prices
                 else:
-                    logger.warning("No coin prices found on tradecoins page - HTML structure may have changed")
+                    logger.warning(
+                        "No coin prices found on tradecoins page - HTML structure may have changed"
+                    )
                     if attempt < MAX_RETRIES:
                         logger.info(f"Retrying in {RETRY_DELAY_SECONDS} seconds...")
                         await asyncio.sleep(RETRY_DELAY_SECONDS)
@@ -212,7 +229,9 @@ class CoinspotCollector:
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP status error on attempt {attempt}/{MAX_RETRIES}: {e.response.status_code}")
+            logger.error(
+                f"HTTP status error on attempt {attempt}/{MAX_RETRIES}: {e.response.status_code}"
+            )
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
         except httpx.RequestError as e:
@@ -220,7 +239,9 @@ class CoinspotCollector:
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
         except Exception as e:
-            logger.error(f"Unexpected error parsing HTML on attempt {attempt}/{MAX_RETRIES}: {e}")
+            logger.error(
+                f"Unexpected error parsing HTML on attempt {attempt}/{MAX_RETRIES}: {e}"
+            )
             if attempt < MAX_RETRIES:
                 await asyncio.sleep(RETRY_DELAY_SECONDS)
 
@@ -250,7 +271,9 @@ class CoinspotCollector:
                     try:
                         # Validate price data
                         if not all(key in price_data for key in ["bid", "ask", "last"]):
-                            logger.warning(f"Missing price fields for {coin_type}, skipping")
+                            logger.warning(
+                                f"Missing price fields for {coin_type}, skipping"
+                            )
                             error_count += 1
                             continue
 
@@ -258,12 +281,14 @@ class CoinspotCollector:
                         existing = session.exec(
                             select(PriceData5Min).where(
                                 PriceData5Min.coin_type == coin_type,
-                                PriceData5Min.timestamp == timestamp
+                                PriceData5Min.timestamp == timestamp,
                             )
                         ).first()
 
                         if existing:
-                            logger.debug(f"Price data for {coin_type} at {timestamp} already exists, skipping")
+                            logger.debug(
+                                f"Price data for {coin_type} at {timestamp} already exists, skipping"
+                            )
                             continue
 
                         # Create new price record with validation
@@ -273,14 +298,20 @@ class CoinspotCollector:
                             last = Decimal(str(price_data["last"]))
 
                             # Enhanced validation for invalid prices (NaN, Infinity, etc.)
-                            if not all(math.isfinite(float(x)) for x in [bid, ask, last]):
-                                logger.warning(f"Invalid price data for {coin_type} (NaN/Inf detected), skipping")
+                            if not all(
+                                math.isfinite(float(x)) for x in [bid, ask, last]
+                            ):
+                                logger.warning(
+                                    f"Invalid price data for {coin_type} (NaN/Inf detected), skipping"
+                                )
                                 error_count += 1
                                 continue
 
                             # Sanity check: prices should be positive
                             if bid < 0 or ask < 0 or last < 0:
-                                logger.warning(f"Negative price detected for {coin_type}, skipping")
+                                logger.warning(
+                                    f"Negative price detected for {coin_type}, skipping"
+                                )
                                 error_count += 1
                                 continue
 
@@ -289,7 +320,7 @@ class CoinspotCollector:
                                 bid=bid,
                                 ask=ask,
                                 last=last,
-                                timestamp=timestamp
+                                timestamp=timestamp,
                             )
 
                             session.add(price_record)
@@ -301,19 +332,27 @@ class CoinspotCollector:
                             continue
 
                     except Exception as e:
-                        logger.error(f"Error processing price for {coin_type}: {type(e).__name__}: {e}")
+                        logger.error(
+                            f"Error processing price for {coin_type}: {type(e).__name__}: {e}"
+                        )
                         error_count += 1
                         continue
 
                 # Commit all records at once
                 try:
                     session.commit()
-                    logger.info(f"Successfully stored {stored_count} price records at {timestamp}")
+                    logger.info(
+                        f"Successfully stored {stored_count} price records at {timestamp}"
+                    )
                     if error_count > 0:
-                        logger.warning(f"Encountered {error_count} errors during storage")
+                        logger.warning(
+                            f"Encountered {error_count} errors during storage"
+                        )
                 except Exception as e:
                     session.rollback()
-                    logger.error(f"Error committing price data: {type(e).__name__}: {e}")
+                    logger.error(
+                        f"Error committing price data: {type(e).__name__}: {e}"
+                    )
                     return 0
 
         except Exception as e:
@@ -336,7 +375,9 @@ class CoinspotCollector:
             prices = await self.fetch_latest_prices()
 
             if not prices:
-                logger.error("Failed to fetch prices after all retries, skipping storage")
+                logger.error(
+                    "Failed to fetch prices after all retries, skipping storage"
+                )
                 return 0
 
             # Store in database
@@ -350,7 +391,10 @@ class CoinspotCollector:
             return stored_count
 
         except Exception as e:
-            logger.error(f"Critical error in collection workflow: {type(e).__name__}: {e}", exc_info=True)
+            logger.error(
+                f"Critical error in collection workflow: {type(e).__name__}: {e}",
+                exc_info=True,
+            )
             return 0
 
 

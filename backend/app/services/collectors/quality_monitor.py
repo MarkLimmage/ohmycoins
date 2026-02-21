@@ -87,9 +87,9 @@ class DataQualityMonitor:
 
         # Calculate overall score (weighted average)
         metrics.overall_score = (
-            metrics.completeness_score * 0.3 +
-            metrics.timeliness_score * 0.4 +
-            metrics.accuracy_score * 0.3
+            metrics.completeness_score * 0.3
+            + metrics.timeliness_score * 0.4
+            + metrics.accuracy_score * 0.3
         )
 
         # Aggregate issues, warnings, and info
@@ -134,9 +134,7 @@ class DataQualityMonitor:
         scores = []
 
         # Check Exchange Ledger (Price Data)
-        price_count = session.exec(
-            select(func.count(col(PriceData5Min.id)))
-        ).one()
+        price_count = session.exec(select(func.count(col(PriceData5Min.id)))).one()
 
         if price_count > 0:
             scores.append(1.0)
@@ -146,9 +144,7 @@ class DataQualityMonitor:
             metrics.issues.append("No price data found")
 
         # Check Human Ledger (Sentiment Data)
-        sentiment_count = session.exec(
-            select(func.count(col(NewsSentiment.id)))
-        ).one()
+        sentiment_count = session.exec(select(func.count(col(NewsSentiment.id)))).one()
 
         if sentiment_count > 0:
             scores.append(1.0)
@@ -158,9 +154,7 @@ class DataQualityMonitor:
             metrics.warnings.append("Limited sentiment data")
 
         # Check Catalyst Ledger (Events)
-        catalyst_count = session.exec(
-            select(func.count(col(CatalystEvents.id)))
-        ).one()
+        catalyst_count = session.exec(select(func.count(col(CatalystEvents.id)))).one()
 
         if catalyst_count > 0:
             scores.append(1.0)
@@ -212,9 +206,7 @@ class DataQualityMonitor:
 
         # Check price data freshness (should be within 10 minutes)
         recent_price = session.exec(
-            select(PriceData5Min)
-            .order_by(desc(col(PriceData5Min.timestamp)))
-            .limit(1)
+            select(PriceData5Min).order_by(desc(col(PriceData5Min.timestamp))).limit(1)
         ).first()
 
         if recent_price:
@@ -282,9 +274,7 @@ class DataQualityMonitor:
                 )
             elif age < timedelta(days=3):
                 scores.append(0.7)
-                metrics.warnings.append(
-                    f"Catalyst data is stale ({age.days} days old)"
-                )
+                metrics.warnings.append(f"Catalyst data is stale ({age.days} days old)")
             else:
                 scores.append(0.3)
                 metrics.issues.append(
@@ -297,9 +287,7 @@ class DataQualityMonitor:
         # Calculate timeliness score
         metrics.timeliness_score = sum(scores) / len(scores) if scores else 0.0
 
-        logger.info(
-            f"{self.name}: Timeliness score: {metrics.timeliness_score:.2f}"
-        )
+        logger.info(f"{self.name}: Timeliness score: {metrics.timeliness_score:.2f}")
 
         return metrics
 
@@ -325,40 +313,31 @@ class DataQualityMonitor:
 
         # Check price data validity
         invalid_prices = session.exec(
-            select(func.count(col(PriceData5Min.id)))
-            .where(
-                (col(PriceData5Min.last) <= 0) |
-                (col(PriceData5Min.last) is None)
+            select(func.count(col(PriceData5Min.id))).where(
+                (col(PriceData5Min.last) <= 0) | (col(PriceData5Min.last) is None)
             )
         ).one()
 
-        total_prices = session.exec(
-            select(func.count(col(PriceData5Min.id)))
-        ).one()
+        total_prices = session.exec(select(func.count(col(PriceData5Min.id)))).one()
 
         if total_prices > 0:
             price_validity = 1.0 - (invalid_prices / total_prices)
             scores.append(price_validity)
 
             if invalid_prices > 0:
-                metrics.warnings.append(
-                    f"Found {invalid_prices} invalid price records"
-                )
+                metrics.warnings.append(f"Found {invalid_prices} invalid price records")
             else:
                 metrics.info.append("All price data is valid")
 
         # Check sentiment score validity (-1 to 1 range)
         invalid_sentiment = session.exec(
-            select(func.count(col(NewsSentiment.id)))
-            .where(
-                (col(NewsSentiment.sentiment_score) < -1) |
-                (col(NewsSentiment.sentiment_score) > 1)
+            select(func.count(col(NewsSentiment.id))).where(
+                (col(NewsSentiment.sentiment_score) < -1)
+                | (col(NewsSentiment.sentiment_score) > 1)
             )
         ).one()
 
-        total_sentiment = session.exec(
-            select(func.count(col(NewsSentiment.id)))
-        ).one()
+        total_sentiment = session.exec(select(func.count(col(NewsSentiment.id)))).one()
 
         if total_sentiment > 0:
             sentiment_validity = 1.0 - (invalid_sentiment / total_sentiment)
@@ -373,16 +352,13 @@ class DataQualityMonitor:
 
         # Check catalyst events have required fields
         invalid_catalysts = session.exec(
-            select(func.count(col(CatalystEvents.id)))
-            .where(
-                (col(CatalystEvents.event_type) is None) |
-                (col(CatalystEvents.detected_at) is None)
+            select(func.count(col(CatalystEvents.id))).where(
+                (col(CatalystEvents.event_type) is None)
+                | (col(CatalystEvents.detected_at) is None)
             )
         ).one()
 
-        total_catalysts = session.exec(
-            select(func.count(col(CatalystEvents.id)))
-        ).one()
+        total_catalysts = session.exec(select(func.count(col(CatalystEvents.id)))).one()
 
         if total_catalysts > 0:
             catalyst_validity = 1.0 - (invalid_catalysts / total_catalysts)
@@ -398,9 +374,7 @@ class DataQualityMonitor:
         # Calculate accuracy score
         metrics.accuracy_score = sum(scores) / len(scores) if scores else 0.9
 
-        logger.info(
-            f"{self.name}: Accuracy score: {metrics.accuracy_score:.2f}"
-        )
+        logger.info(f"{self.name}: Accuracy score: {metrics.accuracy_score:.2f}")
 
         return metrics
 
@@ -426,8 +400,7 @@ class DataQualityMonitor:
             }
 
             logger.warning(
-                f"{self.name}: ALERT - {alert['message']} "
-                f"(threshold: {threshold})"
+                f"{self.name}: ALERT - {alert['message']} " f"(threshold: {threshold})"
             )
 
             return alert

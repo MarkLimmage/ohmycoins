@@ -23,7 +23,9 @@ def create_risk_rule(*, session: Session, risk_rule_create: RiskRuleCreate) -> R
     return db_obj
 
 
-def get_risk_rules(*, session: Session, skip: int = 0, limit: int = 100) -> Sequence[RiskRule]:
+def get_risk_rules(
+    *, session: Session, skip: int = 0, limit: int = 100
+) -> Sequence[RiskRule]:
     statement = select(RiskRule).offset(skip).limit(limit)
     return session.exec(statement).all()
 
@@ -58,7 +60,9 @@ def create_audit_log(*, session: Session, audit_log_create: AuditLogCreate) -> A
     return db_obj
 
 
-def get_audit_logs(*, session: Session, skip: int = 0, limit: int = 100, event_type: str | None = None) -> Sequence[AuditLog]:
+def get_audit_logs(
+    *, session: Session, skip: int = 0, limit: int = 100, event_type: str | None = None
+) -> Sequence[AuditLog]:
     statement = select(AuditLog)
     if event_type:
         statement = statement.where(AuditLog.event_type == event_type)

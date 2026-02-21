@@ -36,26 +36,26 @@ class DeFiLlamaCollector(APICollector):
 
     # List of protocol slugs to monitor (top protocols by TVL)
     MONITORED_PROTOCOLS = [
-        "lido",           # Liquid staking
-        "aave",           # Lending
-        "makerdao",       # Stablecoin
-        "uniswap",        # DEX
-        "curve",          # DEX
-        "justlend",       # Lending
-        "compound",       # Lending
-        "pancakeswap",    # DEX
-        "balancer",       # DEX
-        "rocket-pool",    # Liquid staking
-        "convex-finance", # Yield
-        "sushiswap",      # DEX
-        "venus",          # Lending
-        "gmx",            # Perpetuals
-        "frax",           # Stablecoin
-        "liquity",        # Lending
+        "lido",  # Liquid staking
+        "aave",  # Lending
+        "makerdao",  # Stablecoin
+        "uniswap",  # DEX
+        "curve",  # DEX
+        "justlend",  # Lending
+        "compound",  # Lending
+        "pancakeswap",  # DEX
+        "balancer",  # DEX
+        "rocket-pool",  # Liquid staking
+        "convex-finance",  # Yield
+        "sushiswap",  # DEX
+        "venus",  # Lending
+        "gmx",  # Perpetuals
+        "frax",  # Stablecoin
+        "liquity",  # Lending
         "yearn-finance",  # Yield
-        "stargate",       # Bridge
-        "synthetix",      # Derivatives
-        "pendle",         # Yield
+        "stargate",  # Bridge
+        "synthetix",  # Derivatives
+        "pendle",  # Yield
     ]
 
     def __init__(self):
@@ -79,7 +79,9 @@ class DeFiLlamaCollector(APICollector):
         Raises:
             Exception: If API request fails
         """
-        logger.info(f"{self.name}: Collecting data for {len(self.MONITORED_PROTOCOLS)} protocols")
+        logger.info(
+            f"{self.name}: Collecting data for {len(self.MONITORED_PROTOCOLS)} protocols"
+        )
 
         all_data = []
 
@@ -96,7 +98,11 @@ class DeFiLlamaCollector(APICollector):
 
                 # Get the most recent TVL value
                 latest_tvl = tvl[-1] if isinstance(tvl, list) else tvl
-                current_tvl = latest_tvl.get("totalLiquidityUSD") if isinstance(latest_tvl, dict) else latest_tvl
+                current_tvl = (
+                    latest_tvl.get("totalLiquidityUSD")
+                    if isinstance(latest_tvl, dict)
+                    else latest_tvl
+                )
 
                 # Try to get fees/revenue data (not all protocols have this)
                 fees_24h = None
@@ -110,7 +116,9 @@ class DeFiLlamaCollector(APICollector):
                     if fees_data and "totalRevenue24h" in fees_data:
                         revenue_24h = fees_data["totalRevenue24h"]
                 except Exception as e:
-                    logger.debug(f"{self.name}: No fees data for {protocol_slug}: {str(e)}")
+                    logger.debug(
+                        f"{self.name}: No fees data for {protocol_slug}: {str(e)}"
+                    )
 
                 data_point = {
                     "protocol": protocol_slug,
@@ -121,14 +129,20 @@ class DeFiLlamaCollector(APICollector):
                 }
 
                 all_data.append(data_point)
-                logger.debug(f"{self.name}: Collected data for {protocol_slug}: TVL=${current_tvl:,.0f}")
+                logger.debug(
+                    f"{self.name}: Collected data for {protocol_slug}: TVL=${current_tvl:,.0f}"
+                )
 
             except Exception as e:
-                logger.error(f"{self.name}: Failed to collect data for {protocol_slug}: {str(e)}")
+                logger.error(
+                    f"{self.name}: Failed to collect data for {protocol_slug}: {str(e)}"
+                )
                 # Continue with other protocols even if one fails
                 continue
 
-        logger.info(f"{self.name}: Collected data for {len(all_data)}/{len(self.MONITORED_PROTOCOLS)} protocols")
+        logger.info(
+            f"{self.name}: Collected data for {len(all_data)}/{len(self.MONITORED_PROTOCOLS)} protocols"
+        )
         return all_data
 
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -154,32 +168,42 @@ class DeFiLlamaCollector(APICollector):
                     continue
 
                 if item.get("tvl_usd") is None:
-                    logger.warning(f"{self.name}: Missing TVL for {item['protocol']}, skipping")
+                    logger.warning(
+                        f"{self.name}: Missing TVL for {item['protocol']}, skipping"
+                    )
                     continue
 
                 # Validate TVL is positive
                 tvl = float(item["tvl_usd"])
                 if tvl < 0:
-                    logger.warning(f"{self.name}: Negative TVL for {item['protocol']}, skipping")
+                    logger.warning(
+                        f"{self.name}: Negative TVL for {item['protocol']}, skipping"
+                    )
                     continue
 
                 # Validate fees and revenue if present
                 if item.get("fees_24h") is not None:
                     fees = float(item["fees_24h"])
                     if fees < 0:
-                        logger.warning(f"{self.name}: Negative fees for {item['protocol']}, setting to None")
+                        logger.warning(
+                            f"{self.name}: Negative fees for {item['protocol']}, setting to None"
+                        )
                         item["fees_24h"] = None
 
                 if item.get("revenue_24h") is not None:
                     revenue = float(item["revenue_24h"])
                     if revenue < 0:
-                        logger.warning(f"{self.name}: Negative revenue for {item['protocol']}, setting to None")
+                        logger.warning(
+                            f"{self.name}: Negative revenue for {item['protocol']}, setting to None"
+                        )
                         item["revenue_24h"] = None
 
                 validated.append(item)
 
             except (ValueError, TypeError) as e:
-                logger.warning(f"{self.name}: Invalid data for {item.get('protocol', 'unknown')}: {str(e)}")
+                logger.warning(
+                    f"{self.name}: Invalid data for {item.get('protocol', 'unknown')}: {str(e)}"
+                )
                 continue
 
         logger.info(f"{self.name}: Validated {len(validated)}/{len(data)} records")
@@ -203,9 +227,15 @@ class DeFiLlamaCollector(APICollector):
                 # Convert to Decimal for database storage
                 protocol_fundamental = ProtocolFundamentals(
                     protocol=item["protocol"],
-                    tvl_usd=Decimal(str(item["tvl_usd"])) if item.get("tvl_usd") is not None else None,
-                    fees_24h=Decimal(str(item["fees_24h"])) if item.get("fees_24h") is not None else None,
-                    revenue_24h=Decimal(str(item["revenue_24h"])) if item.get("revenue_24h") is not None else None,
+                    tvl_usd=Decimal(str(item["tvl_usd"]))
+                    if item.get("tvl_usd") is not None
+                    else None,
+                    fees_24h=Decimal(str(item["fees_24h"]))
+                    if item.get("fees_24h") is not None
+                    else None,
+                    revenue_24h=Decimal(str(item["revenue_24h"]))
+                    if item.get("revenue_24h") is not None
+                    else None,
                     collected_at=item["collected_at"],
                 )
 

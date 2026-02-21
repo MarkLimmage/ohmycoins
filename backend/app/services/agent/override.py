@@ -33,10 +33,7 @@ class OverrideManager:
         ]
 
     def apply_override(
-        self,
-        state: dict[str, Any],
-        override_type: str,
-        override_data: dict[str, Any]
+        self, state: dict[str, Any], override_type: str, override_data: dict[str, Any]
     ) -> dict[str, Any]:
         """
         Apply a user override to the workflow state.
@@ -80,31 +77,32 @@ class OverrideManager:
         if "overrides_applied" not in state:
             state["overrides_applied"] = []
 
-        state["overrides_applied"].append({
-            "override_type": override_type,
-            "override_data": override_data,
-            "timestamp": None,  # Will be set by API
-        })
+        state["overrides_applied"].append(
+            {
+                "override_type": override_type,
+                "override_data": override_data,
+                "timestamp": None,  # Will be set by API
+            }
+        )
 
         # Add to reasoning trace
         if "reasoning_trace" not in state or state["reasoning_trace"] is None:
             state["reasoning_trace"] = []
 
-        state["reasoning_trace"].append({
-            "step": "override_applied",
-            "override_type": override_type,
-            "override_data": override_data
-        })
+        state["reasoning_trace"].append(
+            {
+                "step": "override_applied",
+                "override_type": override_type,
+                "override_data": override_data,
+            }
+        )
 
         logger.info(f"OverrideManager: Successfully applied {override_type} override")
 
         return state
 
     def _validate_override(
-        self,
-        override_type: str,
-        override_data: dict[str, Any],
-        state: dict[str, Any]
+        self, override_type: str, override_data: dict[str, Any], state: dict[str, Any]
     ) -> str | None:
         """
         Validate override data based on type.
@@ -161,9 +159,7 @@ class OverrideManager:
         return None
 
     def _apply_model_selection_override(
-        self,
-        state: dict[str, Any],
-        override_data: dict[str, Any]
+        self, state: dict[str, Any], override_data: dict[str, Any]
     ) -> dict[str, Any]:
         """Apply model selection override."""
         model_name = override_data["model_name"]
@@ -177,9 +173,7 @@ class OverrideManager:
         return state
 
     def _apply_hyperparameters_override(
-        self,
-        state: dict[str, Any],
-        override_data: dict[str, Any]
+        self, state: dict[str, Any], override_data: dict[str, Any]
     ) -> dict[str, Any]:
         """Apply hyperparameters override."""
         model_name = override_data["model_name"]
@@ -203,9 +197,7 @@ class OverrideManager:
         return state
 
     def _apply_preprocessing_override(
-        self,
-        state: dict[str, Any],
-        override_data: dict[str, Any]
+        self, state: dict[str, Any], override_data: dict[str, Any]
     ) -> dict[str, Any]:
         """Apply data preprocessing override."""
         preprocessing_steps = override_data["preprocessing_steps"]
@@ -225,9 +217,7 @@ class OverrideManager:
         return state
 
     def _apply_workflow_step_override(
-        self,
-        state: dict[str, Any],
-        override_data: dict[str, Any]
+        self, state: dict[str, Any], override_data: dict[str, Any]
     ) -> dict[str, Any]:
         """Apply workflow step restart override."""
         restart_step = override_data["restart_step"]
@@ -296,9 +286,7 @@ override_manager = OverrideManager()
 
 
 def apply_user_override(
-    state: dict[str, Any],
-    override_type: str,
-    override_data: dict[str, Any]
+    state: dict[str, Any], override_type: str, override_data: dict[str, Any]
 ) -> dict[str, Any]:
     """
     Convenience function to apply a user override.

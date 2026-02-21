@@ -5,6 +5,7 @@ Trade Recording and Reconciliation Service
 This module tracks all trading activity, logs trade attempts, and reconciles
 executed trades with exchange confirmations.
 """
+
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -45,9 +46,9 @@ class TradeRecorder:
         coin_type: str,
         side: str,
         quantity: Decimal,
-        order_type: str = 'market',
+        order_type: str = "market",
         price: Decimal | None = None,
-        algorithm_id: UUID | None = None
+        algorithm_id: UUID | None = None,
     ) -> Order:
         """
         Log a trade attempt by creating an order record
@@ -72,9 +73,9 @@ class TradeRecorder:
             order_type=order_type,
             price=price,
             algorithm_id=algorithm_id,
-            status='pending',
+            status="pending",
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
 
         self.session.add(order)
@@ -93,7 +94,7 @@ class TradeRecorder:
         order_id: UUID,
         coinspot_order_id: str,
         filled_quantity: Decimal,
-        execution_price: Decimal
+        execution_price: Decimal,
     ) -> None:
         """
         Record a successful trade execution
@@ -109,7 +110,7 @@ class TradeRecorder:
             logger.error(f"Order {order_id} not found for success recording")
             return
 
-        order.status = 'filled'
+        order.status = "filled"
         order.filled_quantity = filled_quantity
         order.price = execution_price
         order.coinspot_order_id = coinspot_order_id
@@ -125,11 +126,7 @@ class TradeRecorder:
             f"(Exchange ID: {coinspot_order_id})"
         )
 
-    def record_failure(
-        self,
-        order_id: UUID,
-        error_message: str
-    ) -> None:
+    def record_failure(self, order_id: UUID, error_message: str) -> None:
         """
         Record a failed trade attempt
 
@@ -142,22 +139,17 @@ class TradeRecorder:
             logger.error(f"Order {order_id} not found for failure recording")
             return
 
-        order.status = 'failed'
+        order.status = "failed"
         order.error_message = error_message
         order.updated_at = datetime.now(timezone.utc)
 
         self.session.add(order)
         self.session.commit()
 
-        logger.warning(
-            f"Trade failure recorded: {order_id} - {error_message}"
-        )
+        logger.warning(f"Trade failure recorded: {order_id} - {error_message}")
 
     def record_partial_fill(
-        self,
-        order_id: UUID,
-        filled_quantity: Decimal,
-        execution_price: Decimal
+        self, order_id: UUID, filled_quantity: Decimal, execution_price: Decimal
     ) -> None:
         """
         Record a partial fill
@@ -172,7 +164,7 @@ class TradeRecorder:
             logger.error(f"Order {order_id} not found for partial fill recording")
             return
 
-        order.status = 'partial'
+        order.status = "partial"
         order.filled_quantity = filled_quantity
         order.price = execution_price
         order.updated_at = datetime.now(timezone.utc)
@@ -186,9 +178,7 @@ class TradeRecorder:
         )
 
     async def reconcile_order(
-        self,
-        order_id: UUID,
-        exchange_data: dict[str, Any]
+        self, order_id: UUID, exchange_data: dict[str, Any]
     ) -> bool:
         """
         Reconcile an order with exchange confirmation
@@ -206,10 +196,10 @@ class TradeRecorder:
             return False
 
         # Extract exchange data
-        exchange_order_id = exchange_data.get('id')
-        exchange_status = exchange_data.get('status')
-        filled_amount = Decimal(str(exchange_data.get('amount', 0)))
-        execution_rate = Decimal(str(exchange_data.get('rate', 0)))
+        exchange_order_id = exchange_data.get("id")
+        exchange_status = exchange_data.get("status")
+        filled_amount = Decimal(str(exchange_data.get("amount", 0)))
+        execution_rate = Decimal(str(exchange_data.get("rate", 0)))
 
         # Update order with exchange data
         if order.coinspot_order_id != exchange_order_id:
@@ -220,17 +210,17 @@ class TradeRecorder:
             order.coinspot_order_id = exchange_order_id
 
         # Update status based on exchange status
-        if exchange_status == 'complete':
-            order.status = 'filled'
+        if exchange_status == "complete":
+            order.status = "filled"
             order.filled_quantity = filled_amount
             order.price = execution_rate
             order.filled_at = datetime.now(timezone.utc)
-        elif exchange_status == 'partial':
-            order.status = 'partial'
+        elif exchange_status == "partial":
+            order.status = "partial"
             order.filled_quantity = filled_amount
             order.price = execution_rate
-        elif exchange_status == 'cancelled':
-            order.status = 'cancelled'
+        elif exchange_status == "cancelled":
+            order.status = "cancelled"
 
         order.updated_at = datetime.now(timezone.utc)
 
@@ -251,7 +241,7 @@ class TradeRecorder:
         end_date: datetime | None = None,
         coin_type: str | None = None,
         algorithm_id: UUID | None = None,
-        status: str | None = None
+        status: str | None = None,
     ) -> list[Order]:
         """
         Get trade history with filters
@@ -300,7 +290,7 @@ class TradeRecorder:
         self,
         user_id: UUID,
         start_date: datetime | None = None,
-        end_date: datetime | None = None
+        end_date: datetime | None = None,
     ) -> dict[str, Any]:
         """
         Get trade statistics for a user
@@ -314,40 +304,37 @@ class TradeRecorder:
             Dictionary with trade statistics
         """
         orders = self.get_trade_history(
-            user_id=user_id,
-            start_date=start_date,
-            end_date=end_date
+            user_id=user_id, start_date=start_date, end_date=end_date
         )
 
         # Calculate statistics
         total_trades = len(orders)
-        filled_trades = [o for o in orders if o.status == 'filled']
-        failed_trades = [o for o in orders if o.status == 'failed']
-        partial_trades = [o for o in orders if o.status == 'partial']
+        filled_trades = [o for o in orders if o.status == "filled"]
+        failed_trades = [o for o in orders if o.status == "failed"]
+        partial_trades = [o for o in orders if o.status == "partial"]
 
-        buy_trades = [o for o in filled_trades if o.side == 'buy']
-        sell_trades = [o for o in filled_trades if o.side == 'sell']
+        buy_trades = [o for o in filled_trades if o.side == "buy"]
+        sell_trades = [o for o in filled_trades if o.side == "sell"]
 
         total_buy_volume = sum(o.filled_quantity * o.price for o in buy_trades)
         total_sell_volume = sum(o.filled_quantity * o.price for o in sell_trades)
 
         stats = {
-            'total_trades': total_trades,
-            'filled_trades': len(filled_trades),
-            'failed_trades': len(failed_trades),
-            'partial_trades': len(partial_trades),
-            'buy_trades': len(buy_trades),
-            'sell_trades': len(sell_trades),
-            'total_buy_volume_aud': float(total_buy_volume),
-            'total_sell_volume_aud': float(total_sell_volume),
-            'success_rate': (
-                len(filled_trades) / total_trades * 100
-                if total_trades > 0 else 0
+            "total_trades": total_trades,
+            "filled_trades": len(filled_trades),
+            "failed_trades": len(failed_trades),
+            "partial_trades": len(partial_trades),
+            "buy_trades": len(buy_trades),
+            "sell_trades": len(sell_trades),
+            "total_buy_volume_aud": float(total_buy_volume),
+            "total_sell_volume_aud": float(total_sell_volume),
+            "success_rate": (
+                len(filled_trades) / total_trades * 100 if total_trades > 0 else 0
             ),
-            'period': {
-                'start': start_date.isoformat() if start_date else None,
-                'end': end_date.isoformat() if end_date else None
-            }
+            "period": {
+                "start": start_date.isoformat() if start_date else None,
+                "end": end_date.isoformat() if end_date else None,
+            },
         }
 
         logger.info(

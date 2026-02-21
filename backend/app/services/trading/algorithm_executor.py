@@ -4,6 +4,7 @@ Algorithm Execution Service
 This module executes deployed trading algorithms, generating and executing
 trading signals based on real-time market data.
 """
+
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -71,7 +72,7 @@ class AlgorithmExecutor:
         api_key: str,
         api_secret: str,
         safety_manager: TradingSafetyManager | None = None,
-        trade_recorder: TradeRecorder | None = None
+        trade_recorder: TradeRecorder | None = None,
     ):
         """
         Initialize algorithm executor
@@ -95,7 +96,7 @@ class AlgorithmExecutor:
         user_id: UUID,
         algorithm_id: UUID,
         algorithm: TradingAlgorithm,
-        market_data: dict[str, Any]
+        market_data: dict[str, Any],
     ) -> dict[str, Any]:
         """
         Execute a trading algorithm
@@ -119,21 +120,18 @@ class AlgorithmExecutor:
             signal = algorithm.generate_signal(market_data)
 
             # Check if signal recommends action
-            action = signal.get('action')
-            if action == 'hold' or not action:
-                logger.debug(f"Algorithm {algorithm_id} recommends holding, no action taken")
+            action = signal.get("action")
+            if action == "hold" or not action:
+                logger.debug(
+                    f"Algorithm {algorithm_id} recommends holding, no action taken"
+                )
                 # Optional: Log 'hold' signals if needed, but might be spammy
-                return {
-                    'executed': False,
-                    'reason': 'hold_signal',
-                    'signal': signal
-                }
+                return {"executed": False, "reason": "hold_signal", "signal": signal}
 
             # Log the signal to AuditLog (The "Why")
             # Convert signal decimals to strings for JSON serialization
             serializable_signal = {
-                k: str(v) if isinstance(v, Decimal) else v
-                for k, v in signal.items()
+                k: str(v) if isinstance(v, Decimal) else v for k, v in signal.items()
             }
 
             audit_log = AuditLog(
@@ -143,25 +141,27 @@ class AlgorithmExecutor:
                 details={
                     "algorithm_id": str(algorithm_id),
                     "signal": serializable_signal,
-                    "market_data_snapshot": {k: v for k, v in market_data.items() if k in ['price', 'coin_type', 'volume_24h']}
+                    "market_data_snapshot": {
+                        k: v
+                        for k, v in market_data.items()
+                        if k in ["price", "coin_type", "volume_24h"]
+                    },
                 },
-                timestamp=datetime.now(timezone.utc)
+                timestamp=datetime.now(timezone.utc),
             )
             self.session.add(audit_log)
             self.session.commit()
 
             # Extract trade parameters
-            coin_type = signal.get('coin_type')
-            quantity = Decimal(str(signal.get('quantity', 0)))
-            confidence = signal.get('confidence', 0.0)
+            coin_type = signal.get("coin_type")
+            quantity = Decimal(str(signal.get("quantity", 0)))
+            confidence = signal.get("confidence", 0.0)
 
             if not coin_type or quantity <= 0:
-                logger.warning(f"Invalid signal from algorithm {algorithm_id}: {signal}")
-                return {
-                    'executed': False,
-                    'reason': 'invalid_signal',
-                    'signal': signal
-                }
+                logger.warning(
+                    f"Invalid signal from algorithm {algorithm_id}: {signal}"
+                )
+                return {"executed": False, "reason": "invalid_signal", "signal": signal}
 
             # Get estimated price
             estimated_price = self._get_estimated_price(market_data, coin_type)
@@ -174,15 +174,15 @@ class AlgorithmExecutor:
                     side=action,
                     quantity=quantity,
                     estimated_price=estimated_price,
-                    algorithm_id=algorithm_id
+                    algorithm_id=algorithm_id,
                 )
             except SafetyViolation as e:
                 logger.warning(f"Safety check failed for algorithm {algorithm_id}: {e}")
                 return {
-                    'executed': False,
-                    'reason': 'safety_violation',
-                    'error': str(e),
-                    'signal': signal
+                    "executed": False,
+                    "reason": "safety_violation",
+                    "error": str(e),
+                    "signal": signal,
                 }
 
             # Log trade attempt
@@ -191,7 +191,7 @@ class AlgorithmExecutor:
                 coin_type=coin_type,
                 side=action,
                 quantity=quantity,
-                algorithm_id=algorithm_id
+                algorithm_id=algorithm_id,
             )
 
             # Submit order to execution queue
@@ -203,20 +203,20 @@ class AlgorithmExecutor:
             )
 
             return {
-                'executed': True,
-                'order_id': str(order.id),
-                'signal': signal,
-                'validation': validation
+                "executed": True,
+                "order_id": str(order.id),
+                "signal": signal,
+                "validation": validation,
             }
 
         except Exception as e:
-            logger.error(f"Error executing algorithm {algorithm_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error executing algorithm {algorithm_id}: {e}", exc_info=True
+            )
             raise AlgorithmExecutionError(f"Algorithm execution failed: {e}")
 
     def _get_estimated_price(
-        self,
-        market_data: dict[str, Any],
-        coin_type: str
+        self, market_data: dict[str, Any], coin_type: str
     ) -> Decimal:
         """
         Get estimated execution price from market data
@@ -230,29 +230,29 @@ class AlgorithmExecutor:
         """
         # Extract price from market data
         # Market data should contain current prices for all coins
-        prices = market_data.get('prices', {})
+        prices = market_data.get("prices", {})
         coin_data = prices.get(coin_type, {})
 
         # Use last price, or average of bid/ask
-        last_price = coin_data.get('last')
+        last_price = coin_data.get("last")
         if last_price:
             return Decimal(str(last_price))
 
-        bid = coin_data.get('bid', 0)
-        ask = coin_data.get('ask', 0)
+        bid = coin_data.get("bid", 0)
+        ask = coin_data.get("ask", 0)
 
         if bid and ask:
             return Decimal(str((bid + ask) / 2))
 
         # Fallback to a default if no price available
         logger.warning(f"No price data available for {coin_type}, using 0")
-        return Decimal('0')
+        return Decimal("0")
 
     async def execute_multiple_algorithms(
         self,
         user_id: UUID,
         algorithms: list[tuple[UUID, TradingAlgorithm]],
-        market_data: dict[str, Any]
+        market_data: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """
         Execute multiple algorithms for a user
@@ -273,18 +273,12 @@ class AlgorithmExecutor:
                     user_id=user_id,
                     algorithm_id=algorithm_id,
                     algorithm=algorithm,
-                    market_data=market_data
+                    market_data=market_data,
                 )
-                results.append({
-                    'algorithm_id': str(algorithm_id),
-                    'result': result
-                })
+                results.append({"algorithm_id": str(algorithm_id), "result": result})
             except Exception as e:
                 logger.error(f"Error executing algorithm {algorithm_id}: {e}")
-                results.append({
-                    'algorithm_id': str(algorithm_id),
-                    'error': str(e)
-                })
+                results.append({"algorithm_id": str(algorithm_id), "error": str(e)})
 
         return results
 
@@ -292,7 +286,7 @@ class AlgorithmExecutor:
         self,
         algorithm_id: UUID,
         start_date: datetime | None = None,
-        end_date: datetime | None = None
+        end_date: datetime | None = None,
     ) -> dict[str, Any]:
         """
         Get performance metrics for an algorithm
@@ -311,27 +305,27 @@ class AlgorithmExecutor:
         # TODO: Update when Phase 3 (Agentic) or Phase 4 (Manual Lab) algorithm system is implemented
         # Will integrate with trade_recorder to get actual algorithm performance metrics
 
-        logger.warning("Algorithm performance tracking not fully implemented yet - awaiting Phase 3/4 integration")
+        logger.warning(
+            "Algorithm performance tracking not fully implemented yet - awaiting Phase 3/4 integration"
+        )
 
         return {
-            'algorithm_id': str(algorithm_id),
-            'metrics': {
-                'total_trades': 0,
-                'winning_trades': 0,
-                'losing_trades': 0,
-                'total_pnl': 0.0,
-                'win_rate': 0.0,
-                'sharpe_ratio': 0.0,
-                'max_drawdown': 0.0
+            "algorithm_id": str(algorithm_id),
+            "metrics": {
+                "total_trades": 0,
+                "winning_trades": 0,
+                "losing_trades": 0,
+                "total_pnl": 0.0,
+                "win_rate": 0.0,
+                "sharpe_ratio": 0.0,
+                "max_drawdown": 0.0,
             },
-            'note': 'Full implementation pending Phase 3/4 completion'
+            "note": "Full implementation pending Phase 3/4 completion",
         }
 
 
 def get_algorithm_executor(
-    session: Session,
-    api_key: str,
-    api_secret: str
+    session: Session, api_key: str, api_secret: str
 ) -> AlgorithmExecutor:
     """
     Get an algorithm executor instance
@@ -344,8 +338,4 @@ def get_algorithm_executor(
     Returns:
         AlgorithmExecutor instance
     """
-    return AlgorithmExecutor(
-        session=session,
-        api_key=api_key,
-        api_secret=api_secret
-    )
+    return AlgorithmExecutor(session=session, api_key=api_key, api_secret=api_secret)

@@ -27,11 +27,7 @@ class CollectorMetrics:
         self.last_failure_at: datetime | None = None
         self.last_error: str | None = None
 
-    def record_success(
-        self,
-        records_collected: int,
-        latency_seconds: float
-    ) -> None:
+    def record_success(self, records_collected: int, latency_seconds: float) -> None:
         """Record a successful collection run."""
         self.total_runs += 1
         self.successful_runs += 1
@@ -130,10 +126,7 @@ class MetricsTracker:
         return self._metrics[collector_name]
 
     def record_success(
-        self,
-        collector_name: str,
-        records_collected: int,
-        latency_seconds: float
+        self, collector_name: str, records_collected: int, latency_seconds: float
     ) -> None:
         """
         Record a successful collection run.
@@ -147,10 +140,7 @@ class MetricsTracker:
         metrics.record_success(records_collected, latency_seconds)
 
     def record_failure(
-        self,
-        collector_name: str,
-        error: str,
-        latency_seconds: float
+        self, collector_name: str, error: str, latency_seconds: float
     ) -> None:
         """
         Record a failed collection run.
@@ -179,8 +169,7 @@ class MetricsTracker:
                 "collectors_tracked": len(self._metrics),
             },
             "collectors": {
-                name: metrics.to_dict()
-                for name, metrics in self._metrics.items()
+                name: metrics.to_dict() for name, metrics in self._metrics.items()
             },
         }
 
@@ -202,24 +191,20 @@ class MetricsTracker:
 
         total_runs = sum(m.total_runs for m in self._metrics.values())
         successful_runs = sum(m.successful_runs for m in self._metrics.values())
-        total_records = sum(
-            m.total_records_collected for m in self._metrics.values()
-        )
-        total_latency = sum(
-            m.total_latency_seconds for m in self._metrics.values()
-        )
+        total_records = sum(m.total_records_collected for m in self._metrics.values())
+        total_latency = sum(m.total_latency_seconds for m in self._metrics.values())
 
         return {
             "total_collectors": len(self._metrics),
             "total_runs": total_runs,
             "overall_success_rate": (
                 round((successful_runs / total_runs) * 100, 2)
-                if total_runs > 0 else 0.0
+                if total_runs > 0
+                else 0.0
             ),
             "total_records_collected": total_records,
             "average_latency": (
-                round(total_latency / total_runs, 2)
-                if total_runs > 0 else 0.0
+                round(total_latency / total_runs, 2) if total_runs > 0 else 0.0
             ),
         }
 

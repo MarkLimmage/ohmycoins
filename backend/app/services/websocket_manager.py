@@ -8,6 +8,7 @@ class ConnectionManager:
     Manages WebSocket connections for real-time updates.
     Supports segregating connections by channel (resource ID).
     """
+
     def __init__(self):
         # Map channel_id -> List[WebSocket]
         self.active_connections: dict[str, list[WebSocket]] = {}
@@ -30,12 +31,12 @@ class ConnectionManager:
         if channel_id in self.active_connections:
             # Iterate over a copy to avoid modification during iteration issues if disconnect happens
             for connection in self.active_connections[channel_id][:]:
-                 try:
-                     await connection.send_text(message)
-                 except Exception:
-                     # Handle potential disconnection errors during broadcast
-                     # In a robust system, we might remove the connection here
-                     pass
+                try:
+                    await connection.send_text(message)
+                except Exception:
+                    # Handle potential disconnection errors during broadcast
+                    # In a robust system, we might remove the connection here
+                    pass
 
     async def broadcast_json(self, data: dict, channel_id: str):
         """Broadcast JSON data to all connections in a specific channel."""
@@ -45,5 +46,6 @@ class ConnectionManager:
                     await connection.send_json(data)
                 except Exception:
                     pass
+
 
 manager = ConnectionManager()

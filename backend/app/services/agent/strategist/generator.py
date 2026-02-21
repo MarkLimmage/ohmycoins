@@ -1,4 +1,3 @@
-
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -15,15 +14,18 @@ from app.services.backtesting.schemas import BacktestConfig, BacktestResult
 
 logger = logging.getLogger(__name__)
 
+
 class StrategyParams(BaseModel):
     strategy_name: str = Field(description="Name of the strategy")
     fast_window: int = Field(description="Window size for the fast moving average")
     slow_window: int = Field(description="Window size for the slow moving average")
 
+
 class StrategyGenerator:
     """
     Service for generating trading strategies using LLM and backtesting them.
     """
+
     def __init__(self, session: Session, user_id: UUID):
         self.session = session
         self.user_id = user_id
@@ -36,7 +38,7 @@ class StrategyGenerator:
         coin_type: str,
         start_date: datetime,
         end_date: datetime,
-        initial_capital: Decimal = Decimal("10000.0")
+        initial_capital: Decimal = Decimal("10000.0"),
     ) -> BacktestResult:
         """
         Generates strategy parameters from a prompt and runs a backtest.
@@ -63,10 +65,9 @@ class StrategyGenerator:
         You must output ONLY valid JSON matching the schema. No markdown, no conversational text.
         """
 
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("user", "{query}\n\n{format_instructions}")
-        ])
+        prompt_template = ChatPromptTemplate.from_messages(
+            [("system", system_prompt), ("user", "{query}\n\n{format_instructions}")]
+        )
 
         chain = prompt_template | self.llm | parser
 
@@ -75,17 +76,19 @@ class StrategyGenerator:
             # Note: We use execute synchronously in this sprint context if async environment is tricky,
             # but usually LLM calls should be async. The standard `BacktestService.run_backtest` is sync.
             # So the wrapper method is async but calling sync backtest is fine.
-            strategy_params = await chain.ainvoke({
-                "query": prompt,
-                "format_instructions": parser.get_format_instructions()
-            })
+            strategy_params = await chain.ainvoke(
+                {
+                    "query": prompt,
+                    "format_instructions": parser.get_format_instructions(),
+                }
+            )
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
             # Fallback for resiliency
             strategy_params = {
                 "strategy_name": "Fallback-Strategy",
                 "fast_window": 10,
-                "slow_window": 30
+                "slow_window": 30,
             }
 
         logger.info(f"Generated parameters: {strategy_params}")
@@ -105,10 +108,7 @@ class StrategyGenerator:
             start_date=start_date,
             end_date=end_date,
             initial_capital=initial_capital,
-            parameters={
-                "fast_window": fast,
-                "slow_window": slow
-            }
+            parameters={"fast_window": fast, "slow_window": slow},
         )
 
         # 4. Run Backtest

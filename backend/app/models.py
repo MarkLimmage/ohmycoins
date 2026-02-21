@@ -1,7 +1,6 @@
 # mypy: ignore-errors
 from __future__ import annotations
 
-from typing import List
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -22,8 +21,12 @@ class UserBase(SQLModel):
     # OMC-specific profile fields
     timezone: str | None = Field(default="UTC", max_length=50)
     preferred_currency: str | None = Field(default="AUD", max_length=10)
-    risk_tolerance: str | None = Field(default="medium", max_length=20)  # low, medium, high
-    trading_experience: str | None = Field(default="beginner", max_length=20)  # beginner, intermediate, advanced
+    risk_tolerance: str | None = Field(
+        default="medium", max_length=20
+    )  # low, medium, high
+    trading_experience: str | None = Field(
+        default="beginner", max_length=20
+    )  # beginner, intermediate, advanced
 
 
 # Properties to receive via API on creation
@@ -64,11 +67,11 @@ class User(UserBase, table=True):
     hashed_password: str
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     # Note: For SQLModel compatibility, we don't declare explicit back-populates here
@@ -89,8 +92,10 @@ class UsersPublic(SQLModel):
 # User Profile Models (Phase 2) - Extended profile with trading preferences
 # ============================================================================
 
+
 class UserProfilePublic(SQLModel):
     """Public user profile response with OMC-specific fields"""
+
     email: str
     full_name: str | None = None
     timezone: str
@@ -102,39 +107,55 @@ class UserProfilePublic(SQLModel):
 
 class UserProfileUpdate(SQLModel):
     """User profile update request with validation"""
+
     full_name: str | None = Field(default=None, max_length=255)
     timezone: str | None = Field(default=None, max_length=50)
     preferred_currency: str | None = Field(default=None, max_length=10)
     risk_tolerance: str | None = Field(default=None, max_length=20)
     trading_experience: str | None = Field(default=None, max_length=20)
 
-    @field_validator('timezone')
+    @field_validator("timezone")
     @classmethod
     def validate_timezone(cls, v: str | None) -> str | None:
         """Validate timezone field using pytz"""
         if v is not None:
             try:
                 import pytz
+
                 pytz.timezone(v)
             except pytz.exceptions.UnknownTimeZoneError:
                 raise ValueError(f"Invalid timezone: {v}")
         return v
 
-    @field_validator('preferred_currency')
+    @field_validator("preferred_currency")
     @classmethod
     def validate_currency(cls, v: str | None) -> str | None:
         """Validate currency field - must be 3-letter currency code"""
         if v is not None:
             # Common cryptocurrency and fiat currencies
             valid_currencies = {
-                "AUD", "USD", "EUR", "GBP", "JPY", "CNY", "CAD", "NZD", "SGD",
-                "BTC", "ETH", "USDT", "USDC", "BNB"
+                "AUD",
+                "USD",
+                "EUR",
+                "GBP",
+                "JPY",
+                "CNY",
+                "CAD",
+                "NZD",
+                "SGD",
+                "BTC",
+                "ETH",
+                "USDT",
+                "USDC",
+                "BNB",
             }
             if v.upper() not in valid_currencies:
-                raise ValueError(f"Invalid currency: {v}. Must be one of: {', '.join(sorted(valid_currencies))}")
+                raise ValueError(
+                    f"Invalid currency: {v}. Must be one of: {', '.join(sorted(valid_currencies))}"
+                )
         return v
 
-    @field_validator('risk_tolerance')
+    @field_validator("risk_tolerance")
     @classmethod
     def validate_risk_tolerance(cls, v: str | None) -> str | None:
         """Validate risk_tolerance field"""
@@ -142,14 +163,15 @@ class UserProfileUpdate(SQLModel):
             raise ValueError("risk_tolerance must be one of: low, medium, high")
         return v
 
-    @field_validator('trading_experience')
+    @field_validator("trading_experience")
     @classmethod
     def validate_trading_experience(cls, v: str | None) -> str | None:
         """Validate trading_experience field"""
         if v is not None and v not in ["beginner", "intermediate", "advanced"]:
-            raise ValueError("trading_experience must be one of: beginner, intermediate, advanced")
+            raise ValueError(
+                "trading_experience must be one of: beginner, intermediate, advanced"
+            )
         return v
-
 
 
 # Generic message
@@ -177,9 +199,11 @@ class NewPassword(SQLModel):
 # Price Data Models (The Collector)
 # ============================================================================
 
+
 # Shared properties for price data
 class PriceDataBase(SQLModel):
     """Base model for cryptocurrency price data from Coinspot API"""
+
     coin_type: str = Field(index=True, max_length=20)
     bid: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=8)))
     ask: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=8)))
@@ -194,36 +218,41 @@ class PriceData5Min(PriceDataBase, table=True):
     This table serves as the foundation for backtesting and algorithm development
     in The Lab.
     """
+
     __tablename__ = "price_data_5min"
 
     id: int | None = Field(default=None, primary_key=True)
     timestamp: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
-        description="UTC timestamp when data was collected"
+        description="UTC timestamp when data was collected",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False),
-        description="Timestamp when record was inserted into database"
+        description="Timestamp when record was inserted into database",
     )
 
     __table_args__ = (
         # Composite index for efficient time-series queries
-        Index('ix_price_data_5min_coin_timestamp', 'coin_type', 'timestamp'),
+        Index("ix_price_data_5min_coin_timestamp", "coin_type", "timestamp"),
         # Unique constraint to prevent duplicate entries
-        Index('uq_price_data_5min_coin_timestamp', 'coin_type', 'timestamp', unique=True),
+        Index(
+            "uq_price_data_5min_coin_timestamp", "coin_type", "timestamp", unique=True
+        ),
     )
 
 
 # Properties to receive via API on creation
 class PriceData5MinCreate(PriceDataBase):
     """Schema for creating new price data entries"""
+
     timestamp: datetime
 
 
 # Properties to return via API
 class PriceData5MinPublic(PriceDataBase):
     """Schema for returning price data via API"""
+
     id: int
     timestamp: datetime
     created_at: datetime
@@ -232,6 +261,7 @@ class PriceData5MinPublic(PriceDataBase):
 # List response
 class PriceData5MinList(SQLModel):
     """Paginated list of price data"""
+
     data: list[PriceData5MinPublic]
     count: int
 
@@ -240,9 +270,11 @@ class PriceData5MinList(SQLModel):
 # Coinspot Credentials Models (Phase 2)
 # ============================================================================
 
+
 # Shared properties for Coinspot credentials
 class CoinspotCredentialsBase(SQLModel):
     """Base model for Coinspot API credentials"""
+
     is_validated: bool = False
 
 
@@ -254,6 +286,7 @@ class CoinspotCredentials(CoinspotCredentialsBase, table=True):
     Credentials are encrypted at rest using Fernet (AES-256).
     The api_key and api_secret are stored as encrypted bytes.
     """
+
     __tablename__ = "coinspot_credentials"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -261,18 +294,19 @@ class CoinspotCredentials(CoinspotCredentialsBase, table=True):
         foreign_key="user.id", nullable=False, ondelete="CASCADE", unique=True
     )
     api_key_encrypted: bytes = Field(sa_column=Column(sa.LargeBinary, nullable=False))
-    api_secret_encrypted: bytes = Field(sa_column=Column(sa.LargeBinary, nullable=False))
+    api_secret_encrypted: bytes = Field(
+        sa_column=Column(sa.LargeBinary, nullable=False)
+    )
     last_validated_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     # Relationship to user (one-way, use queries to access from User)
@@ -282,6 +316,7 @@ class CoinspotCredentials(CoinspotCredentialsBase, table=True):
 # Properties to receive via API on creation
 class CoinspotCredentialsCreate(SQLModel):
     """Schema for creating Coinspot credentials"""
+
     api_key: str = Field(min_length=1, max_length=255)
     api_secret: str = Field(min_length=1, max_length=255)
 
@@ -289,6 +324,7 @@ class CoinspotCredentialsCreate(SQLModel):
 # Properties to receive via API on update
 class CoinspotCredentialsUpdate(SQLModel):
     """Schema for updating Coinspot credentials"""
+
     api_key: str | None = Field(default=None, min_length=1, max_length=255)
     api_secret: str | None = Field(default=None, min_length=1, max_length=255)
 
@@ -296,9 +332,12 @@ class CoinspotCredentialsUpdate(SQLModel):
 # Properties to return via API (masked for security)
 class CoinspotCredentialsPublic(CoinspotCredentialsBase):
     """Schema for returning Coinspot credentials via API (with masked values)"""
+
     id: uuid.UUID
     user_id: uuid.UUID
-    api_key_masked: str = Field(description="Masked API key (last 4 characters visible)")
+    api_key_masked: str = Field(
+        description="Masked API key (last 4 characters visible)"
+    )
     is_validated: bool
     last_validated_at: datetime | None
     created_at: datetime
@@ -309,10 +348,14 @@ class CoinspotCredentialsPublic(CoinspotCredentialsBase):
 # User LLM Credentials Models (BYOM - Bring Your Own Model) - Sprint 2.8
 # ============================================================================
 
+
 class UserLLMCredentialsBase(SQLModel):
     """Base model for user LLM credentials"""
+
     provider: str = Field(max_length=20, nullable=False)  # openai, google, anthropic
-    model_name: str | None = Field(default=None, max_length=100)  # gpt-4, gemini-1.5-pro, etc.
+    model_name: str | None = Field(
+        default=None, max_length=100
+    )  # gpt-4, gemini-1.5-pro, etc.
     is_default: bool = False  # Whether this is the user's default LLM
     is_active: bool = True  # Soft delete flag
 
@@ -326,6 +369,7 @@ class UserLLMCredentials(UserLLMCredentialsBase, table=True):
     The api_key is stored as encrypted bytes.
     Users can configure multiple providers (OpenAI, Google Gemini, Anthropic Claude).
     """
+
     __tablename__ = "user_llm_credentials"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -333,18 +377,19 @@ class UserLLMCredentials(UserLLMCredentialsBase, table=True):
         foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True
     )
     encrypted_api_key: bytes = Field(sa_column=Column(sa.LargeBinary, nullable=False))
-    encryption_key_id: str | None = Field(default="default", max_length=50)  # For key rotation
+    encryption_key_id: str | None = Field(
+        default="default", max_length=50
+    )  # For key rotation
     last_validated_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     # Relationship to user (one-way, use queries to access from User)
@@ -354,24 +399,40 @@ class UserLLMCredentials(UserLLMCredentialsBase, table=True):
 # Properties to receive via API on creation
 class UserLLMCredentialsCreate(SQLModel):
     """Schema for creating user LLM credentials"""
-    provider: str = Field(min_length=1, max_length=20, description="LLM provider: openai, google, anthropic")
-    model_name: str | None = Field(default=None, max_length=100, description="Model name (e.g., gpt-4, gemini-1.5-pro)")
-    api_key: str = Field(min_length=1, max_length=500, description="API key from the provider")
-    is_default: bool = Field(default=False, description="Set as default LLM for this user")
 
-    @field_validator('provider')
+    provider: str = Field(
+        min_length=1,
+        max_length=20,
+        description="LLM provider: openai, google, anthropic",
+    )
+    model_name: str | None = Field(
+        default=None,
+        max_length=100,
+        description="Model name (e.g., gpt-4, gemini-1.5-pro)",
+    )
+    api_key: str = Field(
+        min_length=1, max_length=500, description="API key from the provider"
+    )
+    is_default: bool = Field(
+        default=False, description="Set as default LLM for this user"
+    )
+
+    @field_validator("provider")
     @classmethod
     def validate_provider(cls, v: str) -> str:
         """Validate provider field"""
         valid_providers = {"openai", "google", "anthropic"}
         if v.lower() not in valid_providers:
-            raise ValueError(f"Provider must be one of: {', '.join(sorted(valid_providers))}")
+            raise ValueError(
+                f"Provider must be one of: {', '.join(sorted(valid_providers))}"
+            )
         return v.lower()
 
 
 # Properties to receive via API on update
 class UserLLMCredentialsUpdate(SQLModel):
     """Schema for updating user LLM credentials"""
+
     model_name: str | None = Field(default=None, max_length=100)
     api_key: str | None = Field(default=None, min_length=1, max_length=500)
     is_default: bool | None = Field(default=None)
@@ -381,9 +442,12 @@ class UserLLMCredentialsUpdate(SQLModel):
 # Properties to return via API (masked for security)
 class UserLLMCredentialsPublic(UserLLMCredentialsBase):
     """Schema for returning user LLM credentials via API (with masked API key)"""
+
     id: uuid.UUID
     user_id: uuid.UUID
-    api_key_masked: str = Field(description="Masked API key (last 4 characters visible)")
+    api_key_masked: str = Field(
+        description="Masked API key (last 4 characters visible)"
+    )
     last_validated_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -392,22 +456,28 @@ class UserLLMCredentialsPublic(UserLLMCredentialsBase):
 # Validation request/response models
 class UserLLMCredentialsValidate(SQLModel):
     """Schema for validating an API key before saving"""
+
     provider: str = Field(description="LLM provider: openai, google, anthropic")
     api_key: str = Field(description="API key to validate")
-    model_name: str | None = Field(default=None, description="Optional model name to test")
+    model_name: str | None = Field(
+        default=None, description="Optional model name to test"
+    )
 
-    @field_validator('provider')
+    @field_validator("provider")
     @classmethod
     def validate_provider(cls, v: str) -> str:
         """Validate provider field"""
         valid_providers = {"openai", "google", "anthropic"}
         if v.lower() not in valid_providers:
-            raise ValueError(f"Provider must be one of: {', '.join(sorted(valid_providers))}")
+            raise ValueError(
+                f"Provider must be one of: {', '.join(sorted(valid_providers))}"
+            )
         return v.lower()
 
 
 class UserLLMCredentialsValidationResult(SQLModel):
     """Response for API key validation"""
+
     is_valid: bool
     provider: str
     model_name: str | None = None
@@ -419,30 +489,40 @@ class UserLLMCredentialsValidationResult(SQLModel):
 # Comprehensive Data Collection Models (Phase 2.5 - The 4 Ledgers)
 # ============================================================================
 
+
 # Glass Ledger: Protocol Fundamentals
 class ProtocolFundamentals(SQLModel, table=True):
     """
     Stores fundamental data for DeFi protocols (TVL, fees, revenue).
     Data source: DeFiLlama API
     """
+
     __tablename__ = "protocol_fundamentals"
 
     id: int | None = Field(default=None, primary_key=True)
     protocol: str = Field(max_length=50, nullable=False, index=True)
-    tvl_usd: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=2)))
-    fees_24h: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=2)))
-    revenue_24h: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=2)))
+    tvl_usd: Decimal | None = Field(
+        default=None, sa_column=Column(DECIMAL(precision=20, scale=2))
+    )
+    fees_24h: Decimal | None = Field(
+        default=None, sa_column=Column(DECIMAL(precision=20, scale=2))
+    )
+    revenue_24h: Decimal | None = Field(
+        default=None, sa_column=Column(DECIMAL(precision=20, scale=2))
+    )
     collected_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
-        description="UTC timestamp when data was collected"
+        description="UTC timestamp when data was collected",
     )
 
     __table_args__ = (
         # Unique constraint: one entry per protocol per day
-        Index('uq_protocol_fundamentals_protocol_date',
-              'protocol',
-              sa.text("(collected_at::date)"),
-              unique=True),
+        Index(
+            "uq_protocol_fundamentals_protocol_date",
+            "protocol",
+            sa.text("(collected_at::date)"),
+            unique=True,
+        ),
     )
 
 
@@ -452,6 +532,7 @@ class OnChainMetrics(SQLModel, table=True):
     Stores on-chain metrics (active addresses, transaction volumes, etc.).
     Data sources: Glassnode, Santiment (scraped from public dashboards)
     """
+
     __tablename__ = "on_chain_metrics"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -461,11 +542,16 @@ class OnChainMetrics(SQLModel, table=True):
     source: str = Field(max_length=50, nullable=False)
     collected_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
-        description="UTC timestamp when data was collected"
+        description="UTC timestamp when data was collected",
     )
 
     __table_args__ = (
-        Index('ix_on_chain_metrics_asset_metric_time', 'asset', 'metric_name', 'collected_at'),
+        Index(
+            "ix_on_chain_metrics_asset_metric_time",
+            "asset",
+            "metric_name",
+            "collected_at",
+        ),
     )
 
 
@@ -476,43 +562,42 @@ class SmartMoneyFlow(SQLModel, table=True):
     Tracks what successful/smart wallets are buying and selling.
     Data source: Nansen API (https://docs.nansen.ai/)
     """
+
     __tablename__ = "smart_money_flow"
 
     id: int | None = Field(default=None, primary_key=True)
     token: str = Field(max_length=20, nullable=False, index=True)
     net_flow_usd: Decimal = Field(
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
-        description="Net smart money flow in USD (positive = buying, negative = selling)"
+        description="Net smart money flow in USD (positive = buying, negative = selling)",
     )
     buying_wallet_count: int = Field(
         default=0,
         sa_column=Column(sa.Integer, nullable=False),
-        description="Number of smart wallets buying this token"
+        description="Number of smart wallets buying this token",
     )
     selling_wallet_count: int = Field(
         default=0,
         sa_column=Column(sa.Integer, nullable=False),
-        description="Number of smart wallets selling this token"
+        description="Number of smart wallets selling this token",
     )
     buying_wallets: list[str] | None = Field(
         default=None,
         sa_column=Column(postgresql.ARRAY(sa.String())),
-        description="Top smart wallet addresses that are buying"
+        description="Top smart wallet addresses that are buying",
     )
     selling_wallets: list[str] | None = Field(
         default=None,
         sa_column=Column(postgresql.ARRAY(sa.String())),
-        description="Top smart wallet addresses that are selling"
+        description="Top smart wallet addresses that are selling",
     )
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
-        description="UTC timestamp when data was collected"
+        description="UTC timestamp when data was collected",
     )
 
-    __table_args__ = (
-        Index('ix_smart_money_flow_token_time', 'token', 'collected_at'),
-    )
+    __table_args__ = (Index("ix_smart_money_flow_token_time", "token", "collected_at"),)
 
 
 # Human Ledger: News Sentiment
@@ -521,6 +606,7 @@ class NewsSentiment(SQLModel, table=True):
     Stores cryptocurrency news articles with sentiment analysis.
     Data sources: CryptoPanic API, Newscatcher API
     """
+
     __tablename__ = "news_sentiment"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -528,26 +614,21 @@ class NewsSentiment(SQLModel, table=True):
     source: str | None = Field(default=None, max_length=100)
     url: str | None = Field(default=None, sa_column=Column(sa.Text, unique=True))
     published_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
+        default=None, sa_column=Column(DateTime(timezone=True))
     )
     sentiment: str | None = Field(default=None, max_length=20)
     sentiment_score: Decimal | None = Field(
-        default=None,
-        sa_column=Column(DECIMAL(precision=5, scale=4))
+        default=None, sa_column=Column(DECIMAL(precision=5, scale=4))
     )
     currencies: list[str] | None = Field(
-        default=None,
-        sa_column=Column(postgresql.ARRAY(sa.String()))
+        default=None, sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
 
-    __table_args__ = (
-        Index('ix_news_sentiment_published_at', 'published_at'),
-    )
+    __table_args__ = (Index("ix_news_sentiment_published_at", "published_at"),)
 
 
 # Human Ledger: Social Sentiment
@@ -556,6 +637,7 @@ class SocialSentiment(SQLModel, table=True):
     Stores social media sentiment data (Reddit, Twitter/X).
     Data sources: Reddit API, X scraper
     """
+
     __tablename__ = "social_sentiment"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -565,20 +647,18 @@ class SocialSentiment(SQLModel, table=True):
     score: int | None = Field(default=None)
     sentiment: str | None = Field(default=None, max_length=20)
     currencies: list[str] | None = Field(
-        default=None,
-        sa_column=Column(postgresql.ARRAY(sa.String()))
+        default=None, sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     posted_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
+        default=None, sa_column=Column(DateTime(timezone=True))
     )
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
 
     __table_args__ = (
-        Index('ix_social_sentiment_platform_posted', 'platform', 'posted_at'),
+        Index("ix_social_sentiment_platform_posted", "platform", "posted_at"),
     )
 
 
@@ -588,6 +668,7 @@ class CatalystEvents(SQLModel, table=True):
     Stores high-impact market events (SEC filings, exchange listings, etc.).
     Data sources: SEC API, CoinSpot announcements scraper
     """
+
     __tablename__ = "catalyst_events"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -596,25 +677,26 @@ class CatalystEvents(SQLModel, table=True):
     description: str | None = Field(default=None, sa_column=Column(sa.Text))
     source: str | None = Field(default=None, max_length=100)
     currencies: list[str] | None = Field(
-        default=None,
-        sa_column=Column(postgresql.ARRAY(sa.String()))
+        default=None, sa_column=Column(postgresql.ARRAY(sa.String()))
     )
     impact_score: int | None = Field(
         default=None,
-        sa_column=Column(sa.Integer, sa.CheckConstraint('impact_score >= 1 AND impact_score <= 10'))
+        sa_column=Column(
+            sa.Integer, sa.CheckConstraint("impact_score >= 1 AND impact_score <= 10")
+        ),
     )
     detected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
     url: str | None = Field(default=None, max_length=500)
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     __table_args__ = (
-        Index('ix_catalyst_events_type_detected', 'event_type', 'detected_at'),
+        Index("ix_catalyst_events_type_detected", "event_type", "detected_at"),
     )
 
 
@@ -622,21 +704,21 @@ class Collector(SQLModel, table=True):
     """
     Configuration and state for a collector plugin instance.
     """
+
     __tablename__ = "collector"
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True, max_length=100)
     description: str | None = Field(default=None, max_length=500)
-    plugin_name: str = Field(max_length=100, nullable=False) # e.g. "news_coindesk"
+    plugin_name: str = Field(max_length=100, nullable=False)  # e.g. "news_coindesk"
     is_enabled: bool = Field(default=False)
     schedule_cron: str | None = Field(default="*/15 * * * *", max_length=50)
     config: dict = Field(default={}, sa_column=Column(JSON))
     last_run_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
+        default=None, sa_column=Column(DateTime(timezone=True))
     )
-    status: str = Field(default="idle", max_length=20) # idle, running, error
-    
+    status: str = Field(default="idle", max_length=20)  # idle, running, error
+
     # Relationships could go here in future, e.g. runs
 
 
@@ -645,6 +727,7 @@ class CollectorRuns(SQLModel, table=True):
     """
     Tracks collector execution history for monitoring and debugging.
     """
+
     __tablename__ = "collector_runs"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -654,14 +737,13 @@ class CollectorRuns(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     completed_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
+        default=None, sa_column=Column(DateTime(timezone=True))
     )
     records_collected: int | None = Field(default=None)
     error_message: str | None = Field(default=None, sa_column=Column(sa.Text))
 
     __table_args__ = (
-        Index('ix_collector_runs_name_started', 'collector_name', 'started_at'),
+        Index("ix_collector_runs_name_started", "collector_name", "started_at"),
     )
 
 
@@ -669,36 +751,43 @@ class NewsItem(SQLModel, table=True):
     """
     Standardized news item from collectors.
     """
+
     __tablename__ = "news_item"
 
     id: int | None = Field(default=None, primary_key=True)
     title: str = Field(max_length=500, nullable=False)
     link: str = Field(max_length=1000, nullable=False, unique=True, index=True)
-    published_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))
+    published_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True))
+    )
     summary: str | None = Field(default=None, sa_column=Column(sa.Text))
     source: str = Field(max_length=100, index=True)
-    
+
     sentiment_score: float | None = Field(default=None)
-    sentiment_label: str | None = Field(default=None, max_length=20) # positive, negative, neutral
-    
+    sentiment_label: str | None = Field(
+        default=None, max_length=20
+    )  # positive, negative, neutral
+
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
+
 
 class Signal(SQLModel, table=True):
     """
     Standardized trading signal.
     """
+
     __tablename__ = "signal"
 
     id: int | None = Field(default=None, primary_key=True)
-    type: str = Field(max_length=20, nullable=False) # buy, sell, neutral
+    type: str = Field(max_length=20, nullable=False)  # buy, sell, neutral
     asset: str = Field(max_length=20, nullable=False, index=True)
-    strength: float = Field(default=0.0) # 0 to 1
+    strength: float = Field(default=0.0)  # 0 to 1
     generated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
     source: str = Field(max_length=100)
     context: dict = Field(default={}, sa_column=Column(JSON))
@@ -708,24 +797,27 @@ class SentimentScore(SQLModel, table=True):
     """
     Consolidated sentiment score for an asset from a specific source.
     """
+
     __tablename__ = "sentiment_score"
 
     id: int | None = Field(default=None, primary_key=True)
     asset: str = Field(max_length=20, nullable=False, index=True)
     source: str = Field(max_length=100, index=True)
-    score: float = Field(default=0.0) # -1 to 1
-    magnitude: float | None = Field(default=None) # confidence/volume
+    score: float = Field(default=0.0)  # -1 to 1
+    magnitude: float | None = Field(default=None)  # confidence/volume
     raw_data: dict = Field(default={}, sa_column=Column(JSON))
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
 
 
 # API Response Models for Phase 2.5
 
+
 class ProtocolFundamentalsPublic(SQLModel):
     """Public schema for protocol fundamentals"""
+
     id: int
     protocol: str
     tvl_usd: Decimal | None
@@ -736,6 +828,7 @@ class ProtocolFundamentalsPublic(SQLModel):
 
 class OnChainMetricsPublic(SQLModel):
     """Public schema for on-chain metrics"""
+
     id: int
     asset: str
     metric_name: str
@@ -746,6 +839,7 @@ class OnChainMetricsPublic(SQLModel):
 
 class NewsSentimentPublic(SQLModel):
     """Public schema for news sentiment"""
+
     id: int
     title: str
     source: str | None
@@ -759,6 +853,7 @@ class NewsSentimentPublic(SQLModel):
 
 class SocialSentimentPublic(SQLModel):
     """Public schema for social sentiment"""
+
     id: int
     platform: str
     content: str | None
@@ -772,6 +867,7 @@ class SocialSentimentPublic(SQLModel):
 
 class CatalystEventsPublic(SQLModel):
     """Public schema for catalyst events"""
+
     id: int
     event_type: str
     title: str
@@ -786,6 +882,7 @@ class CatalystEventsPublic(SQLModel):
 
 class CollectorRunsPublic(SQLModel):
     """Public schema for collector runs"""
+
     id: int
     collector_name: str
     status: str
@@ -793,11 +890,15 @@ class CollectorRunsPublic(SQLModel):
     completed_at: datetime | None
     records_collected: int | None
     error_message: str | None
+
+
 # Agent Session Models (Phase 3) - Agentic Data Science Capability
 # ============================================================================
 
+
 class AgentSessionStatus(str):
     """Enum for agent session status"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -807,38 +908,55 @@ class AgentSessionStatus(str):
 
 class AgentSessionBase(SQLModel):
     """Base model for agent sessions"""
+
     user_goal: str = Field(description="Natural language trading goal from user")
     status: str = Field(default=AgentSessionStatus.PENDING, max_length=20)
 
 
 class AgentSession(AgentSessionBase, table=True):
     """Database model for agent sessions"""
+
     __tablename__ = "agent_sessions"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     user_goal: str = Field(description="Natural language trading goal from user")
     status: str = Field(default=AgentSessionStatus.PENDING, max_length=20)
-    error_message: str | None = Field(default=None, description="Error message if failed")
-    result_summary: str | None = Field(default=None, description="Natural language summary of results")
+    error_message: str | None = Field(
+        default=None, description="Error message if failed"
+    )
+    result_summary: str | None = Field(
+        default=None, description="Natural language summary of results"
+    )
     # BYOM fields (Sprint 2.8) - Track which LLM configuration was used
-    llm_provider: str | None = Field(default=None, max_length=20, description="LLM provider used: openai, google, anthropic, or system_default")
-    llm_model: str | None = Field(default=None, max_length=100, description="Specific model used (e.g., gpt-4, gemini-1.5-pro)")
-    llm_credential_id: uuid.UUID | None = Field(default=None, foreign_key="user_llm_credentials.id", description="User LLM credential used (null if system default)")
+    llm_provider: str | None = Field(
+        default=None,
+        max_length=20,
+        description="LLM provider used: openai, google, anthropic, or system_default",
+    )
+    llm_model: str | None = Field(
+        default=None,
+        max_length=100,
+        description="Specific model used (e.g., gpt-4, gemini-1.5-pro)",
+    )
+    llm_credential_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="user_llm_credentials.id",
+        description="User LLM credential used (null if system default)",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     completed_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
-    messages: List["AgentSessionMessage"] = Relationship(
+    messages: list[AgentSessionMessage] = Relationship(
         sa_relationship=sa.orm.relationship(
             "AgentSessionMessage",
             primaryjoin="AgentSession.id==AgentSessionMessage.session_id",
@@ -847,7 +965,7 @@ class AgentSession(AgentSessionBase, table=True):
             back_populates="session",
         ),
     )
-    artifacts: List["AgentArtifact"] = Relationship(
+    artifacts: list[AgentArtifact] = Relationship(
         sa_relationship=sa.orm.relationship(
             "AgentArtifact",
             primaryjoin="AgentSession.id==AgentArtifact.session_id",
@@ -860,17 +978,22 @@ class AgentSession(AgentSessionBase, table=True):
 
 class AgentSessionMessage(SQLModel, table=True):
     """Database model for agent session messages (conversation history)"""
+
     __tablename__ = "agent_session_messages"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     session_id: uuid.UUID = Field(foreign_key="agent_sessions.id", nullable=False)
     role: str = Field(max_length=20, description="user, assistant, system, function")
     content: str = Field(description="Message content")
-    agent_name: str | None = Field(default=None, max_length=100, description="Name of agent that sent message")
-    metadata_json: str | None = Field(default=None, description="JSON metadata for message")
+    agent_name: str | None = Field(
+        default=None, max_length=100, description="Name of agent that sent message"
+    )
+    metadata_json: str | None = Field(
+        default=None, description="JSON metadata for message"
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     # Relationship to session
@@ -879,20 +1002,29 @@ class AgentSessionMessage(SQLModel, table=True):
 
 class AgentArtifact(SQLModel, table=True):
     """Database model for agent artifacts (models, plots, reports)"""
+
     __tablename__ = "agent_artifacts"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     session_id: uuid.UUID = Field(foreign_key="agent_sessions.id", nullable=False)
-    artifact_type: str = Field(max_length=50, description="model, plot, report, code, data")
+    artifact_type: str = Field(
+        max_length=50, description="model, plot, report, code, data"
+    )
     name: str = Field(max_length=255, description="Artifact name")
     description: str | None = Field(default=None, description="Artifact description")
-    file_path: str | None = Field(default=None, max_length=500, description="Path to artifact file")
-    mime_type: str | None = Field(default=None, max_length=100, description="MIME type of artifact")
+    file_path: str | None = Field(
+        default=None, max_length=500, description="Path to artifact file"
+    )
+    mime_type: str | None = Field(
+        default=None, max_length=100, description="MIME type of artifact"
+    )
     size_bytes: int | None = Field(default=None, description="File size in bytes")
-    metadata_json: str | None = Field(default=None, description="JSON metadata for artifact")
+    metadata_json: str | None = Field(
+        default=None, description="JSON metadata for artifact"
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
 
     # Relationship to session
@@ -902,86 +1034,110 @@ class AgentArtifact(SQLModel, table=True):
 # API response models for agent sessions
 class AgentSessionCreate(SQLModel):
     """Schema for creating a new agent session"""
-    user_goal: str = Field(min_length=1, max_length=5000, description="Natural language trading goal")
+
+    user_goal: str = Field(
+        min_length=1, max_length=5000, description="Natural language trading goal"
+    )
 
 
 class AgentSessionPublic(AgentSessionBase):
     """Schema for returning agent session via API"""
+
     id: uuid.UUID = Field(description="Unique session identifier")
     user_id: uuid.UUID = Field(description="ID of the user who owns this session")
-    status: str = Field(description="Current status (pending, running, completed, failed, cancelled)")
-    error_message: str | None = Field(default=None, description="Error message if failed")
-    result_summary: str | None = Field(default=None, description="Summary of the session results")
+    status: str = Field(
+        description="Current status (pending, running, completed, failed, cancelled)"
+    )
+    error_message: str | None = Field(
+        default=None, description="Error message if failed"
+    )
+    result_summary: str | None = Field(
+        default=None, description="Summary of the session results"
+    )
     created_at: datetime = Field(description="Session creation timestamp")
     updated_at: datetime = Field(description="Last update timestamp")
-    completed_at: datetime | None = Field(default=None, description="Completion timestamp")
+    completed_at: datetime | None = Field(
+        default=None, description="Completion timestamp"
+    )
 
     # UI Loading State Support
     is_loading: bool = Field(
         default=False,
-        description="Indicates if the data is currently being refreshed or computed."
+        description="Indicates if the data is currently being refreshed or computed.",
     )
     last_updated: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        description="Timestamp when the data was last updated."
+        description="Timestamp when the data was last updated.",
     )
     data_staleness_seconds: float = Field(
-        default=0.0,
-        description="Number of seconds since the data was last updated."
+        default=0.0, description="Number of seconds since the data was last updated."
     )
 
 
 class AgentSessionsPublic(SQLModel):
     """Schema for returning multiple agent sessions"""
+
     data: list[AgentSessionPublic] = Field(description="List of agent sessions")
     count: int = Field(description="Total count of sessions")
 
     # UI Loading State Support
     is_loading: bool = Field(
         default=False,
-        description="Indicates if the data is currently being refreshed or computed."
+        description="Indicates if the data is currently being refreshed or computed.",
     )
     last_updated: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        description="Timestamp when the data was last updated."
+        description="Timestamp when the data was last updated.",
     )
     data_staleness_seconds: float = Field(
-        default=0.0,
-        description="Number of seconds since the data was last updated."
+        default=0.0, description="Number of seconds since the data was last updated."
     )
 
 
 class AgentSessionMessagePublic(SQLModel):
     """Schema for returning agent session message via API"""
+
     id: uuid.UUID = Field(description="Unique message identifier")
-    session_id: uuid.UUID = Field(description="ID of the session this message belongs to")
-    role: str = Field(description="Role of the sender (user, assistant, system, function)")
+    session_id: uuid.UUID = Field(
+        description="ID of the session this message belongs to"
+    )
+    role: str = Field(
+        description="Role of the sender (user, assistant, system, function)"
+    )
     content: str = Field(description="Content of the message")
-    agent_name: str | None = Field(default=None, description="Name of the specific agent")
+    agent_name: str | None = Field(
+        default=None, description="Name of the specific agent"
+    )
     created_at: datetime = Field(description="Message creation timestamp")
 
     # UI Loading State Support
     is_loading: bool = Field(
         default=False,
-        description="Indicates if the data is currently being refreshed or computed."
+        description="Indicates if the data is currently being refreshed or computed.",
     )
     last_updated: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        description="Timestamp when the data was last updated."
+        description="Timestamp when the data was last updated.",
     )
     data_staleness_seconds: float = Field(
-        default=0.0,
-        description="Number of seconds since the data was last updated."
+        default=0.0, description="Number of seconds since the data was last updated."
     )
 
 
 class AgentArtifactPublic(SQLModel):
     """Schema for returning agent artifact via API"""
+
     id: uuid.UUID = Field(description="Unique artifact identifier")
-    session_id: uuid.UUID = Field(description="ID of the session this artifact belongs to")
-    artifact_type: str = Field(description="Type of artifact (model, plot, report, code, data)")
+    session_id: uuid.UUID = Field(
+        description="ID of the session this artifact belongs to"
+    )
+    artifact_type: str = Field(
+        description="Type of artifact (model, plot, report, code, data)"
+    )
     name: str = Field(description="Name of the artifact")
-    description: str | None = Field(default=None, description="Description of the artifact")
+    description: str | None = Field(
+        default=None, description="Description of the artifact"
+    )
     file_path: str | None = Field(default=None, description="Storage path")
     mime_type: str | None = Field(default=None, description="MIME type")
     size_bytes: int | None = Field(default=None, description="Size in bytes")
@@ -990,15 +1146,14 @@ class AgentArtifactPublic(SQLModel):
     # UI Loading State Support
     is_loading: bool = Field(
         default=False,
-        description="Indicates if the data is currently being refreshed or computed."
+        description="Indicates if the data is currently being refreshed or computed.",
     )
     last_updated: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        description="Timestamp when the data was last updated."
+        description="Timestamp when the data was last updated.",
     )
     data_staleness_seconds: float = Field(
-        default=0.0,
-        description="Number of seconds since the data was last updated."
+        default=0.0, description="Number of seconds since the data was last updated."
     )
 
 
@@ -1009,19 +1164,26 @@ class AgentArtifactPublic(SQLModel):
 
 class PositionBase(SQLModel):
     """Base model for trading positions"""
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, description="The UUID of the user who owns this position.")
-    coin_type: str = Field(max_length=20, index=True, description="The type of coin (e.g., 'BTC', 'ETH').")
+
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        index=True,
+        description="The UUID of the user who owns this position.",
+    )
+    coin_type: str = Field(
+        max_length=20, index=True, description="The type of coin (e.g., 'BTC', 'ETH')."
+    )
     quantity: Decimal = Field(
         sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False),
-        description="The quantity of the coin held."
+        description="The quantity of the coin held.",
     )
     average_price: Decimal = Field(
         sa_column=Column(DECIMAL(precision=20, scale=8), nullable=False),
-        description="The average price at which the position was acquired."
+        description="The average price at which the position was acquired.",
     )
     total_cost: Decimal = Field(
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
-        description="The total cost basis of the position."
+        description="The total cost basis of the position.",
     )
 
 
@@ -1032,61 +1194,108 @@ class Position(PositionBase, table=True):
     Tracks the current position (holdings) for each user and coin type.
     Updated when orders are executed.
     """
+
     __tablename__ = "positions"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, description="The unique identifier for the position.")
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="The unique identifier for the position.",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False),
-        description="The timestamp when the position was first created."
+        description="The timestamp when the position was first created.",
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
-        description="The timestamp when the position was last updated."
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
+        description="The timestamp when the position was last updated.",
     )
 
     # Relationships
     user: User = Relationship()
 
     __table_args__ = (
-        Index('idx_position_user_coin', 'user_id', 'coin_type', unique=True),
+        Index("idx_position_user_coin", "user_id", "coin_type", unique=True),
     )
 
 
 class PositionPublic(PositionBase):
     """Schema for returning position via API"""
+
     id: uuid.UUID = Field(description="The unique identifier for the position.")
-    created_at: datetime = Field(description="The timestamp when the position was first created.")
-    updated_at: datetime = Field(description="The timestamp when the position was last updated.")
-    current_value: Decimal | None = Field(default=None, description="The current market value of the position.")
-    unrealized_pnl: Decimal | None = Field(default=None, description="The unrealized profit or loss.")
+    created_at: datetime = Field(
+        description="The timestamp when the position was first created."
+    )
+    updated_at: datetime = Field(
+        description="The timestamp when the position was last updated."
+    )
+    current_value: Decimal | None = Field(
+        default=None, description="The current market value of the position."
+    )
+    unrealized_pnl: Decimal | None = Field(
+        default=None, description="The unrealized profit or loss."
+    )
 
 
 class OrderBase(SQLModel):
     """Base model for trading orders"""
-    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, description="The UUID of the user placing the order.")
-    algorithm_id: uuid.UUID | None = Field(default=None, index=True, description="The UUID of the algorithm that placed this order, if any.")  # NULL for manual orders
-    coin_type: str = Field(max_length=20, index=True, description="The type of coin (e.g., 'BTC', 'ETH').")
-    side: str = Field(max_length=10, description="The side of the order ('buy' or 'sell').")
-    order_type: str = Field(max_length=20, default='market', description="The type of order ('market' or 'limit').")
+
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        index=True,
+        description="The UUID of the user placing the order.",
+    )
+    algorithm_id: uuid.UUID | None = Field(
+        default=None,
+        index=True,
+        description="The UUID of the algorithm that placed this order, if any.",
+    )  # NULL for manual orders
+    coin_type: str = Field(
+        max_length=20, index=True, description="The type of coin (e.g., 'BTC', 'ETH')."
+    )
+    side: str = Field(
+        max_length=10, description="The side of the order ('buy' or 'sell')."
+    )
+    order_type: str = Field(
+        max_length=20,
+        default="market",
+        description="The type of order ('market' or 'limit').",
+    )
     quantity: Decimal = Field(
         sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False),
-        description="The quantity to buy or sell."
+        description="The quantity to buy or sell.",
     )
     price: Decimal | None = Field(
         default=None,
         sa_column=Column(DECIMAL(precision=20, scale=8), nullable=True),
-        description="The price for limit orders. Optional for market orders."
+        description="The price for limit orders. Optional for market orders.",
     )
     filled_quantity: Decimal = Field(
-        default=Decimal('0'),
+        default=Decimal("0"),
         sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False),
-        description="The quantity that has been filled so far."
+        description="The quantity that has been filled so far.",
     )
-    status: str = Field(max_length=20, default='pending', index=True, description="The status of the order (e.g., 'pending', 'filled', 'cancelled').")  # pending, submitted, filled, partial, cancelled, failed
-    error_message: str | None = Field(default=None, max_length=500, description="Error message if the order failed.")
-    coinspot_order_id: str | None = Field(default=None, max_length=100, index=True, description="The ID of the order on CoinSpot.")
+    status: str = Field(
+        max_length=20,
+        default="pending",
+        index=True,
+        description="The status of the order (e.g., 'pending', 'filled', 'cancelled').",
+    )  # pending, submitted, filled, partial, cancelled, failed
+    error_message: str | None = Field(
+        default=None, max_length=500, description="Error message if the order failed."
+    )
+    coinspot_order_id: str | None = Field(
+        default=None,
+        max_length=100,
+        index=True,
+        description="The ID of the order on CoinSpot.",
+    )
 
 
 class Order(OrderBase, table=True):
@@ -1096,65 +1305,99 @@ class Order(OrderBase, table=True):
     Tracks all trading orders (buy/sell) including their execution status.
     Updated as orders progress through their lifecycle.
     """
+
     __tablename__ = "orders"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, description="The unique identifier for the order.")
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="The unique identifier for the order.",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
-        description="The timestamp when the order was created."
+        description="The timestamp when the order was created.",
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc)),
-        description="The timestamp when the order was last updated."
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
+        description="The timestamp when the order was last updated.",
     )
     submitted_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
-        description="The timestamp when the order was submitted to the exchange."
+        description="The timestamp when the order was submitted to the exchange.",
     )
     filled_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
-        description="The timestamp when the order was fully filled."
+        description="The timestamp when the order was fully filled.",
     )
 
     # Relationships
     user: User = Relationship()
 
     __table_args__ = (
-        Index('idx_order_user_status', 'user_id', 'status'),
-        Index('idx_order_created', 'created_at'),
+        Index("idx_order_user_status", "user_id", "status"),
+        Index("idx_order_created", "created_at"),
     )
 
 
 class OrderCreate(SQLModel):
     """Schema for creating an order"""
-    coin_type: str = Field(max_length=20, description="The type of coin (e.g., 'BTC', 'ETH').")
-    side: str = Field(max_length=10, description="The side of the order ('buy' or 'sell').")
-    order_type: str = Field(max_length=20, default='market', description="The type of order ('market' or 'limit').")
+
+    coin_type: str = Field(
+        max_length=20, description="The type of coin (e.g., 'BTC', 'ETH')."
+    )
+    side: str = Field(
+        max_length=10, description="The side of the order ('buy' or 'sell')."
+    )
+    order_type: str = Field(
+        max_length=20,
+        default="market",
+        description="The type of order ('market' or 'limit').",
+    )
     quantity: Decimal = Field(description="The quantity to buy or sell.")
-    price: Decimal | None = Field(default=None, description="The price for limit orders. Optional for market orders.")
-    algorithm_id: uuid.UUID | None = Field(default=None, description="The UUID of the algorithm placing the order.")
+    price: Decimal | None = Field(
+        default=None,
+        description="The price for limit orders. Optional for market orders.",
+    )
+    algorithm_id: uuid.UUID | None = Field(
+        default=None, description="The UUID of the algorithm placing the order."
+    )
 
 
 class OrderRequest(OrderCreate):
     """Request schema for placing a new order"""
+
     pass
 
 
 class OrderPublic(OrderBase):
     """Schema for returning order via API"""
+
     id: uuid.UUID = Field(description="The unique identifier for the order.")
-    created_at: datetime = Field(description="The timestamp when the order was created.")
-    updated_at: datetime = Field(description="The timestamp when the order was last updated.")
-    submitted_at: datetime | None = Field(description="The timestamp when the order was submitted.")
-    filled_at: datetime | None = Field(description="The timestamp when the order was filled.")
+    created_at: datetime = Field(
+        description="The timestamp when the order was created."
+    )
+    updated_at: datetime = Field(
+        description="The timestamp when the order was last updated."
+    )
+    submitted_at: datetime | None = Field(
+        description="The timestamp when the order was submitted."
+    )
+    filled_at: datetime | None = Field(
+        description="The timestamp when the order was filled."
+    )
 
 
 class OrderResponse(OrderPublic):
     """Response schema for an order"""
+
     pass
 
 
@@ -1162,34 +1405,39 @@ class OrderResponse(OrderPublic):
 # Phase 5/6: Algorithm Deployment Models
 # =============================================================================
 
+
 class AlgorithmBase(SQLModel):
     """Base model for trading algorithms"""
+
     name: str = Field(max_length=255)
     description: str | None = Field(default=None, max_length=1000)
-    algorithm_type: str = Field(max_length=50)  # 'ml_model', 'rule_based', 'reinforcement_learning'
-    version: str = Field(max_length=50, default='1.0.0')
+    algorithm_type: str = Field(
+        max_length=50
+    )  # 'ml_model', 'rule_based', 'reinforcement_learning'
+    version: str = Field(max_length=50, default="1.0.0")
     artifact_id: uuid.UUID | None = Field(
         default=None,
         foreign_key="agent_artifacts.id",
-        description="Link to AgentArtifact for ML models from Phase 3"
+        description="Link to AgentArtifact for ML models from Phase 3",
     )
-    status: str = Field(max_length=20, default='draft', index=True)  # draft, active, paused, archived
+    status: str = Field(
+        max_length=20, default="draft", index=True
+    )  # draft, active, paused, archived
     configuration_json: str | None = Field(
-        default=None,
-        description="JSON configuration for algorithm parameters"
+        default=None, description="JSON configuration for algorithm parameters"
     )
     default_execution_frequency: int = Field(
         default=300,
-        description="Default execution frequency in seconds (e.g., 300 = 5 minutes)"
+        description="Default execution frequency in seconds (e.g., 300 = 5 minutes)",
     )
     default_position_limit: Decimal | None = Field(
         default=None,
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=True),
-        description="Default maximum position size in AUD"
+        description="Default maximum position size in AUD",
     )
     performance_metrics_json: str | None = Field(
         default=None,
-        description="JSON metrics: sharpe_ratio, max_drawdown, win_rate, etc."
+        description="JSON metrics: sharpe_ratio, max_drawdown, win_rate, etc.",
     )
 
 
@@ -1200,33 +1448,38 @@ class Algorithm(AlgorithmBase, table=True):
     Represents a trading algorithm that can be deployed by users.
     Can be linked to AgentArtifacts (Phase 3 models) or be standalone.
     """
+
     __tablename__ = "algorithms"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_by: uuid.UUID = Field(foreign_key="user.id", index=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
     )
     last_executed_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
     # Relationships (one-way, query DeployedAlgorithm to access)
 
     __table_args__ = (
-        Index('idx_algorithm_status', 'status'),
-        Index('idx_algorithm_created_by', 'created_by'),
+        Index("idx_algorithm_status", "status"),
+        Index("idx_algorithm_created_by", "created_by"),
     )
 
 
 class AlgorithmPublic(AlgorithmBase):
     """Schema for returning algorithm via API"""
+
     id: uuid.UUID
     created_by: uuid.UUID
     created_at: datetime
@@ -1236,10 +1489,11 @@ class AlgorithmPublic(AlgorithmBase):
 
 class AlgorithmCreate(SQLModel):
     """Schema for creating an algorithm"""
+
     name: str = Field(max_length=255)
     description: str | None = None
     algorithm_type: str = Field(max_length=50)
-    version: str = Field(max_length=50, default='1.0.0')
+    version: str = Field(max_length=50, default="1.0.0")
     artifact_id: uuid.UUID | None = None
     configuration_json: str | None = None
     default_execution_frequency: int = 300
@@ -1248,6 +1502,7 @@ class AlgorithmCreate(SQLModel):
 
 class AlgorithmUpdate(SQLModel):
     """Schema for updating an algorithm"""
+
     name: str | None = None
     description: str | None = None
     status: str | None = None
@@ -1259,27 +1514,27 @@ class AlgorithmUpdate(SQLModel):
 
 class DeployedAlgorithmBase(SQLModel):
     """Base model for deployed algorithms (user-specific deployments)"""
+
     user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
     algorithm_id: uuid.UUID = Field(foreign_key="algorithms.id", index=True)
     deployment_name: str | None = Field(default=None, max_length=255)
     is_active: bool = Field(default=False, index=True)
     execution_frequency: int = Field(
         default=300,
-        description="Execution frequency in seconds (overrides algorithm default)"
+        description="Execution frequency in seconds (overrides algorithm default)",
     )
     position_limit: Decimal | None = Field(
         default=None,
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=True),
-        description="Maximum position size in AUD (overrides algorithm default)"
+        description="Maximum position size in AUD (overrides algorithm default)",
     )
     daily_loss_limit: Decimal | None = Field(
         default=None,
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=True),
-        description="Maximum daily loss in AUD"
+        description="Maximum daily loss in AUD",
     )
     parameters_json: str | None = Field(
-        default=None,
-        description="User-specific algorithm parameters"
+        default=None, description="User-specific algorithm parameters"
     )
 
 
@@ -1290,33 +1545,35 @@ class DeployedAlgorithm(DeployedAlgorithmBase, table=True):
     Represents a user's deployment of an algorithm with custom parameters.
     Multiple users can deploy the same algorithm with different settings.
     """
+
     __tablename__ = "deployed_algorithms"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
     )
     activated_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     deactivated_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     last_executed_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     total_profit_loss: Decimal = Field(
-        default=Decimal('0'),
+        default=Decimal("0"),
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
-        description="Cumulative P&L for this deployment"
+        description="Cumulative P&L for this deployment",
     )
     total_trades: int = Field(default=0, description="Total number of trades executed")
 
@@ -1324,13 +1581,14 @@ class DeployedAlgorithm(DeployedAlgorithmBase, table=True):
     algorithm: Algorithm = Relationship()
 
     __table_args__ = (
-        Index('idx_deployed_algorithm_user_active', 'user_id', 'is_active'),
-        Index('idx_deployed_algorithm_algorithm', 'algorithm_id'),
+        Index("idx_deployed_algorithm_user_active", "user_id", "is_active"),
+        Index("idx_deployed_algorithm_algorithm", "algorithm_id"),
     )
 
 
 class DeployedAlgorithmPublic(DeployedAlgorithmBase):
     """Schema for returning deployed algorithm via API"""
+
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
@@ -1343,6 +1601,7 @@ class DeployedAlgorithmPublic(DeployedAlgorithmBase):
 
 class DeployedAlgorithmCreate(SQLModel):
     """Schema for creating a deployed algorithm"""
+
     algorithm_id: uuid.UUID
     deployment_name: str | None = None
     execution_frequency: int = 300
@@ -1353,6 +1612,7 @@ class DeployedAlgorithmCreate(SQLModel):
 
 class DeployedAlgorithmUpdate(SQLModel):
     """Schema for updating a deployed algorithm"""
+
     deployment_name: str | None = None
     is_active: bool | None = None
     execution_frequency: int | None = None
@@ -1369,19 +1629,24 @@ User.model_rebuild()
 # Strategy Promotion Models (Track C)
 # =============================================================================
 
+
 class StrategyPromotionBase(SQLModel):
     """Base model for strategy promotion requests"""
+
     algorithm_id: uuid.UUID = Field(foreign_key="algorithms.id", index=True)
-    from_environment: str = Field(default="lab", max_length=50) # lab, paper
-    to_environment: str = Field(default="floor", max_length=50) # floor, production
-    status: str = Field(default="pending", max_length=20, index=True) # pending, approved, rejected
+    from_environment: str = Field(default="lab", max_length=50)  # lab, paper
+    to_environment: str = Field(default="floor", max_length=50)  # floor, production
+    status: str = Field(
+        default="pending", max_length=20, index=True
+    )  # pending, approved, rejected
     promotion_notes: str | None = Field(default=None, max_length=1000)
 
     # Snapshot of the performance at the time of promotion request
     performance_snapshot_json: str | None = Field(
         default=None,
-        description="JSON snapshot of backtest performance metrics at time of promotion"
+        description="JSON snapshot of backtest performance metrics at time of promotion",
     )
+
 
 class StrategyPromotion(StrategyPromotionBase, table=True):
     """
@@ -1389,22 +1654,26 @@ class StrategyPromotion(StrategyPromotionBase, table=True):
 
     Tracks the approval process for moving an algorithm from The Lab to The Floor.
     """
+
     __tablename__ = "strategy_promotions"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_by: uuid.UUID = Field(foreign_key="user.id", index=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
     )
 
     reviewed_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True)
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
     )
     reviewed_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
     rejection_reason: str | None = Field(default=None, max_length=1000)
@@ -1412,6 +1681,7 @@ class StrategyPromotion(StrategyPromotionBase, table=True):
 
 class StrategyPromotionCreate(SQLModel):
     """Schema for requesting a strategy promotion"""
+
     algorithm_id: uuid.UUID
     promotion_notes: str | None = None
     performance_snapshot_json: str | None = None
@@ -1419,10 +1689,11 @@ class StrategyPromotionCreate(SQLModel):
 
 class StrategyPromotionUpdate(SQLModel):
     """Schema for reviewing a strategy promotion (approve/reject)"""
+
     status: str = Field(description="approved or rejected")
     rejection_reason: str | None = None
 
-    @field_validator('status')
+    @field_validator("status")
     @classmethod
     def validate_status(cls, v: str) -> str:
         if v not in ["approved", "rejected"]:
@@ -1432,6 +1703,7 @@ class StrategyPromotionUpdate(SQLModel):
 
 class StrategyPromotionPublic(StrategyPromotionBase):
     """Schema for returning strategy promotion via API"""
+
     id: uuid.UUID
     created_by: uuid.UUID
     created_at: datetime
@@ -1445,24 +1717,33 @@ class StrategyPromotionPublic(StrategyPromotionBase):
 # Risk Management & Kill Switch Models
 # ============================================================================
 
+
 class RiskRuleBase(SQLModel):
     name: str = Field(index=True, max_length=100)
     description: str | None = Field(default=None, max_length=500)
-    rule_type: str = Field(index=True, description="max_daily_loss, max_position_size, etc.")
+    rule_type: str = Field(
+        index=True, description="max_daily_loss, max_position_size, etc."
+    )
     value: dict = Field(sa_column=Column(JSON), default={})
     is_active: bool = Field(default=True)
+
 
 class RiskRule(RiskRuleBase, table=True):
     __tablename__ = "risk_rule"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
     )
+
 
 class AuditLogBase(SQLModel):
     event_type: str = Field(index=True, max_length=100)
@@ -1470,32 +1751,38 @@ class AuditLogBase(SQLModel):
     details: dict = Field(sa_column=Column(JSON), default={})
     user_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
 
+
 class AuditLog(AuditLogBase, table=True):
     __tablename__ = "audit_log"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
+
 
 class SystemSettingBase(SQLModel):
     key: str = Field(primary_key=True, max_length=100)
     value: dict = Field(sa_column=Column(JSON), default={})
     description: str | None = None
 
+
 class SystemSetting(SystemSettingBase, table=True):
     __tablename__ = "system_setting"
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(
+            DateTime(timezone=True),
+            nullable=False,
+            onupdate=lambda: datetime.now(timezone.utc),
+        ),
     )
-
-
 
 
 # Risk Rule Schemas
 class RiskRuleCreate(RiskRuleBase):
     pass
+
 
 class RiskRuleUpdate(SQLModel):
     name: str | None = None
@@ -1504,22 +1791,27 @@ class RiskRuleUpdate(SQLModel):
     value: dict | None = None
     is_active: bool | None = None
 
+
 class RiskRulePublic(RiskRuleBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
 
+
 class RiskRules(SQLModel):
     data: list[RiskRulePublic]
     count: int
+
 
 # Audit Log Schemas
 class AuditLogCreate(AuditLogBase):
     pass
 
+
 class AuditLogPublic(AuditLogBase):
     id: uuid.UUID
     timestamp: datetime
+
 
 class AuditLogs(SQLModel):
     data: list[AuditLogPublic]
@@ -1530,24 +1822,40 @@ class AuditLogs(SQLModel):
 # Trade Audit Models (Track C)
 # ============================================================================
 
+
 class TradeAuditBase(SQLModel):
     """
     Records the decision-making process of Trading Agents (The Strategist).
     Required for "Lab-to-Floor" integrity and "The Guard" analysis.
     """
-    agent_id: str = Field(index=True, max_length=100, description="ID of the agent making the decision")
+
+    agent_id: str = Field(
+        index=True, max_length=100, description="ID of the agent making the decision"
+    )
     decision: str = Field(max_length=20, description="BUY, SELL, or HOLD")
     reason: str = Field(max_length=1000, description="Explanation for the decision")
-    confidence_score: float = Field(default=0.0, description="Model confidence (0.0 - 1.0)")
-    asset: str = Field(max_length=20, index=True, description="The asset being traded (e.g. BTC)")
+    confidence_score: float = Field(
+        default=0.0, description="Model confidence (0.0 - 1.0)"
+    )
+    asset: str = Field(
+        max_length=20, index=True, description="The asset being traded (e.g. BTC)"
+    )
 
     # Context snapshots (optional but helpful)
-    price_at_decision: Decimal | None = Field(default=None, sa_column=Column(DECIMAL(precision=20, scale=8)))
+    price_at_decision: Decimal | None = Field(
+        default=None, sa_column=Column(DECIMAL(precision=20, scale=8))
+    )
 
     # Outcome tracking
-    is_executed: bool = Field(default=False, description="Whether the trade was actually placed")
-    execution_order_id: uuid.UUID | None = Field(default=None, description="Link to the Order if placed")
-    block_reason: str | None = Field(default=None, description="Reason if blocked by The Guard")
+    is_executed: bool = Field(
+        default=False, description="Whether the trade was actually placed"
+    )
+    execution_order_id: uuid.UUID | None = Field(
+        default=None, description="Link to the Order if placed"
+    )
+    block_reason: str | None = Field(
+        default=None, description="Reason if blocked by The Guard"
+    )
 
 
 class TradeAudit(TradeAuditBase, table=True):
@@ -1556,7 +1864,7 @@ class TradeAudit(TradeAuditBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
 
 
@@ -1578,12 +1886,15 @@ class TradeAudits(SQLModel):
 class SystemSettingCreate(SystemSettingBase):
     pass
 
+
 class SystemSettingUpdate(SQLModel):
     value: dict | None = None
     description: str | None = None
 
+
 class SystemSettingPublic(SystemSettingBase):
     updated_at: datetime
+
 
 class SystemSettings(SQLModel):
     data: list[SystemSettingPublic]

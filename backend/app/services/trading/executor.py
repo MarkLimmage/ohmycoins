@@ -5,6 +5,7 @@ Order Execution Service
 This module provides queue-based order execution with retry logic
 and order status tracking.
 """
+
 import asyncio
 import logging
 from datetime import datetime, timezone
@@ -48,7 +49,7 @@ class OrderExecutor:
         api_key: str,
         api_secret: str,
         max_retries: int = 3,
-        retry_delay: float = 1.0
+        retry_delay: float = 1.0,
     ):
         """
         Initialize order executor
@@ -90,7 +91,7 @@ class OrderExecutor:
         await self.safety_manager.connect()
 
         # Initialize PaperExchange if in paper mode
-        if settings.TRADING_MODE == 'paper':
+        if settings.TRADING_MODE == "paper":
             logger.info("Initializing Paper Exchange")
             self.paper_exchange = PaperExchange()
             await self.paper_exchange.__aenter__()
@@ -102,10 +103,7 @@ class OrderExecutor:
             while self._running:
                 try:
                     # Get next order from queue with timeout
-                    order_id = await asyncio.wait_for(
-                        self._queue.get(),
-                        timeout=1.0
-                    )
+                    order_id = await asyncio.wait_for(self._queue.get(), timeout=1.0)
 
                     # Execute the order
                     await self._execute_order(order_id)
@@ -117,7 +115,9 @@ class OrderExecutor:
                     # No orders in queue, continue waiting
                     continue
                 except Exception as e:
-                    logger.error(f"Error in order executor main loop: {e}", exc_info=True)
+                    logger.error(
+                        f"Error in order executor main loop: {e}", exc_info=True
+                    )
         finally:
             self._running = False
             await self.safety_manager.disconnect()
@@ -149,18 +149,22 @@ class OrderExecutor:
             return
 
         # Check if order is already processed
-        if order.status in ['filled', 'cancelled', 'failed']:
-            logger.warning(f"Order {order_id} already processed with status {order.status}")
+        if order.status in ["filled", "cancelled", "failed"]:
+            logger.warning(
+                f"Order {order_id} already processed with status {order.status}"
+            )
             return
 
-        logger.info(f"Executing order {order_id}: {order.side} {order.quantity} {order.coin_type}")
+        logger.info(
+            f"Executing order {order_id}: {order.side} {order.quantity} {order.coin_type}"
+        )
 
         # Safety Check
         try:
             # Determine estimated price for validation
             # For market buy (amount is AUD), price is effectively 1 (as quantity is Value)
             # For limit orders, use the limit price
-            estimated_price = order.price if order.price else Decimal('1.0')
+            estimated_price = order.price if order.price else Decimal("1.0")
 
             await self.safety_manager.validate_trade(
                 user_id=order.user_id,
@@ -168,11 +172,11 @@ class OrderExecutor:
                 side=order.side,
                 quantity=order.quantity,
                 estimated_price=estimated_price,
-                algorithm_id=order.algorithm_id
+                algorithm_id=order.algorithm_id,
             )
         except SafetyViolation as e:
             logger.error(f"Safety violation for order {order_id}: {e}")
-            order.status = 'failed'
+            order.status = "failed"
             order.error_message = f"Safety violation: {str(e)}"
             order.updated_at = datetime.now(timezone.utc)
             self.session.add(order)
@@ -182,7 +186,7 @@ class OrderExecutor:
             # Broadcast update
             await manager.broadcast_json(
                 {"type": "order_update", "data": self._order_to_dict(order)},
-                f"trading_{order.user_id}"
+                f"trading_{order.user_id}",
             )
             return
 
@@ -191,7 +195,7 @@ class OrderExecutor:
             try:
                 # Update order status to submitted
                 if attempt == 0:
-                    order.status = 'submitted'
+                    order.status = "submitted"
                     order.submitted_at = datetime.now(timezone.utc)
                     order.updated_at = datetime.now(timezone.utc)
                     self.session.add(order)
@@ -201,26 +205,26 @@ class OrderExecutor:
                     # Broadcast update
                     await manager.broadcast_json(
                         {"type": "order_update", "data": self._order_to_dict(order)},
-                        f"trading_{order.user_id}"
+                        f"trading_{order.user_id}",
                     )
 
                 # Execute the trade
                 result = await self._execute_trade(order)
 
                 # Update order with results
-                order.status = 'filled'
-                if result.get('amount'):
-                     order.filled_quantity = Decimal(str(result['amount']))
+                order.status = "filled"
+                if result.get("amount"):
+                    order.filled_quantity = Decimal(str(result["amount"]))
                 else:
-                     order.filled_quantity = order.quantity
+                    order.filled_quantity = order.quantity
 
                 order.filled_at = datetime.now(timezone.utc)
                 order.updated_at = datetime.now(timezone.utc)
-                order.coinspot_order_id = result.get('id')
+                order.coinspot_order_id = result.get("id")
 
                 # Store execution price if available
-                if 'rate' in result:
-                    order.price = Decimal(str(result['rate']))
+                if "rate" in result:
+                    order.price = Decimal(str(result["rate"]))
 
                 self.session.add(order)
                 self.session.commit()
@@ -229,17 +233,21 @@ class OrderExecutor:
                 # Broadcast update
                 await manager.broadcast_json(
                     {"type": "order_update", "data": self._order_to_dict(order)},
-                    f"trading_{order.user_id}"
+                    f"trading_{order.user_id}",
                 )
 
                 # Update position
                 await self._update_position(order, result)
 
-                logger.info(f"Order {order_id} executed successfully: {order.coinspot_order_id}")
+                logger.info(
+                    f"Order {order_id} executed successfully: {order.coinspot_order_id}"
+                )
                 return
 
             except CoinspotAPIError as e:
-                logger.error(f"API error executing order {order_id} (attempt {attempt + 1}/{self.max_retries}): {e}")
+                logger.error(
+                    f"API error executing order {order_id} (attempt {attempt + 1}/{self.max_retries}): {e}"
+                )
 
                 # Update order with error
                 order.error_message = str(e)
@@ -247,14 +255,14 @@ class OrderExecutor:
 
                 if attempt < self.max_retries - 1:
                     # Retry with exponential backoff
-                    delay = self.retry_delay * (2 ** attempt)
+                    delay = self.retry_delay * (2**attempt)
                     logger.info(f"Retrying order {order_id} in {delay} seconds")
                     self.session.add(order)
                     self.session.commit()
                     await asyncio.sleep(delay)
                 else:
                     # Max retries reached
-                    order.status = 'failed'
+                    order.status = "failed"
                     self.session.add(order)
                     self.session.commit()
                     self.session.refresh(order)
@@ -262,14 +270,18 @@ class OrderExecutor:
                     # Broadcast update
                     await manager.broadcast_json(
                         {"type": "order_update", "data": self._order_to_dict(order)},
-                        f"trading_{order.user_id}"
+                        f"trading_{order.user_id}",
                     )
 
-                    logger.error(f"Order {order_id} failed after {self.max_retries} attempts")
+                    logger.error(
+                        f"Order {order_id} failed after {self.max_retries} attempts"
+                    )
 
             except Exception as e:
-                logger.error(f"Unexpected error executing order {order_id}: {e}", exc_info=True)
-                order.status = 'failed'
+                logger.error(
+                    f"Unexpected error executing order {order_id}: {e}", exc_info=True
+                )
+                order.status = "failed"
                 order.error_message = str(e)
                 self.session.refresh(order)
                 order.updated_at = datetime.now(timezone.utc)
@@ -279,7 +291,7 @@ class OrderExecutor:
                 # Broadcast update
                 await manager.broadcast_json(
                     {"type": "order_update", "data": self._order_to_dict(order)},
-                    f"trading_{order.user_id}"
+                    f"trading_{order.user_id}",
                 )
                 return
 
@@ -297,8 +309,10 @@ class OrderExecutor:
             CoinspotAPIError: If API returns an error
         """
         # Ghost Mode Check
-        if settings.TRADING_MODE == 'paper':
-            logger.info(f"Ghost Mode: Simulating execution for order {order.id} using PaperExchange")
+        if settings.TRADING_MODE == "paper":
+            logger.info(
+                f"Ghost Mode: Simulating execution for order {order.id} using PaperExchange"
+            )
 
             if not self.paper_exchange:
                 # Should have been initialized in start(), but ensure it exists
@@ -306,43 +320,59 @@ class OrderExecutor:
                 self.paper_exchange = PaperExchange()
                 await self.paper_exchange.__aenter__()
 
-            if order.side == 'buy':
-                if order.order_type == 'limit':
+            if order.side == "buy":
+                if order.order_type == "limit":
                     if not order.price:
-                         raise OrderExecutionError("Limit buy order requires price")
-                    return await self.paper_exchange.limit_buy(order.coin_type, order.quantity, order.price)
+                        raise OrderExecutionError("Limit buy order requires price")
+                    return await self.paper_exchange.limit_buy(
+                        order.coin_type, order.quantity, order.price
+                    )
                 else:
-                     # Market Buy
-                     return await self.paper_exchange.market_buy(order.coin_type, order.quantity)
-            else: # sell
-                if order.order_type == 'limit':
+                    # Market Buy
+                    return await self.paper_exchange.market_buy(
+                        order.coin_type, order.quantity
+                    )
+            else:  # sell
+                if order.order_type == "limit":
                     if not order.price:
                         raise OrderExecutionError("Limit sell order requires price")
-                    return await self.paper_exchange.limit_sell(order.coin_type, order.quantity, order.price)
+                    return await self.paper_exchange.limit_sell(
+                        order.coin_type, order.quantity, order.price
+                    )
                 else:
                     # Market Sell
-                    return await self.paper_exchange.market_sell(order.coin_type, order.quantity)
+                    return await self.paper_exchange.market_sell(
+                        order.coin_type, order.quantity
+                    )
 
         async with CoinspotTradingClient(self.api_key, self.api_secret) as client:
             # SAFETY CLAMP FOR BETA: Hard limit of $10 AUD per buy trade
-            if order.side == 'buy' and order.quantity > Decimal('10.00'):
-                 logger.error(f"Order {order.id} rejected by BETA safety clamp: {order.quantity} AUD > $10 AUD limit")
-                 raise SafetyViolation(f"BETA SAFETY CLAMP: Buy order exceeds $10 AUD limit ({order.quantity} AUD).")
+            if order.side == "buy" and order.quantity > Decimal("10.00"):
+                logger.error(
+                    f"Order {order.id} rejected by BETA safety clamp: {order.quantity} AUD > $10 AUD limit"
+                )
+                raise SafetyViolation(
+                    f"BETA SAFETY CLAMP: Buy order exceeds $10 AUD limit ({order.quantity} AUD)."
+                )
 
-            if order.side == 'buy':
-                if order.order_type == 'limit':
+            if order.side == "buy":
+                if order.order_type == "limit":
                     if not order.price:
                         # Should have been caught by validation or set
                         raise OrderExecutionError("Limit buy order requires price")
-                    result = await client.limit_buy(order.coin_type, order.quantity, order.price)
+                    result = await client.limit_buy(
+                        order.coin_type, order.quantity, order.price
+                    )
                 else:
                     # Market buy: quantity is AUD amount
                     result = await client.market_buy(order.coin_type, order.quantity)
-            elif order.side == 'sell':
-                if order.order_type == 'limit':
+            elif order.side == "sell":
+                if order.order_type == "limit":
                     if not order.price:
                         raise OrderExecutionError("Limit sell order requires price")
-                    result = await client.limit_sell(order.coin_type, order.quantity, order.price)
+                    result = await client.limit_sell(
+                        order.coin_type, order.quantity, order.price
+                    )
                 else:
                     # Market sell: quantity is Coin amount
                     result = await client.market_sell(order.coin_type, order.quantity)
@@ -351,7 +381,9 @@ class OrderExecutor:
 
             return result
 
-    async def _update_position(self, order: Order, result: dict[str, Any] | None = None) -> None:
+    async def _update_position(
+        self, order: Order, result: dict[str, Any] | None = None
+    ) -> None:
         """
         Update user's position after order execution
 
@@ -361,37 +393,38 @@ class OrderExecutor:
         """
         # Get existing position
         statement = select(Position).where(
-            Position.user_id == order.user_id,
-            Position.coin_type == order.coin_type
+            Position.user_id == order.user_id, Position.coin_type == order.coin_type
         )
         position = self.session.exec(statement).first()
 
         # Determine coins bought/sold and cost
-        coins_delta = Decimal('0')
-        cost_delta = Decimal('0')
+        coins_delta = Decimal("0")
+        cost_delta = Decimal("0")
 
-        if result and 'amount' in result:
-             # If result provides amount (coins), use it.
-             coins_delta = Decimal(str(result['amount']))
+        if result and "amount" in result:
+            # If result provides amount (coins), use it.
+            coins_delta = Decimal(str(result["amount"]))
 
-        if order.side == 'buy':
+        if order.side == "buy":
             # Buy Order
             # Determine cost delta (AUD spent)
-            if result and 'total' in result:
-                cost_delta = Decimal(str(result['total']))
+            if result and "total" in result:
+                cost_delta = Decimal(str(result["total"]))
             else:
-                 # Fallback: For market buy, quantity is AUD. For limit buy, it might be AUD too in Coinspot if 'amount' param was used as funds.
-                 # But CoinSpot limit buy via client uses coins? No, wait.
-                 # CoinSpot limit buy: client code I wrote used 'amount' (AUD) parameter.
-                 # So order.quantity is AUD for both Limit and Market Buy if relying on my client impl.
-                 cost_delta = order.filled_quantity
+                # Fallback: For market buy, quantity is AUD. For limit buy, it might be AUD too in Coinspot if 'amount' param was used as funds.
+                # But CoinSpot limit buy via client uses coins? No, wait.
+                # CoinSpot limit buy: client code I wrote used 'amount' (AUD) parameter.
+                # So order.quantity is AUD for both Limit and Market Buy if relying on my client impl.
+                cost_delta = order.filled_quantity
 
             if coins_delta == 0:
                 # Calculate from cost and price
                 if order.price and order.price > 0:
                     coins_delta = cost_delta / order.price
                 else:
-                    logger.error(f"Cannot calculate coins bought for order {order.id}: no price")
+                    logger.error(
+                        f"Cannot calculate coins bought for order {order.id}: no price"
+                    )
                     return
 
             if position:
@@ -406,7 +439,11 @@ class OrderExecutor:
                 position.updated_at = datetime.now(timezone.utc)
             else:
                 # Create new position
-                average_price = cost_delta / coins_delta if coins_delta > 0 else (order.price if order.price else Decimal('0'))
+                average_price = (
+                    cost_delta / coins_delta
+                    if coins_delta > 0
+                    else (order.price if order.price else Decimal("0"))
+                )
                 position = Position(
                     user_id=order.user_id,
                     coin_type=order.coin_type,
@@ -414,12 +451,12 @@ class OrderExecutor:
                     average_price=average_price,
                     total_cost=cost_delta,
                     created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc)
+                    updated_at=datetime.now(timezone.utc),
                 )
 
             self.session.add(position)
 
-        elif order.side == 'sell':
+        elif order.side == "sell":
             if coins_delta == 0:
                 coins_delta = order.filled_quantity
 
@@ -427,7 +464,7 @@ class OrderExecutor:
                 # Reduce position
                 position.quantity -= coins_delta
 
-                if position.quantity <= 0.00000001: # Epsilon check for near zero
+                if position.quantity <= 0.00000001:  # Epsilon check for near zero
                     # Position closed
                     self.session.delete(position)
                 else:
@@ -436,7 +473,9 @@ class OrderExecutor:
                     position.updated_at = datetime.now(timezone.utc)
                     self.session.add(position)
             else:
-                logger.warning(f"Sell order {order.id} executed but no position found for {order.coin_type}")
+                logger.warning(
+                    f"Sell order {order.id} executed but no position found for {order.coin_type}"
+                )
 
         self.session.commit()
 
@@ -445,7 +484,7 @@ class OrderExecutor:
             self.session.refresh(position)
             await manager.broadcast_json(
                 {"type": "position_update", "data": jsonable_encoder(position)},
-                f"trading_{order.user_id}"
+                f"trading_{order.user_id}",
             )
 
         logger.info(f"Position updated for {order.user_id}, {order.coin_type}")
@@ -461,12 +500,14 @@ class OrderExecutor:
             "price": float(order.price) if order.price is not None else None,
             "order_type": order.order_type,
             "status": order.status,
-            "filled_quantity": float(order.filled_quantity) if order.filled_quantity is not None else 0.0,
+            "filled_quantity": float(order.filled_quantity)
+            if order.filled_quantity is not None
+            else 0.0,
             "filled_at": order.filled_at.isoformat() if order.filled_at else None,
             "created_at": order.created_at.isoformat() if order.created_at else None,
             "updated_at": order.updated_at.isoformat() if order.updated_at else None,
             "coinspot_order_id": order.coinspot_order_id,
-            "error_message": order.error_message
+            "error_message": order.error_message,
         }
 
 
@@ -491,7 +532,7 @@ class OrderQueue:
         api_key: str,
         api_secret: str,
         max_retries: int = 3,
-        retry_delay: float = 1.0
+        retry_delay: float = 1.0,
     ) -> None:
         """
         Initialize the order executor
@@ -509,7 +550,7 @@ class OrderQueue:
                 api_key=api_key,
                 api_secret=api_secret,
                 max_retries=max_retries,
-                retry_delay=retry_delay
+                retry_delay=retry_delay,
             )
 
     async def submit(self, order_id: UUID) -> None:

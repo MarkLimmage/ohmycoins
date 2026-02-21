@@ -96,8 +96,7 @@ class NansenCollector(APICollector):
 
                     # Fetch smart money flows for this token
                     response = await self.fetch_json(
-                        f"/smart-money/flows/{token}",
-                        headers=headers
+                        f"/smart-money/flows/{token}", headers=headers
                     )
 
                     if not response:
@@ -111,7 +110,9 @@ class NansenCollector(APICollector):
 
                     data_point = {
                         "token": token,
-                        "net_flow_usd": Decimal(str(net_flow_usd)) if net_flow_usd else Decimal("0"),
+                        "net_flow_usd": Decimal(str(net_flow_usd))
+                        if net_flow_usd
+                        else Decimal("0"),
                         "buying_wallet_count": len(buying_wallets),
                         "selling_wallet_count": len(selling_wallets),
                         "buying_wallets": buying_wallets[:10],  # Store top 10 only
@@ -123,11 +124,15 @@ class NansenCollector(APICollector):
                     logger.debug(f"{self.name}: Collected flow data for {token}")
 
                 except Exception as e:
-                    logger.error(f"{self.name}: Failed to collect {token} flows: {str(e)}")
+                    logger.error(
+                        f"{self.name}: Failed to collect {token} flows: {str(e)}"
+                    )
                     # Continue with other tokens
                     continue
 
-            logger.info(f"{self.name}: Collected {len(collected_data)} smart money flows")
+            logger.info(
+                f"{self.name}: Collected {len(collected_data)} smart money flows"
+            )
             return collected_data
 
         except Exception as e:
@@ -161,12 +166,19 @@ class NansenCollector(APICollector):
                     try:
                         Decimal(str(item["net_flow_usd"]))
                     except Exception:
-                        logger.warning(f"{self.name}: Invalid net_flow_usd for {item['token']}, skipping")
+                        logger.warning(
+                            f"{self.name}: Invalid net_flow_usd for {item['token']}, skipping"
+                        )
                         continue
 
                 # Validate wallet counts
-                if item.get("buying_wallet_count", 0) < 0 or item.get("selling_wallet_count", 0) < 0:
-                    logger.warning(f"{self.name}: Invalid wallet counts for {item['token']}, skipping")
+                if (
+                    item.get("buying_wallet_count", 0) < 0
+                    or item.get("selling_wallet_count", 0) < 0
+                ):
+                    logger.warning(
+                        f"{self.name}: Invalid wallet counts for {item['token']}, skipping"
+                    )
                     continue
 
                 validated.append(item)

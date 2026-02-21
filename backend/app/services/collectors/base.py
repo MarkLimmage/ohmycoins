@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class CollectorStatus(str, Enum):
     """Status enumeration for collector runs"""
+
     IDLE = "idle"
     RUNNING = "running"
     SUCCESS = "success"
@@ -135,7 +136,7 @@ class BaseCollector(ABC):
                 collector_run = CollectorRuns(
                     collector_name=self.name,
                     status=CollectorStatus.RUNNING,
-                    started_at=started_at
+                    started_at=started_at,
                 )
                 session.add(collector_run)
                 session.commit()
@@ -173,10 +174,7 @@ class BaseCollector(ABC):
                 return True
 
         except Exception as e:
-            logger.error(
-                f"{self.name}: Collection failed: {str(e)}",
-                exc_info=True
-            )
+            logger.error(f"{self.name}: Collection failed: {str(e)}", exc_info=True)
 
             # Update collector run record with error
             if run_id:
@@ -186,7 +184,9 @@ class BaseCollector(ABC):
                         if failed_run:
                             failed_run.status = CollectorStatus.FAILED
                             failed_run.completed_at = datetime.now(timezone.utc)
-                            failed_run.error_message = str(e)[:1000]  # Truncate long errors
+                            failed_run.error_message = str(e)[
+                                :1000
+                            ]  # Truncate long errors
                             session.add(failed_run)
                             session.commit()
                 except Exception as db_error:

@@ -75,7 +75,9 @@ def setup_collectors() -> None:
         logger.info("✓ Registered Newscatcher collector (Human Ledger)")
     except Exception as e:
         logger.error(f"✗ Failed to register Newscatcher collector: {str(e)}")
-        logger.info("  Get an API key at: https://www.newscatcherapi.com/ ($10/month - Tier 2)")
+        logger.info(
+            "  Get an API key at: https://www.newscatcherapi.com/ ($10/month - Tier 2)"
+        )
 
     # Glass Ledger: Nansen Smart Money Tracking
     # Collects every 15 minutes

@@ -12,6 +12,7 @@ Features:
 - Performance metrics (Sharpe ratio, max drawdown, win rate, profit factor)
 - P&L aggregation by algorithm, coin, and time period
 """
+
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -31,74 +32,95 @@ class PnLMetrics:
 
     def __init__(
         self,
-        realized_pnl: Decimal = Decimal('0'),
-        unrealized_pnl: Decimal = Decimal('0'),
+        realized_pnl: Decimal = Decimal("0"),
+        unrealized_pnl: Decimal = Decimal("0"),
         total_pnl: Decimal | None = None,
         total_trades: int = 0,
         winning_trades: int = 0,
         losing_trades: int = 0,
         win_rate: Decimal | None = None,
         profit_factor: Decimal | None = None,
-        total_profit: Decimal = Decimal('0'),
-        total_loss: Decimal = Decimal('0'),
+        total_profit: Decimal = Decimal("0"),
+        total_loss: Decimal = Decimal("0"),
         average_win: Decimal | None = None,
         average_loss: Decimal | None = None,
-        largest_win: Decimal = Decimal('0'),
-        largest_loss: Decimal = Decimal('0'),
+        largest_win: Decimal = Decimal("0"),
+        largest_loss: Decimal = Decimal("0"),
         max_drawdown: Decimal | None = None,
         sharpe_ratio: Decimal | None = None,
-        total_volume: Decimal = Decimal('0'),
-        total_fees: Decimal = Decimal('0')
+        total_volume: Decimal = Decimal("0"),
+        total_fees: Decimal = Decimal("0"),
     ):
         self.realized_pnl = realized_pnl
         self.unrealized_pnl = unrealized_pnl
-        self.total_pnl = total_pnl if total_pnl is not None else (realized_pnl + unrealized_pnl)
+        self.total_pnl = (
+            total_pnl if total_pnl is not None else (realized_pnl + unrealized_pnl)
+        )
         self.total_trades = total_trades
         self.winning_trades = winning_trades
         self.losing_trades = losing_trades
-        self.win_rate = win_rate if win_rate is not None else (
-            Decimal(winning_trades) / Decimal(total_trades) * Decimal('100')
-            if total_trades > 0 else Decimal('0')
+        self.win_rate = (
+            win_rate
+            if win_rate is not None
+            else (
+                Decimal(winning_trades) / Decimal(total_trades) * Decimal("100")
+                if total_trades > 0
+                else Decimal("0")
+            )
         )
-        self.profit_factor = profit_factor if profit_factor is not None else (
-            total_profit / abs(total_loss) if total_loss != 0 else Decimal('0')
+        self.profit_factor = (
+            profit_factor
+            if profit_factor is not None
+            else (total_profit / abs(total_loss) if total_loss != 0 else Decimal("0"))
         )
         self.total_profit = total_profit
         self.total_loss = total_loss
-        self.average_win = average_win if average_win is not None else (
-            total_profit / Decimal(winning_trades) if winning_trades > 0 else Decimal('0')
+        self.average_win = (
+            average_win
+            if average_win is not None
+            else (
+                total_profit / Decimal(winning_trades)
+                if winning_trades > 0
+                else Decimal("0")
+            )
         )
-        self.average_loss = average_loss if average_loss is not None else (
-            abs(total_loss) / Decimal(losing_trades) if losing_trades > 0 else Decimal('0')
+        self.average_loss = (
+            average_loss
+            if average_loss is not None
+            else (
+                abs(total_loss) / Decimal(losing_trades)
+                if losing_trades > 0
+                else Decimal("0")
+            )
         )
         self.largest_win = largest_win
         self.largest_loss = largest_loss
-        self.max_drawdown = max_drawdown if max_drawdown is not None else Decimal('0')
-        self.sharpe_ratio = sharpe_ratio if sharpe_ratio is not None else Decimal('0')
+        self.max_drawdown = max_drawdown if max_drawdown is not None else Decimal("0")
+        self.sharpe_ratio = sharpe_ratio if sharpe_ratio is not None else Decimal("0")
         self.total_volume = total_volume
         self.total_fees = total_fees
 
     def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary"""
         return {
-            'realized_pnl': float(self.realized_pnl),
-            'unrealized_pnl': float(self.unrealized_pnl),
-            'total_pnl': float(self.total_pnl),
-            'total_trades': self.total_trades,
-            'winning_trades': self.winning_trades,
-            'losing_trades': self.losing_trades,
-            'win_rate': float(self.win_rate),
-            'profit_factor': float(self.profit_factor),
-            'total_profit': float(self.total_profit),
-            'total_loss': float(self.total_loss),
-            'average_win': float(self.average_win),
-            'average_loss': float(self.average_loss),
-            'largest_win': float(self.largest_win),
-            'largest_loss': float(self.largest_loss),
-            'max_drawdown': float(self.max_drawdown),
-            'sharpe_ratio': float(self.sharpe_ratio),
-            'total_volume': float(self.total_volume),
-            'total_fees': float(self.total_fees)
+            "realized_pnl": float(self.realized_pnl),
+            "unrealized_pnl": float(self.unrealized_pnl),
+            "total_pnl": float(self.total_pnl),
+            "total_trades": self.total_trades,
+            "winning_trades": self.winning_trades,
+            "losing_trades": self.losing_trades,
+            "win_rate": float(self.win_rate),
+            "profit_factor": float(self.profit_factor),
+            "total_profit": float(self.total_profit),
+            "total_loss": float(self.total_loss),
+            "average_win": float(self.average_win),
+            "average_loss": float(self.average_loss),
+            "largest_win": float(self.largest_win),
+            "largest_loss": float(self.largest_loss),
+            "max_drawdown": float(self.max_drawdown),
+            "sharpe_ratio": float(self.sharpe_ratio),
+            "total_volume": float(self.total_volume),
+            "total_fees": float(self.total_fees),
         }
 
 
@@ -125,7 +147,7 @@ class PnLEngine:
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         algorithm_id: UUID | None = None,
-        coin_type: str | None = None
+        coin_type: str | None = None,
     ) -> Decimal:
         """
         Calculate realized P&L from completed trades
@@ -144,10 +166,7 @@ class PnLEngine:
             Realized P&L as Decimal
         """
         # Build query for filled orders
-        query = select(Order).where(
-            Order.user_id == user_id,
-            Order.status == 'filled'
-        )
+        query = select(Order).where(Order.user_id == user_id, Order.status == "filled")
 
         # Apply filters
         # Note: We don't filter by start_date in the query because we need
@@ -166,21 +185,26 @@ class PnLEngine:
         orders = self.session.exec(query).all()
 
         # Calculate P&L using FIFO (First In, First Out) method
-        realized_pnl = Decimal('0')
-        positions_tracker: dict[str, list[tuple[Decimal, Decimal]]] = {}  # coin -> [(quantity, price)]
+        realized_pnl = Decimal("0")
+        positions_tracker: dict[
+            str, list[tuple[Decimal, Decimal]]
+        ] = {}  # coin -> [(quantity, price)]
 
         for order in orders:
-            if order.side == 'buy':
+            if order.side == "buy":
                 # Add to position tracker
                 if order.coin_type not in positions_tracker:
                     positions_tracker[order.coin_type] = []
                 positions_tracker[order.coin_type].append(
-                    (order.filled_quantity, order.price or Decimal('0'))
+                    (order.filled_quantity, order.price or Decimal("0"))
                 )
 
-            elif order.side == 'sell':
+            elif order.side == "sell":
                 # Calculate realized P&L from sell
-                if order.coin_type not in positions_tracker or not positions_tracker[order.coin_type]:
+                if (
+                    order.coin_type not in positions_tracker
+                    or not positions_tracker[order.coin_type]
+                ):
                     # No buy positions to match against - skip
                     logger.warning(
                         f"Sell order {order.id} has no matching buy positions for {order.coin_type}"
@@ -188,7 +212,7 @@ class PnLEngine:
                     continue
 
                 sell_quantity = order.filled_quantity
-                sell_price = order.price or Decimal('0')
+                sell_price = order.price or Decimal("0")
 
                 # Match sells against buys using FIFO
                 while sell_quantity > 0 and positions_tracker[order.coin_type]:
@@ -210,16 +234,17 @@ class PnLEngine:
 
                     # Update or remove buy position
                     if buy_quantity > 0:
-                        positions_tracker[order.coin_type][0] = (buy_quantity, buy_price)
+                        positions_tracker[order.coin_type][0] = (
+                            buy_quantity,
+                            buy_price,
+                        )
                     else:
                         positions_tracker[order.coin_type].pop(0)
 
         return realized_pnl
 
     def calculate_unrealized_pnl(
-        self,
-        user_id: UUID,
-        coin_type: str | None = None
+        self, user_id: UUID, coin_type: str | None = None
     ) -> Decimal:
         """
         Calculate unrealized P&L from current positions
@@ -242,14 +267,16 @@ class PnLEngine:
 
         positions = self.session.exec(query).all()
 
-        unrealized_pnl = Decimal('0')
+        unrealized_pnl = Decimal("0")
 
         for position in positions:
             # Get current price for this coin
             current_price = self._get_current_price(position.coin_type)
 
             if current_price is None:
-                logger.warning(f"No price data for {position.coin_type}, skipping unrealized P&L")
+                logger.warning(
+                    f"No price data for {position.coin_type}, skipping unrealized P&L"
+                )
                 continue
 
             # Calculate current value
@@ -265,7 +292,7 @@ class PnLEngine:
         self,
         user_id: UUID,
         start_date: datetime | None = None,
-        end_date: datetime | None = None
+        end_date: datetime | None = None,
     ) -> PnLMetrics:
         """
         Get comprehensive P&L summary with performance metrics
@@ -283,10 +310,7 @@ class PnLEngine:
         unrealized_pnl = self.calculate_unrealized_pnl(user_id)
 
         # Get trade statistics
-        query = select(Order).where(
-            Order.user_id == user_id,
-            Order.status == 'filled'
-        )
+        query = select(Order).where(Order.user_id == user_id, Order.status == "filled")
 
         if start_date:
             query = query.where(Order.filled_at >= start_date)
@@ -299,33 +323,36 @@ class PnLEngine:
         total_trades = 0
         winning_trades = 0
         losing_trades = 0
-        total_profit = Decimal('0')
-        total_loss = Decimal('0')
-        largest_win = Decimal('0')
-        largest_loss = Decimal('0')
-        total_volume = Decimal('0')
+        total_profit = Decimal("0")
+        total_loss = Decimal("0")
+        largest_win = Decimal("0")
+        largest_loss = Decimal("0")
+        total_volume = Decimal("0")
 
         # Track positions for P&L calculation per trade
         positions_tracker: dict[str, list[tuple[Decimal, Decimal]]] = {}
 
         for order in orders:
-            if order.side == 'buy':
+            if order.side == "buy":
                 # Track buy positions
                 if order.coin_type not in positions_tracker:
                     positions_tracker[order.coin_type] = []
                 positions_tracker[order.coin_type].append(
-                    (order.filled_quantity, order.price or Decimal('0'))
+                    (order.filled_quantity, order.price or Decimal("0"))
                 )
-                total_volume += order.filled_quantity * (order.price or Decimal('0'))
+                total_volume += order.filled_quantity * (order.price or Decimal("0"))
 
-            elif order.side == 'sell':
+            elif order.side == "sell":
                 # Calculate P&L for this sell
-                if order.coin_type not in positions_tracker or not positions_tracker[order.coin_type]:
+                if (
+                    order.coin_type not in positions_tracker
+                    or not positions_tracker[order.coin_type]
+                ):
                     continue
 
                 sell_quantity = order.filled_quantity
-                sell_price = order.price or Decimal('0')
-                trade_pnl = Decimal('0')
+                sell_price = order.price or Decimal("0")
+                trade_pnl = Decimal("0")
 
                 # Match against buys
                 while sell_quantity > 0 and positions_tracker[order.coin_type]:
@@ -339,7 +366,10 @@ class PnLEngine:
                     buy_quantity -= match_quantity
 
                     if buy_quantity > 0:
-                        positions_tracker[order.coin_type][0] = (buy_quantity, buy_price)
+                        positions_tracker[order.coin_type][0] = (
+                            buy_quantity,
+                            buy_price,
+                        )
                     else:
                         positions_tracker[order.coin_type].pop(0)
 
@@ -366,14 +396,14 @@ class PnLEngine:
             total_loss=total_loss,
             largest_win=largest_win,
             largest_loss=largest_loss,
-            total_volume=total_volume
+            total_volume=total_volume,
         )
 
     def get_pnl_by_algorithm(
         self,
         user_id: UUID,
         start_date: datetime | None = None,
-        end_date: datetime | None = None
+        end_date: datetime | None = None,
     ) -> dict[UUID, PnLMetrics]:
         """
         Get P&L metrics grouped by algorithm
@@ -387,11 +417,15 @@ class PnLEngine:
             Dictionary mapping algorithm_id to PnLMetrics
         """
         # Get all algorithms used by this user
-        query = select(Order.algorithm_id).where(
-            Order.user_id == user_id,
-            Order.algorithm_id.isnot(None),
-            Order.status == 'filled'
-        ).distinct()
+        query = (
+            select(Order.algorithm_id)
+            .where(
+                Order.user_id == user_id,
+                Order.algorithm_id.isnot(None),
+                Order.status == "filled",
+            )
+            .distinct()
+        )
 
         if start_date:
             query = query.where(Order.filled_at >= start_date)
@@ -414,7 +448,7 @@ class PnLEngine:
         self,
         user_id: UUID,
         start_date: datetime | None = None,
-        end_date: datetime | None = None
+        end_date: datetime | None = None,
     ) -> dict[str, PnLMetrics]:
         """
         Get P&L metrics grouped by cryptocurrency
@@ -428,10 +462,11 @@ class PnLEngine:
             Dictionary mapping coin_type to PnLMetrics
         """
         # Get all coins traded by this user
-        query = select(Order.coin_type).where(
-            Order.user_id == user_id,
-            Order.status == 'filled'
-        ).distinct()
+        query = (
+            select(Order.coin_type)
+            .where(Order.user_id == user_id, Order.status == "filled")
+            .distinct()
+        )
 
         if start_date:
             query = query.where(Order.filled_at >= start_date)
@@ -447,8 +482,7 @@ class PnLEngine:
             )
             unrealized_pnl = self.calculate_unrealized_pnl(user_id, coin_type=coin_type)
             result[coin_type] = PnLMetrics(
-                realized_pnl=realized_pnl,
-                unrealized_pnl=unrealized_pnl
+                realized_pnl=realized_pnl, unrealized_pnl=unrealized_pnl
             )
 
         return result
@@ -458,7 +492,7 @@ class PnLEngine:
         user_id: UUID,
         start_date: datetime,
         end_date: datetime,
-        interval: str = 'day'
+        interval: str = "day",
     ) -> list[dict[str, Any]]:
         """
         Get historical P&L data aggregated by time interval
@@ -473,13 +507,13 @@ class PnLEngine:
             List of dictionaries with timestamp and P&L data
         """
         # Determine time buckets based on interval
-        if interval == 'hour':
+        if interval == "hour":
             delta = timedelta(hours=1)
-        elif interval == 'day':
+        elif interval == "day":
             delta = timedelta(days=1)
-        elif interval == 'week':
+        elif interval == "week":
             delta = timedelta(weeks=1)
-        elif interval == 'month':
+        elif interval == "month":
             delta = timedelta(days=30)  # Approximate
         else:
             raise ValueError(f"Invalid interval: {interval}")
@@ -492,16 +526,16 @@ class PnLEngine:
 
             # Calculate P&L for this time bucket
             realized_pnl = self.calculate_realized_pnl(
-                user_id,
-                start_date=current_date,
-                end_date=next_date
+                user_id, start_date=current_date, end_date=next_date
             )
 
-            result.append({
-                'timestamp': current_date.isoformat(),
-                'realized_pnl': float(realized_pnl),
-                'interval': interval
-            })
+            result.append(
+                {
+                    "timestamp": current_date.isoformat(),
+                    "realized_pnl": float(realized_pnl),
+                    "interval": interval,
+                }
+            )
 
             current_date = next_date
 
@@ -518,9 +552,12 @@ class PnLEngine:
             Current price or None if not available
         """
         # Query for most recent price data
-        query = select(PriceData5Min).where(
-            PriceData5Min.coin_type == coin_type
-        ).order_by(desc(PriceData5Min.timestamp)).limit(1)
+        query = (
+            select(PriceData5Min)
+            .where(PriceData5Min.coin_type == coin_type)
+            .order_by(desc(PriceData5Min.timestamp))
+            .limit(1)
+        )
 
         price_data = self.session.exec(query).first()
 

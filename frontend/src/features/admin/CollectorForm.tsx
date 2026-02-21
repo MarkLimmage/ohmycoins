@@ -8,32 +8,52 @@ import {
   createListCollection
 } from "@chakra-ui/react"
 import { useForm, Controller } from "react-hook-form"
-import { CollectorPlugin, CollectorCreate } from "./types"
+import { CollectorPlugin, CollectorCreate, CollectorInstance } from "./types"
 import { useCollectors } from "./hooks"
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select"
 import { Field } from "@/components/ui/field"
 
 interface CollectorPluginFormProps {
   plugins: CollectorPlugin[]
+  initialData?: CollectorInstance
   onCancel: () => void
   onSuccess: () => void
 }
 
-export const CollectorPluginForm = ({ plugins, onCancel, onSuccess }: CollectorPluginFormProps) => {
-  const { createInstance } = useCollectors()
-  const { register, handleSubmit, control, watch, reset } = useForm<CollectorCreate>()
+export const CollectorPluginForm = ({ plugins, initialData, onCancel, onSuccess }: CollectorPluginFormProps) => {
+  const { createInstance, updateInstance } = useCollectors()
+  const isEditing = !!initialData
+
+  const { register, handleSubmit, control, watch, reset } = useForm<CollectorCreate>({
+    defaultValues: initialData ? {
+      name: initialData.name,
+      plugin_id: initialData.plugin_id,
+      config: initialData.config,
+      is_active: initialData.is_active
+    } : undefined
+  })
+  
   const selectedPluginId = watch("plugin_id")
   
   // Find selected plugin to render its schema
   const selectedPlugin = plugins.find(p => p.id === selectedPluginId)
 
   const onSubmit = (data: CollectorCreate) => {
-    createInstance.mutate(data, {
-      onSuccess: () => {
-        reset()
-        onSuccess()
-      }
-    })
+    if (isEditing && initialData) {
+      updateInstance.mutate({ id: initialData.id, data }, {
+        onSuccess: () => {
+          reset()
+          onSuccess()
+        }
+      })
+    } else {
+      createInstance.mutate(data, {
+        onSuccess: () => {
+          reset()
+          onSuccess()
+        }
+      })
+    }
   }
 
   const pluginCollection = createListCollection({
@@ -55,6 +75,7 @@ export const CollectorPluginForm = ({ plugins, onCancel, onSuccess }: CollectorP
             render={({ field }) => (
               <SelectRoot 
                 collection={pluginCollection}
+                disabled={isEditing}
                 value={field.value ? [field.value] : []}
                 onValueChange={(e) => field.onChange(e.value[0])}
               >
@@ -138,7 +159,9 @@ export const CollectorPluginForm = ({ plugins, onCancel, onSuccess }: CollectorP
 
         <Flex justify="flex-end" gap={3} mt={4}>
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button type="submit" loading={createInstance.isPending}>Create Collector</Button>
+          <Button type="submit" loading={createInstance.isPending || updateInstance.isPending}>
+            {isEditing ? "Update Collector" : "Create Collector"}
+          </Button>
         </Flex>
       </Stack>
     </form>

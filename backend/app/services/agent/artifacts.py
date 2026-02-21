@@ -235,9 +235,7 @@ class ArtifactManager:
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         # Find old artifacts
-        statement = select(AgentArtifact).where(
-            AgentArtifact.created_at < cutoff_date
-        )
+        statement = select(AgentArtifact).where(AgentArtifact.created_at < cutoff_date)
         old_artifacts = db_session.exec(statement).all()
 
         count = 0
@@ -286,7 +284,9 @@ class ArtifactManager:
                 }
             stats["artifacts_by_type"][artifact.artifact_type]["count"] += 1
             if artifact.size_bytes:
-                stats["artifacts_by_type"][artifact.artifact_type]["total_size_bytes"] += artifact.size_bytes
+                stats["artifacts_by_type"][artifact.artifact_type][
+                    "total_size_bytes"
+                ] += artifact.size_bytes
 
             # By session
             session_key = str(artifact.session_id)
@@ -297,7 +297,9 @@ class ArtifactManager:
                 }
             stats["artifacts_by_session"][session_key]["count"] += 1
             if artifact.size_bytes:
-                stats["artifacts_by_session"][session_key]["total_size_bytes"] += artifact.size_bytes
+                stats["artifacts_by_session"][session_key]["total_size_bytes"] += (
+                    artifact.size_bytes
+                )
 
         return stats
 
@@ -369,9 +371,13 @@ class ArtifactManager:
                     "type": artifact.artifact_type,
                     "name": artifact.name,
                     "description": artifact.description,
-                    "filename": Path(artifact.file_path).name if artifact.file_path else None,
+                    "filename": Path(artifact.file_path).name
+                    if artifact.file_path
+                    else None,
                     "size_bytes": artifact.size_bytes,
-                    "created_at": artifact.created_at.isoformat() if artifact.created_at else None,
+                    "created_at": artifact.created_at.isoformat()
+                    if artifact.created_at
+                    else None,
                 }
                 for artifact in artifacts
             ],

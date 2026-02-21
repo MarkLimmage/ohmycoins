@@ -5,6 +5,7 @@ Scheduled Task Runner for Cryptocurrency Data Collection
 This module provides a scheduler that runs the Coinspot collector at 5-minute intervals.
 It uses APScheduler for reliable task scheduling with error handling and logging.
 """
+
 import asyncio
 import logging
 from datetime import datetime
@@ -84,7 +85,7 @@ class CollectorScheduler:
             logger.error(
                 f"Error in scheduled collection after {elapsed_seconds:.2f}s: "
                 f"{type(e).__name__}: {e}",
-                exc_info=True
+                exc_info=True,
             )
 
     async def run_now(self):
@@ -129,7 +130,9 @@ if __name__ == "__main__":
         await scheduler.run_now()
 
         # Keep running for 15 minutes to see scheduled executions
-        logger.info("Scheduler running. Will collect data every 5 minutes. Press Ctrl+C to stop.")
+        logger.info(
+            "Scheduler running. Will collect data every 5 minutes. Press Ctrl+C to stop."
+        )
         try:
             await asyncio.sleep(900)  # 15 minutes
         except KeyboardInterrupt:

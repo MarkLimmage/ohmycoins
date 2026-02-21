@@ -33,7 +33,7 @@ class ModelEvaluatorAgent(BaseAgent):
         """Initialize the model evaluator agent."""
         super().__init__(
             name="ModelEvaluatorAgent",
-            description="Evaluates and compares machine learning models"
+            description="Evaluates and compares machine learning models",
         )
 
     async def execute(self, state: dict[str, Any]) -> dict[str, Any]:
@@ -74,8 +74,7 @@ class ModelEvaluatorAgent(BaseAgent):
             if primary_model:
                 task_type = primary_model.get("task_type", "classification")
                 target_column = evaluation_params.get(
-                    "target_column",
-                    self._infer_target_column(task_type)
+                    "target_column", self._infer_target_column(task_type)
                 )
 
                 # Evaluate the model
@@ -108,8 +107,7 @@ class ModelEvaluatorAgent(BaseAgent):
                             target_column=target_column,
                             feature_columns=primary_model["feature_columns"],
                             model_type=self._get_tuning_model_type(
-                                primary_model["model_type"],
-                                task_type
+                                primary_model["model_type"], task_type
                             ),
                             search_type=evaluation_params.get("search_type", "grid"),
                             cv_folds=evaluation_params.get("cv_folds", 5),
@@ -139,30 +137,32 @@ class ModelEvaluatorAgent(BaseAgent):
             state["evaluation_insights"] = insights
 
             # Add message about evaluation completion
-            state["messages"].append({
-                "role": "agent",
-                "agent": self.name,
-                "content": f"Model evaluation completed. Generated {len(insights)} insights.",
-                "timestamp": pd.Timestamp.now().isoformat(),
-            })
+            state["messages"].append(
+                {
+                    "role": "agent",
+                    "agent": self.name,
+                    "content": f"Model evaluation completed. Generated {len(insights)} insights.",
+                    "timestamp": pd.Timestamp.now().isoformat(),
+                }
+            )
 
             return state
 
         except Exception as e:
             state["error"] = f"Model evaluation failed: {str(e)}"
             state["model_evaluated"] = False
-            state["messages"].append({
-                "role": "agent",
-                "agent": self.name,
-                "content": f"Model evaluation failed: {str(e)}",
-                "timestamp": pd.Timestamp.now().isoformat(),
-            })
+            state["messages"].append(
+                {
+                    "role": "agent",
+                    "agent": self.name,
+                    "content": f"Model evaluation failed: {str(e)}",
+                    "timestamp": pd.Timestamp.now().isoformat(),
+                }
+            )
             return state
 
     def _get_test_data(
-        self,
-        state: dict[str, Any],
-        evaluation_params: dict[str, Any]
+        self, state: dict[str, Any], evaluation_params: dict[str, Any]
     ) -> pd.DataFrame | None:
         """Get test data for evaluation."""
         # Check if test data explicitly provided
@@ -217,9 +217,7 @@ class ModelEvaluatorAgent(BaseAgent):
             return "random_forest_regressor"
 
     def _generate_evaluation_insights(
-        self,
-        evaluation_results: dict[str, Any],
-        task_type: str
+        self, evaluation_results: dict[str, Any], task_type: str
     ) -> list[str]:
         """Generate human-readable insights from evaluation results."""
         insights = []
@@ -261,9 +259,7 @@ class ModelEvaluatorAgent(BaseAgent):
                 rmse = eval_metrics.get("rmse", 0)
 
                 if r2 > 0.7:
-                    insights.append(
-                        f"✓ Model explains {r2:.1%} of price variance"
-                    )
+                    insights.append(f"✓ Model explains {r2:.1%} of price variance")
                 elif r2 > 0.4:
                     insights.append(
                         f"⚠ Model explains {r2:.1%} of price variance - moderate predictive power"
@@ -280,9 +276,7 @@ class ModelEvaluatorAgent(BaseAgent):
             importance_data = evaluation_results["feature_importance"]
             if "top_features" in importance_data and importance_data["top_features"]:
                 top_3 = importance_data["top_features"][:3]
-                insights.append(
-                    f"Top predictive features: {', '.join(top_3)}"
-                )
+                insights.append(f"Top predictive features: {', '.join(top_3)}")
 
         # Hyperparameter tuning insights
         if "hyperparameter_tuning" in evaluation_results:
@@ -297,8 +291,6 @@ class ModelEvaluatorAgent(BaseAgent):
             comparison = evaluation_results["model_comparison"]
             best_model = comparison.get("best_model")
             if best_model:
-                insights.append(
-                    f"Best performing model: {best_model}"
-                )
+                insights.append(f"Best performing model: {best_model}")
 
         return insights

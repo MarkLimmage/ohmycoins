@@ -33,7 +33,7 @@ class DataAnalystAgent(BaseAgent):
         """Initialize the data analyst agent."""
         super().__init__(
             name="DataAnalystAgent",
-            description="Analyzes cryptocurrency data and generates actionable insights"
+            description="Analyzes cryptocurrency data and generates actionable insights",
         )
 
     async def execute(self, state: dict[str, Any]) -> dict[str, Any]:
@@ -74,55 +74,75 @@ class DataAnalystAgent(BaseAgent):
             if "price_data" in retrieved_data and retrieved_data["price_data"]:
                 indicators_to_calc = analysis_params.get("indicators", None)
 
-                if "indicator" in user_goal.lower() or "technical" in user_goal.lower() or analysis_params.get("include_indicators", True):
+                if (
+                    "indicator" in user_goal.lower()
+                    or "technical" in user_goal.lower()
+                    or analysis_params.get("include_indicators", True)
+                ):
                     # Calculate indicators
                     df_with_indicators = calculate_technical_indicators(
-                        retrieved_data["price_data"],
-                        indicators=indicators_to_calc
+                        retrieved_data["price_data"], indicators=indicators_to_calc
                     )
 
                     # Convert DataFrame to dict for storage
                     analysis_results["technical_indicators"] = {
                         "columns": list(df_with_indicators.columns),
                         "data_points": len(df_with_indicators),
-                        "latest_values": df_with_indicators.iloc[-1].to_dict() if len(df_with_indicators) > 0 else {},
+                        "latest_values": df_with_indicators.iloc[-1].to_dict()
+                        if len(df_with_indicators) > 0
+                        else {},
                         "summary": {
                             col: {
                                 "mean": float(df_with_indicators[col].mean()),
                                 "std": float(df_with_indicators[col].std()),
                             }
-                            for col in df_with_indicators.select_dtypes(include=['number']).columns
-                        }
+                            for col in df_with_indicators.select_dtypes(
+                                include=["number"]
+                            ).columns
+                        },
                     }
 
             # Analyze sentiment trends if sentiment data available
             if "sentiment_data" in retrieved_data and retrieved_data["sentiment_data"]:
                 time_window = analysis_params.get("sentiment_window", "24h")
 
-                if "sentiment" in user_goal.lower() or analysis_params.get("include_sentiment", True):
+                if "sentiment" in user_goal.lower() or analysis_params.get(
+                    "include_sentiment", True
+                ):
                     analysis_results["sentiment_analysis"] = analyze_sentiment_trends(
-                        retrieved_data["sentiment_data"],
-                        time_window=time_window
+                        retrieved_data["sentiment_data"], time_window=time_window
                     )
 
             # Analyze on-chain signals if on-chain data available
-            if "on_chain_metrics" in retrieved_data and retrieved_data["on_chain_metrics"]:
+            if (
+                "on_chain_metrics" in retrieved_data
+                and retrieved_data["on_chain_metrics"]
+            ):
                 lookback = analysis_params.get("onchain_lookback", 30)
 
-                if "on-chain" in user_goal.lower() or "onchain" in user_goal.lower() or analysis_params.get("include_onchain", True):
+                if (
+                    "on-chain" in user_goal.lower()
+                    or "onchain" in user_goal.lower()
+                    or analysis_params.get("include_onchain", True)
+                ):
                     analysis_results["on_chain_signals"] = analyze_on_chain_signals(
-                        retrieved_data["on_chain_metrics"],
-                        lookback_period=lookback
+                        retrieved_data["on_chain_metrics"], lookback_period=lookback
                     )
 
             # Detect catalyst impact if both catalyst and price data available
-            if ("catalyst_events" in retrieved_data and retrieved_data["catalyst_events"] and
-                "price_data" in retrieved_data and retrieved_data["price_data"]):
-
-                if "catalyst" in user_goal.lower() or "event" in user_goal.lower() or analysis_params.get("include_catalyst_impact", True):
+            if (
+                "catalyst_events" in retrieved_data
+                and retrieved_data["catalyst_events"]
+                and "price_data" in retrieved_data
+                and retrieved_data["price_data"]
+            ):
+                if (
+                    "catalyst" in user_goal.lower()
+                    or "event" in user_goal.lower()
+                    or analysis_params.get("include_catalyst_impact", True)
+                ):
                     analysis_results["catalyst_impact"] = detect_catalyst_impact(
-                        retrieved_data["catalyst_events"],
-                        retrieved_data["price_data"]
+                        retrieved_data["catalyst_events"], retrieved_data["price_data"]
                     )
 
             # Generate insights summary
@@ -140,7 +160,9 @@ class DataAnalystAgent(BaseAgent):
 
         return state
 
-    def _generate_insights(self, analysis_results: dict[str, Any], user_goal: str) -> list[str]:
+    def _generate_insights(
+        self, analysis_results: dict[str, Any], user_goal: str
+    ) -> list[str]:
         """
         Generate actionable insights from analysis results.
 
@@ -161,9 +183,13 @@ class DataAnalystAgent(BaseAgent):
             if "rsi" in latest:
                 rsi_value = latest["rsi"]
                 if rsi_value > 70:
-                    insights.append(f"RSI is overbought at {rsi_value:.2f}, potential sell signal")
+                    insights.append(
+                        f"RSI is overbought at {rsi_value:.2f}, potential sell signal"
+                    )
                 elif rsi_value < 30:
-                    insights.append(f"RSI is oversold at {rsi_value:.2f}, potential buy signal")
+                    insights.append(
+                        f"RSI is oversold at {rsi_value:.2f}, potential buy signal"
+                    )
 
         # Sentiment insights
         if "sentiment_analysis" in analysis_results:
@@ -197,9 +223,13 @@ class DataAnalystAgent(BaseAgent):
             if events_analyzed > 0:
                 if abs(avg_impact) > 5:
                     direction = "positive" if avg_impact > 0 else "negative"
-                    insights.append(f"Recent catalyst events had {direction} impact (avg {avg_impact:.2f}% price change)")
+                    insights.append(
+                        f"Recent catalyst events had {direction} impact (avg {avg_impact:.2f}% price change)"
+                    )
 
         if not insights:
-            insights.append("Analysis completed. No significant patterns detected in current timeframe.")
+            insights.append(
+                "Analysis completed. No significant patterns detected in current timeframe."
+            )
 
         return insights

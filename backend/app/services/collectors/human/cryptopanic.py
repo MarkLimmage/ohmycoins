@@ -127,7 +127,9 @@ class CryptoPanicCollector(APICollector):
                             article["published_at"].replace("Z", "+00:00")
                         )
                     except Exception as e:
-                        logger.debug(f"{self.name}: Failed to parse timestamp: {str(e)}")
+                        logger.debug(
+                            f"{self.name}: Failed to parse timestamp: {str(e)}"
+                        )
 
                 data_point = {
                     "title": article.get("title", ""),
@@ -184,9 +186,15 @@ class CryptoPanicCollector(APICollector):
         metadata = article.get("metadata", {})
         if metadata:
             description = (metadata.get("description") or "").lower()
-            if any(word in description for word in ["pump", "surge", "rally", "bullish", "moon"]):
+            if any(
+                word in description
+                for word in ["pump", "surge", "rally", "bullish", "moon"]
+            ):
                 return "bullish"
-            if any(word in description for word in ["dump", "crash", "bearish", "plunge", "decline"]):
+            if any(
+                word in description
+                for word in ["dump", "crash", "bearish", "plunge", "decline"]
+            ):
                 return "bearish"
 
         return "neutral"
@@ -246,7 +254,9 @@ class CryptoPanicCollector(APICollector):
                     continue
 
                 if not item.get("url"):
-                    logger.warning(f"{self.name}: Missing URL for '{item['title'][:50]}...', skipping")
+                    logger.warning(
+                        f"{self.name}: Missing URL for '{item['title'][:50]}...', skipping"
+                    )
                     continue
 
                 # Validate sentiment score if present

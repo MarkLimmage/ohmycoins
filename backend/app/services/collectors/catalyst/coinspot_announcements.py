@@ -116,7 +116,9 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
                 try:
                     await page.wait_for_selector("li.article-list-item", timeout=10000)
                 except Exception:
-                    logger.warning(f"{self.name}: Timeout waiting for article list items")
+                    logger.warning(
+                        f"{self.name}: Timeout waiting for article list items"
+                    )
                     # Try to capture page content anyway
 
                 # Extract articles
@@ -128,7 +130,9 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
                 for article in articles:
                     try:
                         # Extract title and link
-                        link_element = await article.query_selector("a.article-list-link")
+                        link_element = await article.query_selector(
+                            "a.article-list-link"
+                        )
                         if not link_element:
                             continue
 
@@ -177,9 +181,7 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
 
                 await browser.close()
 
-            logger.info(
-                f"{self.name}: Scraped {len(announcements)} announcements"
-            )
+            logger.info(f"{self.name}: Scraped {len(announcements)} announcements")
             return announcements
 
         except Exception as e:
@@ -232,10 +234,35 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
         # Common cryptocurrency symbols
         # In production, this should come from a comprehensive DB or config
         common_cryptos = [
-            "BTC", "ETH", "XRP", "ADA", "DOT", "SOL", "DOGE", "SHIB",
-            "MATIC", "UNI", "LINK", "AVAX", "LTC", "BCH", "ATOM",
-            "ALGO", "VET", "FTM", "MANA", "SAND", "AXS", "CRO",
-            "PEPE", "BONK", "WIF", "SUI", "SEI", "TIA", "PYTH"
+            "BTC",
+            "ETH",
+            "XRP",
+            "ADA",
+            "DOT",
+            "SOL",
+            "DOGE",
+            "SHIB",
+            "MATIC",
+            "UNI",
+            "LINK",
+            "AVAX",
+            "LTC",
+            "BCH",
+            "ATOM",
+            "ALGO",
+            "VET",
+            "FTM",
+            "MANA",
+            "SAND",
+            "AXS",
+            "CRO",
+            "PEPE",
+            "BONK",
+            "WIF",
+            "SUI",
+            "SEI",
+            "TIA",
+            "PYTH",
         ]
 
         for crypto in common_cryptos:
@@ -244,7 +271,7 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
                 currencies.append(crypto)
 
         # Also look for patterns like "Listing (SYM)"
-        matches = re.findall(r'\(([A-Z]{2,6})\)', content)
+        matches = re.findall(r"\(([A-Z]{2,6})\)", content)
         for match in matches:
             if match not in currencies and match not in ["NEW", "UPDATE"]:
                 currencies.append(match)
@@ -277,7 +304,11 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
                 # Validate impact score
                 impact_score = item.get("impact_score")
                 if impact_score is not None:
-                    if not isinstance(impact_score, int) or impact_score < 1 or impact_score > 10:
+                    if (
+                        not isinstance(impact_score, int)
+                        or impact_score < 1
+                        or impact_score > 10
+                    ):
                         logger.warning(
                             f"{self.name}: Invalid impact score {impact_score}, setting to 5"
                         )
@@ -313,7 +344,9 @@ class CoinSpotAnnouncementsCollector(ScraperCollector):
                     statement = select(CatalystEvents).where(CatalystEvents.url == url)
                     existing = session.exec(statement).first()
                     if existing:
-                        logger.debug(f"{self.name}: Skipping duplicate announcement {url}")
+                        logger.debug(
+                            f"{self.name}: Skipping duplicate announcement {url}"
+                        )
                         continue
 
                 catalyst_event = CatalystEvents(

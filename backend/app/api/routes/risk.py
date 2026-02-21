@@ -50,7 +50,9 @@ def create_risk_rule(
     Create new risk rule.
     """
     get_current_active_superuser(current_user)
-    risk_rule = crud_risk.create_risk_rule(session=session, risk_rule_create=risk_rule_in)
+    risk_rule = crud_risk.create_risk_rule(
+        session=session, risk_rule_create=risk_rule_in
+    )
     return risk_rule
 
 
@@ -69,7 +71,9 @@ def update_risk_rule(
     risk_rule = crud_risk.get_risk_rule(session=session, risk_rule_id=risk_rule_id)
     if not risk_rule:
         raise HTTPException(status_code=404, detail="Risk rule not found")
-    risk_rule = crud_risk.update_risk_rule(session=session, db_risk_rule=risk_rule, risk_rule_in=risk_rule_in)
+    risk_rule = crud_risk.update_risk_rule(
+        session=session, db_risk_rule=risk_rule, risk_rule_in=risk_rule_in
+    )
     return risk_rule
 
 
@@ -99,7 +103,9 @@ def get_kill_switch_status(session: SessionDep, _current_user: CurrentUser) -> A
     setting = crud_risk.get_system_setting(session=session, key="kill_switch")
     if not setting:
         # Default to inactive if not set
-        return SystemSettingPublic(key="kill_switch", value={"active": False}, updated_at=func.now())
+        return SystemSettingPublic(
+            key="kill_switch", value={"active": False}, updated_at=func.now()
+        )
     return setting
 
 
@@ -115,7 +121,7 @@ def set_kill_switch(
         session=session,
         key="kill_switch",
         value={"active": active},
-        description="Global Kill Switch - Halts all trading when active"
+        description="Global Kill Switch - Halts all trading when active",
     )
 
     # Log audit
@@ -125,8 +131,8 @@ def set_kill_switch(
             event_type="kill_switch_toggle",
             severity="critical",
             details={"active": active},
-            user_id=current_user.id
-        )
+            user_id=current_user.id,
+        ),
     )
 
     return setting
@@ -137,13 +143,19 @@ def set_kill_switch(
 # -----------------------------------------------------------------------------
 @router.get("/audit-logs", response_model=AuditLogs)
 def read_audit_logs(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100, event_type: str | None = None
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
+    event_type: str | None = None,
 ) -> Any:
     """
     Retrieve audit logs.
     """
     get_current_active_superuser(current_user)
-    logs = crud_risk.get_audit_logs(session=session, skip=skip, limit=limit, event_type=event_type)
+    logs = crud_risk.get_audit_logs(
+        session=session, skip=skip, limit=limit, event_type=event_type
+    )
 
     count_statement = select(func.count()).select_from(AuditLog)
     if event_type:

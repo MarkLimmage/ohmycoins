@@ -15,7 +15,6 @@ Security Features:
 """
 
 import time
-from collections.abc import Callable, Awaitable
 from typing import Any
 
 import jwt
@@ -64,11 +63,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         token = auth_header.replace("Bearer ", "")
         try:
-            payload = jwt.decode(
-                token,
-                settings.SECRET_KEY,
-                algorithms=["HS256"]
-            )
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             user_id = payload.get("sub")
             is_superuser = payload.get("is_superuser", False)
             return user_id, is_superuser
@@ -85,10 +80,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return self.normal_user_limits
 
     def check_rate_limit(
-        self,
-        user_id: str,
-        window: str,
-        limit: int
+        self, user_id: str, window: str, limit: int
     ) -> tuple[bool, int, int]:
         """
         Check if user is within rate limit for given window.
@@ -138,7 +130,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # Log error in production
             return True, limit, reset_time
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """Process request with rate limiting."""
 
         # Skip rate limiting for health check and docs endpoints
@@ -175,7 +169,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "X-RateLimit-Remaining": "0",
                     "X-RateLimit-Reset": str(minute_reset),
                     "Retry-After": str(retry_after),
-                }
+                },
             )
 
         if not hour_allowed:
@@ -189,7 +183,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "X-RateLimit-Remaining": "0",
                     "X-RateLimit-Reset": str(hour_reset),
                     "Retry-After": str(retry_after),
-                }
+                },
             )
 
         # Process request

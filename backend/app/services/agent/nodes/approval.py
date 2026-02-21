@@ -63,11 +63,13 @@ def approval_node(state: dict[str, Any]) -> dict[str, Any]:
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
 
-    state["reasoning_trace"].append({
-        "step": "approval_requested",
-        "approval_type": approval_type,
-        "request": approval_request
-    })
+    state["reasoning_trace"].append(
+        {
+            "step": "approval_requested",
+            "approval_type": approval_type,
+            "request": approval_request,
+        }
+    )
 
     return state
 
@@ -96,9 +98,7 @@ def _determine_approval_type(current_step: str) -> str | None:
 
 
 def _requires_approval(
-    approval_type: str,
-    approval_gates: list[str],
-    approval_mode: str
+    approval_type: str, approval_gates: list[str], approval_mode: str
 ) -> bool:
     """
     Check if this approval type requires user approval.
@@ -123,7 +123,9 @@ def _requires_approval(
     return approval_type in approval_gates
 
 
-def _create_approval_request(approval_type: str, state: dict[str, Any]) -> dict[str, Any]:
+def _create_approval_request(
+    approval_type: str, state: dict[str, Any]
+) -> dict[str, Any]:
     """
     Create an approval request with context.
 
@@ -224,16 +226,17 @@ def _grant_auto_approval(state: dict[str, Any], approval_type: str) -> None:
     if "approvals_granted" not in state:
         state["approvals_granted"] = []
 
-    state["approvals_granted"].append({
-        "approval_type": approval_type,
-        "mode": "auto",
-        "timestamp": None,  # Will be set when logged
-    })
+    state["approvals_granted"].append(
+        {
+            "approval_type": approval_type,
+            "mode": "auto",
+            "timestamp": None,  # Will be set when logged
+        }
+    )
 
 
 def handle_approval_granted(
-    state: dict[str, Any],
-    approval_type: str
+    state: dict[str, Any], approval_type: str
 ) -> dict[str, Any]:
     """
     Process user approval.
@@ -250,11 +253,13 @@ def handle_approval_granted(
     if "approvals_granted" not in state:
         state["approvals_granted"] = []
 
-    state["approvals_granted"].append({
-        "approval_type": approval_type,
-        "mode": "manual",
-        "timestamp": None,  # Will be set by API
-    })
+    state["approvals_granted"].append(
+        {
+            "approval_type": approval_type,
+            "mode": "manual",
+            "timestamp": None,  # Will be set by API
+        }
+    )
 
     state["approval_needed"] = False
     state["pending_approvals"] = []
@@ -266,18 +271,15 @@ def handle_approval_granted(
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
 
-    state["reasoning_trace"].append({
-        "step": "approval_granted",
-        "approval_type": approval_type
-    })
+    state["reasoning_trace"].append(
+        {"step": "approval_granted", "approval_type": approval_type}
+    )
 
     return state
 
 
 def handle_approval_rejected(
-    state: dict[str, Any],
-    approval_type: str,
-    reason: str | None = None
+    state: dict[str, Any], approval_type: str, reason: str | None = None
 ) -> dict[str, Any]:
     """
     Process user rejection of approval.
@@ -305,11 +307,9 @@ def handle_approval_rejected(
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
 
-    state["reasoning_trace"].append({
-        "step": "approval_rejected",
-        "approval_type": approval_type,
-        "reason": reason
-    })
+    state["reasoning_trace"].append(
+        {"step": "approval_rejected", "approval_type": approval_type, "reason": reason}
+    )
 
     return state
 

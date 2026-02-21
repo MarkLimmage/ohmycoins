@@ -12,7 +12,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 
-matplotlib.use('Agg')  # Use non-interactive backend for server-side plotting
+matplotlib.use("Agg")  # Use non-interactive backend for server-side plotting
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -41,7 +41,9 @@ def generate_summary(
 
     # Header
     summary_lines.append("# Agent Workflow Summary\n")
-    summary_lines.append(f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+    summary_lines.append(
+        f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+    )
     summary_lines.append(f"**User Goal:** {user_goal}\n")
 
     # Data Analysis Summary
@@ -53,31 +55,47 @@ def generate_summary(
         if "record_count" in analysis_results:
             summary_lines.append(f"- **Records:** {analysis_results['record_count']}")
         if "insights" in analysis_results:
-            summary_lines.append(f"- **Insights:** {', '.join(analysis_results['insights'])}")
+            summary_lines.append(
+                f"- **Insights:** {', '.join(analysis_results['insights'])}"
+            )
 
         # Handle production format
         if "exploratory_analysis" in analysis_results:
             eda = analysis_results["exploratory_analysis"]
             if "price_eda" in eda:
                 price_eda = eda["price_eda"]
-                summary_lines.append(f"- **Records Analyzed:** {price_eda.get('record_count', 'N/A')}")
-                summary_lines.append(f"- **Date Range:** {price_eda.get('date_range', 'N/A')}")
-                summary_lines.append(f"- **Coins Analyzed:** {', '.join(price_eda.get('coins', []))}")
+                summary_lines.append(
+                    f"- **Records Analyzed:** {price_eda.get('record_count', 'N/A')}"
+                )
+                summary_lines.append(
+                    f"- **Date Range:** {price_eda.get('date_range', 'N/A')}"
+                )
+                summary_lines.append(
+                    f"- **Coins Analyzed:** {', '.join(price_eda.get('coins', []))}"
+                )
 
         if "technical_indicators" in analysis_results:
             summary_lines.append("- **Technical Analysis:** Completed")
             indicators = analysis_results["technical_indicators"]
             if isinstance(indicators, dict) and "columns" in indicators:
-                summary_lines.append(f"  - Indicators calculated: {len(indicators['columns'])}")
-            elif hasattr(indicators, 'columns'):
-                summary_lines.append(f"  - Indicators calculated: {len(indicators.columns)}")
+                summary_lines.append(
+                    f"  - Indicators calculated: {len(indicators['columns'])}"
+                )
+            elif hasattr(indicators, "columns"):
+                summary_lines.append(
+                    f"  - Indicators calculated: {len(indicators.columns)}"
+                )
             else:
                 summary_lines.append("  - Indicators calculated: Multiple")
 
         if "sentiment_analysis" in analysis_results:
             sentiment = analysis_results["sentiment_analysis"]
-            summary_lines.append(f"- **Sentiment Analysis:** {sentiment.get('overall_sentiment', 'N/A')}")
-            summary_lines.append(f"  - Average sentiment score: {sentiment.get('avg_sentiment', 0):.2f}")
+            summary_lines.append(
+                f"- **Sentiment Analysis:** {sentiment.get('overall_sentiment', 'N/A')}"
+            )
+            summary_lines.append(
+                f"  - Average sentiment score: {sentiment.get('avg_sentiment', 0):.2f}"
+            )
     else:
         summary_lines.append("- No analysis results available")
 
@@ -89,14 +107,20 @@ def generate_summary(
             model_count = len(model_results)
             summary_lines.append(f"- **Models Trained:** {model_count}")
             for model_name, model_info in model_results.items():
-                algorithm = model_info.get('algorithm', 'Unknown') if isinstance(model_info, dict) else 'Unknown'
+                algorithm = (
+                    model_info.get("algorithm", "Unknown")
+                    if isinstance(model_info, dict)
+                    else "Unknown"
+                )
                 summary_lines.append(f"  - {model_name} ({algorithm})")
         else:
             # Handle production format
             trained_models = model_results.get("trained_models", [])
             summary_lines.append(f"- **Models Trained:** {len(trained_models)}")
             for model in trained_models:
-                summary_lines.append(f"  - {model.get('name', 'Unnamed Model')} ({model.get('algorithm', 'Unknown')})")
+                summary_lines.append(
+                    f"  - {model.get('name', 'Unnamed Model')} ({model.get('algorithm', 'Unknown')})"
+                )
     else:
         summary_lines.append("- No models trained")
 
@@ -104,28 +128,47 @@ def generate_summary(
     summary_lines.append("\n## Model Evaluation\n")
     if evaluation_results:
         # Handle simple dict format from tests (dict of model_name: {accuracy: X, f1_score: Y})
-        if isinstance(evaluation_results, dict) and not evaluation_results.get("evaluations"):
+        if isinstance(evaluation_results, dict) and not evaluation_results.get(
+            "evaluations"
+        ):
             if evaluation_results:
                 # Find best model by accuracy
-                best_model_name = max(evaluation_results, key=lambda x: evaluation_results[x].get("accuracy", 0))
+                best_model_name = max(
+                    evaluation_results,
+                    key=lambda x: evaluation_results[x].get("accuracy", 0),
+                )
                 best_metrics = evaluation_results[best_model_name]
                 summary_lines.append(f"- **Best Model:** {best_model_name}")
-                summary_lines.append(f"  - Accuracy: {best_metrics.get('accuracy', 0):.4f}")
+                summary_lines.append(
+                    f"  - Accuracy: {best_metrics.get('accuracy', 0):.4f}"
+                )
                 if "f1_score" in best_metrics:
-                    summary_lines.append(f"  - F1 Score: {best_metrics.get('f1_score', 0):.4f}")
+                    summary_lines.append(
+                        f"  - F1 Score: {best_metrics.get('f1_score', 0):.4f}"
+                    )
                 if "precision" in best_metrics:
-                    summary_lines.append(f"  - Precision: {best_metrics.get('precision', 0):.4f}")
+                    summary_lines.append(
+                        f"  - Precision: {best_metrics.get('precision', 0):.4f}"
+                    )
                 if "recall" in best_metrics:
-                    summary_lines.append(f"  - Recall: {best_metrics.get('recall', 0):.4f}")
+                    summary_lines.append(
+                        f"  - Recall: {best_metrics.get('recall', 0):.4f}"
+                    )
         else:
             # Handle production format
             evaluations = evaluation_results.get("evaluations", [])
             if evaluations:
-                best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
-                summary_lines.append(f"- **Best Model:** {best_model.get('model_name', 'N/A')}")
+                best_model = max(
+                    evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0)
+                )
+                summary_lines.append(
+                    f"- **Best Model:** {best_model.get('model_name', 'N/A')}"
+                )
                 metrics = best_model.get("metrics", {})
                 summary_lines.append(f"  - Accuracy: {metrics.get('accuracy', 0):.4f}")
-                summary_lines.append(f"  - Precision: {metrics.get('precision', 0):.4f}")
+                summary_lines.append(
+                    f"  - Precision: {metrics.get('precision', 0):.4f}"
+                )
                 summary_lines.append(f"  - Recall: {metrics.get('recall', 0):.4f}")
                 summary_lines.append(f"  - F1 Score: {metrics.get('f1', 0):.4f}")
     else:
@@ -152,7 +195,9 @@ def create_comparison_report(
 
     # Header
     report_lines.append("# Model Comparison Report\n")
-    report_lines.append(f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+    report_lines.append(
+        f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+    )
 
     # Handle simple dict format from tests
     if evaluation_results and "evaluations" not in evaluation_results:
@@ -162,7 +207,9 @@ def create_comparison_report(
 
         # Check for single model
         if len(evaluation_results) == 1:
-            report_lines.append("\n**Note:** Only one model was trained. Comparison not applicable.\n")
+            report_lines.append(
+                "\n**Note:** Only one model was trained. Comparison not applicable.\n"
+            )
 
         # Create comparison table for test format
         report_lines.append("## Performance Comparison\n")
@@ -171,10 +218,16 @@ def create_comparison_report(
 
         for model_name in evaluation_results:
             metrics = evaluation_results[model_name]
-            algorithm = model_results.get(model_name, {}).get('algorithm', 'Unknown') if model_results else 'Unknown'
-            accuracy = metrics.get('accuracy', 0)
-            f1_score = metrics.get('f1_score', metrics.get('f1', 0))
-            report_lines.append(f"| {model_name} | {algorithm} | {accuracy:.4f} | {f1_score:.4f} |")
+            algorithm = (
+                model_results.get(model_name, {}).get("algorithm", "Unknown")
+                if model_results
+                else "Unknown"
+            )
+            accuracy = metrics.get("accuracy", 0)
+            f1_score = metrics.get("f1_score", metrics.get("f1", 0))
+            report_lines.append(
+                f"| {model_name} | {algorithm} | {accuracy:.4f} | {f1_score:.4f} |"
+            )
 
         return "\n".join(report_lines)
 
@@ -187,8 +240,12 @@ def create_comparison_report(
 
     # Create comparison table
     report_lines.append("## Performance Comparison\n")
-    report_lines.append("| Model | Algorithm | Accuracy | Precision | Recall | F1 Score |")
-    report_lines.append("|-------|-----------|----------|-----------|--------|----------|")
+    report_lines.append(
+        "| Model | Algorithm | Accuracy | Precision | Recall | F1 Score |"
+    )
+    report_lines.append(
+        "|-------|-----------|----------|-----------|--------|----------|"
+    )
 
     for eval_result in evaluations:
         model_name = eval_result.get("model_name", "Unknown")
@@ -218,7 +275,9 @@ def create_comparison_report(
     if "feature_importance" in best_model:
         report_lines.append("\n## Feature Importance (Top 10)\n")
         importance = best_model["feature_importance"]
-        sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[:10]
+        sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[
+            :10
+        ]
 
         for i, (feature, importance_val) in enumerate(sorted_features, 1):
             report_lines.append(f"{i}. {feature}: {importance_val:.4f}")
@@ -268,7 +327,9 @@ def generate_recommendations(
 
         # Check for data quality flags in test format
         if "data_quality" in analysis_results:
-            recommendations.append("⚠️  Data quality issues detected. Review and clean your data.")
+            recommendations.append(
+                "⚠️  Data quality issues detected. Review and clean your data."
+            )
 
         # Check quality_checks for quality_grade
         if "quality_checks" in analysis_results:
@@ -282,10 +343,18 @@ def generate_recommendations(
     # Check model performance
     if evaluation_results:
         # Handle test format (simple dict)
-        if isinstance(evaluation_results, dict) and not evaluation_results.get("evaluations"):
+        if isinstance(evaluation_results, dict) and not evaluation_results.get(
+            "evaluations"
+        ):
             if evaluation_results:
                 # Find best accuracy
-                best_accuracy = max((metrics.get("accuracy", 0) for metrics in evaluation_results.values()), default=0)
+                best_accuracy = max(
+                    (
+                        metrics.get("accuracy", 0)
+                        for metrics in evaluation_results.values()
+                    ),
+                    default=0,
+                )
 
                 if best_accuracy < 0.6:
                     recommendations.append(
@@ -304,7 +373,9 @@ def generate_recommendations(
             # Handle production format
             evaluations = evaluation_results.get("evaluations", [])
             if evaluations:
-                best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+                best_model = max(
+                    evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0)
+                )
                 accuracy = best_model.get("metrics", {}).get("accuracy", 0)
 
                 if accuracy < 0.6:
@@ -401,7 +472,7 @@ def create_visualizations(
 
     # Set style
     sns.set_style("whitegrid")
-    plt.rcParams['figure.figsize'] = (10, 6)
+    plt.rcParams["figure.figsize"] = (10, 6)
 
     # Initialize evaluations variable for later use
     evaluations = []
@@ -413,7 +484,7 @@ def create_visualizations(
             "file_path": str(plot_path),
             "filename": plot_path.name,
             "title": title,
-            "type": "visualization"
+            "type": "visualization",
         }
 
     # 1. Model Performance Comparison
@@ -426,16 +497,18 @@ def create_visualizations(
             accuracies = [evaluation_results[m].get("accuracy", 0) for m in models]
 
             ax.bar(models, accuracies)
-            ax.set_xlabel('Model')
-            ax.set_ylabel('Accuracy')
-            ax.set_title('Model Performance Comparison')
+            ax.set_xlabel("Model")
+            ax.set_ylabel("Accuracy")
+            ax.set_title("Model Performance Comparison")
             ax.set_ylim([0, 1])
 
             plt.tight_layout()
             plot_path = output_dir / "model_comparison.png"
-            plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+            plt.savefig(plot_path, dpi=100, bbox_inches="tight")
             plt.close()
-            plots.append(create_plot_metadata(plot_path, "Model Performance Comparison"))
+            plots.append(
+                create_plot_metadata(plot_path, "Model Performance Comparison")
+            )
     else:
         # Handle production format
         evaluations = evaluation_results.get("evaluations", [])
@@ -453,25 +526,29 @@ def create_visualizations(
                 values = [e.get("metrics", {}).get(metric, 0) for e in evaluations]
                 ax.bar(x + i * width, values, width, label=metric.capitalize())
 
-            ax.set_xlabel('Model')
-            ax.set_ylabel('Score')
-            ax.set_title('Model Performance Comparison')
+            ax.set_xlabel("Model")
+            ax.set_ylabel("Score")
+            ax.set_title("Model Performance Comparison")
             ax.set_xticks(x + width * 1.5)
-            ax.set_xticklabels(models, rotation=45, ha='right')
+            ax.set_xticklabels(models, rotation=45, ha="right")
             ax.legend()
             ax.set_ylim([0, 1])
 
             plt.tight_layout()
             plot_path = output_dir / "model_comparison.png"
-            plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+            plt.savefig(plot_path, dpi=100, bbox_inches="tight")
             plt.close()
-            plots.append(create_plot_metadata(plot_path, "Model Performance Comparison"))
+            plots.append(
+                create_plot_metadata(plot_path, "Model Performance Comparison")
+            )
 
     # 2. Feature Importance
     # Handle test format
     if analysis_results and "feature_importance" in analysis_results:
         importance = analysis_results["feature_importance"]
-        sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[:10]
+        sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[
+            :10
+        ]
 
         features, importance_values = zip(*sorted_features, strict=False)
 
@@ -479,23 +556,27 @@ def create_visualizations(
         ax.barh(range(len(features)), importance_values)
         ax.set_yticks(range(len(features)))
         ax.set_yticklabels(features)
-        ax.set_xlabel('Importance')
-        ax.set_title('Feature Importance')
+        ax.set_xlabel("Importance")
+        ax.set_title("Feature Importance")
         ax.invert_yaxis()
 
         plt.tight_layout()
         plot_path = output_dir / "feature_importance.png"
-        plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+        plt.savefig(plot_path, dpi=100, bbox_inches="tight")
         plt.close()
         plots.append(create_plot_metadata(plot_path, "Feature Importance"))
     elif evaluation_results.get("evaluations"):
         # Handle production format
         evaluations = evaluation_results.get("evaluations", [])
         if evaluations:
-            best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+            best_model = max(
+                evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0)
+            )
             if "feature_importance" in best_model:
                 importance = best_model["feature_importance"]
-                sorted_features = sorted(importance.items(), key=lambda x: x[1], reverse=True)[:10]
+                sorted_features = sorted(
+                    importance.items(), key=lambda x: x[1], reverse=True
+                )[:10]
 
                 features, importance_values = zip(*sorted_features, strict=False)
 
@@ -503,56 +584,80 @@ def create_visualizations(
                 ax.barh(range(len(features)), importance_values)
                 ax.set_yticks(range(len(features)))
                 ax.set_yticklabels(features)
-                ax.set_xlabel('Importance')
-                ax.set_title('Top 10 Feature Importance')
+                ax.set_xlabel("Importance")
+                ax.set_title("Top 10 Feature Importance")
                 ax.invert_yaxis()
 
                 plt.tight_layout()
                 plot_path = output_dir / "feature_importance.png"
-                plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+                plt.savefig(plot_path, dpi=100, bbox_inches="tight")
                 plt.close()
                 plots.append(create_plot_metadata(plot_path, "Feature Importance"))
 
     # 3. Technical Indicators (if available)
     indicators_df = analysis_results.get("technical_indicators")
-    if indicators_df is not None and isinstance(indicators_df, pd.DataFrame) and len(indicators_df) > 0:
+    if (
+        indicators_df is not None
+        and isinstance(indicators_df, pd.DataFrame)
+        and len(indicators_df) > 0
+    ):
         fig, axes = plt.subplots(2, 1, figsize=(12, 8))
 
         # Price and moving averages
         if "timestamp" in indicators_df.columns and "close" in indicators_df.columns:
             ax = axes[0]
-            ax.plot(indicators_df["timestamp"], indicators_df["close"], label="Price", linewidth=2)
+            ax.plot(
+                indicators_df["timestamp"],
+                indicators_df["close"],
+                label="Price",
+                linewidth=2,
+            )
 
             if "sma_20" in indicators_df.columns:
-                ax.plot(indicators_df["timestamp"], indicators_df["sma_20"],
-                       label="SMA 20", alpha=0.7)
+                ax.plot(
+                    indicators_df["timestamp"],
+                    indicators_df["sma_20"],
+                    label="SMA 20",
+                    alpha=0.7,
+                )
             if "ema_20" in indicators_df.columns:
-                ax.plot(indicators_df["timestamp"], indicators_df["ema_20"],
-                       label="EMA 20", alpha=0.7)
+                ax.plot(
+                    indicators_df["timestamp"],
+                    indicators_df["ema_20"],
+                    label="EMA 20",
+                    alpha=0.7,
+                )
 
-            ax.set_xlabel('Date')
-            ax.set_ylabel('Price')
-            ax.set_title('Price and Moving Averages')
+            ax.set_xlabel("Date")
+            ax.set_ylabel("Price")
+            ax.set_title("Price and Moving Averages")
             ax.legend()
             ax.grid(True, alpha=0.3)
 
             # RSI
             ax = axes[1]
             if "rsi" in indicators_df.columns:
-                ax.plot(indicators_df["timestamp"], indicators_df["rsi"],
-                       label="RSI", color='purple', linewidth=2)
-                ax.axhline(y=70, color='r', linestyle='--', alpha=0.5, label='Overbought')
-                ax.axhline(y=30, color='g', linestyle='--', alpha=0.5, label='Oversold')
-                ax.set_xlabel('Date')
-                ax.set_ylabel('RSI')
-                ax.set_title('Relative Strength Index (RSI)')
+                ax.plot(
+                    indicators_df["timestamp"],
+                    indicators_df["rsi"],
+                    label="RSI",
+                    color="purple",
+                    linewidth=2,
+                )
+                ax.axhline(
+                    y=70, color="r", linestyle="--", alpha=0.5, label="Overbought"
+                )
+                ax.axhline(y=30, color="g", linestyle="--", alpha=0.5, label="Oversold")
+                ax.set_xlabel("Date")
+                ax.set_ylabel("RSI")
+                ax.set_title("Relative Strength Index (RSI)")
                 ax.legend()
                 ax.grid(True, alpha=0.3)
                 ax.set_ylim([0, 100])
 
             plt.tight_layout()
             plot_path = output_dir / "technical_indicators.png"
-            plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+            plt.savefig(plot_path, dpi=100, bbox_inches="tight")
             plt.close()
             plots.append(create_plot_metadata(plot_path, "Technical Indicators"))
 
@@ -565,31 +670,35 @@ def create_visualizations(
                 cm = np.array(metrics["confusion_matrix"])
 
                 fig, ax = plt.subplots()
-                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-                ax.set_xlabel('Predicted')
-                ax.set_ylabel('Actual')
-                ax.set_title(f'Confusion Matrix - {model_name}')
+                sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_xlabel("Predicted")
+                ax.set_ylabel("Actual")
+                ax.set_title(f"Confusion Matrix - {model_name}")
 
                 plt.tight_layout()
                 plot_path = output_dir / f"confusion_matrix_{model_name}.png"
-                plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+                plt.savefig(plot_path, dpi=100, bbox_inches="tight")
                 plt.close()
-                plots.append(create_plot_metadata(plot_path, f"Confusion Matrix - {model_name}"))
+                plots.append(
+                    create_plot_metadata(plot_path, f"Confusion Matrix - {model_name}")
+                )
                 break  # Only create one confusion matrix plot
     elif evaluations:
-        best_model = max(evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0))
+        best_model = max(
+            evaluations, key=lambda x: x.get("metrics", {}).get("accuracy", 0)
+        )
         if "confusion_matrix" in best_model:
             cm = np.array(best_model["confusion_matrix"])
 
             fig, ax = plt.subplots()
-            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-            ax.set_xlabel('Predicted')
-            ax.set_ylabel('Actual')
-            ax.set_title('Confusion Matrix')
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+            ax.set_xlabel("Predicted")
+            ax.set_ylabel("Actual")
+            ax.set_title("Confusion Matrix")
 
             plt.tight_layout()
             plot_path = output_dir / "confusion_matrix.png"
-            plt.savefig(plot_path, dpi=100, bbox_inches='tight')
+            plt.savefig(plot_path, dpi=100, bbox_inches="tight")
             plt.close()
             plots.append(create_plot_metadata(plot_path, "Confusion Matrix"))
 

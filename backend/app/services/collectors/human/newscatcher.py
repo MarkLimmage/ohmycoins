@@ -112,8 +112,7 @@ class NewscatcherCollector(APICollector):
                 sentiment = None
                 if article.get("sentiment"):
                     sentiment = self.SENTIMENT_MAP.get(
-                        article["sentiment"].lower(),
-                        "neutral"
+                        article["sentiment"].lower(), "neutral"
                     )
 
                 # Parse publication timestamp
@@ -124,7 +123,9 @@ class NewscatcherCollector(APICollector):
                             article["published_date"].replace("Z", "+00:00")
                         )
                     except Exception as e:
-                        logger.debug(f"{self.name}: Failed to parse timestamp: {str(e)}")
+                        logger.debug(
+                            f"{self.name}: Failed to parse timestamp: {str(e)}"
+                        )
 
                 data_point = {
                     "title": article.get("title", ""),
@@ -170,7 +171,9 @@ class NewscatcherCollector(APICollector):
                     continue
 
                 if not item.get("url"):
-                    logger.warning(f"{self.name}: Missing URL for '{item['title'][:50]}...', skipping")
+                    logger.warning(
+                        f"{self.name}: Missing URL for '{item['title'][:50]}...', skipping"
+                    )
                     continue
 
                 validated.append(item)

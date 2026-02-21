@@ -6,6 +6,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 async def send_slack_alert(message: str) -> bool:
     """
     Send an alert to Slack via webhook.

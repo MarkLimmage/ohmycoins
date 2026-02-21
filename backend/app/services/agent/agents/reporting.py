@@ -39,7 +39,7 @@ class ReportingAgent(BaseAgent):
         """
         super().__init__(
             name="ReportingAgent",
-            description="Generates comprehensive reports and visualizations from workflow results"
+            description="Generates comprehensive reports and visualizations from workflow results",
         )
         self.artifacts_dir = Path(artifacts_dir)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -65,13 +65,19 @@ class ReportingAgent(BaseAgent):
 
             # Check if any result keys are present (even if empty)
             # If none of the keys exist at all, we can't generate a report
-            if analysis_results is None and model_results is None and evaluation_results is None:
+            if (
+                analysis_results is None
+                and model_results is None
+                and evaluation_results is None
+            ):
                 raise ValueError("No results available for report generation")
 
             # Default empty dicts for missing results (but at least one key was present)
             analysis_results = analysis_results if analysis_results is not None else {}
             model_results = model_results if model_results is not None else {}
-            evaluation_results = evaluation_results if evaluation_results is not None else {}
+            evaluation_results = (
+                evaluation_results if evaluation_results is not None else {}
+            )
 
             # Create session-specific artifact directory
             session_artifacts_dir = self.artifacts_dir / session_id
@@ -120,7 +126,9 @@ class ReportingAgent(BaseAgent):
 
             # Save recommendations to file
             recommendations_path = session_artifacts_dir / "recommendations.md"
-            recommendations_text = "# Recommendations\n\n" + "\n\n".join(reporting_results["recommendations"])
+            recommendations_text = "# Recommendations\n\n" + "\n\n".join(
+                reporting_results["recommendations"]
+            )
             recommendations_path.write_text(recommendations_text)
 
             # 4. Create visualizations
@@ -135,10 +143,14 @@ class ReportingAgent(BaseAgent):
             # New format is list[dict], old format is dict[str, str]
             if isinstance(visualizations, list):
                 reporting_results["visualizations"] = {
-                    viz.get("title", viz.get("filename", f"viz_{i}")): viz.get("file_path", "")
+                    viz.get("title", viz.get("filename", f"viz_{i}")): viz.get(
+                        "file_path", ""
+                    )
                     for i, viz in enumerate(visualizations)
                 }
-                reporting_results["visualizations_list"] = visualizations  # Keep new format too
+                reporting_results["visualizations_list"] = (
+                    visualizations  # Keep new format too
+                )
             else:
                 reporting_results["visualizations"] = visualizations
 
@@ -161,24 +173,30 @@ class ReportingAgent(BaseAgent):
             state["report_generated"] = True  # Backward compatibility
             # Add backward compatible field names
             report_data_compat = reporting_results.copy()
-            report_data_compat["comparison"] = reporting_results.get("comparison_report")  # Alias
+            report_data_compat["comparison"] = reporting_results.get(
+                "comparison_report"
+            )  # Alias
             # Use the list format for visualizations in report_data
             if "visualizations_list" in reporting_results:
-                report_data_compat["visualizations"] = reporting_results["visualizations_list"]
+                report_data_compat["visualizations"] = reporting_results[
+                    "visualizations_list"
+                ]
             state["report_data"] = report_data_compat  # Backward compatibility
             state["error"] = None
 
             # Add message for user
             if "messages" not in state:
                 state["messages"] = []
-            state["messages"].append({
-                "role": "agent",
-                "agent_name": self.name,
-                "content": f"Report generation completed. Generated summary, comparison report, "
-                          f"{len(reporting_results['recommendations'])} recommendations, and "
-                          f"{len(reporting_results['visualizations'])} visualizations.",
-                "timestamp": datetime.utcnow().isoformat(),
-            })
+            state["messages"].append(
+                {
+                    "role": "agent",
+                    "agent_name": self.name,
+                    "content": f"Report generation completed. Generated summary, comparison report, "
+                    f"{len(reporting_results['recommendations'])} recommendations, and "
+                    f"{len(reporting_results['visualizations'])} visualizations.",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
 
             return state
 
@@ -190,12 +208,14 @@ class ReportingAgent(BaseAgent):
 
             if "messages" not in state:
                 state["messages"] = []
-            state["messages"].append({
-                "role": "agent",
-                "agent_name": self.name,
-                "content": f"Error generating report: {str(e)}",
-                "timestamp": datetime.utcnow().isoformat(),
-            })
+            state["messages"].append(
+                {
+                    "role": "agent",
+                    "agent_name": self.name,
+                    "content": f"Error generating report: {str(e)}",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+            )
 
             return state
 
@@ -222,7 +242,9 @@ class ReportingAgent(BaseAgent):
 
         # Title
         report_lines.append("# Oh My Coins - Agentic Workflow Complete Report")
-        report_lines.append(f"\n**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+        report_lines.append(
+            f"\n**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+        )
         report_lines.append("---\n")
 
         # Summary
