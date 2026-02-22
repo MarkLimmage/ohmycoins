@@ -1,15 +1,15 @@
-# Current Sprint: 2.34 (Planning)
+# Current Sprint: 2.35 (Planning)
 
 **Status**: PLANNING
-**Objective**: The 4 Ledgers (Collector Expansion)
-**Previous Sprint**: 2.33 (Orchestration Engine - COMPLETED)
+**Objective**: Data Integrity & Dashboard Polish
+**Previous Sprint**: 2.34 (The 4 Ledgers - COMPLETED)
 
 ## Status
-- **Orchestration**: Database-driven scheduling is live.
-- **UI**: Manual triggers and schedule editing are available.
+- **Core Collection**: Functional (Tracks A/B/C/D delivered).
+- **Data Quality**: Unverified.
+- **Dashboard**: Basic (Needs polish).
 
 ## Tasks
-1. [ ] **Track A (Backend)**: Implement 'Chain-Walker' (Glass) and 'RSS Scraper' (Human) collectors.
-2. [ ] **Track B (Backend)**: Implement 'Calendar Fetcher' (Catalyst) and 'CCXT Plugin' (Exchange).
-3. [ ] **Track C (Frontend)**: Build 'System Health' dashboard and 'Events Ingested' charts.
+1. [ ] **Track A (Backend)**: Implement Data Validation & Retry Logic.
+2. [ ] **Track B (Frontend)**: Implement Error Modal & Auto-Refresh.
 
