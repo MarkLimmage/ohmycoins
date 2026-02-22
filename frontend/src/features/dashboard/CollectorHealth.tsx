@@ -8,11 +8,6 @@ import {
   CardBody,
   Heading,
   Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   HStack,
   VStack,
   Spinner,
@@ -127,30 +122,30 @@ export const CollectorHealth = () => {
         <Box>
           <Heading size="md" mb={4}>Recent Activity</Heading>
           <Card variant="outline">
-            <Table variant="simple" size="sm">
-              <Thead>
-                <Tr>
-                  <Th>Timestamp</Th>
-                  <Th>Collector</Th>
-                  <Th>Status</Th>
-                  <Th isNumeric>Items</Th>
-                  <Th isNumeric>Duration</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
+            <Table.Root variant="simple" size="sm">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeader>Timestamp</Table.ColumnHeader>
+                  <Table.ColumnHeader>Collector</Table.ColumnHeader>
+                  <Table.ColumnHeader>Status</Table.ColumnHeader>
+                  <Table.ColumnHeader isNumeric>Items</Table.ColumnHeader>
+                  <Table.ColumnHeader isNumeric>Duration</Table.ColumnHeader>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
                 {MOCK_ACTIVITY_LOGS.map((log) => (
-                  <Tr key={log.id}>
-                    <Td>{log.timestamp}</Td>
-                    <Td>{log.collector}</Td>
-                    <Td>
+                  <Table.Row key={log.id}>
+                    <Table.Cell>{log.timestamp}</Table.Cell>
+                    <Table.Cell>{log.collector}</Table.Cell>
+                    <Table.Cell>
                       <Badge colorScheme={log.status === "SUCCESS" ? "green" : "red"}>{log.status}</Badge>
-                    </Td>
-                    <Td isNumeric>{log.items}</Td>
-                    <Td isNumeric>{log.duration}</Td>
-                  </Tr>
+                    </Table.Cell>
+                    <Table.Cell isNumeric>{log.items}</Table.Cell>
+                    <Table.Cell isNumeric>{log.duration}</Table.Cell>
+                  </Table.Row>
                 ))}
-              </Tbody>
-            </Table>
+              </Table.Body>
+            </Table.Root>
           </Card>
         </Box>
 
