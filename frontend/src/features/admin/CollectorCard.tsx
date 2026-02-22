@@ -8,7 +8,7 @@ import {
   IconButton,
   Stat
 } from "@chakra-ui/react"
-import { FiPlay, FiPause, FiTrash2, FiEdit } from "react-icons/fi"
+import { FiPlay, FiPause, FiTrash2, FiEdit, FiZap } from "react-icons/fi"
 import { Tooltip } from "@/components/ui/tooltip"
 import { LineChart, Line, ResponsiveContainer } from "recharts"
 import { CollectorInstance } from "./types"
@@ -19,10 +19,11 @@ interface CollectorCardProps {
   pluginName: string
   onEdit: () => void
   onToggle: () => void
+  onRun: () => void
   onDelete: () => void
 }
 
-export const CollectorCard = ({ instance, pluginName, onEdit, onToggle, onDelete }: CollectorCardProps) => {
+export const CollectorCard = ({ instance, pluginName, onEdit, onToggle, onRun, onDelete }: CollectorCardProps) => {
   const { data: stats } = useCollectorStats(instance.id)
 
   const latestCount = stats && stats.length > 0 ? stats[stats.length - 1].count : 0
@@ -34,6 +35,7 @@ export const CollectorCard = ({ instance, pluginName, onEdit, onToggle, onDelete
            <Box>
              <Heading size="sm" mb={1}>{instance.name}</Heading>
              <Text fontSize="xs" color="gray.500">{pluginName}</Text>
+             <Text fontSize="xs" fontFamily="monospace" color="gray.400">{instance.schedule_cron}</Text>
            </Box>
            <Badge colorScheme={instance.status === 'success' ? 'green' : instance.status === 'failed' ? 'red' : 'gray'}>
              {instance.status}
@@ -66,6 +68,18 @@ export const CollectorCard = ({ instance, pluginName, onEdit, onToggle, onDelete
             </Stat.Root>
 
             <Flex gap={1}>
+                <Tooltip content="Run Now">
+                  <IconButton 
+                    aria-label="Run Manual Trigger"
+                    size="sm" 
+                    variant="ghost"
+                    colorScheme="blue"
+                    onClick={onRun}
+                  >
+                    <FiZap />
+                  </IconButton>
+                </Tooltip>
+
                 <Tooltip content="Edit">
                   <IconButton 
                     aria-label="Edit"
