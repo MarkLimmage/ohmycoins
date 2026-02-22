@@ -49,6 +49,32 @@ To prevent port conflicts and state leakage between agents running simultaneousl
 
 ## 📝 Dockmaster Instructions: Context Injection
 
+### 1. Workspace Provisioning (Anti-Confusion Protocol)
+**CRITICAL**: Do not rely on Git alone. Developer agents need context files physically present in their worktree.
+
+**Step-by-Step Provisioning Checklist**:
+1.  **Path Hygiene**:
+    *   Target: `../sprint-[ID]/track-[ID]` (e.g., `../sprint-2.33/track-a`).
+    *   **verify**: Ensure you are NOT creating a nested path like `.../track-a/sprint-2.33/...`.
+    *   **Clean**: `rm -rf` the target before `git worktree add` to ensure no stale artifacts.
+
+2.  **Asset Replication (The "Lost Dev" Fix)**:
+    *   Immediately after creating the worktree, **COPY** these files from the root to the new `track-` folder:
+        *   `CURRENT_SPRINT.md`
+        *   `ROADMAP.md`
+        *   `AGENT_INSTRUCTIONS.md`
+    *   *Why?* Git worktrees do not inherit untracked/ignored documentation files, leaving agents blind.
+
+3.  **Bootstrap Documentation**:
+    *   Create a `README.md` *inside the track folder* explaining:
+        *   **Port**: The specific port for this track.
+        *   **Role**: Backend vs Frontend vs DevOps.
+    *   Initialize `LOGBOOK.md` with:
+        *   **Intent**: "Initialize workspace..."
+        *   **Context**: "You are working on [FEATURE] in [TRACK]."
+
+### 2. Prompt Context Injection
+
 When initializing a sub-agent, the Dockmaster **MUST** inject the following generic template, replacing `[PLACEHOLDERS]` with the calculated values for that track.
 
 ### Generic Context Template
@@ -78,6 +104,14 @@ MISSION:
 
 CONSTRAINTS:
   - **Environment**: NO LOCAL VENVS. Testing must occur within the project's Docker containers (`docker compose run backend pytest`).
+
+### 3. Failure Recovery
+
+If a developer agent reports "missing files" or "wrong directory":
+1.  **Stop**: Do not argue.
+2.  **Verify**: Run `ls -R` on the reported path.
+3.  **Nuke & Pave**: If the structure is messy, delete the worktree and re-provision using the **Workspace Provisioning** checklist above.
+
   - **Type Safety**: New code must pass `mypy --strict`.
   - **Security**: No hardcoded secrets. Use environment variables.
   - **Infrastructure**: Do NOT edit root `docker-compose.yml`. Use `docker-compose.override.yml`.

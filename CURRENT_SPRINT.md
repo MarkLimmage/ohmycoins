@@ -9,8 +9,10 @@
 - **Docker DX**: Complete (Fix merged to main)
 - **Visualization**: Unit Tests merged to main
 - **Governance**: Journaling Protocol established
+- **Track A (Backend)**: Database Scheduler Implemented & Merged
+- **Track B (Frontend)**: UI Scheduler Implemented & Merged
 
 ## Tasks
-1. [ ] **Track A (Backend)**: Refactor Orchestrator to Database.
-2. [ ] **Track B (Frontend)**: Implement UI Scheduling and Manual Run.
+1. [x] **Track A (Backend)**: Refactor Orchestrator to Database.
+2. [x] **Track B (Frontend)**: Implement UI Scheduling and Manual Run.
 
