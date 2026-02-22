@@ -37,6 +37,7 @@ const mockInstance: CollectorInstance = {
   plugin_id: 'test-plugin',
   status: 'running',
   config: {},
+  schedule_cron: '*/15 * * * *',
   last_run: '2024-01-01T12:00:00Z',
   next_run: null,
   is_active: true,
@@ -48,6 +49,7 @@ describe('CollectorCard', () => {
   const mockOnEdit = vi.fn()
   const mockOnToggle = vi.fn()
   const mockOnDelete = vi.fn()
+  const mockOnRun = vi.fn()
 
   afterEach(() => {
     cleanup()
@@ -72,6 +74,7 @@ describe('CollectorCard', () => {
           pluginName="Test Plugin"
           onEdit={mockOnEdit}
           onToggle={mockOnToggle}
+          onRun={mockOnRun}
           onDelete={mockOnDelete}
         />
     )
@@ -89,6 +92,7 @@ describe('CollectorCard', () => {
           pluginName="Test Plugin"
           onEdit={mockOnEdit}
           onToggle={mockOnToggle}
+          onRun={mockOnRun}
           onDelete={mockOnDelete}
         />
     )
@@ -106,6 +110,7 @@ describe('CollectorCard', () => {
           pluginName="Test Plugin"
           onEdit={mockOnEdit}
           onToggle={mockOnToggle}
+          onRun={mockOnRun}
           onDelete={mockOnDelete}
         />
     )
@@ -122,6 +127,7 @@ describe('CollectorCard', () => {
           pluginName="Test Plugin"
           onEdit={mockOnEdit}
           onToggle={mockOnToggle}
+          onRun={mockOnRun}
           onDelete={mockOnDelete}
         />
     )
@@ -138,6 +144,7 @@ describe('CollectorCard', () => {
           pluginName="Test Plugin"
           onEdit={mockOnEdit}
           onToggle={mockOnToggle}
+          onRun={mockOnRun}
           onDelete={mockOnDelete}
         />
     )
@@ -145,5 +152,22 @@ describe('CollectorCard', () => {
     const deleteButton = screen.getByLabelText('Delete')
     fireEvent.click(deleteButton)
     expect(mockOnDelete).toHaveBeenCalled()
+  })
+
+  it('calls onRun when run button is clicked', () => {
+    renderWithChakra(
+        <CollectorCard 
+          instance={mockInstance} 
+          pluginName="Test Plugin"
+          onEdit={mockOnEdit}
+          onToggle={mockOnToggle}
+          onRun={mockOnRun}
+          onDelete={mockOnDelete}
+        />
+    )
+    
+    const runButton = screen.getByLabelText('Run Manual Trigger')
+    fireEvent.click(runButton)
+    expect(mockOnRun).toHaveBeenCalled()
   })
 })
