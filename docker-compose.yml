@@ -10,7 +10,7 @@ services:
       - --log.level=INFO
     ports:
       - "${PROXY_PORT:-8001}:80"
-      - "${PROXY_DASHBOARD_PORT:-8090}:8080"
+      - "${PROXY_DASHBOARD_PORT:-8099}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
