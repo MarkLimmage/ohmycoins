@@ -15,7 +15,7 @@ import { useState } from "react"
 import { DialogBody, DialogContent, DialogHeader, DialogRoot, DialogTrigger, DialogCloseTrigger } from "@/components/ui/dialog"
 
 export const CollectorDashboard = () => {
-  const { instances, plugins, deleteInstance, toggleInstance } = useCollectors()
+  const { instances, plugins, deleteInstance, toggleInstance, runCollector } = useCollectors()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedInstance, setSelectedInstance] = useState<CollectorInstance | undefined>(undefined)
 
@@ -31,6 +31,10 @@ export const CollectorDashboard = () => {
 
   const handleToggle = (instance: CollectorInstance) => {
     toggleInstance.mutate({ id: instance.id, is_active: !instance.is_active })
+  }
+
+  const handleRun = (instance: CollectorInstance) => {
+    runCollector.mutate(instance.id)
   }
 
   const handleEdit = (instance: CollectorInstance) => {
@@ -79,6 +83,7 @@ export const CollectorDashboard = () => {
                     pluginName={plugins.data?.find(p => p.id === instance.plugin_id)?.name || instance.plugin_id}
                     onEdit={() => handleEdit(instance)}
                     onToggle={() => handleToggle(instance)}
+                    onRun={() => handleRun(instance)}
                     onDelete={() => handleDelete(instance.id)}
                 />
             ))}

@@ -26,8 +26,11 @@ export const CollectorPluginForm = ({ plugins, initialValues, onCancel, onSucces
     defaultValues: initialValues ? {
       name: initialValues.name,
       plugin_id: initialValues.plugin_id,
-      config: initialValues.config
-    } : undefined
+      config: initialValues.config,
+      schedule_cron: initialValues.schedule_cron
+    } : {
+      schedule_cron: "*/15 * * * *"
+    }
   })
   const selectedPluginId = watch("plugin_id")
   
@@ -88,6 +91,11 @@ export const CollectorPluginForm = ({ plugins, initialValues, onCancel, onSucces
               </SelectRoot>
             )}
           />
+        </Field>
+
+        <Field label="Schedule (Cron)">
+            <Input {...register("schedule_cron", { required: true })} placeholder="*/15 * * * *" />
+            <Text fontSize="xs" color="gray.500">Standard cron expression (e.g. */15 * * * *)</Text>
         </Field>
 
         {selectedPlugin && (

@@ -10,6 +10,7 @@ const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
     plugin_id: apiCollector.plugin_name, // Map backend 'plugin_name' to frontend 'plugin_id'
     status: (apiCollector.status as CollectorStatus) || "idle",
     config: apiCollector.config || {},
+    schedule_cron: apiCollector.schedule_cron || "*/15 * * * *", // Default to 15m if missing
     last_run: apiCollector.last_run_at || null,
     next_run: null, // Not provided by API yet
     is_active: apiCollector.is_enabled,
@@ -52,7 +53,7 @@ export const useCollectors = () => {
           plugin_name: data.plugin_id,
           config: data.config,
           is_enabled: data.is_active ?? false,
-          schedule_cron: "*/15 * * * *"
+          schedule_cron: data.schedule_cron
         }
       })
     },
@@ -75,6 +76,7 @@ export const useCollectors = () => {
           plugin_name: data.plugin_id!,
           config: data.config,
           is_enabled: data.is_active,
+          schedule_cron: data.schedule_cron
         }
       })
     },
@@ -94,19 +96,30 @@ export const useCollectors = () => {
       queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
     }
   })
-// is_active is used for optimistic updates or if the API supports setting state directly.
-      // Currently the toggle endpoint just flips the state.
-      
+
   // Toggle Instance
   const toggleMutation = useMutation({
-    mutationFn: async ({ id }: { id: string; is_active: boolean }) => {
-      return await CollectorsService.toggleInstance({
-        id: Number(id)
-      })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
-    }
+      mutationFn: async ({ id, is_active }: { id: string, is_active: boolean }) => {
+          return await CollectorsService.toggleInstance({
+              id: Number(id)
+          })
+      },
+      onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
+      }
+  })
+
+  // Trigger Instance (Run Now)
+  const runMutation = useMutation({
+      mutationFn: async (id: string) => {
+          return await CollectorsService.triggerInstance({
+              id: Number(id)
+          })
+      },
+      onSuccess: () => {
+        // We might want to show a toast here
+        console.log("Collector triggered successfully")
+      }
   })
 
   return {
@@ -115,7 +128,8 @@ export const useCollectors = () => {
     createInstance: createMutation,
     updateInstance: updateMutation,
     deleteInstance: deleteMutation,
-    toggleInstance: toggleMutation
+    toggleInstance: toggleMutation,
+    runCollector: runMutation
   }
 }
 

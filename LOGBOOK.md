@@ -1,26 +1,31 @@
-## [2026-02-21T13:41:35Z] - INITIALIZATION
-**Intent**: Initialize workspace for Sprint 2.32 - Track B.
+## [INITIALIZATION] - Sprint 2.33 Track B
+**Intent**: Initialize workspace for Sprint 2.33 - Track B (Frontend Scheduler UI).
 **Status**: IN_PROGRESS
-**Monologue**: Environment provisioned. Dependencies installed. Standing by for Docker DX fix from Track D.
-**Blockers**: Waiting for Track D to enable 'npm run test' in container.
-\n## [2026-02-21T14:10:00Z] - DOCKER FIX VERIFIED & TESTS ADDED
-**Intent**: Verify Docker fix and implement CollectorCard tests.
+**Context**: You are working on the Frontend Scheduler UI in `track-b`.
+**Sprint Goal**: Implement the Scheduler Management Interface in the React frontend.
+**Key Files**:
+- `frontend/src/routes/_authenticated/scheduler.tsx` (create this)
+- `frontend/src/components/Scheduler/...`
+- `CURRENT_SPRINT.md` (sprint details)
+- `ROADMAP.md` (project vision)
+## [2026-02-22] - Environment Verification
+**Intent**: Ensuring dependencies are installed and environment is stable before feature implementation.
+**Status**: IN_PROGRESS
+**Monologue**: 
+*   Installed npm dependencies successfully.
+*   Starting Docker containers to verify the stack.
+*   Checking for `CollectorCard.tsx` as per `TRACK_B_INSTRUCTIONS.md`.
+**Blockers**: None currently.
+## [2026-02-22] - Feature Implementation: UI Scheduling & Manual Run
+**Intent**: Implement the UI components for editing schedules and triggering manual runs.
 **Status**: COMPLETED
 **Monologue**: 
-- Merged Docker DX fixes from Track D.
-- Verified 'docker compose run --rm frontend npm run test:unit' works.
-- Added comprehensive tests for CollectorCard including mocking Recharts and Chakra Provider setup.
-- Resolved multiple test environment issues:
-  1. Missing jest-dom import (added).
-  2. Missing jsdom environment (added via pragma).
-  3. Missing Chakra Provider (wrapped in test helper).
-  4. Cleanup of DOM elements (added manual cleanup in afterEach).
-- All tests passing. Visualization verified via component rendering assertions.
-**Reflection**: Testing React components in a containerized environment requires careful setup of test environment and cleanup.
-
-
-## Sprint 2.32 Closing Summary
-- **Docker DX**: Frontend container now supports 'dev' target with 'npm' included.
-- **UI Verification**: 'CollectorCard' tests merged.
-- **Status**: Successfully Closed. Ready for Sprint 2.33 planning.
-
+*   **Dependency Fix**: `npm install` executed successfully to resolve missing modules.
+*   **Types**: Updated `CollectorInstance` to include `schedule_cron`.
+*   **Hooks**: Updated `useCollectors` to map `schedule_cron`, handle scheduling in `create`/`update` mutations, and added `runCollector` mutation using `CollectorsService.triggerInstance`.
+*   **UI Components**:
+    *   Updated `CollectorCard.tsx` to display schedule and add a "Run Now" button.
+    *   Updated `CollectorForm.tsx` to include `schedule_cron` input field.
+    *   Updated `CollectorDashboard.tsx` to wire up the "Run Now" action.
+*   **Verification**: Ran `npm run test` and all tests passed (including `CollectorCard.test.tsx` and `App.test.tsx`).
+**Blockers**: None. Ready for integration testing with backend.

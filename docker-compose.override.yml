@@ -1,11 +1,15 @@
 services:
   proxy:
     ports:
-      - "8080:80"
+      - "3001:80"
   backend:
+    volumes:
+      - /home/mark/omc/logs/hub:/var/log/omc-agents
     environment:
       - POSTGRES_PORT=5432
   celery_worker:
+    volumes:
+      - /home/mark/omc/logs/hub:/var/log/omc-agents
     environment:
       - POSTGRES_PORT=5432
   prestart:
@@ -13,7 +17,9 @@ services:
       - POSTGRES_PORT=5432
   frontend:
     build:
+      context: ./frontend
       target: dev
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    command: npm run dev
