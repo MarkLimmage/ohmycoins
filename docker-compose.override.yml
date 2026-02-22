@@ -17,3 +17,8 @@ services:
   prestart:
     environment:
       - POSTGRES_PORT=5432
+
+networks:
+  traefik-public:
+    # For local dev, don't expect an external Traefik network
+    external: false
