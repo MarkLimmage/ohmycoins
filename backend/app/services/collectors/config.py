@@ -17,6 +17,9 @@ from app.services.collectors.human import (
     NewscatcherCollector,
     RedditCollector,
 )
+from app.collectors.strategies.glass_chain_walker import GlassChainWalker
+from app.collectors.strategies.human_rss import HumanRSSCollector
+from app.services.collectors.strategy_adapter import StrategyAdapterCollector
 from app.services.collectors.orchestrator import get_orchestrator
 
 logger = logging.getLogger(__name__)
@@ -91,6 +94,41 @@ def setup_collectors() -> None:
     except Exception as e:
         logger.error(f"✗ Failed to register Nansen collector: {str(e)}")
         logger.info("  Get an API key at: https://nansen.ai/ ($49/month - Tier 2)")
+
+    # Glass Ledger: Chain Walker (New Strategy)
+    try:
+        glass_adapter = StrategyAdapterCollector(
+            GlassChainWalker(),
+            ledger_name="glass",
+            default_config={"chain": "ethereum", "mock_mode": True}
+        )
+        orchestrator.register_collector(
+            glass_adapter,
+            schedule_type="interval",
+            minutes=10, # Check block height every 10 mins
+        )
+        logger.info("✓ Registered GlassChainWalker (Glass Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register GlassChainWalker: {str(e)}")
+
+    # Human Ledger: RSS Scraper (New Strategy)
+    try:
+        human_adapter = StrategyAdapterCollector(
+            HumanRSSCollector(),
+            ledger_name="human",
+            default_config={
+                "feed_urls": ["https://www.coindesk.com/arc/outboundfeeds/rss/"],
+                "mock_mode": True
+            }
+        )
+        orchestrator.register_collector(
+            human_adapter,
+            schedule_type="interval", 
+            minutes=30, # Check RSS every 30 mins
+        )
+        logger.info("✓ Registered HumanRSSCollector (Human Ledger)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register HumanRSSCollector: {str(e)}")
 
     # Catalyst Ledger: SEC API
     # Collects daily at 9 AM UTC (after market open)

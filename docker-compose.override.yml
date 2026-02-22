@@ -6,14 +6,12 @@ services:
     volumes:
       - /home/mark/omc/logs/hub:/var/log/omc-agents
       - ./backend/app:/app/app
-      - ./backend/tests:/app/tests
-      - ./backend/alembic:/app/alembic
     environment:
       - POSTGRES_PORT=5432
   celery_worker:
     volumes:
       - /home/mark/omc/logs/hub:/var/log/omc-agents
-      - ./backend:/app
+      - ./backend/app:/app/app
     environment:
       - POSTGRES_PORT=5432
   prestart:

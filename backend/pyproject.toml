@@ -43,6 +43,7 @@ dependencies = [
     "faker<30.0.0,>=22.0.0",
     "playwright>=1.57.0",
     "h11>=0.16.0",
+    "feedparser>=6.0.10",
 ]
 
 [tool.uv]
