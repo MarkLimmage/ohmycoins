@@ -17,6 +17,13 @@ jobs:
     environment: local-server
     
     steps:
+      - name: Fix Permissions (Pre-Checkout)
+        run: |
+          echo "Fixing permissions for workspace to avoid checkout errors..."
+          # Use docker to chown the current directory to the current user (1000:1000 usually)
+          # This fixes issues where containers left root-owned files (like __pycache__)
+          docker run --rm -v $(pwd):/workspace alpine chown -R $(id -u):$(id -g) /workspace || true
+
       - name: Reset DB Volume
         if: ${{ inputs.reset_db == true }}
         run: |
