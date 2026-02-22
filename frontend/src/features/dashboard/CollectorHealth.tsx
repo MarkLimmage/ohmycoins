@@ -17,8 +17,9 @@ import {
   VStack,
   Spinner,
   Alert,
-  AlertIcon,
+  Icon,
 } from "@chakra-ui/react"
+import { FiAlertCircle } from "react-icons/fi"
 import {
   BarChart,
   Bar,
@@ -65,7 +66,7 @@ export const CollectorHealth = () => {
   const { data: collectors, isLoading, error } = useCollectorInstances()
 
   if (isLoading) return <Spinner size="xl" />
-  if (error) return <Alert status="error"><AlertIcon />Failed to load collectors</Alert>
+  if (error) return <Alert status="error"><Icon as={FiAlertCircle} mr={2} />Failed to load collectors</Alert>
 
   return (
     <Box p={5}>
