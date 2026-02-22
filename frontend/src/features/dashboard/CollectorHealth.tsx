@@ -4,8 +4,6 @@ import {
   Text,
   Badge,
   Card,
-  CardHeader,
-  CardBody,
   Heading,
   Table,
   HStack,
@@ -61,7 +59,7 @@ export const CollectorHealth = () => {
   const { data: collectors, isLoading, error } = useCollectorInstances()
 
   if (isLoading) return <Spinner size="xl" />
-  if (error) return <Alert status="error"><Icon as={FiAlertCircle} mr={2} />Failed to load collectors</Alert>
+  if (error) return <Alert.Root status="error"><Icon as={FiAlertCircle} mr={2} />Failed to load collectors</Alert.Root>
 
   return (
     <Box p={5}>
@@ -73,18 +71,18 @@ export const CollectorHealth = () => {
           <Heading size="md" mb={4}>Status Grid</Heading>
           <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap={4}>
             {collectors?.map((collector: Collector) => (
-              <Card key={collector.id} variant="outline">
-                <CardHeader pb={2}>
+              <Card.Root key={collector.id} variant="outline">
+                <Card.Header pb={2}>
                   <HStack justify="space-between">
                     <Heading size="sm">{collector.name}</Heading>
                     <StatusBadge status={collector.status || (collector.is_enabled ? "active" : "disabled")} />
                   </HStack>
-                </CardHeader>
-                <CardBody pt={0}>
+                </Card.Header>
+                <Card.Body pt={0}>
                   <Text fontSize="sm" color="gray.500">{collector.plugin_name}</Text>
                   <Text fontSize="xs" mt={2}>Last Run: {collector.last_run_at || "Never"}</Text>
-                </CardBody>
-              </Card>
+                </Card.Body>
+              </Card.Root>
             ))}
             {(!collectors || collectors.length === 0) && (
                  <Text>No collectors found.</Text>
@@ -121,15 +119,15 @@ export const CollectorHealth = () => {
         {/* 3. Activity Stream */}
         <Box>
           <Heading size="md" mb={4}>Recent Activity</Heading>
-          <Card variant="outline">
+          <Card.Root variant="outline">
             <Table.Root variant="simple" size="sm">
               <Table.Header>
                 <Table.Row>
                   <Table.ColumnHeader>Timestamp</Table.ColumnHeader>
                   <Table.ColumnHeader>Collector</Table.ColumnHeader>
                   <Table.ColumnHeader>Status</Table.ColumnHeader>
-                  <Table.ColumnHeader isNumeric>Items</Table.ColumnHeader>
-                  <Table.ColumnHeader isNumeric>Duration</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="right">Items</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="right">Duration</Table.ColumnHeader>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
@@ -140,13 +138,13 @@ export const CollectorHealth = () => {
                     <Table.Cell>
                       <Badge colorScheme={log.status === "SUCCESS" ? "green" : "red"}>{log.status}</Badge>
                     </Table.Cell>
-                    <Table.Cell isNumeric>{log.items}</Table.Cell>
-                    <Table.Cell isNumeric>{log.duration}</Table.Cell>
+                    <Table.Cell textAlign="right">{log.items}</Table.Cell>
+                    <Table.Cell textAlign="right">{log.duration}</Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
             </Table.Root>
-          </Card>
+          </Card.Root>
         </Box>
 
       </VStack>
