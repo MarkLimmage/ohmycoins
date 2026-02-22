@@ -44,6 +44,7 @@ dependencies = [
     "playwright>=1.57.0",
     "h11>=0.16.0",
     "feedparser>=6.0.10",
+    "ccxt>=4.5.39",
 ]
 
 [tool.uv]
