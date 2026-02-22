@@ -1,6 +1,7 @@
-import { Container } from "@chakra-ui/react"
+import { Container, VStack, Box } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { CollectorDashboard } from "@/features/admin/CollectorDashboard"
+import { CollectorHealth } from "@/features/dashboard/CollectorHealth"
 
 export const Route = createFileRoute("/_layout/collectors")({
   component: CollectorsPage,
@@ -8,8 +9,15 @@ export const Route = createFileRoute("/_layout/collectors")({
 
 function CollectorsPage() {
   return (
-    <Container maxW="full">
-      <CollectorDashboard />
+    <Container maxW="full" py={8}>
+      <VStack spacing={8} align="stretch">
+        <Box>
+           <CollectorHealth />
+        </Box>
+        <Box>
+           <CollectorDashboard />
+        </Box>
+      </VStack>
     </Container>
   )
 }
