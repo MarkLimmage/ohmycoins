@@ -618,6 +618,37 @@ class CatalystEvents(SQLModel, table=True):
     )
 
 
+# Exchange Ledger: OHLCV Data
+class ExchangeOHLCV(SQLModel, table=True):
+    """
+    Standardized OHLCV market data from exchanges.
+    Data sources: CCXT (Binance, Kraken, etc.)
+    """
+    __tablename__ = "exchange_ohlcv"
+
+    id: int | None = Field(default=None, primary_key=True)
+    exchange: str = Field(max_length=50, nullable=False, index=True)
+    symbol: str = Field(max_length=20, nullable=False, index=True)
+    timestamp: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+    open: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False))
+    high: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False))
+    low: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False))
+    close: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False))
+    volume: Decimal = Field(sa_column=Column(DECIMAL(precision=20, scale=10), nullable=False))
+    
+    collected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+    __table_args__ = (
+        Index('ix_exchange_ohlcv_symbol_timestamp', 'symbol', 'timestamp'),
+        Index('ix_exchange_ohlcv_exchange_symbol', 'exchange', 'symbol'),
+    )
+
+
 class Collector(SQLModel, table=True):
     """
     Configuration and state for a collector plugin instance.
