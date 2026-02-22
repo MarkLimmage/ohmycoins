@@ -1,18 +1,15 @@
-# Current Sprint: 2.33 (Active)
+# Current Sprint: 2.34 (Planning)
 
-**Status**: ACTIVE
-**Objective**: Architecture Review and Next Steps Definition -> Collector Orchestration Engine (Database-Driven Scheduling)
-**Previous Sprint**: 2.32 (Docker DX & Visualization Verification - COMPLETED)
-**Reference**: docs/sprints/SIM_SPRINT_2.33.md
+**Status**: PLANNING
+**Objective**: The 4 Ledgers (Collector Expansion)
+**Previous Sprint**: 2.33 (Orchestration Engine - COMPLETED)
 
 ## Status
-- **Docker DX**: Complete (Fix merged to main)
-- **Visualization**: Unit Tests merged to main
-- **Governance**: Journaling Protocol established
-- **Track A (Backend)**: Database Scheduler Implemented & Merged
-- **Track B (Frontend)**: UI Scheduler Implemented & Merged
+- **Orchestration**: Database-driven scheduling is live.
+- **UI**: Manual triggers and schedule editing are available.
 
 ## Tasks
-1. [x] **Track A (Backend)**: Refactor Orchestrator to Database.
-2. [x] **Track B (Frontend)**: Implement UI Scheduling and Manual Run.
+1. [ ] **Track A (Backend)**: Implement 'Chain-Walker' (Glass) and 'RSS Scraper' (Human) collectors.
+2. [ ] **Track B (Backend)**: Implement 'Calendar Fetcher' (Catalyst) and 'CCXT Plugin' (Exchange).
+3. [ ] **Track C (Frontend)**: Build 'System Health' dashboard and 'Events Ingested' charts.
 
