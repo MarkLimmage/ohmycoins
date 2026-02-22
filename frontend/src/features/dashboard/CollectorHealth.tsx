@@ -120,7 +120,7 @@ export const CollectorHealth = () => {
         <Box>
           <Heading size="md" mb={4}>Recent Activity</Heading>
           <Card.Root variant="outline">
-            <Table.Root variant="simple" size="sm">
+            <Table.Root variant="outline" size="sm">
               <Table.Header>
                 <Table.Row>
                   <Table.ColumnHeader>Timestamp</Table.ColumnHeader>
