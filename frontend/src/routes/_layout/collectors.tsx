@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_layout/collectors")({
 function CollectorsPage() {
   return (
     <Container maxW="full" py={8}>
-      <VStack spacing={8} align="stretch">
+      <VStack gap={8} align="stretch">
         <Box>
            <CollectorHealth />
         </Box>
