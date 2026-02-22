@@ -1,7 +1,7 @@
 services:
   proxy:
-    ports:
-      - "8001:80"
+    # ports:
+    #   - "8001:80"
   backend:
     volumes:
       - /home/mark/omc/logs/hub:/var/log/omc-agents
