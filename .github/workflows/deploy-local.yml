@@ -35,7 +35,7 @@ jobs:
           
       - name: Build and Start Containers
         run: |
-          docker compose -f docker-compose.yml up -d --wait --build --remove-orphans || {
+          docker compose up -d --wait --build --remove-orphans || {
             echo "::error::Docker Compose failed to start containers. Dumping logs for 'prestart' service..."
             docker compose logs prestart
             exit 1
