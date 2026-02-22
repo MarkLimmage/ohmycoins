@@ -1,107 +1,189 @@
 # mypy: ignore-errors
 """
-Scheduled Task Runner for Cryptocurrency Data Collection
+Database-Driven Scheduler for Data Collection
 
-This module provides a scheduler that runs the Coinspot collector at 5-minute intervals.
-It uses APScheduler for reliable task scheduling with error handling and logging.
+This module replaces the legacy in-memory scheduler. It reads from the `collector` table
+and schedules jobs dynamically based on cron expressions stored in the database.
+It supports both legacy Coinspot collector and new plugin-based strategies.
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from sqlmodel import Session, select
 
-from app.services.collector import run_collector
+from app.core.db import engine
+from app.models import Collector, CollectorRuns
+from app.services.collector import run_collector as run_legacy_collector
+from app.core.collectors.registry import CollectorRegistry
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class CollectorScheduler:
-    """Scheduler for running the Coinspot data collector at regular intervals"""
+class DatabaseScheduler:
+    """
+    Scheduler that loads jobs from the database (Collector table).
+    """
 
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
         self.is_running = False
 
     def start(self):
-        """Start the scheduler with a 5-minute cron job"""
+        """Start the scheduler and load jobs"""
         if self.is_running:
             logger.warning("Scheduler is already running")
             return
 
-        # Schedule collector to run every 5 minutes (at :00, :05, :10, etc.)
-        self.scheduler.add_job(
-            self._run_collection_job,
-            trigger=CronTrigger(minute="*/5"),  # Every 5 minutes
-            id="coinspot_collector",
-            name="Coinspot Price Collector",
-            replace_existing=True,
-            max_instances=1,  # Prevent overlapping runs
-        )
-
         self.scheduler.start()
         self.is_running = True
-        logger.info("Scheduler started. Collector will run every 5 minutes")
+        logger.info("DatabaseScheduler started")
+        self.refresh_jobs()
 
     def stop(self):
-        """Stop the scheduler gracefully"""
+        """Stop the scheduler"""
         if not self.is_running:
             logger.warning("Scheduler is not running")
             return
 
         self.scheduler.shutdown(wait=True)
         self.is_running = False
-        logger.info("Scheduler stopped")
+        logger.info("DatabaseScheduler stopped")
 
-    async def _run_collection_job(self):
+    def refresh_jobs(self):
         """
-        Internal method that wraps the collector with error handling and metrics
-        This is called by the scheduler
+        Reload all enabled jobs from the database.
+        This should be called whenever a schedule is updated.
         """
-        start_time = datetime.now()
-        try:
-            logger.info(f"Starting scheduled collection at {start_time}")
-            records_stored = await run_collector()
+        self.scheduler.remove_all_jobs()
+        
+        with Session(engine) as session:
+            try:
+                # Select only enabled collectors
+                collectors = session.exec(select(Collector).where(Collector.is_enabled == True)).all()
+                
+                count = 0
+                for collector in collectors:
+                    try:
+                        # Use cron trigger. Assuming schedule_cron is valid cron string.
+                        # apscheduler CronTrigger.from_crontab handles standard cron strings.
+                        trigger = CronTrigger.from_crontab(collector.schedule_cron)
+                        
+                        self.scheduler.add_job(
+                            self.run_job,
+                            trigger=trigger,
+                            id=str(collector.id),
+                            name=f"{collector.name} ({collector.plugin_name})",
+                            args=[collector.id],
+                            replace_existing=True,
+                            max_instances=1
+                        )
+                        count += 1
+                        logger.info(f"Scheduled job for collector: {collector.name} ({collector.schedule_cron})")
+                    except Exception as e:
+                        logger.error(f"Failed to schedule collector {collector.name} (ID: {collector.id}): {e}")
+                
+                logger.info(f"Loaded {count} collector jobs from database")
+            except Exception as e:
+                logger.error(f"Error refreshing jobs: {e}")
 
-            elapsed_seconds = (datetime.now() - start_time).total_seconds()
+    async def run_job(self, collector_id: int):
+        """
+        Execute a specific collector job by ID.
+        This updates the database status and history.
+        """
+        with Session(engine) as session:
+            collector = session.get(Collector, collector_id)
+            if not collector:
+                logger.error(f"Collector {collector_id} not found during execution")
+                return
 
-            if records_stored > 0:
-                logger.info(
-                    f"Scheduled collection completed successfully: "
-                    f"{records_stored} records stored in {elapsed_seconds:.2f}s"
-                )
-            else:
-                logger.warning(
-                    f"Scheduled collection completed with no records stored "
-                    f"(duration: {elapsed_seconds:.2f}s)"
-                )
-
-        except Exception as e:
-            elapsed_seconds = (datetime.now() - start_time).total_seconds()
-            logger.error(
-                f"Error in scheduled collection after {elapsed_seconds:.2f}s: "
-                f"{type(e).__name__}: {e}",
-                exc_info=True
+            # Avoid concurrent runs if status is running? 
+            # (Optional, but APScheduler max_instances=1 handles per-job concurrency)
+            
+            # Create run record
+            run_record = CollectorRuns(
+                collector_name=collector.name,
+                status="running",
+                started_at=datetime.now(timezone.utc)
             )
+            session.add(run_record)
+            
+            # Update collector status
+            collector.status = "running"
+            collector.last_run_at = datetime.now(timezone.utc)
+            session.add(collector)
+            session.commit()
+            session.refresh(run_record)
 
-    async def run_now(self):
-        """Manually trigger a collection run (for testing or immediate execution)"""
-        logger.info("Manual collection triggered")
-        await self._run_collection_job()
+            try:
+                # Execute Logic
+                records_count = 0
+                error_msg = None
+                
+                logger.info(f"Executing collector: {collector.name}")
+
+                # Dispatch based on plugin_name
+                if collector.plugin_name == "coinspot_price":
+                    # Legacy execution
+                    records_count = await run_legacy_collector()
+                else:
+                    # Strategy execution using CollectorRegistry lookup
+                    # Ensure plugins are discovered
+                    CollectorRegistry.discover_strategies()
+                    strategy_cls = CollectorRegistry.get_strategy(collector.plugin_name)
+                    
+                    if strategy_cls:
+                        strategy = strategy_cls()
+                        # Execute strategy
+                        # Note: strategy.collect returns a list of items.
+                        # TODO: Implement generic storage for these items.
+                        # For now, we mainly focus on executing it.
+                        results = await strategy.collect(collector.config)
+                        records_count = len(results) if results else 0
+                        logger.info(f"Strategy {collector.plugin_name} returned {records_count} items")
+                    else:
+                        raise ValueError(f"Unknown plugin type: {collector.plugin_name}")
+
+                # Success
+                run_record.status = "completed"
+                run_record.completed_at = datetime.now(timezone.utc)
+                run_record.records_collected = records_count
+                
+                collector.status = "idle"
+
+            except Exception as e:
+                logger.error(f"Error running collector {collector.name}: {e}", exc_info=True)
+                run_record.status = "error"
+                run_record.completed_at = datetime.now(timezone.utc)
+                run_record.error_message = str(e)
+                
+                collector.status = "error"
+            
+            finally:
+                session.add(run_record)
+                session.add(collector)
+                session.commit()
+
+    async def run_now(self, collector_id: int):
+        """Manually trigger a job immediately"""
+        await self.run_job(collector_id)
 
 
 # Global scheduler instance
-_scheduler_instance: CollectorScheduler | None = None
+_scheduler_instance: DatabaseScheduler | None = None
 
 
-def get_scheduler() -> CollectorScheduler:
+def get_scheduler() -> DatabaseScheduler:
     """Get or create the global scheduler instance"""
     global _scheduler_instance
     if _scheduler_instance is None:
-        _scheduler_instance = CollectorScheduler()
+        _scheduler_instance = DatabaseScheduler()
     return _scheduler_instance
 
 
@@ -109,32 +191,13 @@ async def start_scheduler():
     """Start the collection scheduler (called at application startup)"""
     scheduler = get_scheduler()
     scheduler.start()
-    logger.info("Collection scheduler initialized")
 
 
 async def stop_scheduler():
     """Stop the collection scheduler (called at application shutdown)"""
     scheduler = get_scheduler()
     scheduler.stop()
-    logger.info("Collection scheduler shut down")
-
 
 if __name__ == "__main__":
-    # For testing the scheduler standalone
-    async def test_scheduler():
-        scheduler = CollectorScheduler()
-        scheduler.start()
-
-        # Run immediately for testing
-        await scheduler.run_now()
-
-        # Keep running for 15 minutes to see scheduled executions
-        logger.info("Scheduler running. Will collect data every 5 minutes. Press Ctrl+C to stop.")
-        try:
-            await asyncio.sleep(900)  # 15 minutes
-        except KeyboardInterrupt:
-            logger.info("Stopping scheduler...")
-        finally:
-            scheduler.stop()
-
-    asyncio.run(test_scheduler())
+    # Test block
+    pass
