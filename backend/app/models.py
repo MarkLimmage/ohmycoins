@@ -441,7 +441,7 @@ class ProtocolFundamentals(SQLModel, table=True):
         # Unique constraint: one entry per protocol per day
         Index('uq_protocol_fundamentals_protocol_date',
               'protocol',
-              sa.text("(collected_at::date)"),
+              sa.text("((collected_at AT TIME ZONE 'UTC')::date)"),
               unique=True),
     )
 
