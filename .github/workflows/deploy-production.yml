@@ -25,8 +25,8 @@ jobs:
       EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      PROXY_PORT: 8090
-      PROXY_DASHBOARD_PORT: 8099
+      PROXY_PORT: 8001
+      PROXY_DASHBOARD_PORT: 8090
     steps:
       - name: Checkout
         uses: actions/checkout@v5
