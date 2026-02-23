@@ -22,7 +22,7 @@ from app.services.collectors.config import (
     start_collection,
     stop_collection,
 )
-# from app.services.scheduler import start_scheduler, stop_scheduler (Legacy Scheduler Deprecated)
+from app.services.scheduler import start_scheduler, stop_scheduler
 from app.services.trading.executor import get_order_queue
 from app.services.trading.scheduler import get_execution_scheduler
 
@@ -31,23 +31,24 @@ from app.services.trading.scheduler import get_execution_scheduler
 async def lifespan(_app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
     
-    # Startup: Start Phase 2.5 Data Collectors (New Orchestrator)
-    # Always register collectors so API knows about them
-    setup_collectors()
-    
-    # Only start the scheduler if configured (to avoid duplicate execution)
+    # Check environment configuration for collectors
     if settings.RUN_COLLECTORS:
+        # Startup: Start Phase 2.5 Data Collectors (New Orchestrator)
+        # We prioritize the new orchestrator. The legacy scheduler should be disabled
+        # or heavily restricted if we are migrating.
+        setup_collectors()
         start_collection()
+        
+        # Determine if we still need the legacy scheduler. 
+        # If CoinspotExchange is in BOTH systems, we get duplicates.
+        # For now, let's assume Phase 2.5 replaces the need for legacy scheduler 
+        # for these specific collectors.
+        # await start_scheduler() 
     else:
         import logging
-        logging.getLogger(__name__).info("Skipping Scheduler Start (RUN_COLLECTORS=False)")
-
-    # Legacy scheduler disabled in favor of CollectionOrchestrator
-    # await start_scheduler()
+        logging.getLogger("app.main").info("Collectors explicitly disabled via RUN_COLLECTORS=False")
 
     # Initialize and start Order Queue
-
-
     executor_session = Session(engine)
     queue = get_order_queue()
     # Use system settings for keys. In a multi-user system, the executor should
@@ -79,7 +80,7 @@ async def lifespan(_app: FastAPI):
     stop_collection()
 
     # Shutdown: Stop the scheduler gracefully
-    # await stop_scheduler()
+    await stop_scheduler()
 
     # Stop Execution Scheduler
     execution_scheduler.stop()
