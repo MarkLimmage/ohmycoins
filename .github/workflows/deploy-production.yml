@@ -30,5 +30,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+      - name: Create external network
+        run: docker network create traefik-public || true
       - run: docker compose --project-name ${{ secrets.STACK_NAME_PRODUCTION }} build
       - run: docker compose --project-name ${{ secrets.STACK_NAME_PRODUCTION }} up -d
