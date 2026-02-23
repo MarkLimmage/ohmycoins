@@ -12,4 +12,5 @@
 ## Tasks
 1. [ ] **Track A (Backend)**: Implement Data Validation & Retry Logic.
 2. [ ] **Track B (Frontend)**: Implement Error Modal & Auto-Refresh.
+3. [ ] **Track C (Backend)**: Migrate Legacy Coinspot Collector.
 
