@@ -52,3 +52,29 @@ OBJECTIVES:
 **Status**: COMPLETED
 **Monologue**: Component created with mocked data for charts and real data for status grid. Integrated into `collectors.tsx`.
 **Blockers**: None.
+
+
+# Context Injection
+DATE: Mon Feb 23 17:19:57 AEST 2026
+CONTEXT: Sprint 2.35 - Track A: Data Integrity
+ROLE: Backend Developer
+WORKSPACE ANCHOR: ../sprint-2.35/track-a (Port 8001)
+
+MISSION:
+Ensure the data collected by our new plugins (Glass, Human, etc.) is valid.
+1. **Data Validation**: Implement `validate_collected_data()` in `BaseCollector`.
+
+
+## [2026-02-23] - Implementation Complete
+**Intent**: Implement data validation and retry logic for collectors.
+**Status**: COMPLETED
+**Context**: Successfully implemented retry logic using `tenacity` and basic data validation in `BaseCollector`.
+**Details**:
+- Modified `backend/app/services/collectors/base.py`:
+    - Added `tenacity` retry logic to `_collect_with_retry` wrapper.
+    - Implemented default `validate_data` to ensure list type.
+- Created `backend/tests/test_base_collector.py` to verify:
+    - Default validation passes for lists.
+    - Validation fails for non-lists.
+    - Retry logic works (mocks success after failure).
+- Updated `docker-compose.override.yml` to correctly mount source/test code for development.

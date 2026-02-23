@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Any
 
 from sqlmodel import Session
+from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log
 
 from app.core.db import engine
 from app.models import CollectorRuns
@@ -73,10 +74,23 @@ class BaseCollector(ABC):
         """
         pass
 
-    @abstractmethod
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True
+    )
+    async def _collect_with_retry(self) -> list[dict[str, Any]]:
+        """
+        Wrapper around collect() to provide retry logic.
+        """
+        return await self.collect()
+
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected data.
+        
+        Default implementation checks if data is a list. Subclasses can override for specific validation.
 
         Args:
             data: Raw data collected from the source
@@ -85,9 +99,11 @@ class BaseCollector(ABC):
             Validated and cleaned data ready for storage
 
         Raises:
-            ValueError: If data validation fails
+            ValueError: If data validation fails, e.g., if data is not a list.
         """
-        pass
+        if not isinstance(data, list):
+            raise ValueError(f"Collected data must be a list, got {type(data)}")
+        return data
 
     @abstractmethod
     async def store_data(self, data: list[dict[str, Any]], session: Session) -> int:
@@ -144,7 +160,7 @@ class BaseCollector(ABC):
 
                 # Collect data
                 logger.debug(f"{self.name}: Collecting data...")
-                raw_data = await self.collect()
+                raw_data = await self._collect_with_retry()
                 logger.debug(f"{self.name}: Collected {len(raw_data)} raw records")
 
                 # Validate data
