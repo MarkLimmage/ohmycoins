@@ -10,6 +10,7 @@ import ReactDOM from "react-dom/client"
 import { ApiError, OpenAPI } from "./client"
 import { CustomProvider } from "./components/ui/provider"
 import { routeTree } from "./routeTree.gen"
+import { emitError } from "./utils/eventBus"
 
 OpenAPI.BASE = import.meta.env.VITE_API_URL
 OpenAPI.TOKEN = async () => {
@@ -20,7 +21,9 @@ const handleApiError = (error: Error) => {
   if (error instanceof ApiError && [401, 403].includes(error.status)) {
     localStorage.removeItem("access_token")
     window.location.href = "/login"
+    return
   }
+  emitError(error.message || "An unexpected error occurred")
 }
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
