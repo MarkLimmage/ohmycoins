@@ -149,3 +149,4 @@ class CoinspotExchangeCollector(ICollector):
                     continue
             
             return prices if prices else None
+CollectorRegistry.register(CoinspotExchangeCollector)

@@ -17,6 +17,7 @@ from app.services.collectors.human import (
     NewscatcherCollector,
     RedditCollector,
 )
+from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
 from app.collectors.strategies.glass_chain_walker import GlassChainWalker
 from app.collectors.strategies.human_rss import HumanRSSCollector
 from app.services.collectors.strategy_adapter import StrategyAdapterCollector
@@ -170,8 +171,25 @@ def setup_collectors() -> None:
     except Exception as e:
         logger.error(f"✗ Failed to register Reddit collector: {str(e)}")
 
+    # Target: CoinSpot Exchange Price Data
+    # Collects every minute
+    try:
+        coinspot_strategy = CoinspotExchangeCollector()
+        coinspot_adapter = StrategyAdapterCollector(
+            coinspot_strategy,
+            ledger_name="exchange",
+            default_config={"use_web_scraping": True}
+        )
+        orchestrator.register_collector(
+            coinspot_adapter,
+            schedule_type="interval",
+            minutes=1,
+        )
+        logger.info("✓ Registered CoinSpot Exchange collector (Target Variable)")
+    except Exception as e:
+        logger.error(f"✗ Failed to register CoinSpot Exchange collector: {str(e)}")
+
     # TODO: Add more collectors as they are implemented
-    # - Enhanced CoinSpot Client (Exchange Ledger)
     #
     # Sprint 2.12 Status:
     # ✓ CryptoPanic - Implemented and registered
