@@ -18,7 +18,12 @@ def seed_collectors(session: Session) -> None:
             "plugin_name": "CoinspotExchange",
             "is_enabled": True,
             "schedule_cron": "* * * * *",  # Every minute
-            "config": {"use_web_scraping": True},
+            "config": {
+                "use_web_scraping": True,
+                "max_retries": 3,
+                "retry_delay": 5,
+                "timeout": 30.0
+            },
             "status": "active"
         },
     ]
