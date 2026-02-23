@@ -17,7 +17,6 @@ from sqlmodel import Session, select
 
 from app.core.db import engine
 from app.models import Collector, CollectorRuns
-from app.services.collector import run_collector as run_legacy_collector
 from app.core.collectors.registry import CollectorRegistry
 
 # Configure logging
@@ -128,27 +127,27 @@ class DatabaseScheduler:
                 
                 logger.info(f"Executing collector: {collector.name}")
 
-                # Dispatch based on plugin_name
-                if collector.plugin_name == "coinspot_price":
-                    # Legacy execution
-                    records_count = await run_legacy_collector()
+                # Ensure plugins are discovered
+                CollectorRegistry.discover_strategies()
+                
+                # Check for legacy mapping
+                plugin_name = collector.plugin_name
+                if plugin_name == "coinspot_price":
+                    plugin_name = "CoinspotExchange"
+
+                strategy_cls = CollectorRegistry.get_strategy(plugin_name)
+                
+                if strategy_cls:
+                    strategy = strategy_cls()
+                    # Execute strategy
+                    # Note: strategy.collect returns a list of items.
+                    # TODO: Implement generic storage for these items.
+                    # For now, we mainly focus on executing it.
+                    results = await strategy.collect(collector.config)
+                    records_count = len(results) if results else 0
+                    logger.info(f"Strategy {plugin_name} returned {records_count} items")
                 else:
-                    # Strategy execution using CollectorRegistry lookup
-                    # Ensure plugins are discovered
-                    CollectorRegistry.discover_strategies()
-                    strategy_cls = CollectorRegistry.get_strategy(collector.plugin_name)
-                    
-                    if strategy_cls:
-                        strategy = strategy_cls()
-                        # Execute strategy
-                        # Note: strategy.collect returns a list of items.
-                        # TODO: Implement generic storage for these items.
-                        # For now, we mainly focus on executing it.
-                        results = await strategy.collect(collector.config)
-                        records_count = len(results) if results else 0
-                        logger.info(f"Strategy {collector.plugin_name} returned {records_count} items")
-                    else:
-                        raise ValueError(f"Unknown plugin type: {collector.plugin_name}")
+                    raise ValueError(f"Unknown plugin type: {plugin_name}")
 
                 # Success
                 run_record.status = "completed"

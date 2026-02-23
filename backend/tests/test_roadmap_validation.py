@@ -43,14 +43,12 @@ class TestPhase1Validation:
 
     def test_collector_has_retry_logic(self):
         """Verify collector has retry configuration"""
-        from app.services.collector import (
-            MAX_RETRIES,
-            REQUEST_TIMEOUT,
-            RETRY_DELAY_SECONDS,
-        )
-        assert MAX_RETRIES == 3
-        assert RETRY_DELAY_SECONDS == 5
-        assert REQUEST_TIMEOUT == 30.0
+        # Check defaults in new strategy
+        from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
+        schema = CoinspotExchangeCollector().get_config_schema()
+        assert schema["properties"]["max_retries"]["default"] == 3
+        assert schema["properties"]["retry_delay"]["default"] == 5
+        assert schema["properties"]["timeout"]["default"] == 30.0
 
     def test_docker_compose_exists(self):
         """Verify Docker Compose files exist"""
@@ -285,7 +283,7 @@ class TestTestCoverage:
 
     def test_collector_tests_exist(self):
         """Verify collector tests exist"""
-        test_path = Path(__file__).parent / "services" / "test_collector.py"
+        test_path = Path(__file__).parent / "services" / "test_coinspot_strategy.py"
         assert test_path.exists()
 
     def test_encryption_tests_exist(self):

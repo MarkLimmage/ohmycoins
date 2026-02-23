@@ -52,3 +52,55 @@ OBJECTIVES:
 **Status**: COMPLETED
 **Monologue**: Component created with mocked data for charts and real data for status grid. Integrated into `collectors.tsx`.
 **Blockers**: None.
+
+
+# Context Injection
+DATE: Mon Feb 23 17:20:12 AEST 2026
+CONTEXT: Sprint 2.35 - Track C: Legacy Migration
+ROLE: Backend Developer
+WORKSPACE ANCHOR: ../sprint-2.35/track-c (Port 8002)
+
+MISSION:
+Migrate the Coinspot collector from scheduler.py to the ICollector architecture.
+1. Create strategies/exchange_coinspot.py.
+2. Ensure target (price) is collected and stored correctly.
+
+
+
+# Context Injection
+DATE: Mon Feb 23 17:20:33 AEST 2026
+CONTEXT: Sprint 2.35 - Track C: Legacy Migration
+ROLE: Backend Developer
+WORKSPACE ANCHOR: ../sprint-2.35/track-c (Port 8002)
+
+MISSION:
+Migrate the legacy `Coinspot` collector to the new `ICollector` plugin system.
+1. **Refactor**: Move logic from `backend/app/services/collector.py` to `backend/app/collectors/strategies/exchange_coinspot.py`.
+2. **Implement Interface**: Ensure it implements `collect()`, `test_connection()`, etc.
+3. **Connect to DB**: Ensure it saves data to `CoinPrice` table (Target Variable) but logs execution to `CollectorRuns`.
+4. **Deprecate**: Remove `backend/app/services/scheduler.py` startup call in `main.py`.
+
+
+## [INITIALIZATION] - Sprint 2.35 Track C
+**Intent**: Initialize workspace for Sprint 2.35 - Track C.
+**Status**: IN_PROGRESS
+**Context**: You are the Backend Developer for Track C (Legacy Coinspot Collector Migration).
+
+CONTEXT: Sprint 2.35 - Track C: Migrate Legacy Coinspot Collector
+ROLE: Backend Developer
+WORKSPACE ANCHOR: ../sprint-2.35/track-c (Port 8030)
+
+MISSION:
+Migrate the legacy Coinspot collector to the new `ICollector` architecture.
+1. Extract Coinspot logic from `backend/app/services/` (legacy location).
+2. Implement `backend/app/collectors/strategies/exchange_coinspot.py` implementing `ICollector`.
+3. Verify functionality and remove legacy code.
+
+## [2026-02-23] - Migration Verification
+**Intent**: Verify Coinspot migration and cleanup legacy code.
+**Status**: COMPLETED
+**Context**: 
+- Implemented `CoinspotExchangeCollector` with default web scraping mode.
+- Verified data collection (500+ coins) via script.
+- Updated `scheduler.py` to use the new strategy for `coinspot_price` tasks.
+- Deleted legacy `backend/app/services/collector.py`.
