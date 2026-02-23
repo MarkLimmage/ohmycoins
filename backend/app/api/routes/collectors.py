@@ -63,12 +63,39 @@ def list_plugins() -> Any:
 # INSTANCES (Configured Collectors)
 # -----------------------------------------------------------------------------
 
-@router.get("/", response_model=List[Collector])
+@router.get("/", response_model=List[dict])
 def list_instances(session: SessionDep) -> Any:
     """
     List all configured collector instances.
+    This merges database-stored instances with system-defined collectors from the Orchestrator.
     """
-    return session.exec(select(Collector)).all()
+    # 1. Get user-defined instances from Database
+    db_instances = session.exec(select(Collector)).all()
+    
+    # 2. Get system-defined instances from Orchestrator (memory)
+    # Since we are moving to fully DB-managed collectors, the orchestrator primarily
+    # reflects what's in the DB. However, checking orchestrator is still useful for *status*
+    from app.services.collectors.orchestrator import get_orchestrator
+    orchestrator = get_orchestrator()
+    # system_collectors = orchestrator.collectors # Deprecated: Orchestrator should now only run DB-instances
+    
+    # 3. Merge them
+    result = []
+    
+    # Add DB instances first
+    for db_inst in db_instances:
+        # Check if it's active in orchestrator?
+        status = "idle" 
+        # Ideally we query orchestrator for running status of this ID
+        # Since API and Orchestrator are separate processes now (in Prod), 
+        # we can't check orchestrator memory directly unless we use Redis/DB for status sync.
+        # For now, we rely on the DB status field updated by the Orchestrator?
+        # Or just return "unknown" / rely on the static field
+        
+        # db_inst.status is persisted in DB by the runner?
+        result.append(db_inst)
+
+    return result
 
 @router.post("/", response_model=Collector)
 def create_instance(

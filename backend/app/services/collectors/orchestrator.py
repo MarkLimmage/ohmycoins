@@ -90,20 +90,126 @@ class CollectionOrchestrator:
             f"with {schedule_type} schedule: {schedule_kwargs}"
         )
 
+
+    def load_jobs_from_db(self) -> None:
+        """
+        Refresh jobs from the database configuration.
+        This removes existing jobs and re-registers them based on the DB state.
+        """
+        from sqlmodel import Session, select
+        from app.core.db import engine
+        from app.models import Collector
+        from app.core.collectors.registry import CollectorRegistry
+        from app.services.collectors.strategy_adapter import StrategyAdapterCollector
+
+        logger.info("Loading collector jobs from database...")
+        
+        # Ensure strategies are discovered/registered
+        CollectorRegistry.discover_strategies()
+        
+        # Clear known collectors to avoid staleness
+        current_job_ids = {job.id for job in self.scheduler.get_jobs()}
+        
+        with Session(engine) as session:
+            db_collectors = session.exec(select(Collector).where(Collector.is_enabled == True)).all()
+            
+            active_ids = set()
+            
+            for db_coll in db_collectors:
+                try:
+                    active_ids.add(str(db_coll.id))
+                    
+                    # Check if strategy exists
+                    strategy_cls = CollectorRegistry.get_strategy(db_coll.plugin_name)
+                    if not strategy_cls:
+                        logger.warning(f"Plugin {db_coll.plugin_name} not found for collector {db_coll.name}")
+                        continue
+                        
+                    # Instantiate strategy
+                    strategy = strategy_cls()
+                    
+                    # Create adapter
+                    # TODO: Determine ledger name from strategy or config
+                    ledger = "mixed" 
+                    if "exchange" in db_coll.plugin_name.lower():
+                        ledger = "exchange"
+                    elif "news" in db_coll.plugin_name.lower() or "reddit" in db_coll.plugin_name.lower():
+                        ledger = "human"
+                        
+                    adapter = StrategyAdapterCollector(
+                        strategy,
+                        ledger_name=ledger,
+                        default_config=db_coll.config
+                    )
+                    
+                    # Override name to match DB name so distinct instances work
+                    adapter.name = db_coll.name 
+                    
+                    # Register/Update Job
+                    # Determine trigger
+                    trigger_args = {}
+                    # Simple heuristic for cron string vs interval
+                    # This needs a robust parser or assumption. 
+                    # Assuming basic 5-part cron or exact kwargs passed in some other way?
+                    # For now, let's support Interval if the string looks like "interval:5m" or use CronTrigger
+                    
+                    try:
+                        trigger = CronTrigger.from_crontab(db_coll.schedule_cron)
+                        
+                        self.scheduler.add_job(
+                            adapter.run,
+                            trigger=trigger,
+                            id=str(db_coll.id),
+                            name=f"{ledger}/{db_coll.name}",
+                            replace_existing=True,
+                        )
+                        # Also track in our local dict for manual triggers (using string ID)
+                        self.collectors[str(db_coll.id)] = adapter
+                        
+                        logger.info(f"Loaded job: {db_coll.name} (ID: {db_coll.id})")
+                    except Exception as e:
+                        logger.error(f"Invalid cron for {db_coll.name}: {e}")
+
+                except Exception as e:
+                    logger.error(f"Error loading collector {db_coll.name}: {e}")
+
+            # Remove jobs that are no longer enabled/present
+            for job_id in current_job_ids:
+                if job_id not in active_ids:
+                    # Don't remove system jobs if we still have some hardcoded ones?
+                    # For now, assumtion is PURE DB driven implies we remove anything not in DB.
+                    # Verify if job_id is an integer (DB id)
+                    if job_id.isdigit():
+                         try:
+                            self.scheduler.remove_job(job_id)
+                            logger.info(f"Removed stale job: {job_id}")
+                         except:
+                            pass
+
     def start(self) -> None:
         """
-        Start the collection scheduler.
-
-        All registered collectors will begin running according to their schedules.
+        Start the collection orchestrator.
+        Also starts a background poller to refresh jobs from DB.
         """
         if not self._is_running:
             self.scheduler.start()
             self._is_running = True
+            
+            # Add a self-maintenance job to refresh configuration every minute
+            self.scheduler.add_job(
+                self.load_jobs_from_db,
+                trigger=IntervalTrigger(minutes=1),
+                id="orchestrator_refresh",
+                name="System/ConfigRefresh",
+                replace_existing=True
+            )
+            
             logger.info(
                 f"Collection orchestrator started with {len(self.collectors)} collectors"
             )
         else:
             logger.warning("Collection orchestrator is already running")
+
 
     def stop(self) -> None:
         """

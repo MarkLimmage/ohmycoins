@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
+    # Phase 2.5 Collector Configuration
+    # Controls whether this instance runs data collection jobs
+    RUN_COLLECTORS: bool = True
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:

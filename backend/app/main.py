@@ -30,14 +30,24 @@ from app.services.trading.scheduler import get_execution_scheduler
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
+    
     # Startup: Start Phase 2.5 Data Collectors (New Orchestrator)
+    # Always register collectors so API knows about them
     setup_collectors()
-    start_collection()
+    
+    # Only start the scheduler if configured (to avoid duplicate execution)
+    if settings.RUN_COLLECTORS:
+        start_collection()
+    else:
+        import logging
+        logging.getLogger(__name__).info("Skipping Scheduler Start (RUN_COLLECTORS=False)")
 
     # Legacy scheduler disabled in favor of CollectionOrchestrator
     # await start_scheduler()
 
     # Initialize and start Order Queue
+
+
     executor_session = Session(engine)
     queue = get_order_queue()
     # Use system settings for keys. In a multi-user system, the executor should
