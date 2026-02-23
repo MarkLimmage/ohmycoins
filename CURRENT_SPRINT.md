@@ -1,16 +1,16 @@
-# Current Sprint: 2.35 (Planning)
+# Current Sprint: 2.36 (Planning)
 
 **Status**: PLANNING
-**Objective**: Data Integrity & Dashboard Polish
-**Previous Sprint**: 2.34 (The 4 Ledgers - COMPLETED)
+**Objective**: Advanced Analytics & Alerting
+**Previous Sprint**: 2.35 (Data Integrity & Dashboard Polish - COMPLETED)
 
 ## Status
-- **Core Collection**: Functional (Tracks A/B/C/D delivered).
-- **Data Quality**: Unverified.
-- **Dashboard**: Basic (Needs polish).
+- **Data Collections**: Stabilized and Verified.
+- **Dashboard**: Production-ready for monitoring.
+- **Legacy Migration**: Coinspot wrapper pending final merge/verification.
 
 ## Tasks
-1. [ ] **Track A (Backend)**: Implement Data Validation & Retry Logic.
-2. [ ] **Track B (Frontend)**: Implement Error Modal & Auto-Refresh.
-3. [ ] **Track C (Backend)**: Migrate Legacy Coinspot Collector.
+1. [ ] **Track A (Data Science)**: Implement Anomaly Detection (Isolation Forest)
+ on CoinPrice.                                                                  2. [ ] **Track B (Backend)**: Implement Alerting Service (Email/Slack on Error T
+hreshold).                                                                      3. [ ] **Track C (Frontend)**: Data Explorer View (Advanced filtering/Charting).
 
