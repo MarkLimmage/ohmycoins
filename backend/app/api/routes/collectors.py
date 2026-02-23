@@ -63,7 +63,7 @@ def list_plugins() -> Any:
 # INSTANCES (Configured Collectors)
 # -----------------------------------------------------------------------------
 
-@router.get("/", response_model=List[dict])
+@router.get("/", response_model=List[Collector])
 def list_instances(session: SessionDep) -> Any:
     """
     List all configured collector instances.
