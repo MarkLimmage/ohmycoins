@@ -59,7 +59,7 @@ async def test_collect_public_api():
         btc = next(item for item in results if item.coin_type == "btc")
         assert btc.bid == Decimal("45000.00")
         assert btc.ask == Decimal("45100.00")
-        assert btc.last == Decimal("45075.00") # Calculated average in new strategy
+        assert btc.last == Decimal("45050.00") # Uses API provided last
 
 @pytest.mark.asyncio
 async def test_collect_scraping():
