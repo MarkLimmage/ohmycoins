@@ -193,6 +193,7 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+    command: /bin/bash -c "fastapi run --workers 1 app/main.py"
     networks:
       - traefik-public
       - default
