@@ -65,10 +65,17 @@ class OrderExecutor:
         self.api_secret = api_secret
         self.max_retries = max_retries
         self.retry_delay = retry_delay
-        self._queue: asyncio.Queue[UUID] = asyncio.Queue()
+        self._queue: asyncio.Queue[UUID] | None = None
         self._running = False
         self.safety_manager = TradingSafetyManager(session)
         self.paper_exchange: PaperExchange | None = None
+
+    @property
+    def queue(self) -> asyncio.Queue[UUID]:
+        """Get the order queue, initializing it if necessary"""
+        if self._queue is None:
+            self._queue = asyncio.Queue()
+        return self._queue
 
     async def submit_order(self, order_id: UUID) -> None:
         """
@@ -78,7 +85,7 @@ class OrderExecutor:
             order_id: UUID of the order to execute
         """
         logger.info(f"Submitting order {order_id} to execution queue")
-        await self._queue.put(order_id)
+        await self.queue.put(order_id)
 
     async def start(self) -> None:
         """Start the order execution worker"""
@@ -103,7 +110,7 @@ class OrderExecutor:
                 try:
                     # Get next order from queue with timeout
                     order_id = await asyncio.wait_for(
-                        self._queue.get(),
+                        self.queue.get(),
                         timeout=1.0
                     )
 
@@ -111,7 +118,7 @@ class OrderExecutor:
                     await self._execute_order(order_id)
 
                     # Mark task as done
-                    self._queue.task_done()
+                    self.queue.task_done()
 
                 except asyncio.TimeoutError:
                     # No orders in queue, continue waiting

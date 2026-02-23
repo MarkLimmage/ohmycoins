@@ -124,7 +124,7 @@ class TestCoinspotTradingClient:
                 result = await client.get_orders()
 
                 assert result == mock_response
-                mock_request.assert_called_once_with('/my/orders', {})
+                mock_request.assert_called_once_with('/ro/my/orders', {})
 
     @pytest.mark.asyncio
     async def test_get_orders_specific_coin(self, client):
@@ -142,7 +142,7 @@ class TestCoinspotTradingClient:
                 result = await client.get_orders('BTC')
 
                 assert result == mock_response
-                mock_request.assert_called_once_with('/my/orders', {'cointype': 'BTC'})
+                mock_request.assert_called_once_with('/ro/my/orders', {'cointype': 'BTC'})
 
     @pytest.mark.asyncio
     async def test_get_order_history(self, client):
@@ -216,11 +216,14 @@ class TestCoinspotTradingClient:
     @pytest.mark.asyncio
     async def test_get_balance_specific_coin(self, client):
         """Test getting balance for specific coin"""
+        # Note: Implementation uses bulk endpoint '/my/balances' now
         mock_response = {
             'status': 'ok',
-            'balance': '0.5',
-            'audvalue': '25000.00'
+            'balances': {
+                'BTC': {'balance': '0.5', 'audvalue': '25000.00'}
+            }
         }
+        expected_result = {'balance': '0.5', 'audvalue': '25000.00'}
 
         async with client:
             with patch.object(client, '_make_request', new_callable=AsyncMock) as mock_request:
@@ -228,8 +231,9 @@ class TestCoinspotTradingClient:
 
                 result = await client.get_balance('BTC')
 
-                assert result == mock_response
-                mock_request.assert_called_once_with('/my/balance', {'cointype': 'BTC'})
+                assert result == expected_result
+                # Should call the bulk balance endpoint, not specific one
+                mock_request.assert_called_once_with('/my/balances')
 
     @pytest.mark.asyncio
     async def test_api_error_handling(self, client):

@@ -40,8 +40,17 @@ from app.utils.test_fixtures import (
     create_test_price_data,
     create_test_user,
 )
+from app.services.trading.executor import OrderQueue
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
+
+
+@pytest.fixture(autouse=True)
+def reset_singletons():
+    """Reset singletons between tests to prevent loop binding errors"""
+    OrderQueue._instance = None
+    yield
+    OrderQueue._instance = None
 
 
 @pytest.fixture(scope="session", autouse=True)

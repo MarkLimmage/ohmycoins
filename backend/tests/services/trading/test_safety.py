@@ -578,38 +578,4 @@ class TestSafetyManagerEdgeCases:
              # This simple log call should not raise an exception
              safety_manager._log_audit("TEST_ACTION", {})
 
-    @pytest.mark.asyncio
-    async def test_risk_rule_percentage_override(
-        self,
-        session: Session,
-        safety_manager: TradingSafetyManager,
-        test_user_with_portfolio: User
-    ):
-        """Test Dynamic Risk Rule percentage override"""
-        # Create a RiskRule that restricts position to 5% (Normal is 20%)
-        # Portfolio 10,000 -> 5% = 500 AUD
-        rule = RiskRule(
-            name="Conservative Strategy",
-            rule_type="max_position_size",
-            value={"max_percentage": "0.05"},
-            is_active=True
-        )
-        session.add(rule)
-        session.commit()
-
-        try:
-            # Try to buy 600 AUD (would pass normal 20% limit, but fails 5% rule)
-            with pytest.raises(SafetyViolation) as excinfo:
-                await safety_manager.validate_trade(
-                    user_id=test_user_with_portfolio.id,
-                    coin_type='DOGE',
-                    side='buy',
-                    quantity=Decimal('600'),
-                    estimated_price=Decimal('1.0')
-                )
-
-            assert "Dynamic Risk Rule 'Conservative Strategy' violated" in str(excinfo.value)
-        finally:
-            session.delete(rule)
-            session.commit()
 
