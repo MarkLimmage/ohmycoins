@@ -22,7 +22,7 @@ from app.services.collectors.config import (
     start_collection,
     stop_collection,
 )
-from app.services.scheduler import start_scheduler, stop_scheduler
+# from app.services.scheduler import start_scheduler, stop_scheduler (Legacy Scheduler Deprecated)
 from app.services.trading.executor import get_order_queue
 from app.services.trading.scheduler import get_execution_scheduler
 
@@ -30,12 +30,12 @@ from app.services.trading.scheduler import get_execution_scheduler
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
-    # Startup: Start the data collection scheduler
-    await start_scheduler()
-
-    # Startup: Start Phase 2.5 Data Collectors
+    # Startup: Start Phase 2.5 Data Collectors (New Orchestrator)
     setup_collectors()
     start_collection()
+
+    # Legacy scheduler disabled in favor of CollectionOrchestrator
+    # await start_scheduler()
 
     # Initialize and start Order Queue
     executor_session = Session(engine)
@@ -69,7 +69,7 @@ async def lifespan(_app: FastAPI):
     stop_collection()
 
     # Shutdown: Stop the scheduler gracefully
-    await stop_scheduler()
+    # await stop_scheduler()
 
     # Stop Execution Scheduler
     execution_scheduler.stop()
