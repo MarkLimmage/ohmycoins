@@ -25,6 +25,9 @@ import {
 } from "recharts"
 import { useCollectorInstances } from "../../hooks/useCollectors"
 import type { Collector } from "../../client/types.gen"
+import { Checkbox } from "../../components/ui/checkbox"
+import { Button } from "../../components/ui/button"
+import { useAutoRefresh } from "../../context/AutoRefreshContext"
 
 // Mock Data for Activity Stream
 const MOCK_ACTIVITY_LOGS = [
@@ -56,7 +59,8 @@ const StatusBadge = ({ status }: { status?: string }) => {
 }
 
 export const CollectorHealth = () => {
-  const { data: collectors, isLoading, error } = useCollectorInstances()
+  const { data: collectors, isLoading, error, refetch } = useCollectorInstances()
+  const { isEnabled, toggle } = useAutoRefresh()
 
   if (isLoading) return <Spinner size="xl" />
   if (error) return <Alert.Root status="error"><Icon as={FiAlertCircle} mr={2} />Failed to load collectors</Alert.Root>
@@ -64,7 +68,17 @@ export const CollectorHealth = () => {
   return (
     <Box p={5}>
       <VStack gap={6} align="stretch">
-        <Heading size="lg">Collector Health Dashboard</Heading>
+        <HStack justify="space-between">
+          <Heading size="lg">Collector Health Dashboard</Heading>
+          <HStack gap={4}>
+            <Button size="sm" onClick={() => refetch()} loading={isLoading}>
+              Refresh Now
+            </Button>
+            <Checkbox checked={isEnabled} onCheckedChange={() => toggle()}>
+              Auto Refresh (30s)
+            </Checkbox>
+          </HStack>
+        </HStack>
 
         {/* 1. Status Grid */}
         <Box>

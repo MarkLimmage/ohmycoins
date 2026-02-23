@@ -52,3 +52,52 @@ OBJECTIVES:
 **Status**: COMPLETED
 **Monologue**: Component created with mocked data for charts and real data for status grid. Integrated into `collectors.tsx`.
 **Blockers**: None.
+
+
+# Context Injection
+DATE: Mon Feb 23 17:20:04 AEST 2026
+CONTEXT: Sprint 2.35 - Track B: Dashboard Polish
+ROLE: Frontend Developer
+WORKSPACE ANCHOR: ../sprint-2.35/track-b (Port 3001)
+
+MISSION:
+Enhance user visibility into system health.
+1. **Error Modals**: Click to view error stack trace.
+2. **Auto-Refresh**: Live status updates.
+
+
+
+# Context Injection
+DATE: Mon Feb 23 17:20:33 AEST 2026
+CONTEXT: Sprint 2.35 - Track B: Dashboard Polish
+ROLE: Frontend Developer
+WORKSPACE ANCHOR: ../sprint-2.35/track-b (Port 3001)
+
+MISSION:
+Enhance the Collector Dashboard to be production-ready.
+1. **Error Modal**: When a collector status is "Error", clicking it should open a modal showing the `error_message` from `CollectorRuns`.
+2. **Relative Times**: Change "Last Run" to "5 minutes ago" (using `date-fns`).
+3. **Auto-Refresh**: Use `react-query` to poll status every 30 seconds.
+
+
+## [INITIALIZATION] - Sprint 2.35 Track B
+**Intent**: Initialize workspace for Sprint 2.35 - Track B.
+**Status**: IN_PROGRESS
+**Context**: You are the Frontend Developer for Track B (Implement Error Modal & Auto-Refresh).
+**Timestamp**: Mon Feb 23 17:23:31 AEST 2026
+
+
+## [2026-02-23] - Implementation - Error Modal & Auto-Refresh
+**Intent**: Implement global error modal and data auto-refresh mechanism.
+**Status**: COMPLETED
+**Context**: Created `ErrorContext` and `AutoRefreshContext`. Integrated with `main.tsx`, `useCollectors.ts` and `CollectorHealth.tsx`.
+**Details**:
+- Created `frontend/src/context/ErrorContext.tsx`: Uses Chakra UI Dialog to show global errors.
+- Created `frontend/src/context/AutoRefreshContext.tsx`: Manages auto-refresh state (enabled/interval).
+- Updated `frontend/src/components/ui/provider.tsx`: Wrapped app with new providers.
+- Created `frontend/src/utils/eventBus.ts`: Simple event bus for decoupling API errors from React context.
+- Updated `frontend/src/main.tsx`: Emit errors to event bus on API failures.
+- Updated `frontend/src/hooks/useCollectors.ts`: Use `useAutoRefresh` to control `refetchInterval`.
+- Updated `frontend/src/features/dashboard/CollectorHealth.tsx`: Added Auto Refresh toggle and Manual Refresh button.
+- Cleaned up environment configuration (Fixed ports in `docker-compose.override.yml`).
+

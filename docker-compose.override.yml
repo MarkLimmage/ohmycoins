@@ -1,24 +1,17 @@
 services:
   proxy:
-    # ports:
-    #   - "8001:80"
+    ports:
+      - "8020:80"
   backend:
     volumes:
       - /home/mark/omc/logs/hub:/var/log/omc-agents
-      - ./backend/app:/app/app
     environment:
       - POSTGRES_PORT=5432
   celery_worker:
     volumes:
       - /home/mark/omc/logs/hub:/var/log/omc-agents
-      - ./backend/app:/app/app
     environment:
       - POSTGRES_PORT=5432
   prestart:
     environment:
       - POSTGRES_PORT=5432
-
-networks:
-  traefik-public:
-    # For local dev, don't expect an external Traefik network
-    external: false
