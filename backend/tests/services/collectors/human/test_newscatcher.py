@@ -55,7 +55,7 @@ class TestNewscatcherCollectorIntegration:
         """Test collector initialization with API key."""
         assert newscatcher_collector.name == "newscatcher_api"
         assert newscatcher_collector.ledger == "human"
-        assert newscatcher_collector.base_url == "https://api.newscatcherapi.com/v2"
+        assert newscatcher_collector.base_url == "https://v3-api.newscatcherapi.com/api"
         assert newscatcher_collector.api_key is not None
 
     def test_initialization_without_api_key(self):

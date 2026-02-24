@@ -32,9 +32,10 @@ class TestPhase1Validation:
         assert hasattr(PriceData5Min, 'timestamp')
 
     def test_collector_service_exists(self):
-        """Verify collector service file exists"""
-        collector_path = Path(__file__).parent.parent / "app" / "services" / "collector.py"
-        assert collector_path.exists()
+        """Verify collector service files exist (migrated to strategies)"""
+        collectors_path = Path(__file__).parent.parent / "app" / "collectors" / "strategies"
+        assert collectors_path.exists()
+        assert (collectors_path / "exchange_coinspot.py").exists()
 
     def test_scheduler_service_exists(self):
         """Verify scheduler service file exists"""

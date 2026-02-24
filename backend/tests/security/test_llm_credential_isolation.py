@@ -226,7 +226,7 @@ class TestUserCredentialIsolation:
         # Query all active credentials (BAD - should never do this)
         all_credentials = session.exec(
             select(UserLLMCredentials).where(
-                UserLLMCredentials.is_active is True
+                UserLLMCredentials.is_active == True
             )
         ).all()
 
@@ -237,7 +237,7 @@ class TestUserCredentialIsolation:
         user_a_credentials = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == user_a.id,
-                UserLLMCredentials.is_active is True
+                UserLLMCredentials.is_active == True
             )
         ).all()
 
@@ -250,7 +250,7 @@ class TestUserCredentialIsolation:
         user_b_credentials = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == user_b.id,
-                UserLLMCredentials.is_active is True
+                UserLLMCredentials.is_active == True
             )
         ).all()
 

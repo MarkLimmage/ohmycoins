@@ -27,25 +27,25 @@ class TestCollectorIntegration:
 
     @pytest.mark.asyncio
     async def test_orchestrator_registration(self):
-        """Test that all collectors are properly registered."""
-        orchestrator = get_orchestrator()
+        """Test that all collectors are properly registered via plugin discovery."""
+        from app.core.collectors.registry import CollectorRegistry
 
-        # Setup collectors
+        # Setup collectors discovers strategies via the registry
         setup_collectors()
 
-        # Check collectors are registered (at least 4 without API keys)
-        assert len(orchestrator.collectors) >= 4
+        # Check that strategies are discovered
+        strategies = CollectorRegistry.list_strategies()
+        assert len(strategies) >= 4
 
-        # Check specific collectors that don't require API keys
-        expected_collectors = [
-            "defillama_api",
-            "reddit_api",
-            "sec_edgar_api",
-            "coinspot_announcements",
+        # Check specific collector strategies by their registered names
+        expected_strategies = [
+            "GlassChainWalker",
+            "HumanRSSCollector",
+            "CoinspotExchange",
         ]
 
-        for collector_name in expected_collectors:
-            assert collector_name in orchestrator.collectors
+        for strategy_name in expected_strategies:
+            assert strategy_name in strategies
 
     @pytest.mark.asyncio
     async def test_quality_monitor_with_empty_database(self, db):

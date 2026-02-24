@@ -60,8 +60,12 @@ class TestCoinspotTradingClient:
 
     @pytest.mark.asyncio
     async def test_market_buy_success(self, client):
-        """Test successful market buy order"""
-        mock_response = {
+        """Test successful market buy order (calls /quote/buy first, then /my/buy)"""
+        quote_response = {
+            'status': 'ok',
+            'rate': '50000.00'
+        }
+        buy_response = {
             'status': 'ok',
             'id': '12345',
             'market': 'BTC/AUD',
@@ -73,14 +77,23 @@ class TestCoinspotTradingClient:
 
         async with client:
             with patch.object(client, '_make_request', new_callable=AsyncMock) as mock_request:
-                mock_request.return_value = mock_response
+                # Setup side effects for the two calls: /quote/buy then /my/buy
+                mock_request.side_effect = [quote_response, buy_response]
 
                 result = await client.market_buy('BTC', Decimal('1000.00'))
 
-                assert result == mock_response
-                mock_request.assert_called_once_with(
-                    '/my/buy',
+                assert result == buy_response
+                # Verify both calls were made
+                assert mock_request.call_count == 2
+                # First call to /quote/buy
+                mock_request.assert_any_call(
+                    '/quote/buy',
                     {'cointype': 'BTC', 'amount': '1000.00'}
+                )
+                # Second call to /my/buy with rate
+                mock_request.assert_any_call(
+                    '/my/buy',
+                    {'cointype': 'BTC', 'amount': '1000.00', 'rate': '50000.00'}
                 )
 
     @pytest.mark.asyncio

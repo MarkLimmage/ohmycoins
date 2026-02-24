@@ -35,30 +35,38 @@ async def test_scheduler_refresh_jobs():
 @pytest.mark.asyncio
 async def test_scheduler_run_job_legacy():
     scheduler = DatabaseScheduler()
-    
+
     with patch("app.services.scheduler.Session") as mock_session_cls, \
-         patch("app.services.scheduler.run_legacy_collector", new_callable=AsyncMock) as mock_run_legacy:
-        
+         patch("app.services.scheduler.CollectorRegistry") as mock_registry:
+
         mock_session = mock_session_cls.return_value
         mock_session.__enter__.return_value = mock_session
-        
+
         # Mock collector
-        c1 = Collector(id=1, name="TestCoinspot", plugin_name="coinspot_price", schedule_cron="*/5 * * * *", is_enabled=True)
+        c1 = Collector(id=1, name="TestCoinspot", plugin_name="coinspot_price", schedule_cron="*/5 * * * *", is_enabled=True, config={})
         mock_session.get.return_value = c1
-        
-        mock_run_legacy.return_value = 10 # 10 records
-        
+
+        # Mock Strategy for coinspot_price -> CoinspotExchange mapping
+        mock_strategy_cls = MagicMock()
+        mock_strategy_instance = AsyncMock()
+        mock_strategy_instance.collect.return_value = ["item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10"]
+        mock_strategy_cls.return_value = mock_strategy_instance
+
+        mock_registry.get_strategy.return_value = mock_strategy_cls
+
         await scheduler.run_job(1)
-        
-        mock_run_legacy.assert_called_once()
-        
+
+        # Verify strategy was called (with legacy mapping: coinspot_price -> CoinspotExchange)
+        mock_registry.get_strategy.assert_called_with("CoinspotExchange")
+        mock_strategy_instance.collect.assert_called_once()
+
         # Verify status updates
         # We expect session.add to be called multiple times (status running, then status idle)
         assert mock_session.add.call_count >= 2
         assert c1.status == "idle" # End state
-        
+
         # Verify run record created
-        # We can't easily check the exact object passed to add without capturing it, 
+        # We can't easily check the exact object passed to add without capturing it,
         # but we can assume if code ran without error it's fine for this smoke test.
 
 @pytest.mark.asyncio

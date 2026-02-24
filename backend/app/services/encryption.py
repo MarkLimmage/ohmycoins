@@ -131,6 +131,8 @@ class EncryptionService:
             ValueError: If encrypted_api_key is empty
             cryptography.fernet.InvalidToken: If decryption fails
         """
+        # Audit log for key access
+        logger.info("LLM API key decrypted for access")
         return self.decrypt(encrypted_api_key)
 
 

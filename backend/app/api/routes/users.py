@@ -313,7 +313,7 @@ def create_llm_credentials(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
             UserLLMCredentials.provider == credentials_in.provider.lower(),
-            UserLLMCredentials.is_active is True
+            UserLLMCredentials.is_active == True
         )
     ).first()
 
@@ -338,7 +338,7 @@ def create_llm_credentials(
         existing_defaults = session.exec(
             select(UserLLMCredentials).where(
                 UserLLMCredentials.user_id == current_user.id,
-                UserLLMCredentials.is_default is True
+                UserLLMCredentials.is_default == True
             )
         ).all()
         for cred in existing_defaults:
@@ -359,6 +359,9 @@ def create_llm_credentials(
     session.add(db_credentials)
     session.commit()
     session.refresh(db_credentials)
+
+    # Audit log for credential creation
+    logger.info(f"LLM credential created for user {current_user.id}, provider={credentials_in.provider}, credential_id={db_credentials.id}")
 
     # Return public view with masked API key
     api_key_masked = encryption_service.mask_api_key(credentials_in.api_key)
@@ -392,7 +395,7 @@ def list_llm_credentials(
     credentials_list = session.exec(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.is_active is True
+            UserLLMCredentials.is_active == True
         )
     ).all()
 
@@ -449,7 +452,7 @@ def set_default_llm_credential(
     existing_defaults = session.exec(
         select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.is_default is True
+            UserLLMCredentials.is_default == True
         )
     ).all()
     for cred in existing_defaults:
@@ -509,6 +512,9 @@ def delete_llm_credential(
     credential.is_default = False  # Can't be default if inactive
     session.add(credential)
     session.commit()
+
+    # Audit log for credential deletion
+    logger.info(f"LLM credential deleted for user {current_user.id}, provider={credential.provider}, credential_id={credential_id}")
 
     return Message(message=f"{credential.provider} credentials deleted successfully")
 
