@@ -108,13 +108,13 @@ export const CollectorHealth = () => {
                   <Card.Body pt={0}>
                     <VStack gap={2} align="start">
                       <Text fontSize="sm">
-                        Success Rate: <strong>{stat.uptime_pct.toFixed(1)}%</strong>
+                        Success Rate: <strong>{(stat.uptime_pct ?? 0).toFixed(1)}%</strong>
                       </Text>
                       <Text fontSize="sm">
                         Total Records: <strong>{stat.total_records}</strong>
                       </Text>
                       <Text fontSize="sm">
-                        Avg Duration: <strong>{stat.avg_duration_seconds.toFixed(2)}s</strong>
+                        Avg Duration: <strong>{(stat.avg_duration_seconds ?? 0).toFixed(2)}s</strong>
                       </Text>
                       <Text fontSize="sm">
                         Total Runs: <strong>{stat.total_runs}</strong>
@@ -199,7 +199,7 @@ export const CollectorHealth = () => {
                         </Badge>
                       </Table.Cell>
                       <Table.Cell textAlign="right">{log.items}</Table.Cell>
-                      <Table.Cell textAlign="right">{log.duration.toFixed(2)}</Table.Cell>
+                      <Table.Cell textAlign="right">{(log.duration ?? 0).toFixed(2)}</Table.Cell>
                     </Table.Row>
                   ))}
                 </Table.Body>
