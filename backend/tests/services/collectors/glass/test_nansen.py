@@ -50,10 +50,21 @@ class TestNansenCollectorIntegration:
         assert len(nansen_collector.TRACKED_TOKENS) >= 5
 
     def test_initialization_without_api_key(self):
-        """Test collector initialization fails without API key."""
+        """Test collector initializes gracefully without API key."""
         with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="Nansen API key required"):
-                NansenCollector(api_key=None)
+            # Should initialize without raising, with API key availability set to False
+            collector = NansenCollector(api_key=None)
+            assert collector.name == "nansen_api"
+            assert not collector._api_key_available
+
+    @pytest.mark.asyncio
+    async def test_collect_without_api_key(self):
+        """Test collection gracefully skips when API key is unavailable."""
+        with patch.dict(os.environ, {}, clear=True):
+            collector = NansenCollector(api_key=None)
+            data = await collector.collect()
+            assert data == []
+            assert not collector._api_key_available
 
     @pytest.mark.asyncio
     async def test_collect_success(self, nansen_collector, sample_nansen_response):

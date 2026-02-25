@@ -57,10 +57,13 @@ class CryptoPanicCollector(APICollector):
             api_key: CryptoPanic API key (if None, reads from environment)
         """
         self.api_key = api_key or os.getenv("CRYPTOPANIC_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "CryptoPanic API key required. Set CRYPTOPANIC_API_KEY environment variable "
-                "or pass api_key parameter. Get a free key at: https://cryptopanic.com/developers/api/"
+        self._api_key_available = bool(self.api_key)
+
+        if not self._api_key_available:
+            logger.warning(
+                f"CryptoPanic API key not found. This collector will not run. "
+                f"Set CRYPTOPANIC_API_KEY environment variable or pass api_key parameter. "
+                f"Get a free key at: https://cryptopanic.com/developers/api/"
             )
 
         super().__init__(
@@ -82,6 +85,13 @@ class CryptoPanicCollector(APICollector):
         Raises:
             Exception: If API request fails
         """
+        if not self._api_key_available:
+            logger.warning(
+                f"{self.name}: API key not available. Skipping collection. "
+                f"Configure CRYPTOPANIC_API_KEY to enable this collector."
+            )
+            return []
+
         logger.info(f"{self.name}: Collecting recent crypto news")
 
         try:

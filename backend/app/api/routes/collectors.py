@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, List
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, desc
 
 from app.api.deps import SessionDep
 from app.core.collectors.registry import CollectorRegistry
@@ -257,12 +257,12 @@ def run_instance(
     """
     return trigger_instance(id, session, background_tasks)
 
-@router.get("/{id}/stats", response_model=List[dict])
+@router.get("/{id}/stats", response_model=List[dict[str, Any]])
 def get_stats(
     id: int,
     session: SessionDep,
     range: str = Query("1h", description="Time range for stats (e.g., 1h, 24h, 7d)")
-) -> Any:
+) -> List[dict[str, Any]]:
     """
     Get statistical data (records collected) for a collector over time.
     """
@@ -279,17 +279,17 @@ def get_stats(
         delta = timedelta(days=7)
     elif range == "30d":
         delta = timedelta(days=30)
-    
+
     start_time = now - delta
 
     statement = (
         select(CollectorRuns)
         .where(CollectorRuns.collector_name == collector.name)
         .where(CollectorRuns.started_at >= start_time)
-        .order_by(CollectorRuns.started_at)
+        .order_by(CollectorRuns.started_at)  # type: ignore[arg-type]
     )
     runs = session.exec(statement).all()
-    
+
     return [
         {
             "timestamp": run.started_at,
@@ -298,4 +298,198 @@ def get_stats(
         }
         for run in runs
     ]
+
+
+# ============================================================================
+# AGGREGATE STATS ENDPOINTS
+# ============================================================================
+
+def _get_ledger_for_collector(session: Session, collector_name: str) -> str | None:
+    """
+    Determine which ledger a collector belongs to by instantiating it.
+    Returns one of: "glass", "human", "catalyst", "exchange"
+    """
+    # Get the collector instance to find its plugin_name
+    statement = select(Collector).where(Collector.name == collector_name)
+    collector = session.exec(statement).first()
+
+    if not collector:
+        return None
+
+    # Get the strategy and check if it has a ledger property
+    strategy_instance = CollectorRegistry.get_strategy_instance(collector.plugin_name)
+    if strategy_instance and hasattr(strategy_instance, 'ledger'):
+        ledger = getattr(strategy_instance, 'ledger', None)
+        if isinstance(ledger, str):
+            return ledger
+
+    # Fallback: infer from plugin_name pattern
+    plugin_name = collector.plugin_name.lower()
+    if any(x in plugin_name for x in ['defillama', 'nansen', 'chain_walker']):
+        return 'glass'
+    elif any(x in plugin_name for x in ['cryptopanic', 'newscatcher', 'reddit', 'rss']):
+        return 'human'
+    elif any(x in plugin_name for x in ['sec', 'coinspot_announce']):
+        return 'catalyst'
+    elif any(x in plugin_name for x in ['coinspot', 'exchange']):
+        return 'exchange'
+
+    return None
+
+
+@router.get("/stats/volume", response_model=List[dict[str, Any]])
+def get_volume_stats(
+    session: SessionDep,
+    range: str = Query("24h", description="Time range for stats (1h, 24h, 7d)")
+) -> List[dict[str, Any]]:
+    """
+    Get records collected grouped by ledger over time.
+
+    Response format: [{time: "HH:MM", Glass: N, Human: N, Catalyst: N, Exchange: N}]
+    Supports time range parameter (1h, 24h, 7d).
+    """
+    # Parse range
+    now = datetime.now(timezone.utc)
+    delta = timedelta(hours=1)
+    if range == "24h":
+        delta = timedelta(hours=24)
+    elif range == "7d":
+        delta = timedelta(days=7)
+
+    start_time = now - delta
+
+    # Query all runs in the time range
+    statement = (
+        select(CollectorRuns)
+        .where(CollectorRuns.started_at >= start_time)
+        .order_by(CollectorRuns.started_at)  # type: ignore[arg-type]
+    )
+    runs = session.exec(statement).all()
+
+    # Group by time (hourly buckets) and ledger
+    time_buckets: dict[str, dict[str, Any]] = {}
+
+    for run in runs:
+        # Create hourly bucket key (HH:MM format)
+        time_key = run.started_at.strftime("%H:%M")
+
+        if time_key not in time_buckets:
+            time_buckets[time_key] = {
+                "time": time_key,
+                "Glass": 0,
+                "Human": 0,
+                "Catalyst": 0,
+                "Exchange": 0
+            }
+
+        # Determine ledger for this collector
+        ledger = _get_ledger_for_collector(session, run.collector_name)
+        if not ledger:
+            continue
+
+        # Map ledger name to capitalized format
+        ledger_display = ledger.capitalize()
+        if ledger_display in time_buckets[time_key]:
+            count = time_buckets[time_key][ledger_display]
+            if isinstance(count, int):
+                time_buckets[time_key][ledger_display] = count + (run.records_collected or 0)
+
+    # Return as sorted list
+    return sorted(list(time_buckets.values()), key=lambda x: str(x.get("time", "")))
+
+
+@router.get("/stats/activity", response_model=List[dict[str, Any]])
+def get_activity_stats(session: SessionDep) -> List[dict[str, Any]]:
+    """
+    Get recent collector runs across all collectors.
+
+    Returns last 50 runs ordered by started_at DESC.
+    Response: [{id, timestamp, collector, status, items, duration}]
+    """
+    statement = (
+        select(CollectorRuns)
+        .order_by(desc(CollectorRuns.started_at))
+        .limit(50)
+    )
+    runs = session.exec(statement).all()
+
+    result: list[dict[str, Any]] = []
+    for run in runs:
+        duration_seconds = 0
+        if run.completed_at and run.started_at:
+            duration_seconds = int((run.completed_at - run.started_at).total_seconds())
+
+        result.append({
+            "id": run.id,
+            "timestamp": run.started_at,
+            "collector_name": run.collector_name,
+            "status": run.status,
+            "records_collected": run.records_collected or 0,
+            "duration_seconds": duration_seconds
+        })
+
+    return result
+
+
+@router.get("/stats/summary", response_model=List[dict[str, Any]])
+def get_summary_stats(session: SessionDep) -> List[dict[str, Any]]:
+    """
+    Get aggregate stats per collector.
+
+    Response: [{collector_name, total_runs, success_count, error_count,
+                total_records, avg_duration_seconds, last_success_at, uptime_pct}]
+    """
+    # Get all unique collectors
+    statement = select(CollectorRuns.collector_name).distinct()
+    collector_names = session.exec(statement).all()
+
+    summary: list[dict[str, Any]] = []
+
+    for collector_name in collector_names:
+        # Get all runs for this collector
+        runs_statement = (
+            select(CollectorRuns)
+            .where(CollectorRuns.collector_name == collector_name)
+            .order_by(CollectorRuns.started_at)  # type: ignore[arg-type]
+        )
+        runs = session.exec(runs_statement).all()
+
+        if not runs:
+            continue
+
+        total_runs = len(runs)
+        success_count = sum(1 for r in runs if r.status == "success")
+        error_count = sum(1 for r in runs if r.status == "error")
+        total_records = sum(r.records_collected or 0 for r in runs)
+
+        # Calculate average duration
+        durations: list[float] = []
+        for run in runs:
+            if run.completed_at and run.started_at:
+                duration = (run.completed_at - run.started_at).total_seconds()
+                durations.append(duration)
+        avg_duration = sum(durations) / len(durations) if durations else 0.0
+
+        # Find last successful run
+        last_success: datetime | None = None
+        for run in reversed(runs):
+            if run.status == "success":
+                last_success = run.started_at
+                break
+
+        # Calculate uptime percentage
+        uptime_pct = (success_count / total_runs * 100) if total_runs > 0 else 0.0
+
+        summary.append({
+            "collector_name": collector_name,
+            "total_runs": total_runs,
+            "success_count": success_count,
+            "error_count": error_count,
+            "total_records": total_records,
+            "avg_duration_seconds": round(avg_duration, 2),
+            "last_success_at": last_success,
+            "uptime_pct": round(uptime_pct, 1)
+        })
+
+    return summary
 

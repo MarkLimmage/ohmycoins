@@ -52,10 +52,13 @@ class NewscatcherCollector(APICollector):
             api_key: Newscatcher API key (if None, reads from environment)
         """
         self.api_key = api_key or os.getenv("NEWSCATCHER_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "Newscatcher API key required. Set NEWSCATCHER_API_KEY environment variable "
-                "or pass api_key parameter. Get a key at: https://www.newscatcherapi.com/"
+        self._api_key_available = bool(self.api_key)
+
+        if not self._api_key_available:
+            logger.warning(
+                f"Newscatcher API key not found. This collector will not run. "
+                f"Set NEWSCATCHER_API_KEY environment variable or pass api_key parameter. "
+                f"Get a key at: https://www.newscatcherapi.com/"
             )
 
         super().__init__(
@@ -77,6 +80,13 @@ class NewscatcherCollector(APICollector):
         Raises:
             Exception: If API request fails
         """
+        if not self._api_key_available:
+            logger.warning(
+                f"{self.name}: API key not available. Skipping collection. "
+                f"Configure NEWSCATCHER_API_KEY to enable this collector."
+            )
+            return []
+
         logger.info(f"{self.name}: Collecting recent crypto news")
 
         try:
