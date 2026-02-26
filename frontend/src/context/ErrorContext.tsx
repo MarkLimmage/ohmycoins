@@ -1,15 +1,21 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
-import { onError } from "../utils/eventBus"
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react"
+import { Button } from "../components/ui/button"
 import {
   DialogBody,
+  DialogCloseTrigger,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogRoot,
   DialogTitle,
-  DialogCloseTrigger,
 } from "../components/ui/dialog"
-import { Button } from "../components/ui/button"
+import { onError } from "../utils/eventBus"
 
 interface ErrorContextType {
   showError: (message: string) => void
@@ -37,9 +43,7 @@ export const ErrorProvider = ({ children }: { children: ReactNode }) => {
             <DialogTitle>Error Occurred</DialogTitle>
             <DialogCloseTrigger />
           </DialogHeader>
-          <DialogBody>
-            {error}
-          </DialogBody>
+          <DialogBody>{error}</DialogBody>
           <DialogFooter>
             <Button onClick={clearError}>Close</Button>
           </DialogFooter>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, type ReactNode, useContext, useState } from "react"
 
 interface AutoRefreshContextType {
   isEnabled: boolean
@@ -7,7 +7,9 @@ interface AutoRefreshContextType {
   setInterval: (interval: number) => void
 }
 
-const AutoRefreshContext = createContext<AutoRefreshContextType | undefined>(undefined)
+const AutoRefreshContext = createContext<AutoRefreshContextType | undefined>(
+  undefined,
+)
 
 export const AutoRefreshProvider = ({ children }: { children: ReactNode }) => {
   const [isEnabled, setIsEnabled] = useState(true)
@@ -17,7 +19,9 @@ export const AutoRefreshProvider = ({ children }: { children: ReactNode }) => {
   const setInterval = (newInterval: number) => setIntervalState(newInterval)
 
   return (
-    <AutoRefreshContext.Provider value={{ isEnabled, toggle, interval, setInterval }}>
+    <AutoRefreshContext.Provider
+      value={{ isEnabled, toggle, interval, setInterval }}
+    >
       {children}
     </AutoRefreshContext.Provider>
   )

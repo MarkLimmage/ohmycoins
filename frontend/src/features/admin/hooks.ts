@@ -1,6 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMemo } from "react"
 import { CollectorsService } from "@/client"
-import { CollectorPlugin, CollectorInstance, CollectorCreate, CollectorStatus, CollectorStatsPoint } from "./types"
+import { useCollectorSummaryStats } from "@/hooks/useCollectors"
+import type {
+  CollectorCardData,
+  CollectorCreate,
+  CollectorInstance,
+  CollectorPlugin,
+  CollectorStatsPoint,
+  CollectorStatus,
+} from "./types"
 
 // Adapter function to convert API Collector to Frontend CollectorInstance
 const mapApiCollectorToInstance = (apiCollector: any): CollectorInstance => {
@@ -27,8 +36,8 @@ export const useCollectors = () => {
     queryKey: ["collector-plugins"],
     queryFn: async () => {
       const response = await CollectorsService.listPlugins()
-      return response as unknown as CollectorPlugin[] 
-    }
+      return response as unknown as CollectorPlugin[]
+    },
   })
 
   // Fetch Instances
@@ -40,31 +49,37 @@ export const useCollectors = () => {
       return data.map(mapApiCollectorToInstance)
     },
     // Poll every 5 seconds to get status updates
-    refetchInterval: 5000 
+    refetchInterval: 5000,
   })
 
   // Create Instance
   const createMutation = useMutation({
     mutationFn: async (data: CollectorCreate) => {
-      console.log("Creating collector with data: ", data);
+      console.log("Creating collector with data: ", data)
       return await CollectorsService.createInstance({
         requestBody: {
           name: data.name,
           plugin_name: data.plugin_id,
           config: data.config,
           is_enabled: data.is_active ?? false,
-          schedule_cron: data.schedule_cron
-        }
+          schedule_cron: data.schedule_cron,
+        },
       })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
-    }
+    },
   })
 
   // Update Instance
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<CollectorCreate> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string
+      data: Partial<CollectorCreate>
+    }) => {
       // The API requires name, but we might only be updating config.
       // However, CollectorForm always sends the full object.
       // If we support partial updates in the future, we need to handle this.
@@ -72,54 +87,54 @@ export const useCollectors = () => {
       return await CollectorsService.updateInstance({
         id: Number(id),
         requestBody: {
-          name: data.name!, 
+          name: data.name!,
           plugin_name: data.plugin_id!,
           config: data.config,
           is_enabled: data.is_active,
-          schedule_cron: data.schedule_cron
-        }
+          schedule_cron: data.schedule_cron,
+        },
       })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
-    }
+    },
   })
 
   // Delete Instance
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       return await CollectorsService.deleteInstance({
-        id: Number(id)
+        id: Number(id),
       })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
-    }
+    },
   })
 
   // Toggle Instance
   const toggleMutation = useMutation({
-      mutationFn: async ({ id, is_active }: { id: string, is_active: boolean }) => {
-          return await CollectorsService.toggleInstance({
-              id: Number(id)
-          })
-      },
-      onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
-      }
+    mutationFn: async ({ id }: { id: string; is_active?: boolean }) => {
+      return await CollectorsService.toggleInstance({
+        id: Number(id),
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
+    },
   })
 
   // Trigger Instance (Run Now)
   const runMutation = useMutation({
-      mutationFn: async (id: string) => {
-          return await CollectorsService.triggerInstance({
-              id: Number(id)
-          })
-      },
-      onSuccess: () => {
-        // We might want to show a toast here
-        console.log("Collector triggered successfully")
-      }
+    mutationFn: async (id: string) => {
+      return await CollectorsService.triggerInstance({
+        id: Number(id),
+      })
+    },
+    onSuccess: () => {
+      // We might want to show a toast here
+      console.log("Collector triggered successfully")
+    },
   })
 
   return {
@@ -129,7 +144,7 @@ export const useCollectors = () => {
     updateInstance: updateMutation,
     deleteInstance: deleteMutation,
     toggleInstance: toggleMutation,
-    runCollector: runMutation
+    runCollector: runMutation,
   }
 }
 
@@ -137,19 +152,77 @@ export const useCollectorStats = (id: string, enabled = true) => {
   return useQuery({
     queryKey: ["collector-stats", id],
     queryFn: async (): Promise<CollectorStatsPoint[]> => {
-      // Mock data: Generate 24h history
-      const points: CollectorStatsPoint[] = [];
-      const now = new Date();
-      for (let i = 24; i >= 0; i--) {
-        points.push({
-          timestamp: new Date(now.getTime() - i * 3600000).toISOString(),
-          count: Math.floor(Math.random() * 50) + 10 
-        });
-      }
-      return points;
+      const response = await CollectorsService.getStats({
+        id: Number(id),
+        range: "24h",
+      })
+      return (response as any[]).map((r: any) => ({
+        timestamp: r.timestamp,
+        count: r.count ?? 0,
+      }))
     },
-    enabled: enabled,
-    staleTime: 60000 // Cache for 1 min
+    enabled: enabled && !!id,
+    staleTime: 60000,
   })
 }
 
+export const usePluginCardData = () => {
+  const { plugins, instances } = useCollectors()
+  const { data: summaryStats } = useCollectorSummaryStats()
+
+  const cards = useMemo((): CollectorCardData[] => {
+    if (!plugins.data) return []
+    return plugins.data.map((plugin) => {
+      const instance = instances.data?.find(
+        (inst) => inst.plugin_id === plugin.id,
+      )
+      const stats = summaryStats?.find(
+        (s) => s.collector_name === instance?.name,
+      )
+      return {
+        plugin_id: plugin.id,
+        plugin_name: plugin.name,
+        plugin_description: plugin.description,
+        plugin_schema: plugin.schema,
+        instance_id: instance?.id ?? null,
+        instance_name: instance?.name ?? null,
+        status: instance?.status ?? "idle",
+        config: instance?.config ?? {},
+        schedule_cron: instance?.schedule_cron ?? "*/15 * * * *",
+        last_run: instance?.last_run ?? null,
+        is_active: instance?.is_active ?? false,
+        success_rate: stats?.uptime_pct ?? null,
+        total_records: stats?.total_records ?? null,
+        avg_duration: stats?.avg_duration_seconds ?? null,
+        total_runs: stats?.total_runs ?? null,
+      }
+    })
+  }, [plugins.data, instances.data, summaryStats])
+
+  return {
+    cards,
+    isLoading: plugins.isLoading || instances.isLoading,
+    error: plugins.error || instances.error,
+  }
+}
+
+export const useCreateAndEnable = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (plugin: CollectorPlugin) => {
+      return await CollectorsService.createInstance({
+        requestBody: {
+          name: plugin.id,
+          plugin_name: plugin.id,
+          config: {},
+          is_enabled: true,
+          schedule_cron: "*/15 * * * *",
+        },
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collector-instances"] })
+      queryClient.invalidateQueries({ queryKey: ["collectors", "instances"] })
+    },
+  })
+}

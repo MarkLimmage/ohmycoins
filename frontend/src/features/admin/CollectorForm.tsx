@@ -1,17 +1,27 @@
-import { 
-  Box, 
-  Button, 
-  Flex, 
-  Input, 
-  Stack, 
+import {
+  Box,
+  Button,
+  createListCollection,
+  Flex,
+  Input,
+  Stack,
   Text,
-  createListCollection
 } from "@chakra-ui/react"
-import { useForm, Controller } from "react-hook-form"
-import { CollectorPlugin, CollectorCreate, CollectorInstance } from "./types"
-import { useCollectors } from "./hooks"
-import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValueText } from "@/components/ui/select"
+import { Controller, useForm } from "react-hook-form"
 import { Field } from "@/components/ui/field"
+import {
+  SelectContent,
+  SelectItem,
+  SelectRoot,
+  SelectTrigger,
+  SelectValueText,
+} from "@/components/ui/select"
+import { useCollectors } from "./hooks"
+import type {
+  CollectorCreate,
+  CollectorInstance,
+  CollectorPlugin,
+} from "./types"
 
 interface CollectorPluginFormProps {
   plugins: CollectorPlugin[]
@@ -20,50 +30,64 @@ interface CollectorPluginFormProps {
   onSuccess: () => void
 }
 
-export const CollectorPluginForm = ({ plugins, initialValues, onCancel, onSuccess }: CollectorPluginFormProps) => {
+export const CollectorPluginForm = ({
+  plugins,
+  initialValues,
+  onCancel,
+  onSuccess,
+}: CollectorPluginFormProps) => {
   const { createInstance, updateInstance } = useCollectors()
-  const { register, handleSubmit, control, watch, reset } = useForm<CollectorCreate>({
-    defaultValues: initialValues ? {
-      name: initialValues.name,
-      plugin_id: initialValues.plugin_id,
-      config: initialValues.config,
-      schedule_cron: initialValues.schedule_cron
-    } : {
-      schedule_cron: "*/15 * * * *"
-    }
-  })
+  const { register, handleSubmit, control, watch, reset } =
+    useForm<CollectorCreate>({
+      defaultValues: initialValues
+        ? {
+            name: initialValues.name,
+            plugin_id: initialValues.plugin_id,
+            config: initialValues.config,
+            schedule_cron: initialValues.schedule_cron,
+          }
+        : {
+            schedule_cron: "*/15 * * * *",
+          },
+    })
   const selectedPluginId = watch("plugin_id")
-  
+
   // Find selected plugin to render its schema
-  const selectedPlugin = plugins.find(p => p.id === selectedPluginId)
+  const selectedPlugin = plugins.find((p) => p.id === selectedPluginId)
 
   const onSubmit = (data: CollectorCreate) => {
     if (initialValues) {
-      updateInstance.mutate({ id: initialValues.id, data }, {
-        onSuccess: () => {
-          reset()
-          onSuccess()
-        }
-      })
+      updateInstance.mutate(
+        { id: initialValues.id, data },
+        {
+          onSuccess: () => {
+            reset()
+            onSuccess()
+          },
+        },
+      )
     } else {
       createInstance.mutate(data, {
         onSuccess: () => {
           reset()
           onSuccess()
-        }
+        },
       })
     }
   }
 
   const pluginCollection = createListCollection({
-    items: plugins.map(p => ({ label: p.name, value: p.id }))
+    items: plugins.map((p) => ({ label: p.name, value: p.id })),
   })
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Stack gap={4} py={4}>
         <Field label="Name">
-          <Input {...register("name", { required: true })} placeholder="My Collector Instance" />
+          <Input
+            {...register("name", { required: true })}
+            placeholder="My Collector Instance"
+          />
         </Field>
 
         <Field label="Plugin Strategy">
@@ -72,7 +96,7 @@ export const CollectorPluginForm = ({ plugins, initialValues, onCancel, onSucces
             name="plugin_id"
             rules={{ required: true }}
             render={({ field }) => (
-              <SelectRoot 
+              <SelectRoot
                 collection={pluginCollection}
                 value={field.value ? [field.value] : []}
                 onValueChange={(e) => field.onChange(e.value[0])}
@@ -94,76 +118,109 @@ export const CollectorPluginForm = ({ plugins, initialValues, onCancel, onSucces
         </Field>
 
         <Field label="Schedule (Cron)">
-            <Input {...register("schedule_cron", { required: true })} placeholder="*/15 * * * *" />
-            <Text fontSize="xs" color="gray.500">Standard cron expression (e.g. */15 * * * *)</Text>
+          <Input
+            {...register("schedule_cron", { required: true })}
+            placeholder="*/15 * * * *"
+          />
+          <Text fontSize="xs" color="gray.500">
+            Standard cron expression (e.g. */15 * * * *)
+          </Text>
         </Field>
 
         {selectedPlugin && (
-          <Box border="1px solid" borderColor="gray.200" p={4} borderRadius="md" bg="gray.50">
-            <Text fontWeight="bold" mb={3}>Configuration ({selectedPlugin.name})</Text>
+          <Box
+            border="1px solid"
+            borderColor="gray.200"
+            p={4}
+            borderRadius="md"
+            bg="gray.50"
+          >
+            <Text fontWeight="bold" mb={3}>
+              Configuration ({selectedPlugin.name})
+            </Text>
             <Stack gap={3}>
               {/* Dynamic Form Generation based on Schema */}
-              {Object.entries(selectedPlugin.schema.properties || {}).map(([key, prop]: [string, any]) => (
-                <Field key={key} label={prop.title || key} helperText={prop.description}>
-                  
-                  {prop.type === "string" && !prop.enum && (
-                    <Input 
-                        {...register(`config.${key}`, { required: selectedPlugin.schema.required?.includes(key) })}
-                        placeholder={prop.default?.toString()}
-                    />
-                  )}
-                  
-                  {prop.type === "integer" && (
-                    <Input 
-                        type="number"
-                        {...register(`config.${key}`, { 
-                            required: selectedPlugin.schema.required?.includes(key),
-                            valueAsNumber: true 
+              {Object.entries(selectedPlugin.schema.properties || {}).map(
+                ([key, prop]: [string, any]) => (
+                  <Field
+                    key={key}
+                    label={prop.title || key}
+                    helperText={prop.description}
+                  >
+                    {prop.type === "string" && !prop.enum && (
+                      <Input
+                        {...register(`config.${key}`, {
+                          required:
+                            selectedPlugin.schema.required?.includes(key),
                         })}
                         placeholder={prop.default?.toString()}
-                    />
-                  )}
+                      />
+                    )}
 
-                  {prop.enum && (
-                    <Controller
+                    {prop.type === "integer" && (
+                      <Input
+                        type="number"
+                        {...register(`config.${key}`, {
+                          required:
+                            selectedPlugin.schema.required?.includes(key),
+                          valueAsNumber: true,
+                        })}
+                        placeholder={prop.default?.toString()}
+                      />
+                    )}
+
+                    {prop.enum && (
+                      <Controller
                         control={control}
                         name={`config.${key}`}
                         render={({ field }) => (
-                            <SelectRoot
-                                onValueChange={(e) => field.onChange(e.value[0])}
-                                value={field.value ? [field.value] : []}
-                                collection={createListCollection({items: prop.enum.map((e: string) => ({label: e, value: e}))})}
-                            >
-                                <SelectTrigger>
-                                  <SelectValueText placeholder={`Select ${key}`} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {prop.enum.map((opt: string) => (
-                                        <SelectItem item={opt} key={opt}>{opt}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </SelectRoot>
+                          <SelectRoot
+                            onValueChange={(e) => field.onChange(e.value[0])}
+                            value={field.value ? [field.value] : []}
+                            collection={createListCollection({
+                              items: prop.enum.map((e: string) => ({
+                                label: e,
+                                value: e,
+                              })),
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValueText placeholder={`Select ${key}`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {prop.enum.map((opt: string) => (
+                                <SelectItem item={opt} key={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </SelectRoot>
                         )}
-                    />
-                  )}
-                  
-                  {prop.type === "array" && (
-                    <Input
-                        {...register(`config.${key}`)} 
-                         placeholder="Comma separated values"
-                         // Simple handling for array input - ideally split by comma
-                    />
-                  )}
-                  
-                </Field>
-              ))}
+                      />
+                    )}
+
+                    {prop.type === "array" && (
+                      <Input
+                        {...register(`config.${key}`)}
+                        placeholder="Comma separated values"
+                        // Simple handling for array input - ideally split by comma
+                      />
+                    )}
+                  </Field>
+                ),
+              )}
             </Stack>
           </Box>
         )}
 
         <Flex justify="flex-end" gap={3} mt={4}>
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button type="submit" loading={createInstance.isPending || updateInstance.isPending}>
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            loading={createInstance.isPending || updateInstance.isPending}
+          >
             {initialValues ? "Update Collector" : "Create Collector"}
           </Button>
         </Flex>

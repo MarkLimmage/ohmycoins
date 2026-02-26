@@ -1,4 +1,4 @@
-import { Container, VStack, Box } from "@chakra-ui/react"
+import { Box, Container, VStack } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { CollectorDashboard } from "@/features/admin/CollectorDashboard"
 import { CollectorHealth } from "@/features/dashboard/CollectorHealth"
@@ -12,10 +12,10 @@ function CollectorsPage() {
     <Container maxW="full" py={8}>
       <VStack gap={8} align="stretch">
         <Box>
-           <CollectorHealth />
+          <CollectorHealth />
         </Box>
         <Box>
-           <CollectorDashboard />
+          <CollectorDashboard />
         </Box>
       </VStack>
     </Container>

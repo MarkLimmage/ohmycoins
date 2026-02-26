@@ -14,4 +14,5 @@ const defaultEmail = "admin@example.com"
 const defaultPassword = "changethis"
 
 export const firstSuperuser = (FIRST_SUPERUSER || defaultEmail) as string
-export const firstSuperuserPassword = (FIRST_SUPERUSER_PASSWORD || defaultPassword) as string
+export const firstSuperuserPassword = (FIRST_SUPERUSER_PASSWORD ||
+  defaultPassword) as string

@@ -38,7 +38,7 @@ function GlassChartView({
     return `$${value.toFixed(2)}`
   }
 
-// removed _formatPercentage
+  // removed _formatPercentage
 
   return (
     <Box>
