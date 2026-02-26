@@ -127,3 +127,41 @@ If a developer agent reports "missing files" or "wrong directory":
 2.  **Test in Container**: `docker compose exec backend pytest` is the only source of truth.
 3.  **Lint Strictness**: `ruff check .` and `mypy --strict .` must pass before PR.
 
+---
+
+## 🤝 Delegation & Ownership Protocol
+
+### Task Ownership Rules
+
+- A delegated task has **exactly one owner** at any time. The owner is the agent actively working on it.
+- The delegator (e.g., Architect) **MUST NOT perform the delegated work** — no running the same tests, builds, health checks, or code reviews in parallel.
+- The delegator may only send **status inquiries** while a task is owned by another agent.
+- To take over a stalled task: send a status inquiry first → wait for response → only then reassign via TaskUpdate.
+
+### Delegation Checklist (For the Spawner)
+
+Before delegating a task to another agent, the spawner MUST:
+
+1. **Read `.claude/agents/{target}.md`** — confirm the target's model, tools, and constraints.
+2. **Use the correct model** from the frontmatter (`dev` = haiku, `dockmaster` = sonnet, `architect` = opus).
+3. **Define success criteria** — the agent must know exactly when the task is done.
+4. **Include bootstrap instruction** — add "Execute the Bootstrap Sequence from CLAUDE.md before starting work" in the task prompt.
+
+### Report-Back Protocol
+
+When completing a delegated task, the agent MUST send this structured report to the delegator:
+
+```
+TASK REPORT
+STATUS: completed | blocked | failed
+RESULT: <one-line summary of what was accomplished>
+DELIVERABLES: <files changed, tests passed, endpoints verified>
+ISSUES: <blockers, warnings, or "none">
+```
+
+### Stale Report Handling
+
+If no TASK REPORT is received after a reasonable period:
+1. The delegator sends a **status inquiry message** to the agent.
+2. If no response after the inquiry, the delegator may **reassign** the task to another agent or take it over — but must log the takeover in `LOGBOOK.md`.
+3. The original agent, upon discovering its task was reassigned, MUST stop work immediately and acknowledge the reassignment.

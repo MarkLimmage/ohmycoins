@@ -238,3 +238,54 @@ Set in root `.env` (see `.env.template`):
 - `CURRENT_SPRINT.md` — Active sprint tasks
 - `LOGBOOK.md` — Development history
 - `AGENT_INSTRUCTIONS.md` — Agent governance and persona definitions
+
+---
+
+## Agent Bootstrap & Delegation Protocol
+
+These rules apply to ALL agents (Architect, Dockmaster, Dev) and to any process that spawns them.
+
+### Bootstrap Sequence (Mandatory First Actions)
+
+Every agent MUST execute these 5 steps before any other work:
+
+1. **Read own role file**: `.claude/agents/{your-name}.md` — confirms your model, tools, and constraints.
+2. **Read `AGENT_INSTRUCTIONS.md`** — contains governance rules, the `!reset []` YAML template, port formulas, and context injection protocols.
+3. **Read `CURRENT_SPRINT.md`** — identifies active tasks and priorities.
+4. **Check `INSTRUCTIONS_OVERRIDE.md`** — if present in the worktree, its contents override your current plan.
+5. **Log to `LOGBOOK.md`** — record your start timestamp, assigned task, and bootstrap confirmation.
+
+### Spawner Protocol (For Any Agent Creating Another)
+
+Before calling the Task tool to spawn an agent, the spawner MUST:
+
+1. **Read `.claude/agents/{target}.md`** to obtain the correct `model` and `tools` from the frontmatter.
+2. **Use the model from the frontmatter** in the Task tool call. The canonical models are:
+   - `architect` → `model: opus`
+   - `dockmaster` → `model: sonnet`
+   - `dev` → `model: haiku`
+3. **Include a bootstrap instruction** in the Task prompt: "Before starting work, execute the Bootstrap Sequence from CLAUDE.md."
+4. **Define clear success criteria** in the Task prompt so the agent knows when it is done.
+
+### Delegation Boundary Protocol
+
+Once a task is delegated to another agent:
+
+- **The delegator MUST NOT perform the delegated work** — no running the same tests, builds, or health checks in parallel.
+- **Status inquiries only** — the delegator may send a message asking for status, but must not duplicate effort.
+- **No silent takeover** — if a delegated agent appears stalled, send a status inquiry first. Only escalate (reassign or take over) after receiving no response.
+- **One owner per task** — a task has exactly one responsible agent at any time. Transfer ownership explicitly via TaskUpdate before intervening.
+
+### Report-Back Protocol
+
+When an agent completes a delegated task, it MUST send a structured report:
+
+```
+TASK REPORT
+STATUS: completed | blocked | failed
+RESULT: <one-line summary>
+DELIVERABLES: <files changed, tests passed, endpoints verified>
+ISSUES: <blockers, warnings, or "none">
+```
+
+If no report is received within a reasonable time, the delegator should send a status inquiry — not take over the work.
