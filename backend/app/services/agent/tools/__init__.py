@@ -7,6 +7,9 @@ Week 5-6 implementation: Model Training and Model Evaluation tools.
 Week 11 implementation: Reporting tools.
 """
 
+from .anomaly_detection import (
+    detect_price_anomalies,
+)
 from .data_analysis_tools import (
     analyze_on_chain_signals,
     analyze_sentiment_trends,
@@ -54,6 +57,7 @@ __all__ = [
     "analyze_sentiment_trends",
     "analyze_on_chain_signals",
     "detect_catalyst_impact",
+    "detect_price_anomalies",
     "clean_data",
     "perform_eda",
     # Model Training Tools

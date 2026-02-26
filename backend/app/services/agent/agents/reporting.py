@@ -168,6 +168,20 @@ class ReportingAgent(BaseAgent):
             state["report_data"] = report_data_compat  # Backward compatibility
             state["error"] = None
 
+            # Sprint 2.36: Alert Bridge
+            anomaly_data = analysis_results.get("anomaly_detection", {})
+            high_severity_count = anomaly_data.get("severity_distribution", {}).get("HIGH", 0)
+            if high_severity_count > 0:
+                state["alert_triggered"] = True
+                state["alert_payload"] = {
+                    "type": "anomaly_severity",
+                    "severity": "HIGH",
+                    "count": high_severity_count,
+                    "coins": list(set(a["coin"] for a in anomaly_data.get("anomalies", []) if a.get("severity") == "HIGH")),
+                    "summary": anomaly_data.get("summary", ""),
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+
             # Add message for user
             if "messages" not in state:
                 state["messages"] = []

@@ -11,6 +11,7 @@ from ..tools import (
     analyze_sentiment_trends,
     calculate_technical_indicators,
     detect_catalyst_impact,
+    detect_price_anomalies,
     perform_eda,
 )
 from .base import BaseAgent
@@ -124,6 +125,18 @@ class DataAnalystAgent(BaseAgent):
                         retrieved_data["catalyst_events"],
                         retrieved_data["price_data"]
                     )
+
+            # Sprint 2.36: Anomaly Detection
+            if "price_data" in retrieved_data and retrieved_data["price_data"]:
+                if ("anomaly" in user_goal.lower() or
+                    analysis_params.get("include_anomaly_detection", True)):
+                    anomaly_result = detect_price_anomalies(
+                        retrieved_data["price_data"],
+                        contamination=analysis_params.get("anomaly_contamination", 0.05)
+                    )
+                    analysis_results["anomaly_detection"] = anomaly_result
+                    state["anomaly_detected"] = anomaly_result.get("total_anomalies", 0) > 0
+                    state["anomaly_summary"] = anomaly_result.get("summary", "")
 
             # Generate insights summary
             insights = self._generate_insights(analysis_results, user_goal)

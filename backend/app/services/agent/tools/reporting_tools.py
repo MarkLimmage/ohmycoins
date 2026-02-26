@@ -78,6 +78,16 @@ def generate_summary(
             sentiment = analysis_results["sentiment_analysis"]
             summary_lines.append(f"- **Sentiment Analysis:** {sentiment.get('overall_sentiment', 'N/A')}")
             summary_lines.append(f"  - Average sentiment score: {sentiment.get('avg_sentiment', 0):.2f}")
+
+        # Sprint 2.36: Anomaly Detection section
+        if "anomaly_detection" in analysis_results:
+            ad = analysis_results["anomaly_detection"]
+            summary_lines.append("\n## Anomaly Detection\n")
+            summary_lines.append(f"- **Model:** {ad.get('model', 'IsolationForest')}")
+            summary_lines.append(f"- **Total Anomalies:** {ad.get('total_anomalies', 0)}")
+            severity_dist = ad.get("severity_distribution", {})
+            if severity_dist.get("HIGH", 0) > 0:
+                summary_lines.append(f"- **⚠ HIGH Severity:** {severity_dist['HIGH']} events")
     else:
         summary_lines.append("- No analysis results available")
 
@@ -349,6 +359,15 @@ def generate_recommendations(
             recommendations.append(
                 "💡 Ensemble Method: Multiple models trained. Consider creating an ensemble "
                 "to improve prediction accuracy and robustness."
+            )
+
+    # Sprint 2.36: Anomaly Detection recommendations
+    if analysis_results and "anomaly_detection" in analysis_results:
+        ad = analysis_results["anomaly_detection"]
+        if ad.get("severity_distribution", {}).get("HIGH", 0) > 0:
+            recommendations.append(
+                "**URGENT**: HIGH severity price anomalies detected. "
+                "Review positions in affected coins and consider tightening stop-losses."
             )
 
     # Check for missing analysis

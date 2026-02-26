@@ -18,6 +18,7 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutPerformanceRouteImport } from './routes/_layout/performance'
 import { Route as LayoutLlmSettingsRouteImport } from './routes/_layout/llm-settings'
+import { Route as LayoutDataExplorerRouteImport } from './routes/_layout/data-explorer'
 import { Route as LayoutCollectorsRouteImport } from './routes/_layout/collectors'
 import { Route as LayoutAuditRouteImport } from './routes/_layout/audit'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
@@ -66,6 +67,11 @@ const LayoutLlmSettingsRoute = LayoutLlmSettingsRouteImport.update({
   path: '/llm-settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutDataExplorerRoute = LayoutDataExplorerRouteImport.update({
+  id: '/data-explorer',
+  path: '/data-explorer',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutCollectorsRoute = LayoutCollectorsRouteImport.update({
   id: '/collectors',
   path: '/collectors',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/audit': typeof LayoutAuditRoute
   '/collectors': typeof LayoutCollectorsRoute
+  '/data-explorer': typeof LayoutDataExplorerRoute
   '/llm-settings': typeof LayoutLlmSettingsRoute
   '/performance': typeof LayoutPerformanceRoute
   '/settings': typeof LayoutSettingsRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/audit': typeof LayoutAuditRoute
   '/collectors': typeof LayoutCollectorsRoute
+  '/data-explorer': typeof LayoutDataExplorerRoute
   '/llm-settings': typeof LayoutLlmSettingsRoute
   '/performance': typeof LayoutPerformanceRoute
   '/settings': typeof LayoutSettingsRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/audit': typeof LayoutAuditRoute
   '/_layout/collectors': typeof LayoutCollectorsRoute
+  '/_layout/data-explorer': typeof LayoutDataExplorerRoute
   '/_layout/llm-settings': typeof LayoutLlmSettingsRoute
   '/_layout/performance': typeof LayoutPerformanceRoute
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/audit'
     | '/collectors'
+    | '/data-explorer'
     | '/llm-settings'
     | '/performance'
     | '/settings'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/audit'
     | '/collectors'
+    | '/data-explorer'
     | '/llm-settings'
     | '/performance'
     | '/settings'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_layout/admin'
     | '/_layout/audit'
     | '/_layout/collectors'
+    | '/_layout/data-explorer'
     | '/_layout/llm-settings'
     | '/_layout/performance'
     | '/_layout/settings'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLlmSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/data-explorer': {
+      id: '/_layout/data-explorer'
+      path: '/data-explorer'
+      fullPath: '/data-explorer'
+      preLoaderRoute: typeof LayoutDataExplorerRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/collectors': {
       id: '/_layout/collectors'
       path: '/collectors'
@@ -267,6 +286,7 @@ interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAuditRoute: typeof LayoutAuditRoute
   LayoutCollectorsRoute: typeof LayoutCollectorsRoute
+  LayoutDataExplorerRoute: typeof LayoutDataExplorerRoute
   LayoutLlmSettingsRoute: typeof LayoutLlmSettingsRoute
   LayoutPerformanceRoute: typeof LayoutPerformanceRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -277,6 +297,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAuditRoute: LayoutAuditRoute,
   LayoutCollectorsRoute: LayoutCollectorsRoute,
+  LayoutDataExplorerRoute: LayoutDataExplorerRoute,
   LayoutLlmSettingsRoute: LayoutLlmSettingsRoute,
   LayoutPerformanceRoute: LayoutPerformanceRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,

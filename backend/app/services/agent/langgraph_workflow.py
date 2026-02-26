@@ -94,6 +94,11 @@ class AgentState(TypedDict):
     # Week 11 additions - Reporting
     reporting_completed: bool  # Flag indicating reporting is complete
     reporting_results: dict[str, Any] | None  # Report generation results
+    # Sprint 2.36 additions - Anomaly Detection
+    anomaly_detected: bool  # True if any anomalies above threshold
+    anomaly_summary: str | None  # Human-readable one-liner for messages
+    alert_triggered: bool  # True if HIGH severity anomalies found
+    alert_payload: dict[str, Any] | None  # Structured payload for alerting service
 
 
 class LangGraphWorkflow:
@@ -239,6 +244,7 @@ class LangGraphWorkflow:
             self._route_after_analysis,
             {
                 "train": "train_model",
+                "report": "generate_report",  # Sprint 2.36: NEW
                 "finalize": "finalize",
                 "reason": "reason",
                 "error": "handle_error",
@@ -318,6 +324,12 @@ class LangGraphWorkflow:
         # Week 11: Initialize reporting fields
         state["report_generated"] = False
         state["report_data"] = None
+
+        # Sprint 2.36: Initialize anomaly detection fields
+        state["anomaly_detected"] = False
+        state["anomaly_summary"] = None
+        state["alert_triggered"] = False
+        state["alert_payload"] = None
 
         state["messages"].append({
             "role": "system",
@@ -848,7 +860,7 @@ class LangGraphWorkflow:
             state["retry_count"] = retry_count + 1
             return "reason"
 
-    def _route_after_analysis(self, state: AgentState) -> Literal["train", "finalize", "reason", "error"]:
+    def _route_after_analysis(self, state: AgentState) -> Literal["train", "report", "finalize", "reason", "error"]:
         """
         Route after data analysis.
 
@@ -865,8 +877,13 @@ class LangGraphWorkflow:
 
         # Check if training is needed
         user_goal = state.get("user_goal", "").lower()
-        if any(keyword in user_goal for keyword in ["predict", "model", "forecast", "train", "ml"]):
+        is_ml_goal = any(keyword in user_goal for keyword in ["predict", "model", "forecast", "train", "ml"])
+
+        if is_ml_goal:
             return "train"
+        elif state.get("anomaly_detected"):
+            # Sprint 2.36: anomalies bypass finalize, go to report
+            return "report"
         else:
             # No training needed, finalize
             return "finalize"
