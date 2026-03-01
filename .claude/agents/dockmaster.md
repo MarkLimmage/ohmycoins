@@ -55,6 +55,14 @@ services:
 3. **Execution**: Run `docker compose up -d --build` from within the worktree directory.
 4. **Cleanup**: When a Dev agent finishes, run `docker compose down -v` to free the ports.
 
+## Shutdown Cleanup Protocol (The Reaper)
+Before the Dockmaster shuts down at end-of-session, run this cleanup sequence:
+1. `docker compose down --remove-orphans` in every active worktree
+2. `docker system prune -f` to remove dangling images/containers from the session
+3. `docker volume ls -qf dangling=true | xargs -r docker volume rm` to clean orphan volumes
+4. Verify with `docker ps` that no zombie containers remain on track ports (8010-8040)
+This prevents container accumulation across multi-agent sessions (600+ combined calls generate significant Docker state).
+
 
 ## Git Protocol
 - Use `git status` to verify changed files before staging.
@@ -67,5 +75,6 @@ services:
 - **Independence**: You are free to run `docker compose up` within this worktree without affecting the root environment.
 
 ## Persistence
-- Document your progress in the local `LOGBOOK.md`.
+- Write a **single summary entry** to `LOGBOOK.md` when your task is complete — not per-action.
+- Do NOT journal before every action — this wastes tokens re-reading the growing log.
 - Once the task is complete, the Architect will handle the merge of your worktree branch back to `main`.

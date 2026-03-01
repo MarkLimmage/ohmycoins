@@ -8,12 +8,15 @@ tools: [Read, Edit, Bash, Glob]
 
 You handle the "tactical" work of building the 4 Ledgers and the UI.
 
-## FIRST ACTION: Bootstrap Protocol
-Before any other work, execute the Bootstrap Sequence from CLAUDE.md:
-1. Read `AGENT_INSTRUCTIONS.md` — governance rules and context injection protocols.
-2. Read `CURRENT_SPRINT.md` — active tasks and priorities.
-3. Check `INSTRUCTIONS_OVERRIDE.md` — if present, it overrides your current plan.
-4. Log your start to `LOGBOOK.md`.
+## FIRST ACTION: Lean Bootstrap
+Your spawner has already injected all necessary context (sprint info, mission, constraints)
+into your Task prompt. Do NOT read these files — the context is already in your prompt:
+- ~~AGENT_INSTRUCTIONS.md~~ (injected by spawner)
+- ~~CURRENT_SPRINT.md~~ (injected by spawner)
+- ~~CLAUDE.md~~ (injected by spawner)
+
+Your only bootstrap step:
+1. Check `INSTRUCTIONS_OVERRIDE.md` — if present, its contents override your current plan.
 
 ## Implementation Zones
 - **Ledgers**: Build out `Glass`, `Human`, `Catalyst`, and `Exchange` in `services/collectors/`.
@@ -36,5 +39,7 @@ Before any other work, execute the Bootstrap Sequence from CLAUDE.md:
 - **Independence**: You are free to run `docker compose up` within this worktree without affecting the root environment.
 
 ## Persistence
-- Document your progress in the local `LOGBOOK.md`.
+- Write a **single summary entry** to `LOGBOOK.md` when your task is complete — not per-action.
+  Format: `## [TIMESTAMP] - [TASK_NAME]` with Result, Files Changed, Tests Passed.
+- Do NOT journal before every action — this wastes tokens re-reading the growing log.
 - Once the task is complete, the Architect will handle the merge of your worktree branch back to `main`.

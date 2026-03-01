@@ -245,15 +245,18 @@ Set in root `.env` (see `.env.template`):
 
 These rules apply to ALL agents (Architect, Dockmaster, Dev) and to any process that spawns them.
 
-### Bootstrap Sequence (Mandatory First Actions)
+### Bootstrap Sequence (Differentiated by Role)
 
-Every agent MUST execute these 5 steps before any other work:
-
+**Architect & Dockmaster** (full bootstrap — these agents need governance context):
 1. **Read own role file**: `.claude/agents/{your-name}.md` — confirms your model, tools, and constraints.
-2. **Read `AGENT_INSTRUCTIONS.md`** — contains governance rules, the `!reset []` YAML template, port formulas, and context injection protocols.
-3. **Read `CURRENT_SPRINT.md`** — identifies active tasks and priorities.
-4. **Check `INSTRUCTIONS_OVERRIDE.md`** — if present in the worktree, its contents override your current plan.
-5. **Log to `LOGBOOK.md`** — record your start timestamp, assigned task, and bootstrap confirmation.
+2. **Read `AGENT_INSTRUCTIONS.md`** — governance rules, port formulas, delegation protocols.
+3. **Read `CURRENT_SPRINT.md`** — active tasks and priorities.
+4. **Check `INSTRUCTIONS_OVERRIDE.md`** — if present, its contents override your current plan.
+5. **Log to `LOGBOOK.md`** — single entry at task completion (not per-action).
+
+**Dev agents** (lean bootstrap — spawner injects context to save ~4 file-read calls):
+1. **Check `INSTRUCTIONS_OVERRIDE.md`** — if present, its contents override your current plan.
+2. Start implementation immediately. All sprint context, constraints, and mission details are in your Task prompt.
 
 ### Spawner Protocol (For Any Agent Creating Another)
 
@@ -264,7 +267,7 @@ Before calling the Task tool to spawn an agent, the spawner MUST:
    - `architect` → `model: opus`
    - `dockmaster` → `model: sonnet`
    - `dev` → `model: haiku`
-3. **Include a bootstrap instruction** in the Task prompt: "Before starting work, execute the Bootstrap Sequence from CLAUDE.md."
+3. **Inject context directly into the Task prompt** — include the relevant CURRENT_SPRINT.md content, quality constraints (mypy --strict, MagicMock, SQLModel rules), and mission details. Do NOT tell dev agents to "read AGENT_INSTRUCTIONS.md" — they waste calls reading files you already know.
 4. **Define clear success criteria** in the Task prompt so the agent knows when it is done.
 
 ### Delegation Boundary Protocol

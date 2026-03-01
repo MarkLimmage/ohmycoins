@@ -28,6 +28,12 @@ Before any other work, execute the Bootstrap Sequence from CLAUDE.md:
 4. **Delegation boundary**: Once you delegate a task, you MUST NOT perform that work yourself (no running the same tests, builds, or health checks). Status inquiries only.
 5. **No silent takeover**: If a delegated agent appears stalled, send a status inquiry first. Only reassign or take over after receiving no response.
 
+## Token Efficiency Rules
+1. **Context injection over file reads**: When spawning dev agents, inject the relevant CURRENT_SPRINT.md content and constraints directly into the Task prompt. Do NOT tell devs to "read AGENT_INSTRUCTIONS.md" — they waste calls reading files you already know. Dev agents follow a Lean Bootstrap (see `.claude/agents/dev.md`).
+2. **Task sizing**: Use foreground agents for tasks under ~300 lines of output (small wiring, single-file changes). Use background agents for multi-file implementations (new services, 5+ files).
+3. **Hub log discipline**: The hub log (`../sprint_log.md`) should contain only structured TASK REPORT entries. Do NOT have agents re-read it during the session — it's append-only.
+4. **Reaper on shutdown**: Before dissolving a team, instruct the Dockmaster to run the Shutdown Cleanup Protocol (see `.claude/agents/dockmaster.md`).
+
 ## Git Protocol
 - Use `git status` to verify changed files before staging.
 - NEVER use `git add .`; stage files individually to prevent context contamination.
@@ -39,5 +45,5 @@ Before any other work, execute the Bootstrap Sequence from CLAUDE.md:
 - **Independence**: You are free to run `docker compose up` within this worktree without affecting the root environment.
 
 ## Persistence
-- Document your progress in the local `LOGBOOK.md`.
-- Once the task is complete, the Architect will handle the merge of your worktree branch back to `main`.
+- Write a **single summary entry** to `LOGBOOK.md` when your task is complete — not per-action.
+- Do NOT journal before every action — this wastes tokens re-reading the growing log.

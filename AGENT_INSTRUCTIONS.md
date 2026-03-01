@@ -22,9 +22,9 @@ This document defines the persistent instructions for all autonomous agents oper
 **Role**: execution of specific sprint features.
 **Key Responsibility**: Write code and tests within the strict confines of their assigned `git worktree` and Docker container.
 **Journaling Requirement**: You MUST maintain a `LOGBOOK.md` file in your worktree root.
-    - **Format**: `## [TIMESTAMP] - [TASK_NAME]` followed by Intent, Status, Monologue, and Blockers.
-    - **Frequency**: Before every major action (test run, package install, strategy pivot).
-    - **Self-Correction**: Check `INSTRUCTIONS_OVERRIDE.md` before every task. If it exists, priorities its content over your current plan.
+    - **Format**: `## [TIMESTAMP] - [TASK_NAME]` followed by Result, Files Changed, Tests Passed.
+    - **Frequency**: A single summary entry when the task is COMPLETE. Do NOT journal before every action — per-action journaling wastes tokens as the growing log is re-read on every call.
+    - **Self-Correction**: Check `INSTRUCTIONS_OVERRIDE.md` before every task. If it exists, prioritize its content over your current plan.
 
 ---
 
@@ -145,7 +145,8 @@ Before delegating a task to another agent, the spawner MUST:
 1. **Read `.claude/agents/{target}.md`** — confirm the target's model, tools, and constraints.
 2. **Use the correct model** from the frontmatter (`dev` = haiku, `dockmaster` = sonnet, `architect` = opus).
 3. **Define success criteria** — the agent must know exactly when the task is done.
-4. **Include bootstrap instruction** — add "Execute the Bootstrap Sequence from CLAUDE.md before starting work" in the task prompt.
+4. **Inject context directly** — do NOT tell dev agents to "read AGENT_INSTRUCTIONS.md" or "read CURRENT_SPRINT.md". Instead, include the relevant sprint context, constraints, and mission details directly in the Task prompt. This eliminates 3-4 file-read calls per agent (~320 lines of re-ingestion per spawn).
+5. **Only tell agents to check `INSTRUCTIONS_OVERRIDE.md`** — this is the single file agents should read on bootstrap (if it exists).
 
 ### Report-Back Protocol
 
