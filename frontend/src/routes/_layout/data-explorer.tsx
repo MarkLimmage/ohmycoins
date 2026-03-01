@@ -24,6 +24,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import {
+  usePriceData,
+  transformPriceDataForLineChart,
+  transformPriceDataForBarChart,
+} from "../../hooks/useDataExplorer"
 
 export const Route = createFileRoute("/_layout/data-explorer")({
   component: DataExplorerPage,
@@ -36,44 +41,6 @@ interface FilterState {
   endDate: string
 }
 
-const MOCK_PRICE_DATA = [
-  {
-    time: "2026-02-27 00:00",
-    BTC: 45230,
-    ETH: 2850,
-    DOGE: 0.385,
-    ADA: 1.12,
-  },
-  {
-    time: "2026-02-27 04:00",
-    BTC: 45450,
-    ETH: 2875,
-    DOGE: 0.388,
-    ADA: 1.14,
-  },
-  {
-    time: "2026-02-27 08:00",
-    BTC: 45100,
-    ETH: 2825,
-    DOGE: 0.382,
-    ADA: 1.11,
-  },
-  {
-    time: "2026-02-27 12:00",
-    BTC: 45800,
-    ETH: 2900,
-    DOGE: 0.391,
-    ADA: 1.15,
-  },
-  {
-    time: "2026-02-27 16:00",
-    BTC: 45600,
-    ETH: 2880,
-    DOGE: 0.389,
-    ADA: 1.13,
-  },
-]
-
 function DataExplorerPage() {
   const [filters, setFilters] = useState<FilterState>({
     coin: "BTC",
@@ -81,7 +48,24 @@ function DataExplorerPage() {
     startDate: "2026-02-26",
     endDate: "2026-02-27",
   })
-  const [isLoading] = useState(false)
+
+  // Fetch price data for selected coin and date range
+  const { data: priceDataResponse, isLoading: isPriceLoading } = usePriceData(
+    filters.coin,
+    filters.startDate,
+    filters.endDate
+  )
+
+  // Transform price data for charts
+  const lineChartData = priceDataResponse?.data
+    ? transformPriceDataForLineChart(priceDataResponse.data)
+    : []
+
+  const barChartData = priceDataResponse?.data
+    ? transformPriceDataForBarChart(priceDataResponse.data)
+    : []
+
+  const isLoading = isPriceLoading
 
   const handleFilterChange = (key: keyof FilterState, value: string) => {
     setFilters((prev) => ({
@@ -214,11 +198,17 @@ function DataExplorerPage() {
                 <Flex justify="center" py={8}>
                   <Spinner size="lg" />
                 </Flex>
+              ) : lineChartData.length === 0 ? (
+                <Flex justify="center" align="center" py={8}>
+                  <Text color="gray.500">
+                    No price data available for the selected date range
+                  </Text>
+                </Flex>
               ) : (
                 <Box height="400px" width="100%">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={MOCK_PRICE_DATA}
+                      data={lineChartData}
                       margin={{
                         top: 20,
                         right: 30,
@@ -255,11 +245,17 @@ function DataExplorerPage() {
                 <Flex justify="center" py={8}>
                   <Spinner size="lg" />
                 </Flex>
+              ) : barChartData.length === 0 ? (
+                <Flex justify="center" align="center" py={8}>
+                  <Text color="gray.500">
+                    No price data available for the selected date range
+                  </Text>
+                </Flex>
               ) : (
                 <Box height="350px" width="100%">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={MOCK_PRICE_DATA}
+                      data={barChartData}
                       margin={{
                         top: 20,
                         right: 30,
@@ -268,35 +264,11 @@ function DataExplorerPage() {
                       }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis yAxisId="left" />
-                      <YAxis yAxisId="right" orientation="right" />
+                      <XAxis dataKey="coin" />
+                      <YAxis />
                       <RechartsTooltip />
                       <Legend />
-                      <Bar
-                        yAxisId="left"
-                        dataKey="BTC"
-                        fill="#f7931a"
-                        name="BTC"
-                      />
-                      <Bar
-                        yAxisId="left"
-                        dataKey="ETH"
-                        fill="#627eea"
-                        name="ETH"
-                      />
-                      <Bar
-                        yAxisId="right"
-                        dataKey="DOGE"
-                        fill="#c2a633"
-                        name="DOGE"
-                      />
-                      <Bar
-                        yAxisId="right"
-                        dataKey="ADA"
-                        fill="#0033ad"
-                        name="ADA"
-                      />
+                      <Bar dataKey="price" fill="#8884d8" name="Price (USD)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>

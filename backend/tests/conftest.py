@@ -20,6 +20,8 @@ from app.models import (
     AgentSession,
     AgentSessionMessage,
     Algorithm,
+    AlertLog,
+    AlertRule,
     AuditLog,
     CatalystEvents,
     CoinspotCredentials,
@@ -91,8 +93,10 @@ def db() -> Generator[Session, None, None]:
             session.execute(delete(NewsSentiment))
             session.execute(delete(SmartMoneyFlow))
 
-            # Delete audit logs
+            # Delete audit logs and alerts
             session.execute(delete(AuditLog))
+            session.execute(delete(AlertLog))
+            session.execute(delete(AlertRule))
 
             # Finally delete users
             session.execute(delete(User))

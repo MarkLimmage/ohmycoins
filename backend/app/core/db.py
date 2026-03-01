@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, create_engine, select
 
 from app import crud
@@ -30,4 +31,10 @@ def init_db(session: Session) -> None:
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
         )
-        user = crud.create_user(session=session, user_create=user_in)
+        try:
+            user = crud.create_user(session=session, user_create=user_in)
+        except IntegrityError:
+            session.rollback()
+            user = session.exec(
+                select(User).where(User.email == settings.FIRST_SUPERUSER)
+            ).first()

@@ -26,6 +26,7 @@ from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
 from app.services.agent.agents.model_training import ModelTrainingAgent
 from app.services.agent.agents.reporting import ReportingAgent
 from app.services.agent.llm_factory import LLMFactory
+from app.services.alerting import AlertService
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +199,7 @@ class LangGraphWorkflow:
         workflow.add_node("evaluate_model", self._evaluate_model_node)
         workflow.add_node("generate_report", self._generate_report_node)
         workflow.add_node("finalize", self._finalize_node)
+        workflow.add_node("dispatch_alerts", self._dispatch_alerts_node)
 
         # Add error recovery node
         workflow.add_node("handle_error", self._handle_error_node)
@@ -287,8 +289,11 @@ class LangGraphWorkflow:
             }
         )
 
-        # Finalize always ends
-        workflow.add_edge("finalize", END)
+        # After finalize, dispatch alerts
+        workflow.add_edge("finalize", "dispatch_alerts")
+
+        # After alert dispatch, end
+        workflow.add_edge("dispatch_alerts", END)
 
         return workflow.compile()
 
@@ -722,6 +727,57 @@ class LangGraphWorkflow:
             "role": "assistant",
             "content": "Workflow completed successfully. All results prepared."
         })
+
+        return state
+
+    async def _dispatch_alerts_node(self, state: AgentState) -> AgentState:
+        """
+        Dispatch alerts based on workflow results.
+
+        Sprint 2.36: Process alerts from the alert bridge.
+        If alert_triggered=True and alert_payload is present, dispatch to configured channels.
+
+        Args:
+            state: Current workflow state
+
+        Returns:
+            Updated state with alert dispatch result
+        """
+        # Skip if no alert was triggered
+        if not state.get("alert_triggered") or not state.get("alert_payload"):
+            logger.info("No alert to dispatch")
+            return state
+
+        try:
+            if not self.session:
+                logger.error("Database session not available for alert dispatch")
+                return state
+
+            # Process alert using AlertService
+            alert_service = AlertService(session=self.session)
+            result = await alert_service.process_alert(state["alert_payload"])
+
+            if result.success:
+                logger.info(
+                    f"Alert dispatched successfully to {result.channels_dispatched}"
+                )
+                state["messages"].append({
+                    "role": "system",
+                    "content": f"Alert dispatched: {result.message}"
+                })
+            else:
+                logger.error(f"Alert dispatch failed: {result.error}")
+                state["messages"].append({
+                    "role": "system",
+                    "content": f"Alert dispatch failed: {result.error}"
+                })
+
+        except Exception as e:
+            logger.error(f"Error in alert dispatch node: {e}")
+            state["messages"].append({
+                "role": "system",
+                "content": f"Error dispatching alert: {str(e)}"
+            })
 
         return state
 

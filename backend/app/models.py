@@ -1619,3 +1619,97 @@ class SystemSettingPublic(SystemSettingBase):
 class SystemSettings(SQLModel):
     data: list[SystemSettingPublic]
     count: int
+
+
+# ============================================================================
+# Alert Service Models (Sprint 2.36)
+# ============================================================================
+
+class AlertRuleBase(SQLModel):
+    """Base alert rule definition."""
+    name: str = Field(max_length=100)
+    alert_type: str = Field(max_length=50)  # e.g., "anomaly_severity"
+    min_severity: str = Field(default="HIGH", max_length=20)  # LOW, MEDIUM, HIGH
+    channels: list[str] = Field(sa_column=Column(JSON))  # ["slack", "email"]
+    recipients: list[str] = Field(sa_column=Column(JSON), default=[])  # email addresses
+    cooldown_minutes: int = Field(default=30)  # Min time between duplicate alerts
+    enabled: bool = Field(default=True)
+
+
+class AlertRule(AlertRuleBase, table=True):
+    """Alert rule for triggering notifications on anomalies."""
+    __tablename__ = "alert_rule"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+
+class AlertLogBase(SQLModel):
+    """Base alert log record."""
+    alert_type: str = Field(max_length=50)
+    severity: str = Field(max_length=20)
+    payload: dict = Field(sa_column=Column(JSON))
+    channels_dispatched: list[str] = Field(sa_column=Column(JSON))
+    success: bool = Field(default=True)
+    error_message: str | None = Field(default=None)
+
+
+class AlertLog(AlertLogBase, table=True):
+    """Alert log record tracking dispatched alerts."""
+    __tablename__ = "alert_log"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    rule_id: uuid.UUID | None = Field(default=None, foreign_key="alert_rule.id")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+
+class AlertRuleCreate(AlertRuleBase):
+    """Schema for creating a new alert rule."""
+    pass
+
+
+class AlertRuleUpdate(SQLModel):
+    """Schema for updating an alert rule."""
+    name: str | None = Field(default=None, max_length=100)
+    alert_type: str | None = Field(default=None, max_length=50)
+    min_severity: str | None = Field(default=None, max_length=20)
+    channels: list[str] | None = None
+    recipients: list[str] | None = None
+    cooldown_minutes: int | None = None
+    enabled: bool | None = None
+
+
+class AlertRulePublic(AlertRuleBase):
+    """Schema for returning alert rule via API."""
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+class AlertRulesPublic(SQLModel):
+    """Collection response for alert rules."""
+    data: list[AlertRulePublic]
+    count: int
+
+
+class AlertLogPublic(AlertLogBase):
+    """Schema for returning alert log via API."""
+    id: uuid.UUID
+    rule_id: uuid.UUID | None
+    created_at: datetime
+
+
+class AlertLogsPublic(SQLModel):
+    """Collection response for alert logs."""
+    data: list[AlertLogPublic]
+    count: int

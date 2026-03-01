@@ -1,9 +1,9 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 4.2
-**Last Updated**: Feb 22, 2026
-**Current Phase**: Sprint 2.33 (Planning)
-**Status**: Active Development - Live Beta
+**Version**: 5.0
+**Last Updated**: Mar 1, 2026
+**Current Phase**: Sprint 2.36 — Phase 4 (Risk & Reliability)
+**Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
 
@@ -84,14 +84,20 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ### � Phase 4: Risk & Reliability (The Guard)
 
-**Status**: Active Sprint Focus (Live Beta)  
-**Objective**: Implement live risk management, P&L monitoring security, and operational stability.
+**Status**: Active Sprint Focus (Sprint 2.36 — Live Beta)
+**Objective**: Implement live risk management, anomaly detection, alerting, and operational stability.
 
-**Deliverables**:
+**Completed Deliverables**:
 - ✅ **RiskCheckService**: Hard-coded safety layer for all orders
 - ✅ **Circuit Breakers**: "Kill Switch" functionality
 - ✅ **Audit Logging**: Immutable logs for all execution attempts
-- ✅ **Local Monitoring**: Docker-based health checks and alert system
+- ✅ **Local Monitoring**: Docker-based health checks on 192.168.0.241
+- ✅ **Anomaly Detection**: IsolationForest pipeline integrated into LangGraph workflow (Sprint 2.36 Track A)
+- ✅ **Data Explorer**: Advanced filtering/charting scaffold at /data-explorer (Sprint 2.36 Track C)
+
+**In Progress (Sprint 2.36)**:
+- 🔄 **Alerting Service**: Email/Slack notifications on anomaly detection (Track B)
+- 🔄 **Data Explorer API**: Wiring frontend to backend price/collector endpoints (Track C)
 
 ---
 
@@ -107,29 +113,16 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ---
 
-### 🛑 Phase 6: Operational Hardening (Sprints 2.22-2.23)
-
-**Duration**: Weeks 35-38 (4 weeks)
-**Status**: Active
-**Objective**: Critical infrastructure validation and safety implementation before Live MVP.
-
-**Planned Deliverables**:
-- **Validated Staging Environment**: Accessible via URL
-- **The Guard**: Pre-trade risk validation microservice
-- **Closed Beta Access**: Whitelist system
-- **CI/CD**: Fully automated deployment pipeline
-
 ---
 
 ## 7. Upcoming Sprints
 
-### Sprint 2.27 - Autonomous Beta Launch (ACTIVE)
-*   **Goal**: Full production deployment and live trading on `jupiter` (192.168.0.241).
-*   **Status**: Active
+### Sprint 2.36 - Advanced Analytics & Alerting (ACTIVE)
+*   **Goal**: Anomaly detection, alerting service, and data explorer for comprehensive market monitoring.
+*   **Status**: Active — Track A (Anomaly Detection) shipped, Track B (Alerting) and Track C (Data Explorer API) in progress.
 
-### Sprint 2.28 - Collector Uplift (Break-In)
-*   **Goal**: Revolutionize data collection management by implementing a **Plugin-Based Architecture**.
-*   **Motivation**: Simplify addition/modification of new data sources via standardized modules and UI configuration.
+### Sprint 2.37 - Collector Uplift & Plugin Architecture
+*   **Goal**: Plugin-based architecture for data collection management.
 *   **Key Features**:
     *   **Plugin System**: `ICollector` interface and `CollectorRegistry` for auto-discovery.
     *   **Admin UI**: Dashboard to Activate, Configure, and Monitor plugins.
@@ -231,10 +224,10 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - Storybook (Component documentation)
 
 **Infrastructure**:
-- AWS ECS (Container orchestration)
-- AWS RDS (PostgreSQL)
-- AWS ElastiCache (Redis)
-- Terraform (Infrastructure as Code)
+- Local Linux Server (192.168.0.241) — Docker Compose orchestration
+- Traefik v3.6 reverse proxy
+- PostgreSQL 17 (containerized)
+- Redis 7 (containerized)
 - GitHub Actions (CI/CD)
 
 **Testing**:
@@ -267,14 +260,15 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ **4 Ledgers Operational** (Sprint 2.6): All data collectors production-ready
 - ✅ **Agent-Data Integration** (Sprint 2.7): 8 tools connecting agents to 4 Ledgers
 - ✅ **BYOM Complete** (Sprint 2.10): 3 LLM providers integrated
-- ✅ **Production Deployment** (Sprint 2.12): AWS infrastructure with DNS/SSL automation
+- ✅ **Production Deployment** (Sprint 2.12): Infrastructure with DNS/SSL automation
 - ✅ **Documentation Uplift** (Sprint 2.14): 4-tier architecture + AI governance
+- ✅ **Infrastructure Pivot** (Sprint 2.35): Migration from AWS to local Docker/Traefik stack
 
-### Current Metrics (Sprint 2.14)
-- **Test Coverage**: 694/702 tests passing (98.9%)
-- **Production Uptime**: 99.9% (AWS ECS with health checks)
-- **Documentation**: 7,000+ lines of living documentation created
-- **Cost Optimization**: Resources scaled to $0 when idle
+### Current Metrics (Sprint 2.36)
+- **Test Coverage**: >97% (target maintained across sprints)
+- **Production Uptime**: Local server (192.168.0.241) with Docker health checks
+- **Documentation**: 7,000+ lines of living documentation, 4-tier architecture
+- **Agent Framework**: Multi-track parallel development with worktree isolation
 
 ### Future Metrics (Phase 3-5)
 - **Time to Find Documentation**: < 2 minutes
@@ -300,7 +294,7 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ AES-256 encryption for LLM credentials
 - ✅ OWASP alignment (A04, A05, A07)
 - ✅ Rate limiting (60 req/min per user)
-- ✅ Secrets management (AWS Secrets Manager)
+- ✅ Secrets management (environment variables, AES-256 for LLM credentials)
 - 📋 Penetration testing (Q2 2026)
 
 ---
@@ -315,11 +309,13 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - 📋 5 user journeys have E2E tests
 - 📋 Documentation-first workflow adopted by team
 
-### Phase 4 Success (The Floor)
-- 📋 Paper trading operational with real-time P&L
-- 📋 Emergency kill switch tested and documented
-- 📋 Risk management enforced (stop-loss, position limits)
-- 📋 Disconnected state handling validated
+### Phase 4 Success (Risk & Reliability)
+- ✅ Paper trading operational with real-time P&L
+- ✅ Emergency kill switch tested and documented
+- ✅ Risk management enforced (stop-loss, position limits)
+- ✅ Anomaly detection pipeline integrated
+- 🔄 Alerting service operational (Slack + email)
+- 🔄 Data Explorer wired to backend APIs
 - 📋 Lab-to-Floor promotion workflow functional
 
 ### Phase 5 Success (Advanced Analytics)
@@ -359,6 +355,6 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 
 **End of Strategic Roadmap**
 
-**Next Review**: After Sprint 2.15 completion  
-**Maintained by**: Tech Lead  
-**Last Major Update**: Sprint 2.14 (Documentation Uplift)
+**Next Review**: After Sprint 2.36 completion
+**Maintained by**: The Architect
+**Last Major Update**: Sprint 2.36 Phase 4 (Risk & Reliability)

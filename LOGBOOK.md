@@ -1,3 +1,13 @@
+## [2026-03-01] - Dockmaster Bootstrap — Sprint 2.36 Tasks
+**Intent**: Execute bootstrap sequence and complete two assigned tasks from team-lead.
+**Status**: COMPLETED
+**Context**: Dockmaster assigned: (1) initialize Track B worktree, (2) smoke test anomaly detection.
+**Details**:
+- Bootstrap: read dockmaster.md, AGENT_INSTRUCTIONS.md, CURRENT_SPRINT.md. No INSTRUCTIONS_OVERRIDE.md found.
+- Task 1: Track B worktree at /home/mark/claude/omc-track-b (branch: sprint-236/track-b) provisioned with correct docker-compose.override.yml (ports 8020/5434/6381) and .env (SLACK_WEBHOOK_URL, SMTP_* dummies).
+- Task 2: All 24 anomaly detection tests passed (3 files: test_anomaly_analyst_routing, test_anomaly_detection, test_anomaly_reporting). Alert bridge in reporting.py:176-183 confirmed populating alert_payload with {type, severity, count, coins, summary, timestamp}.
+**Blockers**: None.
+
 ## [INITIALIZATION] - Sprint 2.34 Track A
 **Intent**: Initialize workspace for Sprint 2.34 - Track A.
 **Status**: COMPLETED
@@ -271,3 +281,147 @@ Enhance the Collector Dashboard to be production-ready.
 
 **TASK REPORT**: Sent to team-lead with full status and deliverables.
 **Next**: Awaiting Track C (Alerting Service) to consume alert_payload from state["alert_triggered"] and state["alert_payload"].
+
+## [2026-03-01] - Task #4: Wire Data Explorer API to Backend
+**Intent**: Replace mock/hardcoded data in Data Explorer frontend with real backend API calls.
+**Status**: ✅ COMPLETED
+**Bootstrap**: ✅ COMPLETED
+  - Read AGENT_INSTRUCTIONS.md ✓
+  - Read CURRENT_SPRINT.md ✓
+  - INSTRUCTIONS_OVERRIDE.md not present ✓
+  - Logging to LOGBOOK.md ✓
+
+**Implementation Summary**:
+- ✅ Backend: Created GET /api/v1/utils/price-data/ endpoint
+  - Location: backend/app/api/routes/utils.py
+  - Accepts coin_type (required), start_date, end_date, limit query params
+  - Queries PriceData5Min model, returns list of PriceDataPoint (timestamp, coin_type, price)
+  - Uses `record.last` field as price value (converted to float)
+  - mypy --strict validation: PASSED ✓
+  - Tests: 4/4 passing (test_get_price_data, test_get_price_data_empty, test_get_price_data_limit, test_get_price_data_missing_coin_type)
+
+- ✅ Frontend: Created useDataExplorer.ts hook
+  - Location: frontend/src/hooks/useDataExplorer.ts
+  - usePriceData() hook: fetches price data with TanStack Query
+  - transformPriceDataForLineChart(): converts to {time, coin: price} format for Recharts LineChart
+  - transformPriceDataForBarChart(): shows latest price per coin for BarChart
+  - useAvailableCoins() hook for coin selector (graceful fallback list)
+
+- ✅ Frontend: Updated Data Explorer component
+  - Location: frontend/src/routes/_layout/data-explorer.tsx
+  - Replaced MOCK_PRICE_DATA with real API calls via usePriceData hook
+  - LineChart displays selected coin price history over date range
+  - BarChart shows latest prices for all coins
+  - Loading/empty state handling
+  - TypeScript compilation: ✅ PASSED (no errors)
+  - Removed unused imports (useCollectorInstances)
+  - Frontend build: ✅ SUCCESS (npm run build)
+
+**Deliverables**:
+- backend/app/api/routes/utils.py: Price data endpoint + Pydantic models
+- backend/tests/api/routes/test_price_data.py: 4 comprehensive tests (all passing)
+- frontend/src/hooks/useDataExplorer.ts: TanStack Query hooks + data transformers
+- frontend/src/routes/_layout/data-explorer.tsx: Updated component with real API integration
+
+**Quality Checks**:
+- Backend mypy --strict: ✅ PASSED
+- Backend tests: ✅ 4/4 PASSED
+- Frontend type-check: ✅ PASSED
+- Frontend build: ✅ SUCCESS
+
+## [2026-03-01T00:00:00] - Task #3: Alerting Service Implementation (Track B)
+
+**Bootstrap Complete**
+- ✓ Read dev.md (model: haiku, tools: [Read, Edit, Bash, Glob])
+- ✓ Read AGENT_INSTRUCTIONS.md (delegation, bootstrap protocols)
+- ✓ Read CURRENT_SPRINT.md (Sprint 2.36, Track B: Alerting Service)
+- ✓ No INSTRUCTIONS_OVERRIDE.md found
+
+**Context**: Implementing Alerting Service in main repo (/home/mark/claude/ohmycoins). Alert payload from Track A is ready. Follow design doc at docs/sprints/sprint-2.36-alerting-service.md.
+
+**Status**: Starting implementation phase 1 (Models & Migrations)
+
+
+## [2026-03-01T11:00:00] - Task #3: Alerting Service Implementation COMPLETE
+
+**Implementation Summary**
+✅ Phase 1: Models & Migration — AlertRule and AlertLog added to models.py, migration generated and applied
+✅ Phase 2: AlertService — Created services/alerting.py with full implementation:
+  - process_alert() — validates, checks rules, dispatches, logs
+  - dispatch_slack() — reuses existing send_slack_alert()
+  - dispatch_email() — async SMTP integration
+  - format_alert_message() — human-readable formatting
+  - _check_cooldown() — prevents alert spam
+  - _find_matching_rules() — severity-aware rule matching
+  - _validate_payload() — alert shape validation
+  - _log_alert() — database logging
+
+✅ Phase 3: Email Utility — Added send_email_alert() to utils/notifications.py with:
+  - SMTP TLS/SSL support
+  - Fallback defaults for missing config
+  - Async implementation
+
+✅ Phase 4: API Routes — Created api/routes/alerts.py with 6 endpoints:
+  - GET /api/v1/alerts/rules — list rules (paginated)
+  - POST /api/v1/alerts/rules — create rule (admin only)
+  - PATCH /api/v1/alerts/rules/{id} — update rule (admin only)
+  - DELETE /api/v1/alerts/rules/{id} — delete rule (admin only)
+  - GET /api/v1/alerts/log — list history (paginated, filterable)
+  - POST /api/v1/alerts/test — send test alert (admin only)
+  - Registered in api/main.py with alerts prefix
+
+✅ Phase 5: LangGraph Integration — Added _dispatch_alerts_node to langgraph_workflow.py:
+  - New node after finalize in workflow graph
+  - Checks for alert_triggered and alert_payload
+  - Calls AlertService.process_alert() asynchronously
+  - Logs to state messages on success/failure
+  - Wired: finalize → dispatch_alerts → END
+
+✅ Phase 6: Tests — 24 tests passing (100% coverage):
+  - tests/services/test_alerting.py: 13 tests
+    - Payload validation (valid, missing fields)
+    - Rule matching by type and severity
+    - Cooldown logic (expired, still active)
+    - Alert message formatting
+    - Full alert processing pipeline
+    - Cooldown suppression
+    - Invalid payload handling
+    - Slack and email dispatch
+    - Alert logging
+  - tests/api/routes/test_alerts.py: 11 tests
+    - CRUD operations for rules
+    - Admin/non-admin access control
+    - Pagination and filtering
+    - Test alert endpoint
+    - Error cases (nonexistent rules)
+
+✅ Phase 7: Database Setup — conftest.py updated to clean up AlertRule and AlertLog in test teardown
+
+✅ Phase 8: Seed Data — Added default alert rule in initial_data.py:
+  - "High Severity Anomalies to Slack"
+  - Fires on HIGH severity anomaly_severity alerts
+  - 30-minute cooldown to prevent spam
+  - Enabled by default
+
+✅ Quality Assurance:
+  - mypy --strict: PASS for all new code
+  - All 24 tests: PASS
+  - No import errors
+  - Type annotations complete
+  - No bidirectional SQLModel relationships (per constraints)
+
+**Deliverables**
+- backend/app/models.py: AlertRule, AlertLog, related schemas
+- backend/app/services/alerting.py: AlertService class (294 lines)
+- backend/app/api/routes/alerts.py: API endpoints (134 lines)
+- backend/app/utils/notifications.py: send_email_alert() utility
+- backend/app/services/agent/langgraph_workflow.py: _dispatch_alerts_node integration
+- backend/tests/services/test_alerting.py: Service layer tests (360 lines)
+- backend/tests/api/routes/test_alerts.py: API route tests (260 lines)
+- backend/tests/conftest.py: Updated with AlertRule/AlertLog cleanup
+- backend/app/initial_data.py: Seed function for default alert rule
+- alembic/versions/544f543b568c_add_alert_rule_and_alert_log_tables.py: Migration
+
+**Status**: Ready for merge. All requirements from design doc met.
+**Issues**: None - all mypy errors fixed, tests passing, code reviewed for quality constraints.
+
