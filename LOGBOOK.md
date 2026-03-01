@@ -1,3 +1,35 @@
+## [2026-03-02] - dev-2 Sprint 2.37 Part B — Plugin Collector Porting
+**Intent**: Port 7 legacy collectors to plugin system, update seed data, write tests.
+**Status**: COMPLETED
+**Tasks**: B1-B8, C1, C2 (all completed)
+**Details**:
+- B1: Ported DeFiLlamaCollector → glass_defillama.py: ICollector with 20 protocols (lido, aave, etc), TVL+fees API fetch, returns ProtocolFundamentals instances.
+- B2: Rewrote CryptoPanicCollector → news_cryptopanic.py: API-based (not scraper), uses CRYPTOPANIC_API_KEY env var, graceful skip if missing, sentiment scoring from votes.
+- B3: Ported RedditCollector → human_reddit.py: 5 subreddits monitored, JSON API (not PRAW), sentiment analysis from keyword matching, crypto symbol extraction.
+- B4: Ported NewscatcherCollector → human_newscatcher.py: Uses NEWSCATCHER_API_KEY, aggregates from 60k+ sources, graceful skip without key.
+- B5: Ported NansenCollector → glass_nansen.py: Uses NANSEN_API_KEY, tracks 5 tokens (ETH, BTC, USDT, USDC, DAI), returns SmartMoneyFlow instances.
+- B6: Ported SECAPICollector → catalyst_sec.py: Public API (no auth), monitors 5 companies (Coinbase, MicroStrategy, etc), filing types 4/8-K/10-K/10-Q/S-1 with impact scores.
+- B7: Rewrote CoinSpotAnnouncementsCollector → catalyst_coinspot_announcements.py: aiohttp+BeautifulSoup (no Playwright), classifies event types (listing/maintenance/trading/feature), returns CatalystEvents.
+- B8: Deleted 9 legacy files; cleaned up imports in glass/__init__.py, human/__init__.py, catalyst/__init__.py, services/collectors/__init__.py, config.py.
+- C1: Updated seed_collectors() in initial_data.py to seed all 16 working collectors with plugin names and default configs.
+- C2: Created test_sprint237_collectors.py with 28 tests covering: ICollector interface compliance (7 collectors), API key graceful skip (3 collectors), sentiment analysis, currency extraction, mock HTTP responses.
+**Test Results**: 28 new tests PASSED; full backend test suite exit code 0; mypy --strict: no errors from new files.
+**Files Changed**: 7 new plugin strategy files, 7 updated __init__ files, 1 test file (28 tests), 1 seed data file, 1 existing test updated, legacy test files deleted.
+
+## [2026-03-02] - dev-1 Sprint 2.37 Part A — Plugin Collector Fixes
+**Intent**: Fix broken plugin collectors and convert HTML scrapers to RSS feeds.
+**Status**: COMPLETED
+**Tasks**: A1-A6 (all completed)
+**Details**:
+- A1: Added `WARNING = "warning"` status to CollectorStatus enum; updated run() to mark zero-record runs as WARNING; added warning_count to summary stats endpoint (collectors.py).
+- A2: Fixed GlassChainWalker indentation (lines 46, 49), changed mock_mode default to False, removed silent exception fallback (now re-raises), added source="GlassChainWalker" to OnChainMetrics instances.
+- A3: Replaced synchronous feedparser.parse() with async aiohttp + BeautifulSoup('xml') in HumanRSSCollector; updated test_connection and collect methods; added RFC 2822 date parsing.
+- A4: Enhanced news_coindesk.py with logging import, User-Agent header, explicit ClientTimeout(total=30), removed bare except that swallowed errors.
+- A5: Rewrote 5 HTML scrapers to RSS collectors (BeInCrypto, CoinTelegraph, CryptoSlate, Decrypt, NewsBTC) using consistent template with aiohttp + BeautifulSoup('xml').
+- A6: Deleted non-viable collectors (news_coinmarketcap.py, news_yahoo.py); preserved news_cryptopanic.py for dev-2 to port.
+**Test Results**: All 893 tests passed (exit code 0); no mypy --strict errors from changes.
+**Files Changed**: 9 collector strategy files, 1 API route file.
+
 ## [2026-03-01] - Dockmaster Bootstrap — Sprint 2.36 Tasks
 **Intent**: Execute bootstrap sequence and complete two assigned tasks from team-lead.
 **Status**: COMPLETED

@@ -12,20 +12,22 @@ logger = logging.getLogger(__name__)
 def seed_collectors(session: Session) -> None:
     logger.info("Checking for required data collectors...")
     collectors_to_seed = [
-        {
-            "name": "CoinspotExchange",
-            "description": "Primary Price Data (Coinspot)",
-            "plugin_name": "CoinspotExchange",
-            "is_enabled": True,
-            "schedule_cron": "* * * * *",  # Every minute
-            "config": {
-                "use_web_scraping": True,
-                "max_retries": 3,
-                "retry_delay": 5,
-                "timeout": 30.0
-            },
-            "status": "active"
-        },
+        {"name": "CoinspotExchange", "description": "Primary Price Data (Coinspot)", "plugin_name": "CoinspotExchange", "is_enabled": True, "schedule_cron": "*/1 * * * *", "config": {"use_web_scraping": True, "max_retries": 3, "retry_delay": 5, "timeout": 30.0}, "status": "active"},
+        {"name": "GlassChainWalker", "description": "On-chain metrics via public RPCs", "plugin_name": "GlassChainWalker", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {"chain": "ethereum", "mock_mode": False}, "status": "idle"},
+        {"name": "DeFiLlama", "description": "DeFi protocol TVL, fees, revenue", "plugin_name": "glass_defillama", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "NansenSmartMoney", "description": "Smart money wallet flow tracking", "plugin_name": "glass_nansen", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "CryptoPanicNews", "description": "Crypto news with sentiment (API)", "plugin_name": "news_cryptopanic", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "RedditSentiment", "description": "Reddit crypto community sentiment", "plugin_name": "human_reddit", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "NewscatcherNews", "description": "Aggregated news from 60k+ sources", "plugin_name": "human_newscatcher", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "HumanRSSCollector", "description": "RSS feed aggregator for crypto news", "plugin_name": "HumanRSSCollector", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {"feed_urls": ["https://www.coindesk.com/arc/outboundfeeds/rss/", "https://cointelegraph.com/rss"]}, "status": "idle"},
+        {"name": "BeInCryptoNews", "description": "BeInCrypto news via RSS", "plugin_name": "news_beincrypto", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "CoinDeskNews", "description": "CoinDesk news via RSS", "plugin_name": "news_coindesk", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "CoinTelegraphNews", "description": "CoinTelegraph news via RSS", "plugin_name": "news_cointelegraph", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "CryptoSlateNews", "description": "CryptoSlate news via RSS", "plugin_name": "news_cryptoslate", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "DecryptNews", "description": "Decrypt news via RSS", "plugin_name": "news_decrypt", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "NewsBTCNews", "description": "NewsBTC news via RSS", "plugin_name": "news_newsbtc", "is_enabled": True, "schedule_cron": "*/15 * * * *", "config": {}, "status": "idle"},
+        {"name": "SECFilings", "description": "SEC EDGAR regulatory filings", "plugin_name": "catalyst_sec", "is_enabled": True, "schedule_cron": "0 */6 * * *", "config": {}, "status": "idle"},
+        {"name": "CoinSpotAnnouncements", "description": "CoinSpot exchange announcements", "plugin_name": "catalyst_coinspot_announcements", "is_enabled": True, "schedule_cron": "0 */1 * * *", "config": {}, "status": "idle"},
     ]
 
     for seed_data in collectors_to_seed:

@@ -7,16 +7,6 @@ This module demonstrates how to register and start all collectors with the orche
 
 import logging
 
-from app.services.collectors.catalyst import (
-    CoinSpotAnnouncementsCollector,
-    SECAPICollector,
-)
-from app.services.collectors.glass import DeFiLlamaCollector, NansenCollector
-from app.services.collectors.human import (
-    CryptoPanicCollector,
-    NewscatcherCollector,
-    RedditCollector,
-)
 from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
 from app.collectors.strategies.glass_chain_walker import GlassChainWalker
 from app.collectors.strategies.human_rss import HumanRSSCollector
@@ -75,29 +65,6 @@ def stop_collection() -> None:
         logger.info("Collection orchestrator stopped")
     except Exception as e:
         logger.error(f"Failed to stop collection orchestrator: {str(e)}")
-
-
-
-def start_collection() -> None:
-    """
-    Start the collection orchestrator.
-
-    All registered collectors will begin running according to their schedules.
-    """
-    orchestrator = get_orchestrator()
-    orchestrator.start()
-    logger.info("Collection orchestrator started")
-
-
-def stop_collection() -> None:
-    """
-    Stop the collection orchestrator.
-
-    All running collectors will be gracefully stopped.
-    """
-    orchestrator = get_orchestrator()
-    orchestrator.stop()
-    logger.info("Collection orchestrator stopped")
 
 
 def get_collection_status() -> dict:

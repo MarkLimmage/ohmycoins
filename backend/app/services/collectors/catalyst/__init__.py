@@ -1,6 +1,4 @@
 # catalyst ledger collectors
-
-from .coinspot_announcements import CoinSpotAnnouncementsCollector
-from .sec_api import SECAPICollector
-
-__all__ = ["SECAPICollector", "CoinSpotAnnouncementsCollector"]
+"""
+Catalyst Ledger collectors have been ported to the plugin system in backend/app/collectors/strategies/
+"""

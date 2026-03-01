@@ -10,11 +10,9 @@ This package provides the base collector framework and implementations for:
 
 from .api_collector import APICollector
 from .base import BaseCollector, CollectorStatus
-from .scraper_collector import ScraperCollector
 
 __all__ = [
     "BaseCollector",
     "CollectorStatus",
     "APICollector",
-    "ScraperCollector",
 ]
