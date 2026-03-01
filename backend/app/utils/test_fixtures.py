@@ -38,7 +38,7 @@ def create_test_user(
     session: Session,
     email: str | None = None,
     is_superuser: bool = False,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> User:
     """Create a test user with sensible defaults."""
     if email is None:
@@ -53,8 +53,13 @@ def create_test_user(
         is_superuser=is_superuser,
         timezone=kwargs.get("timezone", "UTC"),
         preferred_currency=kwargs.get("preferred_currency", "AUD"),
-        risk_tolerance=kwargs.get("risk_tolerance", random.choice(["low", "medium", "high"])),
-        trading_experience=kwargs.get("trading_experience", random.choice(["beginner", "intermediate", "advanced"])),
+        risk_tolerance=kwargs.get(
+            "risk_tolerance", random.choice(["low", "medium", "high"])
+        ),
+        trading_experience=kwargs.get(
+            "trading_experience",
+            random.choice(["beginner", "intermediate", "advanced"]),
+        ),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
@@ -102,11 +107,7 @@ def create_test_price_data(
     return prices
 
 
-def create_test_algorithm(
-    session: Session,
-    user: User,
-    **kwargs: Any
-) -> Algorithm:
+def create_test_algorithm(session: Session, user: User, **kwargs: Any) -> Algorithm:
     """Create a test algorithm."""
     algorithm = Algorithm(
         created_by=user.id,
@@ -128,10 +129,7 @@ def create_test_algorithm(
 
 
 def create_test_position(
-    session: Session,
-    user: User,
-    coin_type: str = "BTC",
-    **kwargs: Any
+    session: Session, user: User, coin_type: str = "BTC", **kwargs: Any
 ) -> Position:
     """Create a test position."""
     quantity = kwargs.get("quantity", Decimal("0.5"))
@@ -153,10 +151,7 @@ def create_test_position(
 
 
 def create_test_order(
-    session: Session,
-    user: User,
-    coin_type: str = "BTC",
-    **kwargs: Any
+    session: Session, user: User, coin_type: str = "BTC", **kwargs: Any
 ) -> Order:
     """Create a test order."""
     quantity = kwargs.get("quantity", Decimal("0.1"))

@@ -17,6 +17,7 @@ from app.services.trading.executor import get_order_queue
 
 router = APIRouter()
 
+
 @router.post("/orders", response_model=OrderResponse)
 async def place_order(
     session: Annotated[Session, Depends(get_db)],
@@ -33,11 +34,7 @@ async def place_order(
     # Note: OrderRequest is exactly OrderCreate.
     # Order has additional fields like status.
 
-    order = Order(
-        user_id=user.id,
-        status="pending",
-        **order_in.model_dump()
-    )
+    order = Order(user_id=user.id, status="pending", **order_in.model_dump())
     session.add(order)
     session.commit()
     session.refresh(order)
@@ -55,6 +52,7 @@ async def place_order(
 
     return order
 
+
 @router.get("/orders", response_model=list[OrderPublic])
 def read_orders(
     session: Annotated[Session, Depends(get_db)],
@@ -65,10 +63,17 @@ def read_orders(
     """
     Retrieve orders.
     """
-    statement = select(Order).where(Order.user_id == user.id).order_by(desc(Order.created_at)).offset(skip).limit(limit)
+    statement = (
+        select(Order)
+        .where(Order.user_id == user.id)
+        .order_by(desc(Order.created_at))
+        .offset(skip)
+        .limit(limit)
+    )
     orders = session.exec(statement).all()
     # SQLModel returns Sequence, but list is compatible in Python > 3.9
     return list(orders)
+
 
 @router.delete("/orders/{order_id}", response_model=OrderPublic)
 def cancel_order(
@@ -85,17 +90,18 @@ def cancel_order(
     if order.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    if order.status in ['filled', 'cancelled', 'failed']:
+    if order.status in ["filled", "cancelled", "failed"]:
         raise HTTPException(status_code=400, detail=f"Order already {order.status}")
 
     # TODO: If status is 'submitted', we should technically call the exchange to cancel.
     # However, for this sprint we handle internal queue cancellation.
 
-    order.status = 'cancelled'
+    order.status = "cancelled"
     session.add(order)
     session.commit()
     session.refresh(order)
     return order
+
 
 @router.get("/positions", response_model=list[PositionPublic])
 def read_positions(

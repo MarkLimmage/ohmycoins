@@ -7,63 +7,70 @@ Provides endpoints for:
 - Monitoring status and triggering runs
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, List
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
-from sqlmodel import Session, select, func, desc
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from sqlmodel import Session, desc, select
 
 from app.api.deps import SessionDep
 from app.core.collectors.registry import CollectorRegistry
-from app.models import Collector, Message, CollectorRuns
+from app.models import Collector, CollectorRuns, Message
 from app.services.scheduler import get_scheduler
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # -----------------------------------------------------------------------------
 # PLUGINS (Strategies)
 # -----------------------------------------------------------------------------
 
-@router.get("/plugins", response_model=List[dict])
+
+@router.get("/plugins", response_model=list[dict[str, Any]])
 def list_plugins() -> Any:
     """
     List all available collector plugins (strategies).
     """
     CollectorRegistry.discover_strategies()
     strategies = CollectorRegistry.list_strategies()
-    
+
     plugins = []
     for name, strategy_cls in strategies.items():
         # Inspect the class to extract metadata
         try:
             # Instantiate the strategy to access properties and methods
             strategy_instance = strategy_cls()
-            
+
             # Check if config_schema is callable
             schema = {}
             if hasattr(strategy_instance, "get_config_schema"):
-                 schema = strategy_instance.get_config_schema()
+                schema = strategy_instance.get_config_schema()
             elif hasattr(strategy_instance, "config_schema"):
-                 schema = strategy_instance.config_schema
-            
-            plugins.append({
-                "id": name,
-                "name": strategy_instance.name, 
-                "description": strategy_instance.description,
-                "version": "1.0.0", 
-                "schema": schema
-            })
+                schema = strategy_instance.config_schema
+
+            plugins.append(
+                {
+                    "id": name,
+                    "name": strategy_instance.name,
+                    "description": strategy_instance.description,
+                    "version": "1.0.0",
+                    "schema": schema,
+                }
+            )
         except Exception as e:
-            print(f"Error loading plugin {name}: {e}")
+            logger.error(f"Error loading plugin {name}: {e}")
             continue
-            
+
     return plugins
+
 
 # -----------------------------------------------------------------------------
 # INSTANCES (Configured Collectors)
 # -----------------------------------------------------------------------------
 
-@router.get("/", response_model=List[Collector])
+
+@router.get("/", response_model=list[Collector])
 def list_instances(session: SessionDep) -> Any:
     """
     List all configured collector instances.
@@ -71,37 +78,19 @@ def list_instances(session: SessionDep) -> Any:
     """
     # 1. Get user-defined instances from Database
     db_instances = session.exec(select(Collector)).all()
-    
-    # 2. Get system-defined instances from Orchestrator (memory)
-    # Since we are moving to fully DB-managed collectors, the orchestrator primarily
-    # reflects what's in the DB. However, checking orchestrator is still useful for *status*
-    from app.services.collectors.orchestrator import get_orchestrator
-    orchestrator = get_orchestrator()
-    # system_collectors = orchestrator.collectors # Deprecated: Orchestrator should now only run DB-instances
-    
-    # 3. Merge them
+
+    # 2. Merge (orchestrator now fully DB-driven; status is persisted in DB)
     result = []
-    
-    # Add DB instances first
+
+    # Add DB instances
     for db_inst in db_instances:
-        # Check if it's active in orchestrator?
-        status = "idle" 
-        # Ideally we query orchestrator for running status of this ID
-        # Since API and Orchestrator are separate processes now (in Prod), 
-        # we can't check orchestrator memory directly unless we use Redis/DB for status sync.
-        # For now, we rely on the DB status field updated by the Orchestrator?
-        # Or just return "unknown" / rely on the static field
-        
-        # db_inst.status is persisted in DB by the runner?
         result.append(db_inst)
 
     return result
 
+
 @router.post("/", response_model=Collector)
-def create_instance(
-    session: SessionDep, 
-    instance_in: Collector
-) -> Any:
+def create_instance(session: SessionDep, instance_in: Collector) -> Any:
     """
     Create a new collector instance.
     """
@@ -112,25 +101,26 @@ def create_instance(
             # Try discovering again just in case
             CollectorRegistry.discover_strategies()
             if not CollectorRegistry.get_strategy(instance_in.plugin_name):
-                 raise HTTPException(status_code=400, detail=f"Plugin '{instance_in.plugin_name}' not found")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Plugin '{instance_in.plugin_name}' not found",
+                )
 
     session.add(instance_in)
     session.commit()
     session.refresh(instance_in)
-    
+
     # Refresh scheduler to pick up new job
     try:
         get_scheduler().refresh_jobs()
     except Exception as e:
-        print(f"Error refreshing scheduler: {e}")
+        logger.error(f"Error refreshing scheduler: {e}")
 
     return instance_in
 
+
 @router.get("/{id}", response_model=Collector)
-def get_instance(
-    id: int,
-    session: SessionDep
-) -> Any:
+def get_instance(id: int, session: SessionDep) -> Any:
     """
     Get a specific collector instance.
     """
@@ -139,100 +129,89 @@ def get_instance(
         raise HTTPException(status_code=404, detail="Collector instance not found")
     return instance
 
+
 @router.put("/{id}", response_model=Collector)
-def update_instance(
-    id: int,
-    instance_in: Collector,
-    session: SessionDep
-) -> Any:
+def update_instance(id: int, instance_in: Collector, session: SessionDep) -> Any:
     """
     Update a collector instance.
     """
     db_instance = session.get(Collector, id)
     if not db_instance:
         raise HTTPException(status_code=404, detail="Collector instance not found")
-    
+
     # Update fields
     instance_data = instance_in.model_dump(exclude_unset=True)
     db_instance.sqlmodel_update(instance_data)
-    
+
     session.add(db_instance)
     session.commit()
     session.refresh(db_instance)
-    
+
     # Refresh scheduler
     try:
         get_scheduler().refresh_jobs()
     except Exception as e:
-        print(f"Error refreshing scheduler: {e}")
+        logger.error(f"Error refreshing scheduler: {e}")
 
     return db_instance
 
+
 @router.patch("/{id}", response_model=Collector)
-def patch_instance(
-    id: int,
-    instance_in: Collector,
-    session: SessionDep
-) -> Any:
+def patch_instance(id: int, instance_in: Collector, session: SessionDep) -> Any:
     """
     Partially update a collector instance (Schedule, Enabled status, etc).
     """
     # PATCH is same as PUT with exclude_unset=True in model_dump
     return update_instance(id, instance_in, session)
 
+
 @router.delete("/{id}", response_model=Message)
-def delete_instance(
-    id: int,
-    session: SessionDep
-) -> Any:
+def delete_instance(id: int, session: SessionDep) -> Any:
     """
     Delete a collector instance.
     """
     instance = session.get(Collector, id)
     if not instance:
         raise HTTPException(status_code=404, detail="Collector instance not found")
-    
+
     session.delete(instance)
     session.commit()
-    
+
     # Refresh scheduler
     try:
         get_scheduler().refresh_jobs()
     except Exception as e:
-        print(f"Error refreshing scheduler: {e}")
+        logger.error(f"Error refreshing scheduler: {e}")
 
     return Message(message="Collector instance deleted successfully")
 
+
 @router.post("/{id}/toggle", response_model=Collector)
-def toggle_instance(
-    id: int,
-    session: SessionDep
-) -> Any:
+def toggle_instance(id: int, session: SessionDep) -> Any:
     """
     Toggle the enabled status of a collector instance.
     """
     instance = session.get(Collector, id)
     if not instance:
         raise HTTPException(status_code=404, detail="Collector instance not found")
-    
+
     instance.is_enabled = not instance.is_enabled
     session.add(instance)
     session.commit()
     session.refresh(instance)
-    
+
     # Refresh scheduler
     try:
         get_scheduler().refresh_jobs()
     except Exception as e:
-        print(f"Error refreshing scheduler: {e}")
+        logger.error(f"Error refreshing scheduler: {e}")
 
     return instance
 
+
 @router.post("/{id}/trigger", response_model=Message)
 def trigger_instance(
-    id: int,
-    session: SessionDep,
-    background_tasks: BackgroundTasks
+    id: int, session: SessionDep, background_tasks: BackgroundTasks
 ) -> Any:
     """
     Trigger a manual run for a specific collector instance.
@@ -243,26 +222,26 @@ def trigger_instance(
 
     # Run in background via scheduler
     background_tasks.add_task(get_scheduler().run_now, id)
-    
+
     return Message(message=f"Collector '{instance.name}' run initiated")
+
 
 @router.post("/{id}/run", response_model=Message)
 def run_instance(
-    id: int,
-    session: SessionDep,
-    background_tasks: BackgroundTasks
+    id: int, session: SessionDep, background_tasks: BackgroundTasks
 ) -> Any:
     """
     Alias for trigger: Run a collector immediately.
     """
     return trigger_instance(id, session, background_tasks)
 
-@router.get("/{id}/stats", response_model=List[dict[str, Any]])
+
+@router.get("/{id}/stats", response_model=list[dict[str, Any]])
 def get_stats(
     id: int,
     session: SessionDep,
-    range: str = Query("1h", description="Time range for stats (e.g., 1h, 24h, 7d)")
-) -> List[dict[str, Any]]:
+    range: str = Query("1h", description="Time range for stats (e.g., 1h, 24h, 7d)"),
+) -> list[dict[str, Any]]:
     """
     Get statistical data (records collected) for a collector over time.
     """
@@ -294,7 +273,7 @@ def get_stats(
         {
             "timestamp": run.started_at,
             "count": run.records_collected or 0,
-            "status": run.status
+            "status": run.status,
         }
         for run in runs
     ]
@@ -303,6 +282,7 @@ def get_stats(
 # ============================================================================
 # AGGREGATE STATS ENDPOINTS
 # ============================================================================
+
 
 def _get_ledger_for_collector(session: Session, collector_name: str) -> str | None:
     """
@@ -318,30 +298,30 @@ def _get_ledger_for_collector(session: Session, collector_name: str) -> str | No
 
     # Get the strategy and check if it has a ledger property
     strategy_instance = CollectorRegistry.get_strategy_instance(collector.plugin_name)
-    if strategy_instance and hasattr(strategy_instance, 'ledger'):
-        ledger = getattr(strategy_instance, 'ledger', None)
+    if strategy_instance and hasattr(strategy_instance, "ledger"):
+        ledger = getattr(strategy_instance, "ledger", None)
         if isinstance(ledger, str):
             return ledger
 
     # Fallback: infer from plugin_name pattern
     plugin_name = collector.plugin_name.lower()
-    if any(x in plugin_name for x in ['defillama', 'nansen', 'chain_walker']):
-        return 'glass'
-    elif any(x in plugin_name for x in ['cryptopanic', 'newscatcher', 'reddit', 'rss']):
-        return 'human'
-    elif any(x in plugin_name for x in ['sec', 'coinspot_announce']):
-        return 'catalyst'
-    elif any(x in plugin_name for x in ['coinspot', 'exchange']):
-        return 'exchange'
+    if any(x in plugin_name for x in ["defillama", "nansen", "chain_walker"]):
+        return "glass"
+    elif any(x in plugin_name for x in ["cryptopanic", "newscatcher", "reddit", "rss"]):
+        return "human"
+    elif any(x in plugin_name for x in ["sec", "coinspot_announce"]):
+        return "catalyst"
+    elif any(x in plugin_name for x in ["coinspot", "exchange"]):
+        return "exchange"
 
     return None
 
 
-@router.get("/stats/volume", response_model=List[dict[str, Any]])
+@router.get("/stats/volume", response_model=list[dict[str, Any]])
 def get_volume_stats(
     session: SessionDep,
-    range: str = Query("24h", description="Time range for stats (1h, 24h, 7d)")
-) -> List[dict[str, Any]]:
+    range: str = Query("24h", description="Time range for stats (1h, 24h, 7d)"),
+) -> list[dict[str, Any]]:
     """
     Get records collected grouped by ledger over time.
 
@@ -379,7 +359,7 @@ def get_volume_stats(
                 "Glass": 0,
                 "Human": 0,
                 "Catalyst": 0,
-                "Exchange": 0
+                "Exchange": 0,
             }
 
         # Determine ledger for this collector
@@ -392,25 +372,23 @@ def get_volume_stats(
         if ledger_display in time_buckets[time_key]:
             count = time_buckets[time_key][ledger_display]
             if isinstance(count, int):
-                time_buckets[time_key][ledger_display] = count + (run.records_collected or 0)
+                time_buckets[time_key][ledger_display] = count + (
+                    run.records_collected or 0
+                )
 
     # Return as sorted list
-    return sorted(list(time_buckets.values()), key=lambda x: str(x.get("time", "")))
+    return sorted(time_buckets.values(), key=lambda x: str(x.get("time", "")))
 
 
-@router.get("/stats/activity", response_model=List[dict[str, Any]])
-def get_activity_stats(session: SessionDep) -> List[dict[str, Any]]:
+@router.get("/stats/activity", response_model=list[dict[str, Any]])
+def get_activity_stats(session: SessionDep) -> list[dict[str, Any]]:
     """
     Get recent collector runs across all collectors.
 
     Returns last 50 runs ordered by started_at DESC.
     Response: [{id, timestamp, collector, status, items, duration}]
     """
-    statement = (
-        select(CollectorRuns)
-        .order_by(desc(CollectorRuns.started_at))
-        .limit(50)
-    )
+    statement = select(CollectorRuns).order_by(desc(CollectorRuns.started_at)).limit(50)
     runs = session.exec(statement).all()
 
     result: list[dict[str, Any]] = []
@@ -419,20 +397,22 @@ def get_activity_stats(session: SessionDep) -> List[dict[str, Any]]:
         if run.completed_at and run.started_at:
             duration_seconds = int((run.completed_at - run.started_at).total_seconds())
 
-        result.append({
-            "id": run.id,
-            "timestamp": run.started_at,
-            "collector_name": run.collector_name,
-            "status": run.status,
-            "records_collected": run.records_collected or 0,
-            "duration_seconds": duration_seconds
-        })
+        result.append(
+            {
+                "id": run.id,
+                "timestamp": run.started_at,
+                "collector_name": run.collector_name,
+                "status": run.status,
+                "records_collected": run.records_collected or 0,
+                "duration_seconds": duration_seconds,
+            }
+        )
 
     return result
 
 
-@router.get("/stats/summary", response_model=List[dict[str, Any]])
-def get_summary_stats(session: SessionDep) -> List[dict[str, Any]]:
+@router.get("/stats/summary", response_model=list[dict[str, Any]])
+def get_summary_stats(session: SessionDep) -> list[dict[str, Any]]:
     """
     Get aggregate stats per collector.
 
@@ -459,7 +439,8 @@ def get_summary_stats(session: SessionDep) -> List[dict[str, Any]]:
 
         total_runs = len(runs)
         success_count = sum(1 for r in runs if r.status == "success")
-        error_count = sum(1 for r in runs if r.status == "error")
+        error_count = sum(1 for r in runs if r.status == "failed")
+        warning_count = sum(1 for r in runs if r.status == "warning")
         total_records = sum(r.records_collected or 0 for r in runs)
 
         # Calculate average duration
@@ -480,16 +461,18 @@ def get_summary_stats(session: SessionDep) -> List[dict[str, Any]]:
         # Calculate uptime percentage
         uptime_pct = (success_count / total_runs * 100) if total_runs > 0 else 0.0
 
-        summary.append({
-            "collector_name": collector_name,
-            "total_runs": total_runs,
-            "success_count": success_count,
-            "error_count": error_count,
-            "total_records": total_records,
-            "avg_duration_seconds": round(avg_duration, 2),
-            "last_success_at": last_success,
-            "uptime_pct": round(uptime_pct, 1)
-        })
+        summary.append(
+            {
+                "collector_name": collector_name,
+                "total_runs": total_runs,
+                "success_count": success_count,
+                "warning_count": warning_count,
+                "error_count": error_count,
+                "total_records": total_records,
+                "avg_duration_seconds": round(avg_duration, 2),
+                "last_success_at": last_success,
+                "uptime_pct": round(uptime_pct, 1),
+            }
+        )
 
     return summary
-

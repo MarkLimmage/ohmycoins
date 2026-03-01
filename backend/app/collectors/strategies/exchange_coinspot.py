@@ -1,16 +1,18 @@
-from typing import Any, Dict, List, Optional
 import asyncio
 import logging
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any
+
 import httpx
 from bs4 import BeautifulSoup
-from decimal import Decimal
-from datetime import datetime, timezone
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
 from app.models import PriceData5Min
 
 logger = logging.getLogger(__name__)
+
 
 class CoinspotExchangeCollector(ICollector):
     @property
@@ -21,23 +23,23 @@ class CoinspotExchangeCollector(ICollector):
     def description(self) -> str:
         return "Fetches cryptocurrency prices from Coinspot via API or Web Scraping."
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
                 "use_web_scraping": {"type": "boolean", "default": True},
                 "max_retries": {"type": "integer", "default": 3},
                 "retry_delay": {"type": "integer", "default": 5},
-                "timeout": {"type": "number", "default": 30.0}
+                "timeout": {"type": "number", "default": 30.0},
             },
-            "required": []
+            "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         # Configuration is optional/flexible, mostly defaults apply
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         # Test by fetching the public API which is always available
         url = "https://www.coinspot.com.au/pubapi/v2/latest"
         try:
@@ -45,12 +47,12 @@ class CoinspotExchangeCollector(ICollector):
                 response = await client.get(url)
                 response.raise_for_status()
                 data = response.json()
-                return data.get("status") == "ok"
+                return bool(data.get("status") == "ok")
         except Exception as e:
             logger.error(f"Connection test failed: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[PriceData5Min]:
+    async def collect(self, config: dict[str, Any]) -> list[PriceData5Min]:
         # Default to True for web scraping if not specified, to ensure full coin coverage
         use_web_scraping = config.get("use_web_scraping", True)
         max_retries = config.get("max_retries", 3)
@@ -72,7 +74,7 @@ class CoinspotExchangeCollector(ICollector):
                 logger.error(f"Error in collect attempt {attempt}: {e}")
                 if attempt < max_retries:
                     await asyncio.sleep(retry_delay)
-        
+
         if not prices_data:
             logger.error("Failed to collect data from Coinspot.")
             return []
@@ -80,7 +82,7 @@ class CoinspotExchangeCollector(ICollector):
         # Convert dict to PriceData5Min objects
         results = []
         now = datetime.now(timezone.utc)
-        
+
         for coin, data in prices_data.items():
             try:
                 # Ensure we have required fields
@@ -90,63 +92,67 @@ class CoinspotExchangeCollector(ICollector):
                         bid=Decimal(str(data["bid"])),
                         ask=Decimal(str(data["ask"])),
                         last=Decimal(str(data["last"])),
-                        timestamp=now
+                        timestamp=now,
                         # created_at is handled by default factory
                     )
                     results.append(item)
             except Exception as e:
                 logger.warning(f"Failed to parse coin data for {coin}: {e}")
                 continue
-                
+
         logger.info(f"Collected {len(results)} price records from Coinspot.")
         return results
 
-    async def _fetch_public_prices(self, timeout: float) -> Optional[Dict[str, Any]]:
+    async def _fetch_public_prices(self, timeout: float) -> dict[str, Any] | None:
         url = "https://www.coinspot.com.au/pubapi/v2/latest"
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url)
             response.raise_for_status()
             data = response.json()
             if data.get("status") == "ok":
-                return data.get("prices", {})
+                prices = data.get("prices", {})
+                return dict(prices) if isinstance(prices, dict) else {}
         return None
 
-    async def _fetch_scraped_prices(self, timeout: float) -> Optional[Dict[str, Any]]:
+    async def _fetch_scraped_prices(self, timeout: float) -> dict[str, Any] | None:
         url = "https://www.coinspot.com.au/tradecoins"
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url)
             response.raise_for_status()
             html = response.text
-            
-            soup = BeautifulSoup(html, 'html.parser')
-            coin_rows = soup.find_all('tr', attrs={'data-coin': True})
-            
+
+            soup = BeautifulSoup(html, "html.parser")
+            coin_rows = soup.find_all("tr", attrs={"data-coin": True})
+
             prices = {}
             for row in coin_rows:
-                coin_symbol = row.get('data-coin', '').upper()
-                if not coin_symbol or coin_symbol == 'AUD':
+                coin_data = row.get("data-coin", "")
+                coin_symbol = coin_data.upper() if isinstance(coin_data, str) else ""
+                if not coin_symbol or coin_symbol == "AUD":
                     continue
-                
+
                 try:
-                    tds = row.find_all('td')
+                    tds = row.find_all("td")
                     if len(tds) >= 4:
                         # Index 2 is Buy, Index 3 is Sell
-                        buy_val = tds[2].get('data-value')
-                        sell_val = tds[3].get('data-value')
-                        
-                        if buy_val and sell_val:
+                        buy_val = tds[2].get("data-value")
+                        sell_val = tds[3].get("data-value")
+
+                        if isinstance(buy_val, str) and isinstance(sell_val, str):
                             buy_price = float(buy_val)
                             sell_price = float(sell_val)
-                            
+
                             if buy_price > 0 and sell_price > 0:
                                 last_price = (buy_price + sell_price) / 2
                                 prices[coin_symbol.lower()] = {
                                     "bid": buy_price,
                                     "ask": sell_price,
-                                    "last": last_price
+                                    "last": last_price,
                                 }
                 except Exception:
                     continue
-            
+
             return prices if prices else None
+
+
 CollectorRegistry.register(CoinspotExchangeCollector)

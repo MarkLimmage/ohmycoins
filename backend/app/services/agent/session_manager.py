@@ -114,7 +114,11 @@ class SessionManager:
                 session.error_message = error_message
             if result_summary:
                 session.result_summary = result_summary
-            if status in [AgentSessionStatus.COMPLETED, AgentSessionStatus.FAILED, AgentSessionStatus.CANCELLED]:
+            if status in [
+                AgentSessionStatus.COMPLETED,
+                AgentSessionStatus.FAILED,
+                AgentSessionStatus.CANCELLED,
+            ]:
                 session.completed_at = datetime.now(timezone.utc)
 
             db.add(session)
@@ -138,7 +142,9 @@ class SessionManager:
             error_message: Optional error message if failed
             result_summary: Optional result summary if completed
         """
-        await self.update_session_status(db, session_id, status, error_message, result_summary)
+        await self.update_session_status(
+            db, session_id, status, error_message, result_summary
+        )
 
     async def add_message(
         self,
@@ -193,6 +199,7 @@ class SessionManager:
             state_data = await self.redis_client.get(state_key)
             if state_data:
                 import json
+
                 result: dict[str, Any] = json.loads(state_data)
                 return result
         return None
@@ -212,11 +219,10 @@ class SessionManager:
 
         if self.redis_client:
             import json
+
             state_key = f"agent:session:{session_id}:state"
             # Store with 24-hour expiration
-            await self.redis_client.setex(
-                state_key, 86400, json.dumps(state)
-            )
+            await self.redis_client.setex(state_key, 86400, json.dumps(state))
 
     async def delete_session_state(self, session_id: uuid.UUID) -> None:
         """

@@ -8,10 +8,10 @@ from app.services.trading.safety import TradingSafetyManager
 
 router = APIRouter()
 
+
 @router.post("/emergency-stop/activate")
 async def activate_emergency_stop(
-    session: SessionDep,
-    current_user: User = Depends(get_current_active_superuser)
+    session: SessionDep, current_user: User = Depends(get_current_active_superuser)
 ) -> Any:
     """
     Activate the emergency stop (Kill Switch).
@@ -24,10 +24,10 @@ async def activate_emergency_stop(
     finally:
         await safety.disconnect()
 
+
 @router.post("/emergency-stop/clear")
 async def clear_emergency_stop(
-    session: SessionDep,
-    current_user: User = Depends(get_current_active_superuser)
+    session: SessionDep, current_user: User = Depends(get_current_active_superuser)
 ) -> Any:
     """
     Clear the emergency stop.
@@ -40,7 +40,10 @@ async def clear_emergency_stop(
     finally:
         await safety.disconnect()
 
-@router.get("/emergency-stop/status", dependencies=[Depends(get_current_active_superuser)])
+
+@router.get(
+    "/emergency-stop/status", dependencies=[Depends(get_current_active_superuser)]
+)
 async def get_emergency_stop_status(session: SessionDep) -> Any:
     """
     Check the current status of the emergency stop.

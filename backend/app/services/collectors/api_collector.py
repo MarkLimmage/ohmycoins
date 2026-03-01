@@ -95,16 +95,18 @@ class APICollector(BaseCollector):
             aiohttp.ClientError: If the request fails after all retries
             ValueError: If the response is not valid JSON
         """
-        url = f"{self.base_url}{endpoint}" if endpoint.startswith("/") else f"{self.base_url}/{endpoint}"
+        url = (
+            f"{self.base_url}{endpoint}"
+            if endpoint.startswith("/")
+            else f"{self.base_url}/{endpoint}"
+        )
 
         await self._enforce_rate_limit()
 
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(self.max_retries),
             wait=wait_exponential(multiplier=1, min=2, max=10),
-            retry=retry_if_exception_type(
-                (aiohttp.ClientError, asyncio.TimeoutError)
-            ),
+            retry=retry_if_exception_type((aiohttp.ClientError, asyncio.TimeoutError)),
             reraise=True,
         ):
             with attempt:
@@ -149,16 +151,18 @@ class APICollector(BaseCollector):
         Raises:
             aiohttp.ClientError: If the request fails after all retries
         """
-        url = f"{self.base_url}{endpoint}" if endpoint.startswith("/") else f"{self.base_url}/{endpoint}"
+        url = (
+            f"{self.base_url}{endpoint}"
+            if endpoint.startswith("/")
+            else f"{self.base_url}/{endpoint}"
+        )
 
         await self._enforce_rate_limit()
 
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(self.max_retries),
             wait=wait_exponential(multiplier=1, min=2, max=10),
-            retry=retry_if_exception_type(
-                (aiohttp.ClientError, asyncio.TimeoutError)
-            ),
+            retry=retry_if_exception_type((aiohttp.ClientError, asyncio.TimeoutError)),
             reraise=True,
         ):
             with attempt:

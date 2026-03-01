@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any
 
 from sqlmodel import Session
-from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log
+from tenacity import before_sleep_log, retry, stop_after_attempt, wait_exponential
 
 from app.core.db import engine
 from app.models import CollectorRuns
@@ -22,10 +22,12 @@ logger = logging.getLogger(__name__)
 
 class CollectorStatus(str, Enum):
     """Status enumeration for collector runs"""
+
     IDLE = "idle"
     RUNNING = "running"
     SUCCESS = "success"
     FAILED = "failed"
+    WARNING = "warning"
 
 
 class BaseCollector(ABC):
@@ -78,7 +80,7 @@ class BaseCollector(ABC):
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
         before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True
+        reraise=True,
     )
     async def _collect_with_retry(self) -> list[dict[str, Any]]:
         """
@@ -89,7 +91,7 @@ class BaseCollector(ABC):
     async def validate_data(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Validate the collected data.
-        
+
         Default implementation checks if data is a list. Subclasses can override for specific validation.
 
         Args:
@@ -151,7 +153,7 @@ class BaseCollector(ABC):
                 collector_run = CollectorRuns(
                     collector_name=self.name,
                     status=CollectorStatus.RUNNING,
-                    started_at=started_at
+                    started_at=started_at,
                 )
                 session.add(collector_run)
                 session.commit()
@@ -176,7 +178,11 @@ class BaseCollector(ABC):
                 )
 
                 # Update collector run record
-                collector_run.status = CollectorStatus.SUCCESS
+                if records_collected == 0:
+                    collector_run.status = CollectorStatus.WARNING
+                    logger.warning(f"{self.name}: Completed with 0 records collected")
+                else:
+                    collector_run.status = CollectorStatus.SUCCESS
                 collector_run.completed_at = datetime.now(timezone.utc)
                 collector_run.records_collected = records_collected
                 session.add(collector_run)
@@ -189,10 +195,7 @@ class BaseCollector(ABC):
                 return True
 
         except Exception as e:
-            logger.error(
-                f"{self.name}: Collection failed: {str(e)}",
-                exc_info=True
-            )
+            logger.error(f"{self.name}: Collection failed: {str(e)}", exc_info=True)
 
             # Update collector run record with error
             if run_id:
@@ -202,7 +205,9 @@ class BaseCollector(ABC):
                         if failed_run:
                             failed_run.status = CollectorStatus.FAILED
                             failed_run.completed_at = datetime.now(timezone.utc)
-                            failed_run.error_message = str(e)[:1000]  # Truncate long errors
+                            failed_run.error_message = str(e)[
+                                :1000
+                            ]  # Truncate long errors
                             session.add(failed_run)
                             session.commit()
                 except Exception as db_error:

@@ -12,6 +12,7 @@ class AlgoOrderManager:
     """
     Manages the lifecycle of algorithmic orders.
     """
+
     def __init__(self):
         # In-memory storage for active orders
         self.orders: dict[UUID, AlgoOrder] = {}
@@ -65,7 +66,8 @@ class AlgoOrderManager:
 
     def get_active_orders(self) -> list[AlgoOrder]:
         return [
-            o for o in self.orders.values()
+            o
+            for o in self.orders.values()
             if o.status in [AlgoOrderStatus.PENDING, AlgoOrderStatus.RUNNING]
         ]
 
@@ -96,17 +98,21 @@ class AlgoOrderManager:
             # but here we can stick to one per tick or use a while loop if needed.
             if current_time >= scheduled_time:
                 # Execute logic
-                child_order_id = str(uuid4()) # Mock ID
-                orders_generated.append({
-                    "parent_id": str(order.id),
-                    "child_id": child_order_id,
-                    "symbol": order.symbol,
-                    "side": order.side,
-                    "quantity": str(qty) # Decimal not JSON serializable usually, stringifying for safety
-                })
+                child_order_id = str(uuid4())  # Mock ID
+                orders_generated.append(
+                    {
+                        "parent_id": str(order.id),
+                        "child_id": child_order_id,
+                        "symbol": order.symbol,
+                        "side": order.side,
+                        "quantity": str(
+                            qty
+                        ),  # Decimal not JSON serializable usually, stringifying for safety
+                    }
+                )
 
                 order.child_orders.append(child_order_id)
-                order.filled_quantity += qty # Optimistic fill for now
+                order.filled_quantity += qty  # Optimistic fill for now
                 order.next_schedule_index += 1
 
                 # Check for completion

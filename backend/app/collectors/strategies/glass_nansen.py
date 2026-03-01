@@ -10,7 +10,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -41,7 +41,7 @@ class GlassNansen(ICollector):
     def description(self) -> str:
         return "Smart money wallet flow tracking from Nansen API"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -60,7 +60,7 @@ class GlassNansen(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "tokens" in config:
             if not isinstance(config["tokens"], list):
                 logger.error("Invalid config: 'tokens' must be a list")
@@ -75,7 +75,7 @@ class GlassNansen(ICollector):
 
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to Nansen API."""
         api_key = os.getenv("NANSEN_API_KEY")
         if not api_key:
@@ -95,7 +95,7 @@ class GlassNansen(ICollector):
             logger.error(f"Failed to test Nansen connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect smart money wallet flows from Nansen API."""
         api_key = os.getenv("NANSEN_API_KEY")
         if not api_key:
@@ -124,7 +124,9 @@ class GlassNansen(ICollector):
                         timeout=aiohttp.ClientTimeout(total=30),
                     ) as resp:
                         if resp.status != 200:
-                            logger.warning(f"Failed to fetch {token}: status {resp.status}")
+                            logger.warning(
+                                f"Failed to fetch {token}: status {resp.status}"
+                            )
                             continue
 
                         flow_data = await resp.json()

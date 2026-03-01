@@ -11,9 +11,11 @@ class ExecutionStrategyType(str, Enum):
     TWAP = "TWAP"
     VWAP = "VWAP"
 
+
 class OrderSide(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
+
 
 class AlgoOrderStatus(str, Enum):
     PENDING = "PENDING"
@@ -23,6 +25,7 @@ class AlgoOrderStatus(str, Enum):
     CANCELLED = "CANCELLED"
     PAUSED = "PAUSED"
 
+
 class AlgoOrderBase(BaseModel):
     symbol: str
     side: OrderSide
@@ -30,8 +33,10 @@ class AlgoOrderBase(BaseModel):
     strategy: ExecutionStrategyType
     parameters: dict[str, Any] = Field(default_factory=dict)
 
+
 class AlgoOrderCreate(AlgoOrderBase):
     pass
+
 
 class AlgoOrder(AlgoOrderBase):
     id: UUID = Field(default_factory=uuid4)
@@ -43,7 +48,7 @@ class AlgoOrder(AlgoOrderBase):
     average_price: Decimal | None = None
 
     # Execution details
-    child_orders: list[str] = Field(default_factory=list) # List of child order IDs
+    child_orders: list[str] = Field(default_factory=list)  # List of child order IDs
     next_schedule_index: int = 0
 
     model_config = ConfigDict(from_attributes=True)

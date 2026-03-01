@@ -49,8 +49,13 @@ def calculate_technical_indicators(
     if indicators is None or "all" in indicators:
         # Add all technical indicators
         df = add_all_ta_features(
-            df, open="close", high="high", low="low", close="close", volume="volume",
-            fillna=True
+            df,
+            open="close",
+            high="high",
+            low="low",
+            close="close",
+            volume="volume",
+            fillna=True,
         )
     else:
         # Add specific indicators (simplified implementation)
@@ -96,7 +101,9 @@ def analyze_sentiment_trends(
     }.get(time_window, 24)
 
     # Aggregate sentiment scores
-    news_sentiments = [n["sentiment_score"] for n in news if n["sentiment_score"] is not None]
+    news_sentiments = [
+        n["sentiment_score"] for n in news if n["sentiment_score"] is not None
+    ]
     social_sentiments = []
 
     # Map social sentiment to numeric scores
@@ -115,18 +122,32 @@ def analyze_sentiment_trends(
             "count": len(news),
             "avg_score": np.mean(news_sentiments) if news_sentiments else 0.0,
             "std_score": np.std(news_sentiments) if len(news_sentiments) > 1 else 0.0,
-            "positive_ratio": len([s for s in news_sentiments if s > 0]) / len(news_sentiments) if news_sentiments else 0.0,
+            "positive_ratio": len([s for s in news_sentiments if s > 0])
+            / len(news_sentiments)
+            if news_sentiments
+            else 0.0,
         },
         "social_sentiment": {
             "count": len(social),
             "avg_score": np.mean(social_sentiments) if social_sentiments else 0.0,
-            "std_score": np.std(social_sentiments) if len(social_sentiments) > 1 else 0.0,
-            "positive_ratio": len([s for s in social_sentiments if s > 0]) / len(social_sentiments) if social_sentiments else 0.0,
+            "std_score": np.std(social_sentiments)
+            if len(social_sentiments) > 1
+            else 0.0,
+            "positive_ratio": len([s for s in social_sentiments if s > 0])
+            / len(social_sentiments)
+            if social_sentiments
+            else 0.0,
         },
         "overall_sentiment": {
             "all_scores": news_sentiments + social_sentiments,
-            "avg_score": np.mean(news_sentiments + social_sentiments) if (news_sentiments or social_sentiments) else 0.0,
-            "trend": "bullish" if np.mean(news_sentiments + social_sentiments) > 0.2 else "bearish" if np.mean(news_sentiments + social_sentiments) < -0.2 else "neutral",
+            "avg_score": np.mean(news_sentiments + social_sentiments)
+            if (news_sentiments or social_sentiments)
+            else 0.0,
+            "trend": "bullish"
+            if np.mean(news_sentiments + social_sentiments) > 0.2
+            else "bearish"
+            if np.mean(news_sentiments + social_sentiments) < -0.2
+            else "neutral",
         },
     }
 
@@ -174,7 +195,9 @@ def analyze_on_chain_signals(
             "latest_value": float(values[-1]),
             "first_value": float(values[0]),
             "trend": trend,
-            "change_percent": ((values[-1] - values[0]) / values[0] * 100) if values[0] != 0 else 0,
+            "change_percent": ((values[-1] - values[0]) / values[0] * 100)
+            if values[0] != 0
+            else 0,
             "avg_value": float(np.mean(values)),
         }
 
@@ -220,33 +243,39 @@ def detect_catalyst_impact(
 
         # Get price before event (1 hour window)
         before_prices = price_df[
-            (price_df["timestamp"] >= event_time - pd.Timedelta(hours=1)) &
-            (price_df["timestamp"] < event_time)
+            (price_df["timestamp"] >= event_time - pd.Timedelta(hours=1))
+            & (price_df["timestamp"] < event_time)
         ]
 
         # Get price after event (1 hour window)
         after_prices = price_df[
-            (price_df["timestamp"] >= event_time) &
-            (price_df["timestamp"] <= event_time + pd.Timedelta(hours=1))
+            (price_df["timestamp"] >= event_time)
+            & (price_df["timestamp"] <= event_time + pd.Timedelta(hours=1))
         ]
 
         if len(before_prices) > 0 and len(after_prices) > 0:
             before_avg = before_prices["last"].mean()
             after_avg = after_prices["last"].mean()
-            price_change = ((after_avg - before_avg) / before_avg * 100) if before_avg != 0 else 0
+            price_change = (
+                ((after_avg - before_avg) / before_avg * 100) if before_avg != 0 else 0
+            )
 
-            impact_analysis.append({
-                "event_type": event["event_type"],
-                "title": event["title"],
-                "impact_score": event["impact_score"],
-                "price_change_percent": float(price_change),
-                "detected_at": event["detected_at"].isoformat(),
-            })
+            impact_analysis.append(
+                {
+                    "event_type": event["event_type"],
+                    "title": event["title"],
+                    "impact_score": event["impact_score"],
+                    "price_change_percent": float(price_change),
+                    "detected_at": event["detected_at"].isoformat(),
+                }
+            )
 
     return {
         "events_analyzed": len(impact_analysis),
         "impacts": impact_analysis,
-        "avg_impact": np.mean([i["price_change_percent"] for i in impact_analysis]) if impact_analysis else 0,
+        "avg_impact": np.mean([i["price_change_percent"] for i in impact_analysis])
+        if impact_analysis
+        else 0,
     }
 
 

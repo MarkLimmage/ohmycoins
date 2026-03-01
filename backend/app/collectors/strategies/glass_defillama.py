@@ -8,7 +8,7 @@ DeFi protocols from the DeFiLlama API (free, no authentication required).
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -23,26 +23,26 @@ class GlassDefiLlama(ICollector):
 
     # List of protocol slugs to monitor (top protocols by TVL)
     MONITORED_PROTOCOLS = [
-        "lido",           # Liquid staking
-        "aave",           # Lending
-        "makerdao",       # Stablecoin
-        "uniswap",        # DEX
-        "curve",          # DEX
-        "justlend",       # Lending
-        "compound",       # Lending
-        "pancakeswap",    # DEX
-        "balancer",       # DEX
-        "rocket-pool",    # Liquid staking
-        "convex-finance", # Yield
-        "sushiswap",      # DEX
-        "venus",          # Lending
-        "gmx",            # Perpetuals
-        "frax",           # Stablecoin
-        "liquity",        # Lending
+        "lido",  # Liquid staking
+        "aave",  # Lending
+        "makerdao",  # Stablecoin
+        "uniswap",  # DEX
+        "curve",  # DEX
+        "justlend",  # Lending
+        "compound",  # Lending
+        "pancakeswap",  # DEX
+        "balancer",  # DEX
+        "rocket-pool",  # Liquid staking
+        "convex-finance",  # Yield
+        "sushiswap",  # DEX
+        "venus",  # Lending
+        "gmx",  # Perpetuals
+        "frax",  # Stablecoin
+        "liquity",  # Lending
         "yearn-finance",  # Yield
-        "stargate",       # Bridge
-        "synthetix",      # Derivatives
-        "pendle",         # Yield
+        "stargate",  # Bridge
+        "synthetix",  # Derivatives
+        "pendle",  # Yield
     ]
 
     @property
@@ -53,7 +53,7 @@ class GlassDefiLlama(ICollector):
     def description(self) -> str:
         return "DeFi protocol TVL, fees, and revenue from DeFiLlama API"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -72,7 +72,7 @@ class GlassDefiLlama(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "protocols" in config:
             if not isinstance(config["protocols"], list):
                 logger.error("Invalid config: 'protocols' must be a list")
@@ -90,7 +90,7 @@ class GlassDefiLlama(ICollector):
 
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to DeFiLlama API."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -103,7 +103,7 @@ class GlassDefiLlama(ICollector):
             logger.error(f"Failed to test DeFiLlama connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect protocol fundamental data from DeFiLlama API."""
         protocols = config.get("protocols", self.MONITORED_PROTOCOLS)
         rate_limit_delay = config.get("rate_limit_delay", 0.1)
@@ -126,7 +126,9 @@ class GlassDefiLlama(ICollector):
                         timeout=aiohttp.ClientTimeout(total=30),
                     ) as resp:
                         if resp.status != 200:
-                            logger.warning(f"Failed to fetch {protocol_slug}: status {resp.status}")
+                            logger.warning(
+                                f"Failed to fetch {protocol_slug}: status {resp.status}"
+                            )
                             continue
 
                         protocol_data = await resp.json()
@@ -185,6 +187,6 @@ class GlassDefiLlama(ICollector):
 
 
 # Register the collector
-from app.core.collectors.registry import CollectorRegistry
+from app.core.collectors.registry import CollectorRegistry  # noqa: E402
 
 CollectorRegistry.register(GlassDefiLlama)

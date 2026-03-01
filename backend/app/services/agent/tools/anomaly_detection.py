@@ -13,8 +13,7 @@ from sklearn.ensemble import IsolationForest
 
 
 def detect_price_anomalies(
-    price_data: list[dict[str, Any]],
-    contamination: float = 0.05
+    price_data: list[dict[str, Any]], contamination: float = 0.05
 ) -> dict[str, Any]:
     """
     Detect anomalies in CoinPrice time series using Isolation Forest.
@@ -34,7 +33,7 @@ def detect_price_anomalies(
             "total_anomalies": 0,
             "anomalies": [],
             "severity_distribution": {},
-            "summary": "No price data provided for anomaly detection."
+            "summary": "No price data provided for anomaly detection.",
         }
 
     # Convert to DataFrame
@@ -86,14 +85,15 @@ def detect_price_anomalies(
 
         # Fit Isolation Forest
         iso_forest = IsolationForest(
-            contamination=min(contamination, 0.5),
-            random_state=42
+            contamination=min(contamination, 0.5), random_state=42
         )
         predictions = iso_forest.fit_predict(X)
         scores = iso_forest.score_samples(X)
 
         # Identify anomalies
-        for idx, (is_anomaly, score) in enumerate(zip(predictions, scores)):
+        for idx, (is_anomaly, score) in enumerate(
+            zip(predictions, scores, strict=False)
+        ):
             if is_anomaly == -1:  # -1 indicates anomaly
                 # Determine severity based on score threshold
                 if score < -0.9:
@@ -105,14 +105,16 @@ def detect_price_anomalies(
 
                 severity_distribution[severity] += 1
 
-                all_anomalies.append({
-                    "timestamp": coin_data.iloc[idx]["timestamp"].isoformat(),
-                    "coin": coin,
-                    "price": float(coin_data.iloc[idx]["price"]),
-                    "anomaly_score": float(score),
-                    "is_anomaly": True,
-                    "severity": severity,
-                })
+                all_anomalies.append(
+                    {
+                        "timestamp": coin_data.iloc[idx]["timestamp"].isoformat(),
+                        "coin": coin,
+                        "price": float(coin_data.iloc[idx]["price"]),
+                        "anomaly_score": float(score),
+                        "is_anomaly": True,
+                        "severity": severity,
+                    }
+                )
 
     # Generate summary
     total_anomalies = len(all_anomalies)

@@ -31,7 +31,7 @@ class ModelTrainingAgent(BaseAgent):
         """Initialize the model training agent."""
         super().__init__(
             name="ModelTrainingAgent",
-            description="Trains machine learning models on cryptocurrency data"
+            description="Trains machine learning models on cryptocurrency data",
         )
 
     async def execute(self, state: dict[str, Any]) -> dict[str, Any]:
@@ -68,7 +68,9 @@ class ModelTrainingAgent(BaseAgent):
                 return state
 
             # Get training configuration
-            target_column = training_params.get("target_column", self._infer_target_column(task_type))
+            target_column = training_params.get(
+                "target_column", self._infer_target_column(task_type)
+            )
             feature_columns = training_params.get("feature_columns", None)
             model_type = training_params.get("model_type", "random_forest")
             hyperparameters = training_params.get("hyperparameters", None)
@@ -132,27 +134,33 @@ class ModelTrainingAgent(BaseAgent):
             )
 
             # Add message about training completion
-            state["messages"].append({
-                "role": "agent",
-                "agent": self.name,
-                "content": f"Model training completed. Task type: {task_type}, Model: {model_type}",
-                "timestamp": pd.Timestamp.now().isoformat(),
-            })
+            state["messages"].append(
+                {
+                    "role": "agent",
+                    "agent": self.name,
+                    "content": f"Model training completed. Task type: {task_type}, Model: {model_type}",
+                    "timestamp": pd.Timestamp.now().isoformat(),
+                }
+            )
 
             return state
 
         except Exception as e:
             state["error"] = f"Model training failed: {str(e)}"
             state["model_trained"] = False
-            state["messages"].append({
-                "role": "agent",
-                "agent": self.name,
-                "content": f"Model training failed: {str(e)}",
-                "timestamp": pd.Timestamp.now().isoformat(),
-            })
+            state["messages"].append(
+                {
+                    "role": "agent",
+                    "agent": self.name,
+                    "content": f"Model training failed: {str(e)}",
+                    "timestamp": pd.Timestamp.now().isoformat(),
+                }
+            )
             return state
 
-    def _determine_task_type(self, user_goal: str, training_params: dict[str, Any]) -> str:
+    def _determine_task_type(
+        self, user_goal: str, training_params: dict[str, Any]
+    ) -> str:
         """Determine whether this is a classification or regression task."""
         if "task_type" in training_params:
             return training_params["task_type"]
@@ -160,8 +168,20 @@ class ModelTrainingAgent(BaseAgent):
         # Infer from user goal
         user_goal_lower = user_goal.lower()
 
-        classification_keywords = ["classify", "classification", "predict direction", "binary", "category"]
-        regression_keywords = ["regress", "regression", "predict price", "predict value", "forecast"]
+        classification_keywords = [
+            "classify",
+            "classification",
+            "predict direction",
+            "binary",
+            "category",
+        ]
+        regression_keywords = [
+            "regress",
+            "regression",
+            "predict price",
+            "predict value",
+            "forecast",
+        ]
 
         if any(keyword in user_goal_lower for keyword in classification_keywords):
             return "classification"
@@ -172,9 +192,7 @@ class ModelTrainingAgent(BaseAgent):
         return "classification"
 
     def _prepare_training_data(
-        self,
-        analysis_results: dict[str, Any],
-        state: dict[str, Any]
+        self, analysis_results: dict[str, Any], state: dict[str, Any]
     ) -> pd.DataFrame | None:
         """Prepare training data from analysis results."""
         # Check if we have a processed DataFrame with features
@@ -224,7 +242,7 @@ class ModelTrainingAgent(BaseAgent):
         self,
         model_result: dict[str, Any],
         cv_results: dict[str, Any] | None,
-        task_type: str
+        task_type: str,
     ) -> str:
         """Generate a human-readable training summary."""
         summary_lines = []

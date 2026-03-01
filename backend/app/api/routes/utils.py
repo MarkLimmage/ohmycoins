@@ -1,14 +1,11 @@
 from datetime import datetime
-from decimal import Decimal
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from pydantic.networks import EmailStr
-from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlmodel import select
 
-from app.api.deps import get_current_active_superuser, SessionDep
+from app.api.deps import SessionDep, get_current_active_superuser
 from app.models import Message, PriceData5Min
 from app.utils import generate_test_email, send_email
 
@@ -17,6 +14,7 @@ router = APIRouter(prefix="/utils", tags=["utils"])
 
 class PriceDataPoint(BaseModel):
     """Price data point for charting"""
+
     timestamp: datetime
     coin_type: str
     price: float
@@ -24,6 +22,7 @@ class PriceDataPoint(BaseModel):
 
 class PriceDataResponse(BaseModel):
     """Response containing price data points"""
+
     data: list[PriceDataPoint]
     total_points: int
 
@@ -54,19 +53,21 @@ async def health_check() -> bool:
 @router.get("/price-data/", response_model=PriceDataResponse)
 def get_price_data(
     session: SessionDep,
-    coin_type: str = Query(..., description="Cryptocurrency symbol (e.g., 'BTC', 'ETH')"),
+    coin_type: str = Query(
+        ..., description="Cryptocurrency symbol (e.g., 'BTC', 'ETH')"
+    ),
     start_date: datetime | None = Query(None, description="Start date for price data"),
     end_date: datetime | None = Query(None, description="End date for price data"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Maximum number of records to return"
+    ),
 ) -> PriceDataResponse:
     """
     Fetch price data for a specific cryptocurrency within a date range.
 
     Returns price data points suitable for charting in the Data Explorer.
     """
-    query = select(PriceData5Min).where(
-        PriceData5Min.coin_type == coin_type.upper()
-    )
+    query = select(PriceData5Min).where(PriceData5Min.coin_type == coin_type.upper())
 
     if start_date:
         query = query.where(PriceData5Min.timestamp >= start_date)

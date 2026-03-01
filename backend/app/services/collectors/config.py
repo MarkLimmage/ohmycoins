@@ -7,10 +7,6 @@ This module demonstrates how to register and start all collectors with the orche
 
 import logging
 
-from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
-from app.collectors.strategies.glass_chain_walker import GlassChainWalker
-from app.collectors.strategies.human_rss import HumanRSSCollector
-from app.services.collectors.strategy_adapter import StrategyAdapterCollector
 from app.services.collectors.orchestrator import get_orchestrator
 
 logger = logging.getLogger(__name__)
@@ -19,26 +15,28 @@ logger = logging.getLogger(__name__)
 def setup_collectors() -> None:
     """
     Register available Phase 2.5 collectors with the orchestrator.
-    
+
     This function discovers all available collector strategies but does NOT
     instantiate or schedule them immediately. Scheduling is now handled by
     loading configuration from the database.
     """
-    orchestrator = get_orchestrator()
-
     logger.info("Setting up Phase 2.5 comprehensive data collectors...")
-    
+
     # Discover and register all available strategies
     from app.core.collectors.registry import CollectorRegistry
+
     CollectorRegistry.discover_strategies()
-    
-    logger.info(f"Discovered {len(CollectorRegistry.list_strategies())} collector strategies.")
-    
+
+    logger.info(
+        f"Discovered {len(CollectorRegistry.list_strategies())} collector strategies."
+    )
+
     # The actual scheduling of jobs is now handled by:
     # orchestrator.load_jobs_from_db()
     # which is called during start_collection()
-    
+
     logger.info("Collectors setup complete (waiting for DB configuration)")
+
 
 def start_collection() -> None:
     """
@@ -48,12 +46,13 @@ def start_collection() -> None:
     try:
         # Initial load of jobs from database
         orchestrator.load_jobs_from_db()
-        
+
         # Start the scheduler
         orchestrator.start()
         logger.info("Collection orchestrator started")
     except Exception as e:
         logger.error(f"Failed to start collection orchestrator: {str(e)}")
+
 
 def stop_collection() -> None:
     """

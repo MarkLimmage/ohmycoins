@@ -9,7 +9,7 @@ import asyncio
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -79,7 +79,7 @@ class HumanReddit(ICollector):
     def description(self) -> str:
         return "Reddit crypto community sentiment from r/CryptoCurrency and related subreddits"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -103,7 +103,7 @@ class HumanReddit(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "subreddits" in config:
             if not isinstance(config["subreddits"], list):
                 logger.error("Invalid config: 'subreddits' must be a list")
@@ -125,7 +125,7 @@ class HumanReddit(ICollector):
 
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to Reddit API."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -140,7 +140,7 @@ class HumanReddit(ICollector):
             logger.error(f"Failed to test Reddit connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect hot/trending posts from monitored subreddits."""
         subreddits = config.get("subreddits", self.MONITORED_SUBREDDITS)
         limit = config.get("limit", 25)
@@ -167,7 +167,9 @@ class HumanReddit(ICollector):
                         timeout=aiohttp.ClientTimeout(total=30),
                     ) as resp:
                         if resp.status != 200:
-                            logger.warning(f"Failed to fetch r/{subreddit}: status {resp.status}")
+                            logger.warning(
+                                f"Failed to fetch r/{subreddit}: status {resp.status}"
+                            )
                             continue
 
                         data = await resp.json()
@@ -183,8 +185,6 @@ class HumanReddit(ICollector):
                         try:
                             post_data = post.get("data", {})
                             title = post_data.get("title", "")
-                            score = post_data.get("score", 0)
-                            num_comments = post_data.get("num_comments", 0)
                             created_utc = post_data.get("created_utc")
 
                             # Parse publication timestamp
@@ -238,8 +238,12 @@ class HumanReddit(ICollector):
         """Analyze sentiment from text using keyword matching."""
         text_lower = text.lower()
 
-        bullish_count = sum(1 for keyword in self.BULLISH_KEYWORDS if keyword in text_lower)
-        bearish_count = sum(1 for keyword in self.BEARISH_KEYWORDS if keyword in text_lower)
+        bullish_count = sum(
+            1 for keyword in self.BULLISH_KEYWORDS if keyword in text_lower
+        )
+        bearish_count = sum(
+            1 for keyword in self.BEARISH_KEYWORDS if keyword in text_lower
+        )
 
         if bullish_count > bearish_count and bullish_count > 0:
             return "bullish"
@@ -248,7 +252,7 @@ class HumanReddit(ICollector):
         else:
             return "neutral"
 
-    def _extract_currencies(self, text: str) -> List[str]:
+    def _extract_currencies(self, text: str) -> list[str]:
         """Extract cryptocurrency symbols from text."""
         # Common crypto symbols and full names
         crypto_patterns = [

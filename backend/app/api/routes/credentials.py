@@ -3,6 +3,7 @@ API endpoints for Coinspot credential management
 
 Provides CRUD operations for securely storing and managing Coinspot API credentials.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -41,13 +42,15 @@ def create_credentials(
     """
     # Check if user already has credentials
     existing = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     if existing:
         raise HTTPException(
             status_code=400,
-            detail="Coinspot credentials already exist. Use PUT to update them."
+            detail="Coinspot credentials already exist. Use PUT to update them.",
         )
 
     # Encrypt credentials
@@ -56,17 +59,14 @@ def create_credentials(
         api_secret_encrypted = encryption_service.encrypt(credentials_in.api_secret)
     except Exception as e:
         logger.error(f"Failed to encrypt credentials: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to encrypt credentials"
-        )
+        raise HTTPException(status_code=500, detail="Failed to encrypt credentials")
 
     # Create credentials record
     db_credentials = CoinspotCredentials(
         user_id=current_user.id,
         api_key_encrypted=api_key_encrypted,
         api_secret_encrypted=api_secret_encrypted,
-        is_validated=False
+        is_validated=False,
     )
 
     session.add(db_credentials)
@@ -83,7 +83,7 @@ def create_credentials(
         is_validated=db_credentials.is_validated,
         last_validated_at=db_credentials.last_validated_at,
         created_at=db_credentials.created_at,
-        updated_at=db_credentials.updated_at
+        updated_at=db_credentials.updated_at,
     )
 
 
@@ -99,14 +99,13 @@ def get_credentials(
     Returns masked credentials for security.
     """
     credentials = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     if not credentials:
-        raise HTTPException(
-            status_code=404,
-            detail="Coinspot credentials not found"
-        )
+        raise HTTPException(status_code=404, detail="Coinspot credentials not found")
 
     # Decrypt API key to mask it
     try:
@@ -123,7 +122,7 @@ def get_credentials(
         is_validated=credentials.is_validated,
         last_validated_at=credentials.last_validated_at,
         created_at=credentials.created_at,
-        updated_at=credentials.updated_at
+        updated_at=credentials.updated_at,
     )
 
 
@@ -138,13 +137,15 @@ def update_credentials(
     Update Coinspot API credentials for the current user.
     """
     credentials = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     if not credentials:
         raise HTTPException(
             status_code=404,
-            detail="Coinspot credentials not found. Use POST to create them."
+            detail="Coinspot credentials not found. Use POST to create them.",
         )
 
     # Update credentials if provided
@@ -153,30 +154,28 @@ def update_credentials(
 
     if "api_key" in update_data and update_data["api_key"]:
         try:
-            credentials.api_key_encrypted = encryption_service.encrypt(update_data["api_key"])
+            credentials.api_key_encrypted = encryption_service.encrypt(
+                update_data["api_key"]
+            )
             api_key_masked = encryption_service.mask_api_key(update_data["api_key"])
             # Reset validation status when credentials change
             credentials.is_validated = False
             credentials.last_validated_at = None
         except Exception as e:
             logger.error(f"Failed to encrypt API key: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to encrypt API key"
-            )
+            raise HTTPException(status_code=500, detail="Failed to encrypt API key")
 
     if "api_secret" in update_data and update_data["api_secret"]:
         try:
-            credentials.api_secret_encrypted = encryption_service.encrypt(update_data["api_secret"])
+            credentials.api_secret_encrypted = encryption_service.encrypt(
+                update_data["api_secret"]
+            )
             # Reset validation status when credentials change
             credentials.is_validated = False
             credentials.last_validated_at = None
         except Exception as e:
             logger.error(f"Failed to encrypt API secret: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to encrypt API secret"
-            )
+            raise HTTPException(status_code=500, detail="Failed to encrypt API secret")
 
     session.add(credentials)
     session.commit()
@@ -198,7 +197,7 @@ def update_credentials(
         is_validated=credentials.is_validated,
         last_validated_at=credentials.last_validated_at,
         created_at=credentials.created_at,
-        updated_at=credentials.updated_at
+        updated_at=credentials.updated_at,
     )
 
 
@@ -212,14 +211,13 @@ def delete_credentials(
     Delete Coinspot API credentials for the current user.
     """
     credentials = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     if not credentials:
-        raise HTTPException(
-            status_code=404,
-            detail="Coinspot credentials not found"
-        )
+        raise HTTPException(status_code=404, detail="Coinspot credentials not found")
 
     session.delete(credentials)
     session.commit()
@@ -241,13 +239,15 @@ async def validate_credentials(
     """
     # Get user's credentials
     credentials = session.exec(
-        select(CoinspotCredentials).where(CoinspotCredentials.user_id == current_user.id)
+        select(CoinspotCredentials).where(
+            CoinspotCredentials.user_id == current_user.id
+        )
     ).first()
 
     if not credentials:
         raise HTTPException(
             status_code=404,
-            detail="Coinspot credentials not found. Please add credentials first."
+            detail="Coinspot credentials not found. Please add credentials first.",
         )
 
     # Decrypt credentials
@@ -256,10 +256,7 @@ async def validate_credentials(
         api_secret = encryption_service.decrypt(credentials.api_secret_encrypted)
     except Exception as e:
         logger.error(f"Failed to decrypt credentials: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to decrypt credentials"
-        )
+        raise HTTPException(status_code=500, detail="Failed to decrypt credentials")
 
     # Test credentials with Coinspot API
     authenticator = CoinspotAuthenticator(api_key, api_secret)
@@ -272,11 +269,7 @@ async def validate_credentials(
         headers, payload = authenticator.prepare_request()
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                coinspot_url,
-                headers=headers,
-                json=payload
-            )
+            response = await client.post(coinspot_url, headers=headers, json=payload)
 
             response.raise_for_status()
             data = response.json()
@@ -289,7 +282,9 @@ async def validate_credentials(
                 session.add(credentials)
                 session.commit()
 
-                logger.info(f"Successfully validated credentials for user {current_user.id}")
+                logger.info(
+                    f"Successfully validated credentials for user {current_user.id}"
+                )
                 return Message(message="Credentials validated successfully")
             else:
                 # API returned error status
@@ -297,7 +292,7 @@ async def validate_credentials(
                 logger.warning(f"Coinspot API returned error: {error_message}")
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Credentials validation failed: {error_message}"
+                    detail=f"Credentials validation failed: {error_message}",
                 )
 
     except httpx.HTTPStatusError as e:
@@ -305,27 +300,26 @@ async def validate_credentials(
         if e.response.status_code == 401:
             raise HTTPException(
                 status_code=401,
-                detail="Invalid credentials. Please check your API key and secret."
+                detail="Invalid credentials. Please check your API key and secret.",
             )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to validate credentials: HTTP {e.response.status_code}"
+            detail=f"Failed to validate credentials: HTTP {e.response.status_code}",
         )
     except httpx.TimeoutException:
         logger.error("Timeout validating credentials")
         raise HTTPException(
             status_code=504,
-            detail="Request to Coinspot API timed out. Please try again."
+            detail="Request to Coinspot API timed out. Please try again.",
         )
     except httpx.RequestError as e:
         logger.error(f"Request error validating credentials: {e}")
         raise HTTPException(
             status_code=503,
-            detail="Failed to connect to Coinspot API. Please try again later."
+            detail="Failed to connect to Coinspot API. Please try again later.",
         )
     except Exception as e:
         logger.error(f"Unexpected error validating credentials: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred during validation"
+            status_code=500, detail="An unexpected error occurred during validation"
         )

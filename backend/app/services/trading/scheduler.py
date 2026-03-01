@@ -5,6 +5,7 @@ Execution Scheduler for Trading Algorithms
 This module schedules and manages the execution of trading algorithms
 at configured frequencies.
 """
+
 import json
 import logging
 from datetime import datetime, timezone
@@ -46,7 +47,7 @@ class ExecutionScheduler:
         session: Session,
         api_key: str,
         api_secret: str,
-        market_data_provider: Any | None = None
+        market_data_provider: Any | None = None,
     ):
         """
         Initialize execution scheduler
@@ -94,7 +95,11 @@ class ExecutionScheduler:
             Number of algorithms scheduled
         """
         logger.info("Loading deployed algorithms from database...")
-        stmt = select(DeployedAlgorithm, Algorithm).join(Algorithm).where(DeployedAlgorithm.is_active is True)
+        stmt = (
+            select(DeployedAlgorithm, Algorithm)
+            .join(Algorithm)
+            .where(DeployedAlgorithm.is_active is True)
+        )
         results = self.session.exec(stmt).all()
 
         count = 0
@@ -111,33 +116,41 @@ class ExecutionScheduler:
                         try:
                             params = json.loads(deployed_algo.parameters_json)
                         except json.JSONDecodeError:
-                            logger.warning(f"Invalid parameters JSON for deployment {deployed_algo.id}")
+                            logger.warning(
+                                f"Invalid parameters JSON for deployment {deployed_algo.id}"
+                            )
 
                     # Defaults
-                    short_window = params.get('short_window', 10)
-                    long_window = params.get('long_window', 50)
-                    coin_type = params.get('coin_type', 'BTC')
+                    short_window = params.get("short_window", 10)
+                    long_window = params.get("long_window", 50)
+                    coin_type = params.get("coin_type", "BTC")
 
                     algorithm_instance = MACrossoverStrategy(
                         short_window=short_window,
                         long_window=long_window,
-                        coin_type=coin_type
+                        coin_type=coin_type,
                     )
 
                 if algorithm_instance:
                     # Calculate frequency
-                    freq_seconds = deployed_algo.execution_frequency or algo_def.default_execution_frequency or 300
+                    freq_seconds = (
+                        deployed_algo.execution_frequency
+                        or algo_def.default_execution_frequency
+                        or 300
+                    )
                     frequency = f"interval:{freq_seconds}:seconds"
 
                     self.schedule_algorithm(
                         user_id=deployed_algo.user_id,
                         algorithm_id=deployed_algo.algorithm_id,  # Use Algorithm ID for uniqueness per user/algo pair
                         algorithm=algorithm_instance,
-                        frequency=frequency
+                        frequency=frequency,
                     )
                     count += 1
                 else:
-                    logger.warning(f"Unknown algorithm type for deployment {deployed_algo.id}: {algo_def.name}")
+                    logger.warning(
+                        f"Unknown algorithm type for deployment {deployed_algo.id}: {algo_def.name}"
+                    )
 
             except Exception as e:
                 logger.error(f"Failed to load deployment {deployed_algo.id}: {e}")
@@ -151,7 +164,7 @@ class ExecutionScheduler:
         algorithm_id: UUID,
         algorithm: TradingAlgorithm,
         frequency: str,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Schedule an algorithm for execution
@@ -187,18 +200,18 @@ class ExecutionScheduler:
                 id=job_id,
                 args=[user_id, algorithm_id, algorithm],
                 replace_existing=True,
-                **kwargs
+                **kwargs,
             )
 
             # Track scheduled algorithm
             self._scheduled_algorithms[job_id] = {
-                'user_id': user_id,
-                'algorithm_id': algorithm_id,
-                'frequency': frequency,
-                'scheduled_at': datetime.now(timezone.utc),
-                'last_execution': None,
-                'execution_count': 0,
-                'error_count': 0
+                "user_id": user_id,
+                "algorithm_id": algorithm_id,
+                "frequency": frequency,
+                "scheduled_at": datetime.now(timezone.utc),
+                "last_execution": None,
+                "execution_count": 0,
+                "error_count": 0,
             }
 
             logger.info(
@@ -225,16 +238,16 @@ class ExecutionScheduler:
         Raises:
             SchedulerError: If frequency format is invalid
         """
-        parts = frequency.split(':', 1)
+        parts = frequency.split(":", 1)
 
         if len(parts) != 2:
             raise SchedulerError(f"Invalid frequency format: {frequency}")
 
         freq_type, freq_value = parts
 
-        if freq_type == 'interval':
+        if freq_type == "interval":
             # Parse interval: N:unit (e.g., "5:minutes")
-            interval_parts = freq_value.split(':', 1)
+            interval_parts = freq_value.split(":", 1)
             if len(interval_parts) != 2:
                 raise SchedulerError(f"Invalid interval format: {freq_value}")
 
@@ -249,7 +262,7 @@ class ExecutionScheduler:
             except (ValueError, TypeError) as e:
                 raise SchedulerError(f"Invalid interval value: {e}")
 
-        elif freq_type == 'cron':
+        elif freq_type == "cron":
             # Parse cron expression
             try:
                 # Split cron expression (minute hour day month day_of_week)
@@ -262,7 +275,7 @@ class ExecutionScheduler:
                     hour=cron_parts[1],
                     day=cron_parts[2],
                     month=cron_parts[3],
-                    day_of_week=cron_parts[4]
+                    day_of_week=cron_parts[4],
                 )
 
             except Exception as e:
@@ -272,10 +285,7 @@ class ExecutionScheduler:
             raise SchedulerError(f"Unknown frequency type: {freq_type}")
 
     async def _execute_algorithm_job(
-        self,
-        user_id: UUID,
-        algorithm_id: UUID,
-        algorithm: TradingAlgorithm
+        self, user_id: UUID, algorithm_id: UUID, algorithm: TradingAlgorithm
     ) -> None:
         """
         Execute algorithm job (called by scheduler)
@@ -298,13 +308,15 @@ class ExecutionScheduler:
                 user_id=user_id,
                 algorithm_id=algorithm_id,
                 algorithm=algorithm,
-                market_data=market_data
+                market_data=market_data,
             )
 
             # Update tracking
             if job_id in self._scheduled_algorithms:
-                self._scheduled_algorithms[job_id]['last_execution'] = datetime.now(timezone.utc)
-                self._scheduled_algorithms[job_id]['execution_count'] += 1
+                self._scheduled_algorithms[job_id]["last_execution"] = datetime.now(
+                    timezone.utc
+                )
+                self._scheduled_algorithms[job_id]["execution_count"] += 1
 
             logger.info(f"Algorithm job {job_id} completed: {result}")
 
@@ -313,7 +325,7 @@ class ExecutionScheduler:
 
             # Update error tracking
             if job_id in self._scheduled_algorithms:
-                self._scheduled_algorithms[job_id]['error_count'] += 1
+                self._scheduled_algorithms[job_id]["error_count"] += 1
 
             # TODO: Implement error threshold and auto-disable failing algorithms (Phase 6 Weeks 7-8 - Advanced Features)
 
@@ -332,39 +344,35 @@ class ExecutionScheduler:
         try:
             async with CoinspotTradingClient(self.api_key, self.api_secret) as client:
                 # Fetch latest prices for common coins
-                prices = await client._get_public_price('BTC', 'buy')
-                eth_price = await client._get_public_price('ETH', 'buy')
-                doge_price = await client._get_public_price('DOGE', 'buy')
+                prices = await client._get_public_price("BTC", "buy")
+                eth_price = await client._get_public_price("ETH", "buy")
+                doge_price = await client._get_public_price("DOGE", "buy")
 
                 market_data = {
-                    'timestamp': datetime.now(timezone.utc).isoformat(),
-                    'prices': {
-                        'BTC': {'last': prices, 'coin_type': 'BTC'},
-                        'ETH': {'last': eth_price, 'coin_type': 'ETH'},
-                        'DOGE': {'last': doge_price, 'coin_type': 'DOGE'}
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "prices": {
+                        "BTC": {"last": prices, "coin_type": "BTC"},
+                        "ETH": {"last": eth_price, "coin_type": "ETH"},
+                        "DOGE": {"last": doge_price, "coin_type": "DOGE"},
                     },
                     # Legacy support for naive strats
-                    'price': prices,
-                    'coin_type': 'BTC',
-                    'BTC': {'price': prices},
-                    'ETH': {'price': eth_price},
-                    'DOGE': {'price': doge_price}
+                    "price": prices,
+                    "coin_type": "BTC",
+                    "BTC": {"price": prices},
+                    "ETH": {"price": eth_price},
+                    "DOGE": {"price": doge_price},
                 }
                 return market_data
         except Exception as e:
             logger.error(f"Failed to fetch live market data: {e}")
             return {
-                'timestamp': datetime.now(timezone.utc).isoformat(),
-                'prices': {},
-                'price': Decimal('0'),
-                'coin_type': 'BTC'
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "prices": {},
+                "price": Decimal("0"),
+                "coin_type": "BTC",
             }
 
-    def unschedule_algorithm(
-        self,
-        user_id: UUID,
-        algorithm_id: UUID
-    ) -> bool:
+    def unschedule_algorithm(self, user_id: UUID, algorithm_id: UUID) -> bool:
         """
         Unschedule an algorithm
 
@@ -391,11 +399,7 @@ class ExecutionScheduler:
             logger.error(f"Error unscheduling algorithm {job_id}: {e}")
             return False
 
-    def pause_algorithm(
-        self,
-        user_id: UUID,
-        algorithm_id: UUID
-    ) -> bool:
+    def pause_algorithm(self, user_id: UUID, algorithm_id: UUID) -> bool:
         """
         Pause an algorithm (keep schedule but don't execute)
 
@@ -417,11 +421,7 @@ class ExecutionScheduler:
             logger.error(f"Error pausing algorithm {job_id}: {e}")
             return False
 
-    def resume_algorithm(
-        self,
-        user_id: UUID,
-        algorithm_id: UUID
-    ) -> bool:
+    def resume_algorithm(self, user_id: UUID, algorithm_id: UUID) -> bool:
         """
         Resume a paused algorithm
 
@@ -452,12 +452,16 @@ class ExecutionScheduler:
         """
         return [
             {
-                'job_id': job_id,
+                "job_id": job_id,
                 **info,
-                'user_id': str(info['user_id']),
-                'algorithm_id': str(info['algorithm_id']),
-                'scheduled_at': info['scheduled_at'].isoformat() if info['scheduled_at'] else None,
-                'last_execution': info['last_execution'].isoformat() if info['last_execution'] else None
+                "user_id": str(info["user_id"]),
+                "algorithm_id": str(info["algorithm_id"]),
+                "scheduled_at": info["scheduled_at"].isoformat()
+                if info["scheduled_at"]
+                else None,
+                "last_execution": info["last_execution"].isoformat()
+                if info["last_execution"]
+                else None,
             }
             for job_id, info in self._scheduled_algorithms.items()
         ]
@@ -470,10 +474,10 @@ class ExecutionScheduler:
             Dictionary with scheduler status
         """
         return {
-            'running': self._running,
-            'total_jobs': len(self.scheduler.get_jobs()),
-            'scheduled_algorithms': len(self._scheduled_algorithms),
-            'state': self.scheduler.state
+            "running": self._running,
+            "total_jobs": len(self.scheduler.get_jobs()),
+            "scheduled_algorithms": len(self._scheduled_algorithms),
+            "state": self.scheduler.state,
         }
 
 
@@ -482,9 +486,7 @@ _execution_scheduler: ExecutionScheduler | None = None
 
 
 def get_execution_scheduler(
-    session: Session,
-    api_key: str,
-    api_secret: str
+    session: Session, api_key: str, api_secret: str
 ) -> ExecutionScheduler:
     """
     Get or create the global execution scheduler instance
@@ -500,8 +502,6 @@ def get_execution_scheduler(
     global _execution_scheduler
     if _execution_scheduler is None:
         _execution_scheduler = ExecutionScheduler(
-            session=session,
-            api_key=api_key,
-            api_secret=api_secret
+            session=session, api_key=api_key, api_secret=api_secret
         )
     return _execution_scheduler

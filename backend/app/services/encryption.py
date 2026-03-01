@@ -5,6 +5,7 @@ Encryption Service for Coinspot API Credentials
 This module provides utilities for encrypting and decrypting sensitive credentials
 using Fernet (AES-256) symmetric encryption.
 """
+
 import logging
 import os
 
@@ -17,7 +18,9 @@ logger = logging.getLogger(__name__)
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 
 if not ENCRYPTION_KEY:
-    logger.warning("ENCRYPTION_KEY not set in environment. Generating a new key for development.")
+    logger.warning(
+        "ENCRYPTION_KEY not set in environment. Generating a new key for development."
+    )
     # Generate a key for development (DO NOT use in production)
     ENCRYPTION_KEY = Fernet.generate_key().decode()
     logger.info(f"Generated encryption key: {ENCRYPTION_KEY}")
@@ -52,7 +55,7 @@ class EncryptionService:
         if not plaintext:
             raise ValueError("Cannot encrypt empty string")
 
-        plaintext_bytes = plaintext.encode('utf-8')
+        plaintext_bytes = plaintext.encode("utf-8")
         encrypted = self.fernet.encrypt(plaintext_bytes)
         return encrypted
 
@@ -70,7 +73,7 @@ class EncryptionService:
             raise ValueError("Cannot decrypt empty bytes")
 
         decrypted_bytes = self.fernet.decrypt(encrypted)
-        return decrypted_bytes.decode('utf-8')
+        return decrypted_bytes.decode("utf-8")
 
     def mask_api_key(self, api_key: str) -> str:
         """

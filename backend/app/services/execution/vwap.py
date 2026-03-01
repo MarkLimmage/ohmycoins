@@ -24,7 +24,7 @@ class VWAPStrategy(ExecutionStrategy):
     def generate_schedule(self) -> list[tuple[datetime, Decimal]]:
         params = self.order.parameters
         total_quantity = self.order.total_quantity
-        symbol = self.order.symbol # This corresponds to coin_type in PriceData5Min
+        symbol = self.order.symbol  # This corresponds to coin_type in PriceData5Min
 
         start_time = datetime.now(timezone.utc)
         duration_minutes = params.get("duration_minutes", 60)
@@ -61,7 +61,9 @@ class VWAPStrategy(ExecutionStrategy):
 
         return schedule
 
-    def _get_volume_profile(self, symbol: str, buckets: list[datetime]) -> list[Decimal]:
+    def _get_volume_profile(
+        self, symbol: str, buckets: list[datetime]
+    ) -> list[Decimal]:
         """
         Fetch historical volume for the time-of-day of each bucket.
         """
@@ -78,10 +80,18 @@ class VWAPStrategy(ExecutionStrategy):
                 # This is a simplified profile lookup
                 try:
                     statement = (
-                        select(func.avg(PriceData5Min.volume)) # getattr to avoid static check error if any
+                        select(
+                            func.avg(PriceData5Min.volume)
+                        )  # getattr to avoid static check error if any
                         .where(PriceData5Min.coin_type == symbol)
-                        .where(func.extract('hour', PriceData5Min.timestamp) == bucket_time.hour)
-                        .where(func.extract('minute', PriceData5Min.timestamp) == bucket_time.minute)
+                        .where(
+                            func.extract("hour", PriceData5Min.timestamp)
+                            == bucket_time.hour
+                        )
+                        .where(
+                            func.extract("minute", PriceData5Min.timestamp)
+                            == bucket_time.minute
+                        )
                     )
                     avg_vol = session.exec(statement).first()
                     weights.append(Decimal(str(avg_vol)) if avg_vol else Decimal("1"))

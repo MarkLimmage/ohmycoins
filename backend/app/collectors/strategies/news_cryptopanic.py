@@ -9,7 +9,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -42,7 +42,7 @@ class NewsCryptoPanic(ICollector):
     def description(self) -> str:
         return "Crypto news with sentiment analysis from CryptoPanic API"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -56,14 +56,16 @@ class NewsCryptoPanic(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "filter" in config:
             if config["filter"] not in ["rising", "hot", "all"]:
-                logger.error("Invalid config: 'filter' must be 'rising', 'hot', or 'all'")
+                logger.error(
+                    "Invalid config: 'filter' must be 'rising', 'hot', or 'all'"
+                )
                 return False
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to CryptoPanic API."""
         api_key = os.getenv("CRYPTOPANIC_API_KEY")
         if not api_key:
@@ -87,7 +89,7 @@ class NewsCryptoPanic(ICollector):
             logger.error(f"Failed to test CryptoPanic connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect recent cryptocurrency news from CryptoPanic API."""
         api_key = os.getenv("CRYPTOPANIC_API_KEY")
         if not api_key:
@@ -173,7 +175,7 @@ class NewsCryptoPanic(ICollector):
             logger.error(f"Failed to collect news: {e}")
             return []
 
-    def _determine_sentiment(self, article: Dict[str, Any]) -> str | None:
+    def _determine_sentiment(self, article: dict[str, Any]) -> str | None:
         """Determine sentiment from article votes and metadata."""
         votes = article.get("votes", {})
 
@@ -200,14 +202,20 @@ class NewsCryptoPanic(ICollector):
         metadata = article.get("metadata", {})
         if metadata:
             description = (metadata.get("description") or "").lower()
-            if any(word in description for word in ["pump", "surge", "rally", "bullish", "moon"]):
+            if any(
+                word in description
+                for word in ["pump", "surge", "rally", "bullish", "moon"]
+            ):
                 return "bullish"
-            if any(word in description for word in ["dump", "crash", "bearish", "plunge", "decline"]):
+            if any(
+                word in description
+                for word in ["dump", "crash", "bearish", "plunge", "decline"]
+            ):
                 return "bearish"
 
         return "neutral"
 
-    def _calculate_sentiment_score(self, article: Dict[str, Any]) -> float | None:
+    def _calculate_sentiment_score(self, article: dict[str, Any]) -> float | None:
         """Calculate numerical sentiment score from votes."""
         votes = article.get("votes", {})
 

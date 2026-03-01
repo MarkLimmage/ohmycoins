@@ -41,7 +41,7 @@ def train_classification_model(
         "logistic_regression",
         "decision_tree",
         "gradient_boosting",
-        "svm"
+        "svm",
     ] = "random_forest",
     hyperparameters: dict[str, Any] | None = None,
     test_size: float = 0.2,
@@ -90,14 +90,10 @@ def train_classification_model(
     if scale_features:
         scaler = StandardScaler()
         X_train = pd.DataFrame(
-            scaler.fit_transform(X_train),
-            columns=feature_columns,
-            index=X_train.index
+            scaler.fit_transform(X_train), columns=feature_columns, index=X_train.index
         )
         X_test = pd.DataFrame(
-            scaler.transform(X_test),
-            columns=feature_columns,
-            index=X_test.index
+            scaler.transform(X_test), columns=feature_columns, index=X_test.index
         )
 
     # Initialize model with hyperparameters
@@ -110,23 +106,35 @@ def train_classification_model(
             max_depth=hyperparams.get("max_depth", None),
             min_samples_split=hyperparams.get("min_samples_split", 2),
             min_samples_leaf=hyperparams.get("min_samples_leaf", 1),
-            **{k: v for k, v in hyperparams.items() if k not in [
-                "n_estimators", "max_depth", "min_samples_split", "min_samples_leaf"
-            ]}
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k
+                not in [
+                    "n_estimators",
+                    "max_depth",
+                    "min_samples_split",
+                    "min_samples_leaf",
+                ]
+            },
         )
     elif model_type == "logistic_regression":
         model = LogisticRegression(
             random_state=random_state,
             max_iter=hyperparams.get("max_iter", 1000),
             C=hyperparams.get("C", 1.0),
-            **{k: v for k, v in hyperparams.items() if k not in ["max_iter", "C"]}
+            **{k: v for k, v in hyperparams.items() if k not in ["max_iter", "C"]},
         )
     elif model_type == "decision_tree":
         model = DecisionTreeClassifier(
             random_state=random_state,
             max_depth=hyperparams.get("max_depth", None),
             min_samples_split=hyperparams.get("min_samples_split", 2),
-            **{k: v for k, v in hyperparams.items() if k not in ["max_depth", "min_samples_split"]}
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k not in ["max_depth", "min_samples_split"]
+            },
         )
     elif model_type == "gradient_boosting":
         model = GradientBoostingClassifier(
@@ -134,9 +142,11 @@ def train_classification_model(
             n_estimators=hyperparams.get("n_estimators", 100),
             learning_rate=hyperparams.get("learning_rate", 0.1),
             max_depth=hyperparams.get("max_depth", 3),
-            **{k: v for k, v in hyperparams.items() if k not in [
-                "n_estimators", "learning_rate", "max_depth"
-            ]}
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k not in ["n_estimators", "learning_rate", "max_depth"]
+            },
         )
     elif model_type == "svm":
         model = SVC(
@@ -144,7 +154,7 @@ def train_classification_model(
             C=hyperparams.get("C", 1.0),
             kernel=hyperparams.get("kernel", "rbf"),
             probability=True,
-            **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]}
+            **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]},
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
@@ -167,15 +177,31 @@ def train_classification_model(
     metrics = {
         "train": {
             "accuracy": float(accuracy_score(y_train, y_pred_train)),
-            "precision": float(precision_score(y_train, y_pred_train, average="weighted", zero_division=0)),
-            "recall": float(recall_score(y_train, y_pred_train, average="weighted", zero_division=0)),
-            "f1": float(f1_score(y_train, y_pred_train, average="weighted", zero_division=0)),
+            "precision": float(
+                precision_score(
+                    y_train, y_pred_train, average="weighted", zero_division=0
+                )
+            ),
+            "recall": float(
+                recall_score(y_train, y_pred_train, average="weighted", zero_division=0)
+            ),
+            "f1": float(
+                f1_score(y_train, y_pred_train, average="weighted", zero_division=0)
+            ),
         },
         "test": {
             "accuracy": float(accuracy_score(y_test, y_pred_test)),
-            "precision": float(precision_score(y_test, y_pred_test, average="weighted", zero_division=0)),
-            "recall": float(recall_score(y_test, y_pred_test, average="weighted", zero_division=0)),
-            "f1": float(f1_score(y_test, y_pred_test, average="weighted", zero_division=0)),
+            "precision": float(
+                precision_score(
+                    y_test, y_pred_test, average="weighted", zero_division=0
+                )
+            ),
+            "recall": float(
+                recall_score(y_test, y_pred_test, average="weighted", zero_division=0)
+            ),
+            "f1": float(
+                f1_score(y_test, y_pred_test, average="weighted", zero_division=0)
+            ),
         },
     }
 
@@ -205,7 +231,7 @@ def train_regression_model(
         "lasso",
         "decision_tree",
         "gradient_boosting",
-        "svr"
+        "svr",
     ] = "random_forest",
     hyperparameters: dict[str, Any] | None = None,
     test_size: float = 0.2,
@@ -255,14 +281,10 @@ def train_regression_model(
     if scale_features:
         scaler = StandardScaler()
         X_train = pd.DataFrame(
-            scaler.fit_transform(X_train),
-            columns=feature_columns,
-            index=X_train.index
+            scaler.fit_transform(X_train), columns=feature_columns, index=X_train.index
         )
         X_test = pd.DataFrame(
-            scaler.transform(X_test),
-            columns=feature_columns,
-            index=X_test.index
+            scaler.transform(X_test), columns=feature_columns, index=X_test.index
         )
 
     # Initialize model with hyperparameters
@@ -275,32 +297,42 @@ def train_regression_model(
             max_depth=hyperparams.get("max_depth", None),
             min_samples_split=hyperparams.get("min_samples_split", 2),
             min_samples_leaf=hyperparams.get("min_samples_leaf", 1),
-            **{k: v for k, v in hyperparams.items() if k not in [
-                "n_estimators", "max_depth", "min_samples_split", "min_samples_leaf"
-            ]}
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k
+                not in [
+                    "n_estimators",
+                    "max_depth",
+                    "min_samples_split",
+                    "min_samples_leaf",
+                ]
+            },
         )
     elif model_type == "linear_regression":
-        model = LinearRegression(
-            **hyperparams
-        )
+        model = LinearRegression(**hyperparams)
     elif model_type == "ridge":
         model = Ridge(
             random_state=random_state,
             alpha=hyperparams.get("alpha", 1.0),
-            **{k: v for k, v in hyperparams.items() if k != "alpha"}
+            **{k: v for k, v in hyperparams.items() if k != "alpha"},
         )
     elif model_type == "lasso":
         model = Lasso(
             random_state=random_state,
             alpha=hyperparams.get("alpha", 1.0),
-            **{k: v for k, v in hyperparams.items() if k != "alpha"}
+            **{k: v for k, v in hyperparams.items() if k != "alpha"},
         )
     elif model_type == "decision_tree":
         model = DecisionTreeRegressor(
             random_state=random_state,
             max_depth=hyperparams.get("max_depth", None),
             min_samples_split=hyperparams.get("min_samples_split", 2),
-            **{k: v for k, v in hyperparams.items() if k not in ["max_depth", "min_samples_split"]}
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k not in ["max_depth", "min_samples_split"]
+            },
         )
     elif model_type == "gradient_boosting":
         model = GradientBoostingRegressor(
@@ -308,15 +340,17 @@ def train_regression_model(
             n_estimators=hyperparams.get("n_estimators", 100),
             learning_rate=hyperparams.get("learning_rate", 0.1),
             max_depth=hyperparams.get("max_depth", 3),
-            **{k: v for k, v in hyperparams.items() if k not in [
-                "n_estimators", "learning_rate", "max_depth"
-            ]}
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k not in ["n_estimators", "learning_rate", "max_depth"]
+            },
         )
     elif model_type == "svr":
         model = SVR(
             C=hyperparams.get("C", 1.0),
             kernel=hyperparams.get("kernel", "rbf"),
-            **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]}
+            **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]},
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
@@ -408,9 +442,7 @@ def cross_validate_model(
     if scale_features:
         scaler = StandardScaler()
         X = pd.DataFrame(
-            scaler.fit_transform(X),
-            columns=feature_columns,
-            index=X.index
+            scaler.fit_transform(X), columns=feature_columns, index=X.index
         )
 
     # Initialize model

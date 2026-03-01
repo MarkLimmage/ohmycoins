@@ -35,11 +35,11 @@ class AgentOrchestrator:
             session_manager: Session manager for state persistence
         """
         self.session_manager = session_manager
-        self.workflow = LangGraphWorkflow(session=None)  # Session will be set per execution
+        self.workflow = LangGraphWorkflow(
+            session=None
+        )  # Session will be set per execution
 
-    async def start_session(
-        self, db: Session, session_id: uuid.UUID
-    ) -> dict[str, Any]:
+    async def start_session(self, db: Session, session_id: uuid.UUID) -> dict[str, Any]:
         """
         Start executing an agent session.
 
@@ -84,9 +84,7 @@ class AgentOrchestrator:
             "message": "Session started successfully",
         }
 
-    async def execute_step(
-        self, db: Session, session_id: uuid.UUID
-    ) -> dict[str, Any]:
+    async def execute_step(self, db: Session, session_id: uuid.UUID) -> dict[str, Any]:
         """
         Execute one step of the agent workflow using LangGraph.
 
@@ -122,7 +120,7 @@ class AgentOrchestrator:
             workflow = LangGraphWorkflow(
                 session=db,
                 user_id=session.user_id,
-                credential_id=session.llm_credential_id
+                credential_id=session.llm_credential_id,
             )
 
             # Track which LLM was selected by the factory
@@ -210,7 +208,9 @@ class AgentOrchestrator:
                     db,
                     session_id,
                     AgentSessionStatus.COMPLETED,
-                    result_summary=final_state.get("result", "Workflow completed successfully"),
+                    result_summary=final_state.get(
+                        "result", "Workflow completed successfully"
+                    ),
                 )
                 await self.session_manager.delete_session_state(session_id)
                 return {
@@ -260,7 +260,9 @@ class AgentOrchestrator:
             "message": "Session cancelled successfully",
         }
 
-    def get_session_state(self, db: Session | uuid.UUID, session_id: uuid.UUID = None) -> dict[str, Any] | None:
+    def get_session_state(
+        self, db: Session | uuid.UUID, session_id: uuid.UUID = None
+    ) -> dict[str, Any] | None:
         """
         Get the current state of a session synchronously.
 
@@ -389,9 +391,7 @@ class AgentOrchestrator:
             "current_step": state.get("current_step"),
         }
 
-    async def run_workflow(
-        self, db: Session, session_id: uuid.UUID
-    ) -> dict[str, Any]:
+    async def run_workflow(self, db: Session, session_id: uuid.UUID) -> dict[str, Any]:
         """
         Run a complete workflow from start to finish.
 

@@ -8,11 +8,10 @@ This collector scrapes CoinSpot's announcements/news page to detect:
 - Platform changes
 """
 
-import asyncio
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -59,7 +58,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
     def description(self) -> str:
         return "CoinSpot exchange announcements and events"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -77,7 +76,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "url" in config:
             if not isinstance(config["url"], str):
                 logger.error("Invalid config: 'url' must be a string")
@@ -92,7 +91,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
 
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to CoinSpot announcements page."""
         url = config.get(
             "url",
@@ -114,7 +113,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
             logger.error(f"Failed to test CoinSpot connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect CoinSpot announcements."""
         url = config.get(
             "url",
@@ -213,8 +212,8 @@ class CatalystCoinSpotAnnouncements(ICollector):
         """Classify event type and return impact score."""
         title_lower = title.lower()
 
-        for event_key, event_info in self.EVENT_TYPES.items():
-            keywords: List[str] = event_info["keywords"]  # type: ignore
+        for _event_key, event_info in self.EVENT_TYPES.items():
+            keywords: list[str] = event_info["keywords"]  # type: ignore
             for keyword in keywords:
                 if keyword in title_lower:
                     event_type: str = event_info["event_type"]  # type: ignore
@@ -224,7 +223,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
         # Default to feature
         return ("exchange_feature", 3)
 
-    def _extract_currencies(self, text: str) -> List[str]:
+    def _extract_currencies(self, text: str) -> list[str]:
         """Extract cryptocurrency symbols from text."""
         # Common crypto symbols and full names
         patterns = [

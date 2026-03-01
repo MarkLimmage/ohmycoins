@@ -9,6 +9,7 @@ from app.models import TradeAudit, TradeAuditCreate, TradeAuditPublic, TradeAudi
 
 router = APIRouter()
 
+
 @router.get("/", response_model=TradeAudits)
 def read_trade_audits(
     session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
@@ -19,8 +20,11 @@ def read_trade_audits(
     count_statement = select(func.count()).select_from(TradeAudit)
     count = session.exec(count_statement).one()
 
-    trade_audits = crud_trade_audit.get_trade_audits(session=session, skip=skip, limit=limit)
+    trade_audits = crud_trade_audit.get_trade_audits(
+        session=session, skip=skip, limit=limit
+    )
     return TradeAudits(data=trade_audits, count=count)
+
 
 @router.post("/", response_model=TradeAuditPublic)
 def create_trade_audit(
@@ -29,5 +33,7 @@ def create_trade_audit(
     """
     Create new trade audit record.
     """
-    trade_audit = crud_trade_audit.create_trade_audit(session=session, trade_audit_create=trade_audit_in)
+    trade_audit = crud_trade_audit.create_trade_audit(
+        session=session, trade_audit_create=trade_audit_in
+    )
     return trade_audit

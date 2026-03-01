@@ -1,3 +1,14 @@
+## [2026-03-02] - Dockmaster Sprint 2.37 — Final Verification Gate
+**Intent**: Independent lint + test suite verification for Sprint 2.37 Collector Rehabilitation.
+**Status**: COMPLETED
+**Details**:
+- Fixed 14 mypy errors across 5 files (registry.py truthy-function, exchange_coinspot.py Any returns/union-attr, strategy_adapter.py implicit Optional, orchestrator.py missing annotation, collectors.py generic type/untyped calls)
+- ruff auto-fixed 342 errors; manually fixed remaining 37 (T201/F841/E712/E722/ARG001/B007/C401/C414/W293)
+- Updated 4 stale roadmap validation tests to point to new plugin paths (Sprint 2.37 migration)
+- Updated test_sprint_234_integration.py to use new plugin system imports (ccxt_collector/simulated_calendar were intentionally deleted)
+- Final result: mypy ✅ | ruff check ✅ | ruff format ✅ | 842 passed, 5 pre-existing failures (Sprint 2.35 executor/trading_ws)
+- File verification: all 10 legacy files deleted, all 14 new plugin files exist
+
 ## [2026-03-02] - dev-2 Sprint 2.37 Part B — Plugin Collector Porting
 **Intent**: Port 7 legacy collectors to plugin system, update seed data, write tests.
 **Status**: COMPLETED

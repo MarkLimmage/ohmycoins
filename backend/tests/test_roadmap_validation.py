@@ -165,21 +165,21 @@ class TestPhase25Validation:
         assert hasattr(CatalystEvents, 'description')
 
     def test_defillama_collector_exists(self):
-        """Verify DeFiLlama collector is implemented"""
-        defillama_path = Path(__file__).parent.parent / "app" / "services" / "collectors" / "glass" / "defillama.py"
+        """Verify DeFiLlama collector is implemented (Sprint 2.37: migrated to plugin system)"""
+        defillama_path = Path(__file__).parent.parent / "app" / "collectors" / "strategies" / "glass_defillama.py"
         assert defillama_path.exists()
 
     def test_cryptopanic_collector_exists(self):
-        """Verify CryptoPanic collector is implemented"""
-        cryptopanic_path = Path(__file__).parent.parent / "app" / "services" / "collectors" / "human" / "cryptopanic.py"
+        """Verify CryptoPanic collector is implemented (Sprint 2.37: migrated to plugin system)"""
+        cryptopanic_path = Path(__file__).parent.parent / "app" / "collectors" / "strategies" / "news_cryptopanic.py"
         assert cryptopanic_path.exists()
 
     def test_collector_base_classes_exist(self):
-        """Verify collector framework base classes exist"""
+        """Verify collector framework base classes exist (Sprint 2.37: scraper_collector replaced by strategy_adapter)"""
         base_path = Path(__file__).parent.parent / "app" / "services" / "collectors"
         assert (base_path / "base.py").exists()
         assert (base_path / "api_collector.py").exists()
-        assert (base_path / "scraper_collector.py").exists()
+        assert (base_path / "strategy_adapter.py").exists()
 
     def test_collector_orchestrator_exists(self):
         """Verify collector orchestrator exists"""
@@ -298,8 +298,8 @@ class TestTestCoverage:
         assert test_path.exists()
 
     def test_defillama_tests_exist(self):
-        """Verify DeFiLlama collector tests exist"""
-        test_path = Path(__file__).parent / "services" / "collectors" / "glass" / "test_defillama.py"
+        """Verify DeFiLlama collector tests exist (Sprint 2.37: consolidated into sprint237 test file)"""
+        test_path = Path(__file__).parent / "services" / "collectors" / "test_sprint237_collectors.py"
         assert test_path.exists()
 
     def test_session_manager_tests_exist(self):

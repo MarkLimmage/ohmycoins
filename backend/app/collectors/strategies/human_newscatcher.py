@@ -8,8 +8,7 @@ which aggregates news from 60,000+ sources worldwide with built-in sentiment ana
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -38,7 +37,7 @@ class HumanNewscatcher(ICollector):
     def description(self) -> str:
         return "Aggregated news from 60k+ sources via Newscatcher API"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -56,7 +55,7 @@ class HumanNewscatcher(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "hours_back" in config:
             try:
                 int(config["hours_back"])
@@ -73,7 +72,7 @@ class HumanNewscatcher(ICollector):
 
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to Newscatcher API."""
         api_key = os.getenv("NEWSCATCHER_API_KEY")
         if not api_key:
@@ -99,7 +98,7 @@ class HumanNewscatcher(ICollector):
             logger.error(f"Failed to test Newscatcher connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect recent cryptocurrency news from Newscatcher API."""
         api_key = os.getenv("NEWSCATCHER_API_KEY")
         if not api_key:

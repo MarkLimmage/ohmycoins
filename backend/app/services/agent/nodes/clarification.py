@@ -51,7 +51,8 @@ def clarification_node(state: dict[str, Any]) -> dict[str, Any]:
         logger.info("ClarificationNode: User goal is ambiguous")
 
         # Generate clarification questions using LLM
-        system_message = SystemMessage(content="""
+        system_message = SystemMessage(
+            content="""
 You are an expert at identifying ambiguities in data science goals.
 Analyze the user's goal and generate 2-3 specific, actionable clarification questions.
 Focus on:
@@ -60,7 +61,8 @@ Focus on:
 3. Specific prediction or analysis type desired
 
 Return questions in a simple list format, one per line.
-""")
+"""
+        )
 
         human_message = HumanMessage(content=f"User goal: {user_goal}")
 
@@ -77,7 +79,9 @@ Return questions in a simple list format, one per line.
     if retrieved_data:
         data_issues = _check_data_quality(retrieved_data)
         if data_issues:
-            logger.info(f"ClarificationNode: Data quality issues detected: {data_issues}")
+            logger.info(
+                f"ClarificationNode: Data quality issues detected: {data_issues}"
+            )
             clarifications_needed.extend(data_issues)
 
     # Update state
@@ -85,16 +89,20 @@ Return questions in a simple list format, one per line.
     state["awaiting_clarification"] = len(clarifications_needed) > 0
 
     if clarifications_needed:
-        logger.info(f"ClarificationNode: {len(clarifications_needed)} clarifications needed")
+        logger.info(
+            f"ClarificationNode: {len(clarifications_needed)} clarifications needed"
+        )
         state["current_step"] = "awaiting_clarification"
         # Add to reasoning trace
         if "reasoning_trace" not in state or state["reasoning_trace"] is None:
             state["reasoning_trace"] = []
-        state["reasoning_trace"].append({
-            "step": "clarification",
-            "reasoning": f"Need clarification on {len(clarifications_needed)} points",
-            "questions": clarifications_needed
-        })
+        state["reasoning_trace"].append(
+            {
+                "step": "clarification",
+                "reasoning": f"Need clarification on {len(clarifications_needed)} points",
+                "questions": clarifications_needed,
+            }
+        )
     else:
         logger.info("ClarificationNode: No clarifications needed, proceeding")
         state["awaiting_clarification"] = False
@@ -115,8 +123,16 @@ def _is_goal_ambiguous(goal: str) -> bool:
     # Check for vague language
     vague_terms = ["predict", "analyze", "trading", "algorithm", "model"]
     specific_terms = [
-        "bitcoin", "btc", "ethereum", "eth", "daily", "weekly", "month",
-        "technical indicators", "sentiment analysis", "price movements"
+        "bitcoin",
+        "btc",
+        "ethereum",
+        "eth",
+        "daily",
+        "weekly",
+        "month",
+        "technical indicators",
+        "sentiment analysis",
+        "price movements",
     ]
 
     goal_lower = goal.lower()
@@ -143,16 +159,28 @@ def _generate_template_questions(goal: str) -> list[str]:
     goal_lower = goal.lower()
 
     # Coin selection
-    if "coin" not in goal_lower and "btc" not in goal_lower and "bitcoin" not in goal_lower:
-        questions.append("Which cryptocurrency would you like to analyze? (e.g., Bitcoin, Ethereum)")
+    if (
+        "coin" not in goal_lower
+        and "btc" not in goal_lower
+        and "bitcoin" not in goal_lower
+    ):
+        questions.append(
+            "Which cryptocurrency would you like to analyze? (e.g., Bitcoin, Ethereum)"
+        )
 
     # Timeframe
-    if not any(t in goal_lower for t in ["day", "week", "month", "year", "daily", "weekly"]):
-        questions.append("What time period should I analyze? (e.g., last 30 days, last 3 months)")
+    if not any(
+        t in goal_lower for t in ["day", "week", "month", "year", "daily", "weekly"]
+    ):
+        questions.append(
+            "What time period should I analyze? (e.g., last 30 days, last 3 months)"
+        )
 
     # Analysis type
     if "predict" in goal_lower or "forecast" in goal_lower:
-        questions.append("What would you like to predict? (e.g., price direction, volatility, trading signals)")
+        questions.append(
+            "What would you like to predict? (e.g., price direction, volatility, trading signals)"
+        )
 
     return questions
 
@@ -171,25 +199,30 @@ def _check_data_quality(retrieved_data: dict[str, Any]) -> list[str]:
 
     # Check if data is empty or insufficient
     if not retrieved_data or not any(retrieved_data.values()):
-        issues.append("No data was retrieved. Would you like to adjust the time period or data sources?")
+        issues.append(
+            "No data was retrieved. Would you like to adjust the time period or data sources?"
+        )
         return issues
 
     # Check each data type
     for data_type, data in retrieved_data.items():
         if data_type == "price_data":
             if isinstance(data, list) and len(data) < 10:
-                issues.append(f"Only {len(data)} price data points found. Would you like to expand the time range?")
+                issues.append(
+                    f"Only {len(data)} price data points found. Would you like to expand the time range?"
+                )
 
         elif data_type == "sentiment_data":
             if isinstance(data, list) and len(data) < 5:
-                issues.append(f"Limited sentiment data available ({len(data)} records). Should I proceed with price data only?")
+                issues.append(
+                    f"Limited sentiment data available ({len(data)} records). Should I proceed with price data only?"
+                )
 
     return issues
 
 
 def handle_clarification_response(
-    state: dict[str, Any],
-    responses: dict[str, str]
+    state: dict[str, Any], responses: dict[str, str]
 ) -> dict[str, Any]:
     """
     Process user responses to clarification questions.
@@ -210,10 +243,7 @@ def handle_clarification_response(
     state["clarifications_provided"].update(responses)
 
     # Update user goal with clarifications
-    clarified_goal = _incorporate_clarifications(
-        state.get("user_goal", ""),
-        responses
-    )
+    clarified_goal = _incorporate_clarifications(state.get("user_goal", ""), responses)
 
     state["user_goal"] = clarified_goal
     state["awaiting_clarification"] = False
@@ -224,11 +254,13 @@ def handle_clarification_response(
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
 
-    state["reasoning_trace"].append({
-        "step": "clarification_received",
-        "responses": responses,
-        "updated_goal": clarified_goal
-    })
+    state["reasoning_trace"].append(
+        {
+            "step": "clarification_received",
+            "responses": responses,
+            "updated_goal": clarified_goal,
+        }
+    )
 
     logger.info(f"ClarificationNode: Updated goal: {clarified_goal}")
 
@@ -236,8 +268,7 @@ def handle_clarification_response(
 
 
 def _incorporate_clarifications(
-    original_goal: str,
-    clarifications: dict[str, str]
+    original_goal: str, clarifications: dict[str, str]
 ) -> str:
     """
     Incorporate user clarifications into the goal statement.
@@ -250,9 +281,9 @@ def _incorporate_clarifications(
         Enhanced goal statement
     """
     # Combine original goal with clarifications
-    clarification_text = " ".join([
-        f"{response}" for response in clarifications.values()
-    ])
+    clarification_text = " ".join(
+        [f"{response}" for response in clarifications.values()]
+    )
 
     enhanced_goal = f"{original_goal}. {clarification_text}"
 

@@ -33,7 +33,7 @@ def list_alert_rules(
     session: SessionDep,
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    current_user: User = Depends(get_current_active_superuser),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> AlertRulesPublic:
     """List all alert rules (paginated)."""
     statement = select(AlertRule).offset(skip).limit(limit)
@@ -49,7 +49,7 @@ def list_alert_rules(
 def create_alert_rule(
     rule_create: AlertRuleCreate,
     session: SessionDep,
-    current_user: User = Depends(get_current_active_superuser),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> Any:
     """Create a new alert rule."""
     rule = AlertRule(**rule_create.model_dump())
@@ -64,7 +64,7 @@ def update_alert_rule(
     rule_id: str,
     rule_update: AlertRuleUpdate,
     session: SessionDep,
-    current_user: User = Depends(get_current_active_superuser),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> Any:
     """Update an alert rule."""
     rule = session.get(AlertRule, rule_id)
@@ -86,7 +86,7 @@ def update_alert_rule(
 def delete_alert_rule(
     rule_id: str,
     session: SessionDep,
-    current_user: User = Depends(get_current_active_superuser),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict[str, str]:
     """Delete an alert rule."""
     rule = session.get(AlertRule, rule_id)
@@ -105,7 +105,7 @@ def list_alert_log(
     limit: int = Query(20, ge=1, le=100),
     alert_type: str | None = Query(None),
     severity: str | None = Query(None),
-    current_user: User = Depends(get_current_active_superuser),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> AlertLogsPublic:
     """List alert history (paginated, filterable by type/severity)."""
     statement = select(AlertLog)
@@ -133,7 +133,7 @@ def list_alert_log(
 @router.post("/test")
 async def send_test_alert(
     session: SessionDep,
-    current_user: User = Depends(get_current_active_superuser),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict[str, Any]:
     """Send a test alert to verify channel configuration."""
     # Create test payload

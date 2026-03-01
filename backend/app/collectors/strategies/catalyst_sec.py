@@ -8,7 +8,7 @@ regulatory events that may impact cryptocurrency markets.
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 import aiohttp
 
@@ -57,7 +57,7 @@ class CatalystSEC(ICollector):
     def description(self) -> str:
         return "SEC EDGAR regulatory filings for crypto-related companies"
 
-    def get_config_schema(self) -> Dict[str, Any]:
+    def get_config_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
             "properties": {
@@ -71,14 +71,14 @@ class CatalystSEC(ICollector):
             "required": [],
         }
 
-    def validate_config(self, config: Dict[str, Any]) -> bool:
+    def validate_config(self, config: dict[str, Any]) -> bool:
         if "companies" in config:
             if not isinstance(config["companies"], list):
                 logger.error("Invalid config: 'companies' must be a list")
                 return False
         return True
 
-    async def test_connection(self, config: Dict[str, Any]) -> bool:
+    async def test_connection(self, config: dict[str, Any]) -> bool:
         """Test connectivity to SEC API."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -94,7 +94,7 @@ class CatalystSEC(ICollector):
             logger.error(f"Failed to test SEC connection: {e}")
             return False
 
-    async def collect(self, config: Dict[str, Any]) -> List[Any]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         """Collect recent SEC filings for monitored companies."""
         companies = config.get("companies", list(self.MONITORED_COMPANIES.keys()))
         logger.info(f"Collecting SEC filings for {len(companies)} companies")
@@ -118,7 +118,9 @@ class CatalystSEC(ICollector):
                         timeout=aiohttp.ClientTimeout(total=30),
                     ) as resp:
                         if resp.status != 200:
-                            logger.warning(f"Failed to fetch {company_name}: status {resp.status}")
+                            logger.warning(
+                                f"Failed to fetch {company_name}: status {resp.status}"
+                            )
                             continue
 
                         company_data = await resp.json()
@@ -136,11 +138,12 @@ class CatalystSEC(ICollector):
                     recent_filings = filings_data["recent"]
 
                     # Iterate through recent filings
-                    for i, filing in enumerate(
+                    for _i, filing in enumerate(
                         zip(
                             recent_filings.get("form", []),
                             recent_filings.get("filingDate", []),
                             recent_filings.get("accessionNumber", []),
+                            strict=False,
                         )
                     ):
                         try:
@@ -159,11 +162,15 @@ class CatalystSEC(ICollector):
                                 continue
 
                             # Skip old filings (older than 30 days)
-                            if datetime.now(timezone.utc) - filing_datetime > timedelta(days=30):
+                            if datetime.now(timezone.utc) - filing_datetime > timedelta(
+                                days=30
+                            ):
                                 continue
 
                             filing_info = self.FILING_TYPES[form_type]
-                            currencies = self.COMPANY_CRYPTO_MAP.get(company_name, ["BTC"])
+                            currencies = self.COMPANY_CRYPTO_MAP.get(
+                                company_name, ["BTC"]
+                            )
 
                             # Create CatalystEvents instance
                             data_point = CatalystEvents(

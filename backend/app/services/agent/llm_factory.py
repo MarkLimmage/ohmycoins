@@ -16,6 +16,7 @@ The factory handles:
 
 Sprint 2.8: Phase 3 - Initial implementation with OpenAI and Google support
 """
+
 import logging
 from uuid import UUID
 
@@ -62,7 +63,7 @@ class LLMFactory:
         session: Session,
         user_id: UUID,
         credential_id: UUID | None = None,
-        prefer_default: bool = False
+        prefer_default: bool = False,
     ):
         """
         Create an LLM instance based on user configuration or system default.
@@ -86,7 +87,9 @@ class LLMFactory:
         """
         # Option 1: System default requested explicitly
         if prefer_default:
-            logger.info(f"Using system default LLM for user {user_id} (prefer_default=True)")
+            logger.info(
+                f"Using system default LLM for user {user_id} (prefer_default=True)"
+            )
             return LLMFactory._create_system_default_llm()
 
         # Option 2: Specific credential ID provided
@@ -95,7 +98,9 @@ class LLMFactory:
             if not credential:
                 raise ValueError(f"Credential {credential_id} not found")
             if credential.user_id != user_id:
-                raise ValueError(f"Credential {credential_id} does not belong to user {user_id}")
+                raise ValueError(
+                    f"Credential {credential_id} does not belong to user {user_id}"
+                )
             if not credential.is_active:
                 raise ValueError(f"Credential {credential_id} is not active")
 
@@ -109,7 +114,7 @@ class LLMFactory:
         statement = select(UserLLMCredentials).where(
             UserLLMCredentials.user_id == user_id,
             UserLLMCredentials.is_default is True,
-            UserLLMCredentials.is_active is True
+            UserLLMCredentials.is_active is True,
         )
         default_credential = session.exec(statement).first()
 
@@ -121,7 +126,9 @@ class LLMFactory:
             return LLMFactory._create_llm_from_credential(default_credential)
 
         # Option 4: No user credentials, use system default
-        logger.info(f"No user credentials found for user {user_id}, using system default")
+        logger.info(
+            f"No user credentials found for user {user_id}, using system default"
+        )
         return LLMFactory._create_system_default_llm()
 
     @staticmethod
@@ -142,17 +149,12 @@ class LLMFactory:
         model_name = credential.model_name
 
         return LLMFactory.create_llm_from_api_key(
-            provider=credential.provider,
-            api_key=api_key,
-            model_name=model_name
+            provider=credential.provider, api_key=api_key, model_name=model_name
         )
 
     @staticmethod
     def create_llm_from_api_key(
-        provider: str,
-        api_key: str,
-        model_name: str | None = None,
-        **kwargs
+        provider: str, api_key: str, model_name: str | None = None, **kwargs
     ):
         """
         Create an LLM instance directly from provider and API key.
@@ -202,15 +204,16 @@ class LLMFactory:
             if not settings.OPENAI_API_KEY:
                 raise ValueError("OPENAI_API_KEY not configured in environment")
             return LLMFactory._create_openai_llm(
-                api_key=settings.OPENAI_API_KEY,
-                model_name=settings.OPENAI_MODEL
+                api_key=settings.OPENAI_API_KEY, model_name=settings.OPENAI_MODEL
             )
         elif provider == "anthropic":
             if not settings.ANTHROPIC_API_KEY:
                 raise ValueError("ANTHROPIC_API_KEY not configured in environment")
             return LLMFactory._create_anthropic_llm(
                 api_key=settings.ANTHROPIC_API_KEY,
-                model_name=getattr(settings, 'ANTHROPIC_MODEL', 'claude-3-sonnet-20240229')
+                model_name=getattr(
+                    settings, "ANTHROPIC_MODEL", "claude-3-sonnet-20240229"
+                ),
             )
         else:
             # Default to OpenAI if provider not recognized
@@ -220,15 +223,12 @@ class LLMFactory:
             if not settings.OPENAI_API_KEY:
                 raise ValueError("OPENAI_API_KEY not configured for fallback")
             return LLMFactory._create_openai_llm(
-                api_key=settings.OPENAI_API_KEY,
-                model_name=settings.OPENAI_MODEL
+                api_key=settings.OPENAI_API_KEY, model_name=settings.OPENAI_MODEL
             )
 
     @staticmethod
     def _create_openai_llm(
-        api_key: str,
-        model_name: str | None = None,
-        **kwargs
+        api_key: str, model_name: str | None = None, **kwargs
     ) -> ChatOpenAI:
         """
         Create OpenAI LLM instance.
@@ -242,8 +242,8 @@ class LLMFactory:
             ChatOpenAI instance
         """
         model = model_name or settings.OPENAI_MODEL
-        max_tokens = kwargs.pop('max_tokens', settings.MAX_TOKENS_PER_REQUEST)
-        streaming = kwargs.pop('streaming', settings.ENABLE_STREAMING)
+        max_tokens = kwargs.pop("max_tokens", settings.MAX_TOKENS_PER_REQUEST)
+        streaming = kwargs.pop("streaming", settings.ENABLE_STREAMING)
 
         logger.debug(f"Creating OpenAI LLM with model={model}")
 
@@ -252,14 +252,12 @@ class LLMFactory:
             api_key=api_key,
             max_tokens=max_tokens,
             streaming=streaming,
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
     def _create_google_llm(
-        api_key: str,
-        model_name: str | None = None,
-        **kwargs
+        api_key: str, model_name: str | None = None, **kwargs
     ) -> ChatGoogleGenerativeAI:
         """
         Create Google Gemini LLM instance.
@@ -273,7 +271,7 @@ class LLMFactory:
             ChatGoogleGenerativeAI instance
         """
         model = model_name or "gemini-1.5-pro"
-        max_tokens = kwargs.pop('max_tokens', settings.MAX_TOKENS_PER_REQUEST)
+        max_tokens = kwargs.pop("max_tokens", settings.MAX_TOKENS_PER_REQUEST)
 
         logger.debug(f"Creating Google Gemini LLM with model={model}")
 
@@ -285,14 +283,12 @@ class LLMFactory:
             google_api_key=api_key,
             max_output_tokens=max_tokens,
             convert_system_message_to_human=True,  # Required for Gemini
-            **kwargs
+            **kwargs,
         )
 
     @staticmethod
     def _create_anthropic_llm(
-        api_key: str,
-        model_name: str | None = None,
-        **kwargs
+        api_key: str, model_name: str | None = None, **kwargs
     ) -> ChatAnthropic:
         """
         Create Anthropic Claude LLM instance.
@@ -306,16 +302,13 @@ class LLMFactory:
             ChatAnthropic instance
         """
         model = model_name or "claude-3-sonnet-20240229"
-        max_tokens = kwargs.pop('max_tokens', settings.MAX_TOKENS_PER_REQUEST)
+        max_tokens = kwargs.pop("max_tokens", settings.MAX_TOKENS_PER_REQUEST)
 
         logger.debug(f"Creating Anthropic Claude LLM with model={model}")
 
         # Anthropic uses max_tokens directly (same as OpenAI)
         return ChatAnthropic(
-            model=model,
-            anthropic_api_key=api_key,
-            max_tokens=max_tokens,
-            **kwargs
+            model=model, anthropic_api_key=api_key, max_tokens=max_tokens, **kwargs
         )
 
     @staticmethod
@@ -339,7 +332,7 @@ class LLMFactory:
         return {
             "openai": "gpt-4-turbo-preview",
             "google": "gemini-1.5-pro",
-            "anthropic": "claude-3-sonnet-20240229"
+            "anthropic": "claude-3-sonnet-20240229",
         }
 
 
@@ -348,7 +341,7 @@ def create_llm(
     session: Session,
     user_id: UUID,
     credential_id: UUID | None = None,
-    prefer_default: bool = False
+    prefer_default: bool = False,
 ):
     """
     Convenience function for creating LLM instances.
@@ -368,5 +361,5 @@ def create_llm(
         session=session,
         user_id=user_id,
         credential_id=credential_id,
-        prefer_default=prefer_default
+        prefer_default=prefer_default,
     )

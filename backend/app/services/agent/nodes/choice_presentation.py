@@ -44,7 +44,9 @@ def choice_presentation_node(state: dict[str, Any]) -> dict[str, Any]:
     choices = _generate_model_choices(trained_models, evaluation_results)
 
     if len(choices) <= 1:
-        logger.info("ChoicePresentationNode: Only one model available, no choice needed")
+        logger.info(
+            "ChoicePresentationNode: Only one model available, no choice needed"
+        )
         state["awaiting_choice"] = False
         # Auto-select the single model
         if choices:
@@ -64,11 +66,13 @@ def choice_presentation_node(state: dict[str, Any]) -> dict[str, Any]:
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
 
-    state["reasoning_trace"].append({
-        "step": "choice_presentation",
-        "num_choices": len(choices),
-        "recommendation": recommendation
-    })
+    state["reasoning_trace"].append(
+        {
+            "step": "choice_presentation",
+            "num_choices": len(choices),
+            "recommendation": recommendation,
+        }
+    )
 
     logger.info(f"ChoicePresentationNode: Presenting {len(choices)} choices to user")
 
@@ -76,8 +80,7 @@ def choice_presentation_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def _generate_model_choices(
-    trained_models: dict[str, Any],
-    evaluation_results: dict[str, Any]
+    trained_models: dict[str, Any], evaluation_results: dict[str, Any]
 ) -> list[dict[str, Any]]:
     """
     Generate structured choices from trained models and their evaluations.
@@ -112,7 +115,7 @@ def _generate_model_choices(
             "pros": pros,
             "cons": cons,
             "metrics": metrics,
-            "parameters": model_info.get("parameters", {})
+            "parameters": model_info.get("parameters", {}),
         }
 
         choices.append(choice)
@@ -146,8 +149,7 @@ def _estimate_model_complexity(model_name: str) -> str:
 
 
 def _generate_pros_cons(
-    model_name: str,
-    metrics: dict[str, Any]
+    model_name: str, metrics: dict[str, Any]
 ) -> tuple[list[str], list[str]]:
     """
     Generate pros and cons for a model based on its characteristics and metrics.
@@ -222,7 +224,7 @@ def _generate_recommendation(choices: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "recommended_model": None,
             "reasoning": "No models available for recommendation",
-            "confidence": 0.0
+            "confidence": 0.0,
         }
 
     # Initialize LLM for recommendation
@@ -235,7 +237,8 @@ def _generate_recommendation(choices: list[dict[str, Any]]) -> dict[str, Any]:
     # Prepare comparison data
     comparison_text = _format_choices_for_llm(choices)
 
-    system_message = SystemMessage(content="""
+    system_message = SystemMessage(
+        content="""
 You are an expert machine learning consultant. Analyze the model comparison
 and provide a recommendation. Consider:
 1. Accuracy (most important for production)
@@ -247,7 +250,8 @@ Provide your recommendation in this format:
 RECOMMENDED: [model_name]
 REASONING: [brief explanation]
 CONFIDENCE: [0.0-1.0]
-""")
+"""
+    )
 
     human_message = HumanMessage(content=comparison_text)
 
@@ -277,8 +281,7 @@ def _format_choices_for_llm(choices: list[dict[str, Any]]) -> str:
 
 
 def _parse_llm_recommendation(
-    llm_response: str,
-    _choices: list[dict[str, Any]]
+    llm_response: str, _choices: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Parse LLM recommendation response."""
     lines = llm_response.strip().split("\n")
@@ -301,7 +304,7 @@ def _parse_llm_recommendation(
     return {
         "recommended_model": recommended_model,
         "reasoning": reasoning,
-        "confidence": confidence
+        "confidence": confidence,
     }
 
 
@@ -313,13 +316,12 @@ def _simple_recommendation(choices: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "recommended_model": best_model["model_name"],
         "reasoning": f"Highest accuracy ({best_model['accuracy']:.2%}) with {best_model['complexity']} complexity",
-        "confidence": 0.7
+        "confidence": 0.7,
     }
 
 
 def handle_choice_selection(
-    state: dict[str, Any],
-    selected_model: str
+    state: dict[str, Any], selected_model: str
 ) -> dict[str, Any]:
     """
     Process user's model selection.
@@ -342,9 +344,8 @@ def handle_choice_selection(
     if "reasoning_trace" not in state or state["reasoning_trace"] is None:
         state["reasoning_trace"] = []
 
-    state["reasoning_trace"].append({
-        "step": "choice_selected",
-        "selected_model": selected_model
-    })
+    state["reasoning_trace"].append(
+        {"step": "choice_selected", "selected_model": selected_model}
+    )
 
     return state

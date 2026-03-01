@@ -16,21 +16,20 @@ def test_sprint_2_34_imports():
     import feedparser
     assert feedparser.__version__
 
-    # Track B: Exchange & Catalyst (CCXT)
+    # Track B: Exchange & Catalyst (Sprint 2.37: migrated to plugin system)
+    # Legacy ccxt_collector and simulated_calendar were intentionally deleted in Sprint 2.37.
+    # New plugin-based equivalents are in app/collectors/strategies/.
     try:
-        from app.services.collectors.ccxt_collector import CCXTCollector
-        assert CCXTCollector
-        import ccxt
-        assert ccxt.__version__
+        from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
+        assert CoinspotExchangeCollector
     except ImportError as e:
-        pytest.fail(f"Failed to import CCXT components: {e}")
+        pytest.fail(f"Failed to import Exchange plugin: {e}")
 
-    # Track B: Catalyst Simulation (simulated_calendar)
     try:
-        from app.services.collectors.catalyst.simulated_calendar import SimulatedCalendarCollector
-        assert SimulatedCalendarCollector
+        from app.collectors.strategies.catalyst_sec import CatalystSEC
+        assert CatalystSEC
     except ImportError as e:
-        pytest.fail(f"Failed to import Catalyst components: {e}")
+        pytest.fail(f"Failed to import Catalyst plugin: {e}")
 
 def test_collector_registration():
     """Verify that new collectors are registered in the config (if applicable)."""

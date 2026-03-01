@@ -15,8 +15,11 @@ logger = logging.getLogger(__name__)
 
 REDIS_KEY_INITIAL_EQUITY = "omc:initial_equity"
 
+
 class HardStopWatcher:
-    def __init__(self, check_interval: int = 5, drawdown_limit_pct: Decimal = Decimal("0.95")):
+    def __init__(
+        self, check_interval: int = 5, drawdown_limit_pct: Decimal = Decimal("0.95")
+    ):
         self.check_interval = check_interval
         self.drawdown_limit_pct = drawdown_limit_pct
         self.redis_client = None
@@ -24,9 +27,7 @@ class HardStopWatcher:
     async def connect_redis(self):
         if not self.redis_client:
             self.redis_client = await redis.from_url(
-                settings.REDIS_URL,
-                encoding="utf-8",
-                decode_responses=True
+                settings.REDIS_URL, encoding="utf-8", decode_responses=True
             )
 
     async def get_latest_prices(self, session: Session) -> dict[str, Decimal]:
@@ -85,7 +86,7 @@ class HardStopWatcher:
         is_active = await self.redis_client.get("omc:emergency_stop")
         if is_active == "true":
             logger.debug("Emergency Stop already active.")
-            return True # Already stopped
+            return True  # Already stopped
 
         current_equity = await self.calculate_total_equity(session)
 
@@ -95,7 +96,9 @@ class HardStopWatcher:
         if not initial_equity_str:
             # Initialize
             if current_equity > 0:
-                await self.redis_client.set(REDIS_KEY_INITIAL_EQUITY, str(current_equity))
+                await self.redis_client.set(
+                    REDIS_KEY_INITIAL_EQUITY, str(current_equity)
+                )
                 logger.info(f"Initialized Base Equity: {current_equity:.2f} AUD")
             else:
                 logger.warning("Total Equity is 0. Strategies not deployed?")

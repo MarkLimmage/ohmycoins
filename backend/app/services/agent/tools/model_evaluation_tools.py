@@ -63,9 +63,7 @@ def evaluate_model(
     # Scale features if scaler provided
     if scaler is not None:
         X_test = pd.DataFrame(
-            scaler.transform(X_test),
-            columns=feature_columns,
-            index=X_test.index
+            scaler.transform(X_test), columns=feature_columns, index=X_test.index
         )
 
     # Make predictions
@@ -79,8 +77,12 @@ def evaluate_model(
         # Classification metrics
         metrics = {
             "accuracy": float(accuracy_score(y_test, y_pred)),
-            "precision": float(precision_score(y_test, y_pred, average="weighted", zero_division=0)),
-            "recall": float(recall_score(y_test, y_pred, average="weighted", zero_division=0)),
+            "precision": float(
+                precision_score(y_test, y_pred, average="weighted", zero_division=0)
+            ),
+            "recall": float(
+                recall_score(y_test, y_pred, average="weighted", zero_division=0)
+            ),
             "f1": float(f1_score(y_test, y_pred, average="weighted", zero_division=0)),
         }
 
@@ -93,7 +95,9 @@ def evaluate_model(
 
         result["metrics"] = metrics
         result["confusion_matrix"] = confusion_matrix(y_test, y_pred).tolist()
-        result["classification_report"] = classification_report(y_test, y_pred, output_dict=True)
+        result["classification_report"] = classification_report(
+            y_test, y_pred, output_dict=True
+        )
 
     else:  # regression
         # Regression metrics
@@ -114,8 +118,7 @@ def tune_hyperparameters(
     target_column: str,
     feature_columns: list[str] | None = None,
     model_type: Literal[
-        "random_forest_classifier",
-        "random_forest_regressor"
+        "random_forest_classifier", "random_forest_regressor"
     ] = "random_forest_classifier",
     param_grid: dict[str, list[Any]] | None = None,
     search_type: Literal["grid", "random"] = "grid",
@@ -191,7 +194,7 @@ def tune_hyperparameters(
             cv=cv_folds,
             scoring=default_scoring,
             n_jobs=-1,
-            verbose=0
+            verbose=0,
         )
     else:  # random
         search = RandomizedSearchCV(
@@ -202,7 +205,7 @@ def tune_hyperparameters(
             scoring=default_scoring,
             random_state=random_state,
             n_jobs=-1,
-            verbose=0
+            verbose=0,
         )
 
     search.fit(X, y)
@@ -298,7 +301,9 @@ def compare_models(
                 ranked = sorted(comparisons.items(), key=lambda x: x[1][metric])
             else:
                 # Higher is better
-                ranked = sorted(comparisons.items(), key=lambda x: x[1][metric], reverse=True)
+                ranked = sorted(
+                    comparisons.items(), key=lambda x: x[1][metric], reverse=True
+                )
             rankings[metric] = [model_name for model_name, _ in ranked]
 
     return {
@@ -349,9 +354,7 @@ def calculate_feature_importance(
 
     # Sort by importance (descending)
     sorted_features = sorted(
-        feature_importance_dict.items(),
-        key=lambda x: x[1],
-        reverse=True
+        feature_importance_dict.items(), key=lambda x: x[1], reverse=True
     )
 
     # Get top N features

@@ -10,15 +10,18 @@ class ExecutionEvent(BaseModel):
     """
     Represents a single fill or relevant market event during execution.
     """
+
     timestamp: datetime
     event_type: str  # e.g., "fill", "market_update"
     price: Decimal
     volume: Decimal = Decimal("0")
 
+
 class ExecutionReport(BaseModel):
     """
     Post-trade analysis report containing execution metrics.
     """
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     trade_id: str
     symbol: str
@@ -31,13 +34,16 @@ class ExecutionReport(BaseModel):
     execution_timeline: list[ExecutionEvent] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class SlippageCalculator:
     """
     Calculates execution quality metrics.
     """
 
     @staticmethod
-    def calculate_slippage_bps(avg_fill_price: Decimal, arrival_mid_price: Decimal) -> float:
+    def calculate_slippage_bps(
+        avg_fill_price: Decimal, arrival_mid_price: Decimal
+    ) -> float:
         """
         Calculates slippage in Basis Points (bps).
         Formula: ((Avg Fill Price - Arrival Mid Price) / Arrival Mid Price) * 10000
@@ -62,7 +68,7 @@ class SlippageCalculator:
         side: str,
         quantity: Decimal,
         arrival_mid_price: Decimal,
-        execution_events: list[ExecutionEvent]
+        execution_events: list[ExecutionEvent],
     ) -> ExecutionReport:
         """
         Generates a full execution report from a list of execution events.
@@ -72,13 +78,15 @@ class SlippageCalculator:
         total_volume = sum(e.volume for e in fill_events)
 
         if total_volume == 0:
-             # If no fills, assume avg_fill_price is 0 or same as arrival (no trade)?
-             # Ideally this shouldn't happen for a "completed" trade report.
-             avg_fill_price = Decimal(0)
+            # If no fills, assume avg_fill_price is 0 or same as arrival (no trade)?
+            # Ideally this shouldn't happen for a "completed" trade report.
+            avg_fill_price = Decimal(0)
         else:
-             avg_fill_price = sum(e.price * e.volume for e in fill_events) / total_volume
+            avg_fill_price = sum(e.price * e.volume for e in fill_events) / total_volume
 
-        slippage_bps = SlippageCalculator.calculate_slippage_bps(avg_fill_price, arrival_mid_price)
+        slippage_bps = SlippageCalculator.calculate_slippage_bps(
+            avg_fill_price, arrival_mid_price
+        )
 
         return ExecutionReport(
             id=f"rep-{uuid.uuid4()}",
@@ -89,5 +97,5 @@ class SlippageCalculator:
             arrival_mid_price=arrival_mid_price,
             avg_fill_price=avg_fill_price,
             slippage_bps=slippage_bps,
-            execution_timeline=execution_events
+            execution_timeline=execution_events,
         )

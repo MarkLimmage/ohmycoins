@@ -22,7 +22,7 @@ from app.services.collectors.config import (
     start_collection,
     stop_collection,
 )
-from app.services.scheduler import start_scheduler, stop_scheduler
+from app.services.scheduler import stop_scheduler
 from app.services.trading.executor import get_order_queue
 from app.services.trading.scheduler import get_execution_scheduler
 
@@ -30,7 +30,7 @@ from app.services.trading.scheduler import get_execution_scheduler
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Application lifespan manager for startup and shutdown events"""
-    
+
     # Check environment configuration for collectors
     if settings.RUN_COLLECTORS:
         # Startup: Start Phase 2.5 Data Collectors (New Orchestrator)
@@ -38,15 +38,18 @@ async def lifespan(_app: FastAPI):
         # or heavily restricted if we are migrating.
         setup_collectors()
         start_collection()
-        
-        # Determine if we still need the legacy scheduler. 
+
+        # Determine if we still need the legacy scheduler.
         # If CoinspotExchange is in BOTH systems, we get duplicates.
-        # For now, let's assume Phase 2.5 replaces the need for legacy scheduler 
+        # For now, let's assume Phase 2.5 replaces the need for legacy scheduler
         # for these specific collectors.
-        # await start_scheduler() 
+        # await start_scheduler()
     else:
         import logging
-        logging.getLogger("app.main").info("Collectors explicitly disabled via RUN_COLLECTORS=False")
+
+        logging.getLogger("app.main").info(
+            "Collectors explicitly disabled via RUN_COLLECTORS=False"
+        )
 
     # Initialize and start Order Queue
     executor_session = Session(engine)
@@ -56,7 +59,7 @@ async def lifespan(_app: FastAPI):
     queue.initialize(
         session=executor_session,
         api_key=settings.COINSPOT_API_KEY,
-        api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode"
+        api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode",
     )
     queue_task = asyncio.create_task(queue.start())
 
@@ -65,7 +68,7 @@ async def lifespan(_app: FastAPI):
     execution_scheduler = get_execution_scheduler(
         session=executor_session,
         api_key=settings.COINSPOT_API_KEY,
-        api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode"
+        api_secret=settings.COINSPOT_API_SECRET or "placeholder_secret_for_ghost_mode",
     )
 
     # Start scheduler FIRST so it can accept jobs
@@ -166,9 +169,10 @@ async def http_exception_handler(_request: Request, exc: StarletteHTTPException)
         content={
             "message": user_message,
             "detail": str(exc.detail),
-            "error_code": error_code
+            "error_code": error_code,
         },
     )
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(_request: Request, exc: RequestValidationError):
@@ -177,12 +181,15 @@ async def validation_exception_handler(_request: Request, exc: RequestValidation
     """
     return JSONResponse(
         status_code=422,
-        content=jsonable_encoder({
-            "message": "Some fields have errors. Please check your input.",
-            "detail": exc.errors(),
-            "error_code": "VALIDATION_ERROR"
-        }),
+        content=jsonable_encoder(
+            {
+                "message": "Some fields have errors. Please check your input.",
+                "detail": exc.errors(),
+                "error_code": "VALIDATION_ERROR",
+            }
+        ),
     )
+
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(websockets.router, prefix="/ws", tags=["websockets"])

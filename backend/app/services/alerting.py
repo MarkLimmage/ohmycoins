@@ -107,9 +107,7 @@ class AlertService:
             # Log the alert
             self._log_alert(payload, list(all_channels), success=True)
 
-            channels_msg = (
-                ", ".join(all_channels) if all_channels else "no channels"
-            )
+            channels_msg = ", ".join(all_channels) if all_channels else "no channels"
             return AlertResult(
                 success=True,
                 message=f"Alert dispatched to {channels_msg}",
@@ -193,9 +191,7 @@ class AlertService:
             f"{summary}"
         )
 
-    async def _check_cooldown(
-        self, rule: AlertRule, payload: dict[str, Any]
-    ) -> bool:
+    async def _check_cooldown(self, rule: AlertRule, payload: dict[str, Any]) -> bool:
         """
         Check if alert should be sent (cooldown expired).
 
@@ -235,9 +231,7 @@ class AlertService:
         required_fields = ["type", "severity", "timestamp"]
         return all(field in payload for field in required_fields)
 
-    def _find_matching_rules(
-        self, alert_type: str, severity: str
-    ) -> list[AlertRule]:
+    def _find_matching_rules(self, alert_type: str, severity: str) -> list[AlertRule]:
         """
         Find alert rules matching the alert type and severity.
 
@@ -251,12 +245,9 @@ class AlertService:
         severity_order = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
         alert_severity_level = severity_order.get(severity, 0)
 
-        statement = (
-            select(AlertRule)
-            .where(
-                AlertRule.alert_type == alert_type,
-                AlertRule.enabled == True,  # noqa: E712
-            )
+        statement = select(AlertRule).where(
+            AlertRule.alert_type == alert_type,
+            AlertRule.enabled == True,  # noqa: E712
         )
         rules = self.session.exec(statement).all()
 
@@ -288,6 +279,7 @@ class AlertService:
         """
         try:
             import uuid
+
             alert_log = AlertLog(
                 rule_id=uuid.UUID(rule_id) if rule_id else None,
                 alert_type=payload.get("type", "unknown"),
