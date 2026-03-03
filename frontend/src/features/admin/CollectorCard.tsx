@@ -10,7 +10,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { FiEdit, FiZap } from "react-icons/fi"
+import { FiDatabase, FiEdit, FiZap } from "react-icons/fi"
 import { Line, LineChart, ResponsiveContainer } from "recharts"
 import { Tooltip } from "@/components/ui/tooltip"
 import { useCollectorStats } from "./hooks"
@@ -21,6 +21,7 @@ interface CollectorCardProps {
   onEdit: () => void
   onToggle: () => void
   onRun: () => void
+  onViewData: () => void
 }
 
 export const CollectorCard = ({
@@ -28,6 +29,7 @@ export const CollectorCard = ({
   onEdit,
   onToggle,
   onRun,
+  onViewData,
 }: CollectorCardProps) => {
   const { data: stats } = useCollectorStats(
     card.instance_id ?? "",
@@ -117,6 +119,17 @@ export const CollectorCard = ({
         {/* Action buttons - only when instance exists */}
         {isConfigured && (
           <HStack justify="flex-end" gap={1}>
+            <Tooltip content="View Data">
+              <IconButton
+                aria-label="View Data"
+                size="sm"
+                variant="ghost"
+                onClick={onViewData}
+              >
+                <FiDatabase />
+              </IconButton>
+            </Tooltip>
+
             <Tooltip content="Run Now">
               <IconButton
                 aria-label="Run Manual Trigger"

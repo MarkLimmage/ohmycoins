@@ -25,9 +25,9 @@ import {
   YAxis,
 } from "recharts"
 import {
-  usePriceData,
-  transformPriceDataForLineChart,
   transformPriceDataForBarChart,
+  transformPriceDataForLineChart,
+  usePriceData,
 } from "../../hooks/useDataExplorer"
 
 export const Route = createFileRoute("/_layout/data-explorer")({
@@ -53,7 +53,7 @@ function DataExplorerPage() {
   const { data: priceDataResponse, isLoading: isPriceLoading } = usePriceData(
     filters.coin,
     filters.startDate,
-    filters.endDate
+    filters.endDate,
   )
 
   // Transform price data for charts

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import aiohttp
@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
+from app.models import NewsItem
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +55,11 @@ class CoinDeskCollector(ICollector):
         except Exception:
             return False
 
-    async def collect(self, config: dict[str, Any]) -> list[dict[str, Any]]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         url = config.get("rss_url", "https://www.coindesk.com/arc/outboundfeeds/rss/")
         limit = config.get("max_items", 10)
 
-        results = []
+        results: list[Any] = []
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 url,
@@ -75,18 +76,25 @@ class CoinDeskCollector(ICollector):
         for item in items[:limit]:
             title = item.title.text if item.title else "No Title"
             link = item.link.text if item.link else ""
-            pub_date = item.pubDate.text if item.pubDate else ""
+            pub_date_text = item.pubDate.text if item.pubDate else ""
             description = item.description.text if item.description else ""
 
+            # Parse published date from RFC 2822 format
+            published_at = None
+            if pub_date_text:
+                try:
+                    published_at = parsedate_to_datetime(pub_date_text)
+                except Exception:
+                    pass
+
             results.append(
-                {
-                    "title": title,
-                    "link": link,
-                    "published": pub_date,
-                    "summary": description,
-                    "source": "CoinDesk",
-                    "collected_at": datetime.utcnow().isoformat(),
-                }
+                NewsItem(
+                    title=title,
+                    link=link,
+                    published_at=published_at,
+                    summary=description if description else None,
+                    source="CoinDesk",
+                )
             )
 
         return results

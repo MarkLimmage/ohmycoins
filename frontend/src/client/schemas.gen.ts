@@ -324,6 +324,324 @@ export const AgentSessionsPublicSchema = {
     description: 'Schema for returning multiple agent sessions'
 } as const;
 
+export const AlertLogPublicSchema = {
+    properties: {
+        alert_type: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Alert Type'
+        },
+        severity: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Severity'
+        },
+        payload: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Payload'
+        },
+        channels_dispatched: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Channels Dispatched'
+        },
+        success: {
+            type: 'boolean',
+            title: 'Success',
+            default: true
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        rule_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rule Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['alert_type', 'severity', 'payload', 'channels_dispatched', 'id', 'rule_id', 'created_at'],
+    title: 'AlertLogPublic',
+    description: 'Schema for returning alert log via API.'
+} as const;
+
+export const AlertLogsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/AlertLogPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'AlertLogsPublic',
+    description: 'Collection response for alert logs.'
+} as const;
+
+export const AlertRuleCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name'
+        },
+        alert_type: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Alert Type'
+        },
+        min_severity: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Min Severity',
+            default: 'HIGH'
+        },
+        channels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Channels'
+        },
+        recipients: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Recipients',
+            default: []
+        },
+        cooldown_minutes: {
+            type: 'integer',
+            title: 'Cooldown Minutes',
+            default: 30
+        },
+        enabled: {
+            type: 'boolean',
+            title: 'Enabled',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['name', 'alert_type', 'channels'],
+    title: 'AlertRuleCreate',
+    description: 'Schema for creating a new alert rule.'
+} as const;
+
+export const AlertRulePublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name'
+        },
+        alert_type: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Alert Type'
+        },
+        min_severity: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Min Severity',
+            default: 'HIGH'
+        },
+        channels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Channels'
+        },
+        recipients: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Recipients',
+            default: []
+        },
+        cooldown_minutes: {
+            type: 'integer',
+            title: 'Cooldown Minutes',
+            default: 30
+        },
+        enabled: {
+            type: 'boolean',
+            title: 'Enabled',
+            default: true
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['name', 'alert_type', 'channels', 'id', 'created_at', 'updated_at'],
+    title: 'AlertRulePublic',
+    description: 'Schema for returning alert rule via API.'
+} as const;
+
+export const AlertRuleUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        alert_type: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Alert Type'
+        },
+        min_severity: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Min Severity'
+        },
+        channels: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Channels'
+        },
+        recipients: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recipients'
+        },
+        cooldown_minutes: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cooldown Minutes'
+        },
+        enabled: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Enabled'
+        }
+    },
+    type: 'object',
+    title: 'AlertRuleUpdate',
+    description: 'Schema for updating an alert rule.'
+} as const;
+
+export const AlertRulesPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/AlertRulePublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'AlertRulesPublic',
+    description: 'Collection response for alert rules.'
+} as const;
+
 export const ApprovalDecisionSchema = {
     properties: {
         approved: {
@@ -1469,6 +1787,48 @@ export const PositionPublicSchema = {
     required: ['user_id', 'coin_type', 'quantity', 'average_price', 'total_cost', 'id', 'created_at', 'updated_at'],
     title: 'PositionPublic',
     description: 'Schema for returning position via API'
+} as const;
+
+export const PriceDataPointSchema = {
+    properties: {
+        timestamp: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Timestamp'
+        },
+        coin_type: {
+            type: 'string',
+            title: 'Coin Type'
+        },
+        price: {
+            type: 'number',
+            title: 'Price'
+        }
+    },
+    type: 'object',
+    required: ['timestamp', 'coin_type', 'price'],
+    title: 'PriceDataPoint',
+    description: 'Price data point for charting'
+} as const;
+
+export const PriceDataResponseSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/PriceDataPoint'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        total_points: {
+            type: 'integer',
+            title: 'Total Points'
+        }
+    },
+    type: 'object',
+    required: ['data', 'total_points'],
+    title: 'PriceDataResponse',
+    description: 'Response containing price data points'
 } as const;
 
 export const PrivateUserCreateSchema = {

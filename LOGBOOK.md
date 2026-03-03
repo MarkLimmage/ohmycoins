@@ -1,3 +1,21 @@
+## [2026-03-03] - Sprint 2.38: Collector Observability & Health
+**Intent**: Add sample records viewing per collector + fix 6 RSS collectors silently discarding data.
+**Status**: COMPLETED
+**Tasks**:
+- **Part A — Sample Records Feature**:
+  - Created `backend/app/core/collectors/sample_records.py`: PLUGIN_DATA_MAP (16 plugins mapped to their data tables), `get_sample_records()` function with count + recent records + serialization.
+  - Added `GET /{id}/sample-records` endpoint to `backend/app/api/routes/collectors.py`.
+  - Created `backend/tests/api/routes/test_collectors.py`: 6 tests (success, limit, 404, 400, empty, coverage).
+  - Frontend: `useSampleRecords` hook, `SampleRecordsDialog.tsx` (server-driven columns, datetime formatting, truncation), `FiDatabase` button on `CollectorCard.tsx`, wired in `CollectorDashboard.tsx`.
+  - Regenerated OpenAPI TypeScript client.
+- **Part B — RSS Collector Fix**:
+  - Root cause: 6 `news_*` collectors returned `list[dict]` from `collect()`. `StrategyAdapterCollector.store_data()` checks `hasattr(item, "id")` — dicts fail, data silently skipped.
+  - Fixed all 6 files (`news_beincrypto.py`, `news_coindesk.py`, `news_cointelegraph.py`, `news_cryptoslate.py`, `news_decrypt.py`, `news_newsbtc.py`) to return `list[NewsItem]` with RFC 2822 date parsing via `parsedate_to_datetime`.
+  - Removed unused `datetime` imports.
+- **Part C — Sprint Housekeeping**: Updated `CURRENT_SPRINT.md` to Sprint 2.38.
+**Test Results**: 6 new API tests passed, 84 existing collector tests passed, mypy + ruff clean.
+**Files Changed**: 1 new backend module, 1 new test file, 1 new frontend component, 7 modified backend files, 4 modified frontend files, regenerated OpenAPI client.
+
 ## [2026-03-02] - Dockmaster Sprint 2.37 — Final Verification Gate
 **Intent**: Independent lint + test suite verification for Sprint 2.37 Collector Rehabilitation.
 **Status**: COMPLETED

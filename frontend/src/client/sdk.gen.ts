@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -555,6 +555,136 @@ export class AgentService {
     }
 }
 
+export class AlertsService {
+    /**
+     * List Alert Rules
+     * List all alert rules (paginated).
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns AlertRulesPublic Successful Response
+     * @throws ApiError
+     */
+    public static listAlertRules(data: AlertsListAlertRulesData = {}): CancelablePromise<AlertsListAlertRulesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/alerts/rules',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Alert Rule
+     * Create a new alert rule.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AlertRulePublic Successful Response
+     * @throws ApiError
+     */
+    public static createAlertRule(data: AlertsCreateAlertRuleData): CancelablePromise<AlertsCreateAlertRuleResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/alerts/rules',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Alert Rule
+     * Update an alert rule.
+     * @param data The data for the request.
+     * @param data.ruleId
+     * @param data.requestBody
+     * @returns AlertRulePublic Successful Response
+     * @throws ApiError
+     */
+    public static updateAlertRule(data: AlertsUpdateAlertRuleData): CancelablePromise<AlertsUpdateAlertRuleResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/alerts/rules/{rule_id}',
+            path: {
+                rule_id: data.ruleId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Alert Rule
+     * Delete an alert rule.
+     * @param data The data for the request.
+     * @param data.ruleId
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static deleteAlertRule(data: AlertsDeleteAlertRuleData): CancelablePromise<AlertsDeleteAlertRuleResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/alerts/rules/{rule_id}',
+            path: {
+                rule_id: data.ruleId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Alert Log
+     * List alert history (paginated, filterable by type/severity).
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.alertType
+     * @param data.severity
+     * @returns AlertLogsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listAlertLog(data: AlertsListAlertLogData = {}): CancelablePromise<AlertsListAlertLogResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/alerts/log',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                alert_type: data.alertType,
+                severity: data.severity
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Send Test Alert
+     * Send a test alert to verify channel configuration.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static sendTestAlert(): CancelablePromise<AlertsSendTestAlertResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/alerts/test'
+        });
+    }
+}
+
 export class AuditService {
     /**
      * Read Trade Audits
@@ -617,6 +747,7 @@ export class CollectorsService {
     /**
      * List Instances
      * List all configured collector instances.
+     * This merges database-stored instances with system-defined collectors from the Orchestrator.
      * @returns Collector Successful Response
      * @throws ApiError
      */
@@ -693,6 +824,30 @@ export class CollectorsService {
     }
     
     /**
+     * Patch Instance
+     * Partially update a collector instance (Schedule, Enabled status, etc).
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns Collector Successful Response
+     * @throws ApiError
+     */
+    public static patchInstance(data: CollectorsPatchInstanceData): CancelablePromise<CollectorsPatchInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/collectors/{id}',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Delete Instance
      * Delete a collector instance.
      * @param data The data for the request.
@@ -756,6 +911,52 @@ export class CollectorsService {
     }
     
     /**
+     * Run Instance
+     * Alias for trigger: Run a collector immediately.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static runInstance(data: CollectorsRunInstanceData): CancelablePromise<CollectorsRunInstanceResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/collectors/{id}/run',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Sample Records Endpoint
+     * Get sample records from the data table associated with this collector.
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.limit Number of records to return
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getSampleRecordsEndpoint(data: CollectorsGetSampleRecordsEndpointData): CancelablePromise<CollectorsGetSampleRecordsEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/{id}/sample-records',
+            path: {
+                id: data.id
+            },
+            query: {
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Get Stats
      * Get statistical data (records collected) for a collector over time.
      * @param data The data for the request.
@@ -777,6 +978,62 @@ export class CollectorsService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Get Volume Stats
+     * Get records collected grouped by ledger over time.
+     *
+     * Response format: [{time: "HH:MM", Glass: N, Human: N, Catalyst: N, Exchange: N}]
+     * Supports time range parameter (1h, 24h, 7d).
+     * @param data The data for the request.
+     * @param data.range Time range for stats (1h, 24h, 7d)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getVolumeStats(data: CollectorsGetVolumeStatsData = {}): CancelablePromise<CollectorsGetVolumeStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/stats/volume',
+            query: {
+                range: data.range
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Activity Stats
+     * Get recent collector runs across all collectors.
+     *
+     * Returns last 50 runs ordered by started_at DESC.
+     * Response: [{id, timestamp, collector, status, items, duration}]
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getActivityStats(): CancelablePromise<CollectorsGetActivityStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/stats/activity'
+        });
+    }
+    
+    /**
+     * Get Summary Stats
+     * Get aggregate stats per collector.
+     *
+     * Response: [{collector_name, total_runs, success_count, error_count,
+     * total_records, avg_duration_seconds, last_success_at, uptime_pct}]
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getSummaryStats(): CancelablePromise<CollectorsGetSummaryStatsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/stats/summary'
         });
     }
 }
@@ -2043,6 +2300,35 @@ export class UtilsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/utils/health-check/'
+        });
+    }
+    
+    /**
+     * Get Price Data
+     * Fetch price data for a specific cryptocurrency within a date range.
+     *
+     * Returns price data points suitable for charting in the Data Explorer.
+     * @param data The data for the request.
+     * @param data.coinType Cryptocurrency symbol (e.g., 'BTC', 'ETH')
+     * @param data.startDate Start date for price data
+     * @param data.endDate End date for price data
+     * @param data.limit Maximum number of records to return
+     * @returns PriceDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPriceData(data: UtilsGetPriceDataData): CancelablePromise<UtilsGetPriceDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/utils/price-data/',
+            query: {
+                coin_type: data.coinType,
+                start_date: data.startDate,
+                end_date: data.endDate,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }

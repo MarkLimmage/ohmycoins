@@ -206,6 +206,25 @@ export const usePluginCardData = () => {
   }
 }
 
+export const useSampleRecords = (id: string | null) => {
+  return useQuery({
+    queryKey: ["collector-sample-records", id],
+    queryFn: async () => {
+      const response = await CollectorsService.getSampleRecordsEndpoint({
+        id: Number(id),
+      })
+      return response as {
+        data_type: string
+        columns: string[]
+        records: Record<string, unknown>[]
+        total_count: number
+      }
+    },
+    enabled: !!id,
+    staleTime: 30000,
+  })
+}
+
 export const useCreateAndEnable = () => {
   const queryClient = useQueryClient()
   return useMutation({

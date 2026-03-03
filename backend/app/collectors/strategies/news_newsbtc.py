@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import aiohttp
@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
+from app.models import NewsItem
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class NewsBTCCollector(ICollector):
         except Exception:
             return False
 
-    async def collect(self, config: dict[str, Any]) -> list[dict[str, Any]]:
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
         url = config.get("rss_url", self.RSS_URL)
         limit = config.get("max_items", 20)
 
@@ -65,26 +66,31 @@ class NewsBTCCollector(ICollector):
         soup = BeautifulSoup(text, "xml")
         items = soup.find_all("item")
 
-        results: list[dict[str, Any]] = []
+        results: list[Any] = []
         for item in items[:limit]:
             title = item.find("title")
             link = item.find("link")
             pub_date = item.find("pubDate")
             description = item.find("description")
-            creator = item.find("dc:creator")
+
+            # Parse published date from RFC 2822 format
+            published_at = None
+            if pub_date:
+                try:
+                    published_at = parsedate_to_datetime(pub_date.get_text(strip=True))
+                except Exception:
+                    pass
 
             results.append(
-                {
-                    "title": title.get_text(strip=True) if title else "No Title",
-                    "link": link.get_text(strip=True) if link else "",
-                    "published": pub_date.get_text(strip=True) if pub_date else "",
-                    "summary": description.get_text(strip=True)[:500]
+                NewsItem(
+                    title=title.get_text(strip=True) if title else "No Title",
+                    link=link.get_text(strip=True) if link else "",
+                    published_at=published_at,
+                    summary=description.get_text(strip=True)[:500]
                     if description
-                    else "",
-                    "source": self.SOURCE_NAME,
-                    "author": creator.get_text(strip=True) if creator else None,
-                    "collected_at": datetime.utcnow().isoformat(),
-                }
+                    else None,
+                    source=self.SOURCE_NAME,
+                )
             )
 
         return results

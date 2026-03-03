@@ -10,6 +10,7 @@ import {
 import { CollectorCard } from "./CollectorCard"
 import { CollectorPluginForm } from "./CollectorForm"
 import { useCollectors, useCreateAndEnable, usePluginCardData } from "./hooks"
+import { SampleRecordsDialog } from "./SampleRecordsDialog"
 import type { CollectorCardData } from "./types"
 
 export const CollectorDashboard = () => {
@@ -18,6 +19,9 @@ export const CollectorDashboard = () => {
   const createAndEnable = useCreateAndEnable()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCard, setSelectedCard] = useState<
+    CollectorCardData | undefined
+  >(undefined)
+  const [sampleRecordsCard, setSampleRecordsCard] = useState<
     CollectorCardData | undefined
   >(undefined)
 
@@ -52,6 +56,10 @@ export const CollectorDashboard = () => {
     setIsDialogOpen(true)
   }
 
+  const handleViewData = (card: CollectorCardData) => {
+    setSampleRecordsCard(card)
+  }
+
   return (
     <Container maxW="container.xl" py={8}>
       <Heading size="lg" mb={8}>
@@ -72,6 +80,7 @@ export const CollectorDashboard = () => {
                 onEdit={() => handleEdit(card)}
                 onToggle={() => handleToggle(card)}
                 onRun={() => handleRun(card)}
+                onViewData={() => handleViewData(card)}
               />
             ))}
           </SimpleGrid>
@@ -118,6 +127,15 @@ export const CollectorDashboard = () => {
               </DialogBody>
             </DialogContent>
           </DialogRoot>
+
+          <SampleRecordsDialog
+            instanceId={sampleRecordsCard?.instance_id ?? null}
+            pluginName={sampleRecordsCard?.plugin_name ?? ""}
+            open={!!sampleRecordsCard}
+            onOpenChange={(open) => {
+              if (!open) setSampleRecordsCard(undefined)
+            }}
+          />
         </>
       )}
     </Container>

@@ -236,6 +236,28 @@ def run_instance(
     return trigger_instance(id, session, background_tasks)
 
 
+@router.get("/{id}/sample-records", response_model=dict[str, Any])
+def get_sample_records_endpoint(
+    id: int,
+    session: SessionDep,
+    limit: int = Query(10, ge=1, le=100, description="Number of records to return"),
+) -> Any:
+    """Get sample records from the data table associated with this collector."""
+    from app.core.collectors.sample_records import get_sample_records
+
+    collector = session.get(Collector, id)
+    if not collector:
+        raise HTTPException(status_code=404, detail="Collector not found")
+
+    result = get_sample_records(session, collector.plugin_name, limit=limit)
+    if result is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No data table mapping for plugin '{collector.plugin_name}'",
+        )
+    return result
+
+
 @router.get("/{id}/stats", response_model=list[dict[str, Any]])
 def get_stats(
     id: int,

@@ -187,6 +187,81 @@ export type AgentSessionsPublic = {
 };
 
 /**
+ * Schema for returning alert log via API.
+ */
+export type AlertLogPublic = {
+    alert_type: string;
+    severity: string;
+    payload: {
+        [key: string]: unknown;
+    };
+    channels_dispatched: Array<(string)>;
+    success?: boolean;
+    error_message?: (string | null);
+    id: string;
+    rule_id: (string | null);
+    created_at: string;
+};
+
+/**
+ * Collection response for alert logs.
+ */
+export type AlertLogsPublic = {
+    data: Array<AlertLogPublic>;
+    count: number;
+};
+
+/**
+ * Schema for creating a new alert rule.
+ */
+export type AlertRuleCreate = {
+    name: string;
+    alert_type: string;
+    min_severity?: string;
+    channels: Array<(string)>;
+    recipients?: Array<(string)>;
+    cooldown_minutes?: number;
+    enabled?: boolean;
+};
+
+/**
+ * Schema for returning alert rule via API.
+ */
+export type AlertRulePublic = {
+    name: string;
+    alert_type: string;
+    min_severity?: string;
+    channels: Array<(string)>;
+    recipients?: Array<(string)>;
+    cooldown_minutes?: number;
+    enabled?: boolean;
+    id: string;
+    created_at: string;
+    updated_at: string;
+};
+
+/**
+ * Collection response for alert rules.
+ */
+export type AlertRulesPublic = {
+    data: Array<AlertRulePublic>;
+    count: number;
+};
+
+/**
+ * Schema for updating an alert rule.
+ */
+export type AlertRuleUpdate = {
+    name?: (string | null);
+    alert_type?: (string | null);
+    min_severity?: (string | null);
+    channels?: (Array<(string)> | null);
+    recipients?: (Array<(string)> | null);
+    cooldown_minutes?: (number | null);
+    enabled?: (boolean | null);
+};
+
+/**
  * User approval or rejection.
  */
 export type ApprovalDecision = {
@@ -714,6 +789,23 @@ export type PositionPublic = {
      * The unrealized profit or loss.
      */
     unrealized_pnl?: (string | null);
+};
+
+/**
+ * Price data point for charting
+ */
+export type PriceDataPoint = {
+    timestamp: string;
+    coin_type: string;
+    price: number;
+};
+
+/**
+ * Response containing price data points
+ */
+export type PriceDataResponse = {
+    data: Array<PriceDataPoint>;
+    total_points: number;
 };
 
 export type PrivateUserCreate = {
@@ -1259,6 +1351,47 @@ export type AgentGetArtifactStatsResponse = ({
     [key: string]: unknown;
 });
 
+export type AlertsListAlertRulesData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type AlertsListAlertRulesResponse = (AlertRulesPublic);
+
+export type AlertsCreateAlertRuleData = {
+    requestBody: AlertRuleCreate;
+};
+
+export type AlertsCreateAlertRuleResponse = (AlertRulePublic);
+
+export type AlertsUpdateAlertRuleData = {
+    requestBody: AlertRuleUpdate;
+    ruleId: string;
+};
+
+export type AlertsUpdateAlertRuleResponse = (AlertRulePublic);
+
+export type AlertsDeleteAlertRuleData = {
+    ruleId: string;
+};
+
+export type AlertsDeleteAlertRuleResponse = ({
+    [key: string]: (string);
+});
+
+export type AlertsListAlertLogData = {
+    alertType?: (string | null);
+    limit?: number;
+    severity?: (string | null);
+    skip?: number;
+};
+
+export type AlertsListAlertLogResponse = (AlertLogsPublic);
+
+export type AlertsSendTestAlertResponse = ({
+    [key: string]: unknown;
+});
+
 export type AuditReadTradeAuditsData = {
     limit?: number;
     skip?: number;
@@ -1297,6 +1430,13 @@ export type CollectorsUpdateInstanceData = {
 
 export type CollectorsUpdateInstanceResponse = (Collector);
 
+export type CollectorsPatchInstanceData = {
+    id: number;
+    requestBody: Collector;
+};
+
+export type CollectorsPatchInstanceResponse = (Collector);
+
 export type CollectorsDeleteInstanceData = {
     id: number;
 };
@@ -1315,6 +1455,24 @@ export type CollectorsTriggerInstanceData = {
 
 export type CollectorsTriggerInstanceResponse = (Message);
 
+export type CollectorsRunInstanceData = {
+    id: number;
+};
+
+export type CollectorsRunInstanceResponse = (Message);
+
+export type CollectorsGetSampleRecordsEndpointData = {
+    id: number;
+    /**
+     * Number of records to return
+     */
+    limit?: number;
+};
+
+export type CollectorsGetSampleRecordsEndpointResponse = ({
+    [key: string]: unknown;
+});
+
 export type CollectorsGetStatsData = {
     id: number;
     /**
@@ -1324,6 +1482,25 @@ export type CollectorsGetStatsData = {
 };
 
 export type CollectorsGetStatsResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
+export type CollectorsGetVolumeStatsData = {
+    /**
+     * Time range for stats (1h, 24h, 7d)
+     */
+    range?: string;
+};
+
+export type CollectorsGetVolumeStatsResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
+export type CollectorsGetActivityStatsResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
+export type CollectorsGetSummaryStatsResponse = (Array<{
     [key: string]: unknown;
 }>);
 
@@ -1689,3 +1866,24 @@ export type UtilsTestEmailData = {
 export type UtilsTestEmailResponse = (Message);
 
 export type UtilsHealthCheckResponse = (boolean);
+
+export type UtilsGetPriceDataData = {
+    /**
+     * Cryptocurrency symbol (e.g., 'BTC', 'ETH')
+     */
+    coinType: string;
+    /**
+     * End date for price data
+     */
+    endDate?: (string | null);
+    /**
+     * Maximum number of records to return
+     */
+    limit?: number;
+    /**
+     * Start date for price data
+     */
+    startDate?: (string | null);
+};
+
+export type UtilsGetPriceDataResponse = (PriceDataResponse);

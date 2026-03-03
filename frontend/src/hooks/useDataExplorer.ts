@@ -17,7 +17,7 @@ export interface PriceDataResponse {
 export const usePriceData = (
   coinType: string | null,
   startDate: string | null,
-  endDate: string | null
+  endDate: string | null,
 ) => {
   return useQuery({
     queryKey: ["price-data", coinType, startDate, endDate],
@@ -33,7 +33,7 @@ export const usePriceData = (
       params.append("limit", "500")
 
       const response = await fetch(
-        `/api/v1/utils/price-data/?${params.toString()}`
+        `/api/v1/utils/price-data/?${params.toString()}`,
       )
       if (!response.ok) {
         throw new Error(`Failed to fetch price data: ${response.statusText}`)
@@ -67,7 +67,7 @@ export const useAvailableCoins = () => {
  * Transform price data for LineChart (single coin, multiple timestamps)
  */
 export const transformPriceDataForLineChart = (
-  priceData: PriceDataPoint[]
+  priceData: PriceDataPoint[],
 ): Array<{ time: string; [key: string]: number | string }> => {
   return priceData.map((point) => ({
     time: new Date(point.timestamp).toLocaleString(),
@@ -80,13 +80,13 @@ export const transformPriceDataForLineChart = (
  * Shows latest price for each coin
  */
 export const transformPriceDataForBarChart = (
-  priceData: PriceDataPoint[]
+  priceData: PriceDataPoint[],
 ): Array<{ coin: string; price: number }> => {
   if (priceData.length === 0) return []
 
   // Get the latest timestamp
   const latestTimestamp = Math.max(
-    ...priceData.map((p) => new Date(p.timestamp).getTime())
+    ...priceData.map((p) => new Date(p.timestamp).getTime()),
   )
 
   // Filter data to latest timestamp and aggregate by coin

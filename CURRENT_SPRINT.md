@@ -1,29 +1,31 @@
-# Current Sprint: 2.36
+# Current Sprint: 2.38
 
 **Status**: IN PROGRESS
-**Objective**: Advanced Analytics & Alerting
-**Previous Sprint**: 2.35 (Data Integrity & Dashboard Polish - COMPLETED)
+**Objective**: Collector Observability & Health
+**Previous Sprint**: 2.37 (Collector Rehabilitation & Legacy Removal - COMPLETED)
 
-## Status
-- **Data Collections**: Stabilized and Verified.
-- **Dashboard**: Production-ready for monitoring.
-- **Anomaly Detection**: Shipped — IsolationForest pipeline integrated into LangGraph workflow.
-- **Data Explorer**: Shipped — scaffold route with filters and charts at /data-explorer.
+## Context
+
+Sprint 2.37 shipped the collector plugin system with 16 collectors. Production stats reveal only 3 of 16 are healthy. Root cause: 6 RSS collectors return `list[dict]` from `collect()`, but `StrategyAdapterCollector.store_data()` checks `hasattr(item, "id")` — dicts fail this, so data is silently discarded.
 
 ## Tasks
-1. [x] **Track A (Data Science)**: Implement Anomaly Detection (Isolation Forest) on CoinPrice.
-   - `anomaly_detection.py` tool (per-coin IsolationForest, LOW/MEDIUM/HIGH severity)
-   - 4 new AgentState fields (`anomaly_detected`, `anomaly_summary`, `alert_triggered`, `alert_payload`)
-   - DataAnalystAgent integration + `_route_after_analysis` → "report" route
-   - ReportingAgent anomaly summary, recommendations, and alert bridge
-   - 24 tests passing across 3 test files
-2. [ ] **Track B (Backend)**: Implement Alerting Service (Email/Slack on Error Threshold).
-   - Blocked on: nothing — alert bridge payload (`state["alert_payload"]`) is ready to consume
-3. [x] **Track C (Frontend)**: Data Explorer View (Advanced filtering/Charting).
-   - Scaffold at `frontend/src/routes/_layout/data-explorer.tsx`
-   - Coin selector, date range, ledger filters + Recharts line/bar charts
-   - Next: wire to backend price/collector APIs
+
+1. [ ] **Part A — Sample Records Feature**
+   - Backend: `sample_records.py` module with plugin-to-table mapping + `get_sample_records()` function
+   - Backend: `GET /{id}/sample-records` API endpoint on collectors router
+   - Frontend: `useSampleRecords` hook, `SampleRecordsDialog.tsx`, `CollectorCard` button
+   - Tests: API route tests for sample records endpoint
+
+2. [ ] **Part B — Fix Dict-Returning RSS Collectors**
+   - Fix 6 files to return `list[NewsItem]` instead of `list[dict]`:
+     - `news_beincrypto.py`, `news_coindesk.py`, `news_cointelegraph.py`
+     - `news_cryptoslate.py`, `news_decrypt.py`, `news_newsbtc.py`
+   - Parse `pubDate` RSS field → datetime for `published_at`
+   - Construct `NewsItem` model instances with `source`, `title`, `link`, `summary`, `published_at`
+
+3. [ ] **Part C — Sprint Housekeeping**
+   - Update `CURRENT_SPRINT.md` to Sprint 2.38
+   - Update `LOGBOOK.md` at completion
 
 ## Shipped Commits
-- `b886b14` docs: add agent bootstrap & delegation protocol
-- `644b099` feat(sprint-2.36): anomaly detection pipeline, analyst-reporting handoff, data explorer
+(none yet)

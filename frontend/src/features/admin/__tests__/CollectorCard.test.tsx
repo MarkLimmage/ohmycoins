@@ -53,6 +53,7 @@ describe("CollectorCard", () => {
   const mockOnEdit = vi.fn()
   const mockOnToggle = vi.fn()
   const mockOnRun = vi.fn()
+  const mockOnViewData = vi.fn()
 
   afterEach(() => {
     cleanup()
@@ -77,6 +78,7 @@ describe("CollectorCard", () => {
         onEdit={mockOnEdit}
         onToggle={mockOnToggle}
         onRun={mockOnRun}
+        onViewData={mockOnViewData}
       />,
     )
 
@@ -92,6 +94,7 @@ describe("CollectorCard", () => {
         onEdit={mockOnEdit}
         onToggle={mockOnToggle}
         onRun={mockOnRun}
+        onViewData={mockOnViewData}
       />,
     )
 
@@ -108,6 +111,7 @@ describe("CollectorCard", () => {
         onEdit={mockOnEdit}
         onToggle={mockOnToggle}
         onRun={mockOnRun}
+        onViewData={mockOnViewData}
       />,
     )
 
@@ -123,6 +127,7 @@ describe("CollectorCard", () => {
         onEdit={mockOnEdit}
         onToggle={mockOnToggle}
         onRun={mockOnRun}
+        onViewData={mockOnViewData}
       />,
     )
 
@@ -138,6 +143,7 @@ describe("CollectorCard", () => {
         onEdit={mockOnEdit}
         onToggle={mockOnToggle}
         onRun={mockOnRun}
+        onViewData={mockOnViewData}
       />,
     )
 
