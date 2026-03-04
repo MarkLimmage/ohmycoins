@@ -1,3 +1,17 @@
+## [2026-03-04] - Sprint 2.39: CryptoSlate Keyword Enrichment (Pilot)
+**Intent**: Pilot structured keyword/sentiment enrichment on CryptoSlate collector + fix batch-crashing duplicate handling.
+**Status**: COMPLETED
+**Tasks**:
+- **Part A — NewsKeywordMatch Model**: Added `NewsKeywordMatch` table to `models.py` (FK to `news_item.link`, ARRAY currencies, unique constraint on link+keyword+source).
+- **Part B — Keyword Taxonomy**: Created `keyword_taxonomy.py` — 30 precompiled keyword patterns across 4 categories (macro, liquidity, regulatory, fundamental) with direction/impact/temporal signals. Shared `CRYPTO_PATTERNS` for currency extraction.
+- **Part C — CryptoSlate Enrichment**: Modified `news_cryptoslate.py` to produce interleaved `NewsItem` + `NewsKeywordMatch` records. Weighted sentiment aggregation populates `sentiment_score`/`sentiment_label`.
+- **Part D — Duplicate Handling Fix**: `StrategyAdapterCollector.store_data()` now uses per-item savepoints — duplicate `IntegrityError` rolls back only the offending item, not the batch.
+- **Part E — Migration**: `d0ff5656d6f6_add_news_keyword_match_table.py` applied.
+- **Part F — Sample Records**: Updated `news_cryptoslate` mapping with enrichment columns; added `news_cryptoslate_keywords` mapping.
+- **Tests**: 25 new tests (13 taxonomy, 7 enrichment, 5 adapter duplicates). 872 total passing.
+**Files Changed**: `models.py`, `keyword_taxonomy.py` (new), `news_cryptoslate.py`, `strategy_adapter.py`, `sample_records.py`, migration, 4 test files.
+**Commit**: `f79e400`
+
 ## [2026-03-03] - Sprint 2.38: Collector Observability & Health
 **Intent**: Add sample records viewing per collector + fix 6 RSS collectors silently discarding data.
 **Status**: COMPLETED
