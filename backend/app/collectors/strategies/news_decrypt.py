@@ -5,9 +5,15 @@ from typing import Any
 import aiohttp
 from bs4 import BeautifulSoup
 
+from app.collectors.strategies.keyword_taxonomy import (
+    aggregate_sentiment,
+    extract_context,
+    extract_currencies,
+    match_keywords,
+)
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
-from app.models import NewsItem
+from app.models import NewsItem, NewsKeywordMatch
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +98,30 @@ class DecryptCollector(ICollector):
                     source=self.SOURCE_NAME,
                 )
             )
+
+            # Keyword enrichment
+            news_item = results[-1]
+            search_text = f"{news_item.title} {news_item.summary or ''}"
+            matches = match_keywords(search_text)
+            if matches:
+                currencies = extract_currencies(search_text)
+                for kw in matches:
+                    results.append(
+                        NewsKeywordMatch(
+                            news_item_link=news_item.link,
+                            keyword=kw.keyword,
+                            category=kw.category,
+                            direction=kw.direction,
+                            impact=kw.impact,
+                            currencies=currencies,
+                            match_context=extract_context(search_text, kw.keyword),
+                            temporal_signal=kw.temporal_signal,
+                            source_collector="news_decrypt",
+                        )
+                    )
+                news_item.sentiment_score, news_item.sentiment_label = (
+                    aggregate_sentiment(matches)
+                )
 
         return results
 

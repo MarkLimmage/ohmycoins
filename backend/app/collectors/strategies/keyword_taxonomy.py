@@ -183,3 +183,22 @@ def extract_context(text: str, keyword: str, window: int = 100) -> str:
     start = max(0, match.start() - window // 2)
     end = min(len(text), match.end() + window // 2)
     return text[start:end]
+
+
+# ── Sentiment Aggregation ──────────────────────────────────────────────────
+
+DIRECTION_WEIGHTS = {"bullish": 1.0, "bearish": -1.0, "neutral": 0.0}
+IMPACT_MULTIPLIER = {"high": 3.0, "medium": 2.0, "low": 1.0}
+
+
+def aggregate_sentiment(matches: list[KeywordEntry]) -> tuple[float, str]:
+    """Compute weighted sentiment score from keyword matches."""
+    total_weight = sum(IMPACT_MULTIPLIER[m.impact] for m in matches)
+    if total_weight == 0:
+        return 0.0, "neutral"
+    weighted_sum = sum(
+        DIRECTION_WEIGHTS[m.direction] * IMPACT_MULTIPLIER[m.impact] for m in matches
+    )
+    score = round(weighted_sum / total_weight, 4)
+    label = "bullish" if score > 0.1 else "bearish" if score < -0.1 else "neutral"
+    return score, label
