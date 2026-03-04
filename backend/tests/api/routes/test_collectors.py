@@ -151,6 +151,7 @@ class TestSampleRecords:
             "news_coindesk",
             "news_beincrypto",
             "news_cryptoslate",
+            "news_cryptoslate_keywords",
             "news_decrypt",
             "news_newsbtc",
         }

@@ -5,11 +5,33 @@ from typing import Any
 import aiohttp
 from bs4 import BeautifulSoup
 
+from app.collectors.strategies.keyword_taxonomy import (
+    KeywordEntry,
+    extract_context,
+    extract_currencies,
+    match_keywords,
+)
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
-from app.models import NewsItem
+from app.models import NewsItem, NewsKeywordMatch
 
 logger = logging.getLogger(__name__)
+
+_DIRECTION_WEIGHTS = {"bullish": 1.0, "bearish": -1.0, "neutral": 0.0}
+_IMPACT_MULTIPLIER = {"high": 3.0, "medium": 2.0, "low": 1.0}
+
+
+def _aggregate_sentiment(matches: list[KeywordEntry]) -> tuple[float, str]:
+    """Compute weighted sentiment score from keyword matches."""
+    total_weight = sum(_IMPACT_MULTIPLIER[m.impact] for m in matches)
+    if total_weight == 0:
+        return 0.0, "neutral"
+    weighted_sum = sum(
+        _DIRECTION_WEIGHTS[m.direction] * _IMPACT_MULTIPLIER[m.impact] for m in matches
+    )
+    score = round(weighted_sum / total_weight, 4)
+    label = "bullish" if score > 0.1 else "bearish" if score < -0.1 else "neutral"
+    return score, label
 
 
 class CryptoSlateCollector(ICollector):
@@ -92,6 +114,30 @@ class CryptoSlateCollector(ICollector):
                     source=self.SOURCE_NAME,
                 )
             )
+
+            # Keyword enrichment
+            news_item = results[-1]
+            search_text = f"{news_item.title} {news_item.summary or ''}"
+            matches = match_keywords(search_text)
+            if matches:
+                currencies = extract_currencies(search_text)
+                for kw in matches:
+                    results.append(
+                        NewsKeywordMatch(
+                            news_item_link=news_item.link,
+                            keyword=kw.keyword,
+                            category=kw.category,
+                            direction=kw.direction,
+                            impact=kw.impact,
+                            currencies=currencies,
+                            match_context=extract_context(search_text, kw.keyword),
+                            temporal_signal=kw.temporal_signal,
+                            source_collector="news_cryptoslate",
+                        )
+                    )
+                news_item.sentiment_score, news_item.sentiment_label = (
+                    _aggregate_sentiment(matches)
+                )
 
         return results
 

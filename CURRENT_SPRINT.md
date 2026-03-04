@@ -1,31 +1,38 @@
-# Current Sprint: 2.38
+# Current Sprint: 2.39
 
 **Status**: IN PROGRESS
-**Objective**: Collector Observability & Health
-**Previous Sprint**: 2.37 (Collector Rehabilitation & Legacy Removal - COMPLETED)
+**Objective**: CryptoSlate Keyword Enrichment (Pilot)
+**Previous Sprint**: 2.38 (Collector Observability — Sample Records & RSS Fix - COMPLETED)
 
 ## Context
 
-Sprint 2.37 shipped the collector plugin system with 16 collectors. Production stats reveal only 3 of 16 are healthy. Root cause: 6 RSS collectors return `list[dict]` from `collect()`, but `StrategyAdapterCollector.store_data()` checks `hasattr(item, "id")` — dicts fail this, so data is silently discarded.
+Sprint 2.38 shipped sample records viewer and fixed 6 RSS collectors to persist `NewsItem` records. This sprint pilots structured keyword/sentiment enrichment on the CryptoSlate collector. A `NewsKeywordMatch` table captures market-moving keyword signals across 4 categories (Macro, Liquidity, Regulatory, Fundamental) with directional signals, impact levels, and temporal hints. Additionally, `StrategyAdapterCollector.store_data()` duplicate handling was hardened with per-item savepoints.
 
 ## Tasks
 
-1. [ ] **Part A — Sample Records Feature**
-   - Backend: `sample_records.py` module with plugin-to-table mapping + `get_sample_records()` function
-   - Backend: `GET /{id}/sample-records` API endpoint on collectors router
-   - Frontend: `useSampleRecords` hook, `SampleRecordsDialog.tsx`, `CollectorCard` button
-   - Tests: API route tests for sample records endpoint
+1. [x] **Part A — NewsKeywordMatch Model**
+   - Added `NewsKeywordMatch` SQLModel table (FK to `news_item.link`, ARRAY currencies, unique constraint)
 
-2. [ ] **Part B — Fix Dict-Returning RSS Collectors**
-   - Fix 6 files to return `list[NewsItem]` instead of `list[dict]`:
-     - `news_beincrypto.py`, `news_coindesk.py`, `news_cointelegraph.py`
-     - `news_cryptoslate.py`, `news_decrypt.py`, `news_newsbtc.py`
-   - Parse `pubDate` RSS field → datetime for `published_at`
-   - Construct `NewsItem` model instances with `source`, `title`, `link`, `summary`, `published_at`
+2. [x] **Part B — Keyword Taxonomy Module**
+   - Created `keyword_taxonomy.py` with 30 precompiled keyword patterns across 4 categories
+   - Shared `CRYPTO_PATTERNS` for currency extraction
+   - Functions: `match_keywords()`, `extract_currencies()`, `extract_context()`
 
-3. [ ] **Part C — Sprint Housekeeping**
-   - Update `CURRENT_SPRINT.md` to Sprint 2.38
-   - Update `LOGBOOK.md` at completion
+3. [x] **Part C — CryptoSlate Collector Enrichment**
+   - Inline keyword matching in `collect()` — creates `NewsKeywordMatch` records alongside `NewsItem`
+   - Weighted sentiment aggregation populates `sentiment_score` and `sentiment_label`
 
-## Shipped Commits
-(none yet)
+4. [x] **Part D — Duplicate Handling Fix**
+   - `StrategyAdapterCollector.store_data()` now uses per-item savepoints
+   - Duplicate `IntegrityError` rolls back only the offending item, not the entire batch
+
+5. [x] **Part E — Alembic Migration**
+   - Migration `d0ff5656d6f6` creates `news_keyword_match` table
+
+6. [x] **Part F — Sample Records Mapping**
+   - Updated `news_cryptoslate` to show enrichment columns (sentiment_label, sentiment_score)
+   - Added `news_cryptoslate_keywords` mapping for keyword match viewing
+
+## Verification
+
+- 872 tests passing (25 new), mypy + ruff clean

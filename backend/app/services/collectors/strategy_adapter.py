@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from app.core.collectors.base import ICollector
@@ -44,22 +45,26 @@ class StrategyAdapterCollector(BaseCollector):
             return 0
 
         count = 0
-        try:
-            for item in data:
-                # Check if item is a SQLModel instance or compatible
-                if hasattr(item, "id"):
-                    session.add(item)
-                    count += 1
-                else:
-                    logger.warning(
-                        f"Item {item} is not a valid model instance, skipping storage."
-                    )
+        for item in data:
+            if not hasattr(item, "id"):
+                logger.warning(
+                    f"Item {item} is not a valid model instance, skipping storage."
+                )
+                continue
 
-            # We let the caller (BaseCollector.run) commit the transaction
-            # along with the run status update.
-            return count
-        except Exception as e:
-            logger.error(
-                f"Failed to prepare data storage for {self.strategy.name}: {e}"
-            )
-            raise e
+            try:
+                nested = session.begin_nested()
+                session.add(item)
+                session.flush()
+                count += 1
+            except IntegrityError:
+                nested.rollback()
+                logger.debug(
+                    f"Duplicate item skipped for {self.strategy.name}: "
+                    f"{getattr(item, 'link', '?')}"
+                )
+            except Exception as e:
+                nested.rollback()
+                logger.error(f"Failed to store item for {self.strategy.name}: {e}")
+
+        return count

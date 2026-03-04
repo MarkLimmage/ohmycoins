@@ -15,6 +15,7 @@ from sqlmodel import Session, desc, func, select
 from app.models import (
     CatalystEvents,
     NewsItem,
+    NewsKeywordMatch,
     NewsSentiment,
     OnChainMetrics,
     PriceData5Min,
@@ -172,8 +173,29 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
     "news_cryptoslate": PluginDataConfig(
         model=NewsItem,
         order_by="collected_at",
-        display_columns=["title", "source", "link", "published_at", "collected_at"],
-        data_type_label="News Items",
+        display_columns=[
+            "title",
+            "source",
+            "sentiment_label",
+            "sentiment_score",
+            "published_at",
+            "collected_at",
+        ],
+        data_type_label="News Items (Enriched)",
+    ),
+    "news_cryptoslate_keywords": PluginDataConfig(
+        model=NewsKeywordMatch,
+        order_by="matched_at",
+        display_columns=[
+            "keyword",
+            "category",
+            "direction",
+            "impact",
+            "currencies",
+            "temporal_signal",
+            "matched_at",
+        ],
+        data_type_label="Keyword Matches",
     ),
     "news_decrypt": PluginDataConfig(
         model=NewsItem,

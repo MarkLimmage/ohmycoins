@@ -816,6 +816,44 @@ class NewsItem(SQLModel, table=True):
     )
 
 
+class NewsKeywordMatch(SQLModel, table=True):
+    """Keyword match extracted from a news item during collection."""
+
+    __tablename__ = "news_keyword_match"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "news_item_link",
+            "keyword",
+            "source_collector",
+            name="uq_keyword_match_link_kw_src",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    news_item_link: str = Field(
+        max_length=1000,
+        foreign_key="news_item.link",
+        index=True,
+    )
+    keyword: str = Field(max_length=100, index=True)
+    category: str = Field(max_length=50)
+    direction: str = Field(max_length=10)
+    impact: str = Field(max_length=10)
+    currencies: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(
+            postgresql.ARRAY(sa.String()), nullable=False, server_default="{}"
+        ),
+    )
+    match_context: str | None = Field(default=None, max_length=500)
+    temporal_signal: str | None = Field(default=None, max_length=50)
+    source_collector: str = Field(max_length=100, index=True)
+    matched_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+
 class Signal(SQLModel, table=True):
     """
     Standardized trading signal.
