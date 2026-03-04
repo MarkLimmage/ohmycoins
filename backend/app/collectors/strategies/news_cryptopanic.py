@@ -141,6 +141,23 @@ class NewsCryptoPanic(ICollector):
                         if currency.get("code") or currency.get("title")
                     ]
 
+                # Calculate total votes
+                votes = article.get("votes", {})
+                total_votes = (
+                    sum(
+                        votes.get(k, 0)
+                        for k in (
+                            "positive",
+                            "negative",
+                            "liked",
+                            "disliked",
+                            "important",
+                        )
+                    )
+                    if votes
+                    else 0
+                )
+
                 # Parse publication timestamp
                 published_at = None
                 if "published_at" in article and article["published_at"]:
@@ -163,6 +180,7 @@ class NewsCryptoPanic(ICollector):
                         else None
                     ),
                     currencies=currencies if currencies else None,
+                    total_votes=total_votes,
                     collected_at=datetime.now(timezone.utc),
                 )
 
@@ -183,7 +201,6 @@ class NewsCryptoPanic(ICollector):
         if votes:
             positive = votes.get("positive", 0)
             negative = votes.get("negative", 0)
-            important = votes.get("important", 0)
             liked = votes.get("liked", 0)
             disliked = votes.get("disliked", 0)
 
@@ -195,8 +212,7 @@ class NewsCryptoPanic(ICollector):
                 return "bullish"
             elif net_negative > net_positive and net_negative > 0:
                 return "bearish"
-            elif important > 0:
-                return "important"
+            # "important" is now a significance marker factored into sentiment_score magnitude
 
         # Check metadata for sentiment hints
         metadata = article.get("metadata", {})
@@ -216,7 +232,7 @@ class NewsCryptoPanic(ICollector):
         return "neutral"
 
     def _calculate_sentiment_score(self, article: dict[str, Any]) -> float | None:
-        """Calculate numerical sentiment score from votes."""
+        """Calculate numerical sentiment score from votes, with importance boost."""
         votes = article.get("votes", {})
 
         if not votes:
@@ -226,6 +242,7 @@ class NewsCryptoPanic(ICollector):
         negative = votes.get("negative", 0)
         liked = votes.get("liked", 0)
         disliked = votes.get("disliked", 0)
+        important = votes.get("important", 0)
 
         net_positive = positive + liked
         net_negative = negative + disliked
@@ -234,9 +251,18 @@ class NewsCryptoPanic(ICollector):
         if total == 0:
             return 0.0
 
-        # Calculate score: (positive - negative) / total
-        score = (net_positive - net_negative) / total
-        return float(round(score, 4))
+        # Base score: (positive - negative) / total → range [-1, 1]
+        base_score = (net_positive - net_negative) / total
+
+        # Importance boost: amplify the absolute magnitude of the score
+        # Each "important" vote adds 10% to the score magnitude, capped at 50%
+        if important > 0:
+            boost = min(important * 0.1, 0.5)
+            base_score = base_score * (1.0 + boost)
+            # Clamp to [-1, 1]
+            base_score = max(-1.0, min(1.0, base_score))
+
+        return float(round(base_score, 4))
 
 
 CollectorRegistry.register(NewsCryptoPanic)

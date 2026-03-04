@@ -86,6 +86,7 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
             "source",
             "sentiment",
             "sentiment_score",
+            "total_votes",
             "published_at",
         ],
         data_type_label="News Sentiment",

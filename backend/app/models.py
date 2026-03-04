@@ -623,6 +623,7 @@ class NewsSentiment(SQLModel, table=True):
     currencies: list[str] | None = Field(
         default=None, sa_column=Column(postgresql.ARRAY(sa.String()))
     )
+    total_votes: int | None = Field(default=None)
     collected_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
@@ -928,6 +929,7 @@ class NewsSentimentPublic(SQLModel):
     sentiment: str | None
     sentiment_score: Decimal | None
     currencies: list[str] | None
+    total_votes: int | None
     collected_at: datetime
 
 
