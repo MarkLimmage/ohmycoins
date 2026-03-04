@@ -27,6 +27,12 @@ class PriceDataResponse(BaseModel):
     total_points: int
 
 
+class AvailableCoinsResponse(BaseModel):
+    """Available cryptocurrency symbols in the database"""
+
+    coins: list[str]
+
+
 @router.post(
     "/test-email/",
     dependencies=[Depends(get_current_active_superuser)],
@@ -50,6 +56,18 @@ async def health_check() -> bool:
     return True
 
 
+@router.get("/available-coins/", response_model=AvailableCoinsResponse)
+def get_available_coins(session: SessionDep) -> AvailableCoinsResponse:
+    """
+    Return distinct cryptocurrency symbols available in the price data.
+
+    Used by the Data Explorer to populate the coin selection dropdown.
+    """
+    stmt = select(PriceData5Min.coin_type).distinct().order_by(PriceData5Min.coin_type)
+    coins = list(session.exec(stmt).all())
+    return AvailableCoinsResponse(coins=coins)
+
+
 @router.get("/price-data/", response_model=PriceDataResponse)
 def get_price_data(
     session: SessionDep,
@@ -61,12 +79,19 @@ def get_price_data(
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of records to return"
     ),
+    ledger: str | None = Query(
+        None, description="Filter by ledger (glass, human, catalyst, exchange)"
+    ),
 ) -> PriceDataResponse:
     """
     Fetch price data for a specific cryptocurrency within a date range.
 
     Returns price data points suitable for charting in the Data Explorer.
     """
+    # Ledger filtering — currently only exchange ledger has price data
+    if ledger is not None and ledger.lower() != "exchange":
+        return PriceDataResponse(data=[], total_points=0)
+
     query = select(PriceData5Min).where(PriceData5Min.coin_type == coin_type.upper())
 
     if start_date:
