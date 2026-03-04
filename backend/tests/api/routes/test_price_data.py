@@ -31,8 +31,11 @@ def price_data_sample(session: Session) -> None:
 
 def test_get_price_data(client: TestClient, price_data_sample: None) -> None:
     """Test getting price data for a coin."""
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    end = (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
     response = client.get(
-        "/api/v1/utils/price-data/?coin_type=BTC&start_date=2026-02-01T00:00:00Z&end_date=2026-03-02T23:59:59Z&limit=10"
+        f"/api/v1/utils/price-data/?coin_type=BTC&start_date={start}&end_date={end}&limit=10"
     )
 
     assert response.status_code == 200
@@ -65,8 +68,11 @@ def test_get_price_data_empty(client: TestClient) -> None:
 
 def test_get_price_data_limit(client: TestClient, price_data_sample: None) -> None:
     """Test limit parameter."""
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    end = (now + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
     response = client.get(
-        "/api/v1/utils/price-data/?coin_type=BTC&start_date=2026-02-01T00:00:00Z&end_date=2026-03-02T23:59:59Z&limit=2"
+        f"/api/v1/utils/price-data/?coin_type=BTC&start_date={start}&end_date={end}&limit=2"
     )
 
     assert response.status_code == 200

@@ -1,3 +1,15 @@
+## [2026-03-05] - Sprint 2.40: Keyword Enrichment Rollout + Platform Polish
+**Intent**: Roll out keyword enrichment to all RSS collectors and fill Data Explorer backend gaps.
+**Status**: COMPLETED
+**Tasks**:
+- **Part A — Keyword Enrichment Rollout**: Extracted `aggregate_sentiment` to `keyword_taxonomy.py` (shared module). Added enrichment to 5 RSS collectors (BeInCrypto, CoinTelegraph, NewsBTC, Decrypt, CoinDesk) — all now produce interleaved `NewsItem + NewsKeywordMatch` with weighted sentiment. Updated `sample_records.py` with enriched display columns and keyword match mappings for all 6 collectors.
+- **Part B — Available Coins Endpoint**: Added `GET /api/v1/utils/available-coins/` (distinct coin symbols from DB). Added optional `ledger` query param to price-data endpoint with placeholder filtering.
+- **Part C — Housekeeping**: Updated CURRENT_SPRINT.md, ROADMAP.md v5.1 (Phase 4 marked complete, sprint history updated through 2.40).
+- **Verification Fix**: Fixed pre-existing `test_get_price_data` hardcoded date range (expired 2026-03-02 → dynamic dates). Identified Redis `omc:emergency_stop` as root cause of test_executor/test_trading_ws hangs (Sprint 2.35 tech debt).
+**Tests**: 34 Sprint 2.40 tests passing (26 enrichment + 8 price data). mypy + ruff clean.
+**Files Changed**: `keyword_taxonomy.py`, 6 `news_*.py` collectors, `sample_records.py`, `utils.py`, `test_enrichment_rollout.py` (new), `test_price_data.py`, `CURRENT_SPRINT.md`, `ROADMAP.md`.
+**Commits**: `3244330`, `b3d633a`, `ba9a0f4` + verification fix pending.
+
 ## [2026-03-04] - Sprint 2.39: CryptoSlate Keyword Enrichment (Pilot)
 **Intent**: Pilot structured keyword/sentiment enrichment on CryptoSlate collector + fix batch-crashing duplicate handling.
 **Status**: COMPLETED

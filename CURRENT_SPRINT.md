@@ -1,38 +1,32 @@
-# Current Sprint: 2.39
+# Current Sprint: 2.40
 
-**Status**: IN PROGRESS
-**Objective**: CryptoSlate Keyword Enrichment (Pilot)
-**Previous Sprint**: 2.38 (Collector Observability — Sample Records & RSS Fix - COMPLETED)
+**Status**: COMPLETED
+**Objective**: Keyword Enrichment Rollout + Platform Polish
+**Previous Sprint**: 2.39 (CryptoSlate Keyword Enrichment Pilot - COMPLETED)
 
 ## Context
 
-Sprint 2.38 shipped sample records viewer and fixed 6 RSS collectors to persist `NewsItem` records. This sprint pilots structured keyword/sentiment enrichment on the CryptoSlate collector. A `NewsKeywordMatch` table captures market-moving keyword signals across 4 categories (Macro, Liquidity, Regulatory, Fundamental) with directional signals, impact levels, and temporal hints. Additionally, `StrategyAdapterCollector.store_data()` duplicate handling was hardened with per-item savepoints.
+Sprint 2.39 piloted keyword enrichment on CryptoSlate — a `NewsKeywordMatch` table captures market-moving keyword signals across 4 categories with directional signals, impact levels, and temporal hints. This sprint rolls out that enrichment to all remaining RSS news collectors and fills Data Explorer backend gaps.
 
 ## Tasks
 
-1. [x] **Part A — NewsKeywordMatch Model**
-   - Added `NewsKeywordMatch` SQLModel table (FK to `news_item.link`, ARRAY currencies, unique constraint)
+1. [x] **Part A — Keyword Enrichment Rollout**
+   - Extracted shared enrichment logic (`aggregate_sentiment`, `DIRECTION_WEIGHTS`, `IMPACT_MULTIPLIER`) from CryptoSlate to `keyword_taxonomy.py`
+   - Added keyword enrichment to 5 RSS collectors: BeInCrypto, CoinTelegraph, NewsBTC, Decrypt, CoinDesk
+   - Updated `sample_records.py` with enriched display columns and keyword match mappings for all 6 collectors
+   - 26 tests (5 sentiment aggregation, 5 collector enrichment, 11 sample records, 5 existing CryptoSlate)
 
-2. [x] **Part B — Keyword Taxonomy Module**
-   - Created `keyword_taxonomy.py` with 30 precompiled keyword patterns across 4 categories
-   - Shared `CRYPTO_PATTERNS` for currency extraction
-   - Functions: `match_keywords()`, `extract_currencies()`, `extract_context()`
+2. [x] **Part B — Available Coins Endpoint**
+   - `GET /api/v1/utils/available-coins/` — dynamic coin enumeration from DB
+   - Added optional `ledger` query param to `GET /api/v1/utils/price-data/`
+   - 4 new tests + fixed 1 pre-existing date-hardcoded test
 
-3. [x] **Part C — CryptoSlate Collector Enrichment**
-   - Inline keyword matching in `collect()` — creates `NewsKeywordMatch` records alongside `NewsItem`
-   - Weighted sentiment aggregation populates `sentiment_score` and `sentiment_label`
-
-4. [x] **Part D — Duplicate Handling Fix**
-   - `StrategyAdapterCollector.store_data()` now uses per-item savepoints
-   - Duplicate `IntegrityError` rolls back only the offending item, not the entire batch
-
-5. [x] **Part E — Alembic Migration**
-   - Migration `d0ff5656d6f6` creates `news_keyword_match` table
-
-6. [x] **Part F — Sample Records Mapping**
-   - Updated `news_cryptoslate` to show enrichment columns (sentiment_label, sentiment_score)
-   - Added `news_cryptoslate_keywords` mapping for keyword match viewing
+3. [x] **Part C — Sprint Housekeeping**
+   - Updated CURRENT_SPRINT.md, ROADMAP.md (Phase 4 marked complete)
 
 ## Verification
 
-- 872 tests passing (25 new), mypy + ruff clean
+- 34 Sprint 2.40 tests passing (26 enrichment + 8 price data)
+- mypy --strict: clean (132 files)
+- ruff check + ruff format: clean
+- Pre-existing tech debt: test_executor.py / test_trading_ws.py hangs (Redis emergency_stop key — Sprint 2.35)

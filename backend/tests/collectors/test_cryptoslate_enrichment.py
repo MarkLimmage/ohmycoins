@@ -3,11 +3,8 @@
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 
-from app.collectors.strategies.news_cryptoslate import (
-    CryptoSlateCollector,
-    _aggregate_sentiment,
-)
-from app.collectors.strategies.keyword_taxonomy import KeywordEntry
+from app.collectors.strategies.news_cryptoslate import CryptoSlateCollector
+from app.collectors.strategies.keyword_taxonomy import KeywordEntry, aggregate_sentiment as _aggregate_sentiment
 from app.models import NewsItem, NewsKeywordMatch
 
 # Sample RSS XML with keyword-rich content

@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 5.0
-**Last Updated**: Mar 1, 2026
-**Current Phase**: Sprint 2.36 — Phase 4 (Risk & Reliability)
+**Version**: 5.1
+**Last Updated**: Mar 4, 2026
+**Current Phase**: Sprint 2.40 — Phase 4 Complete, transitioning to Phase 5
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -82,9 +82,9 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ---
 
-### � Phase 4: Risk & Reliability (The Guard)
+### ✅ Phase 4: Risk & Reliability (The Guard)
 
-**Status**: Active Sprint Focus (Sprint 2.36 — Live Beta)
+**Status**: Complete (Sprint 2.36–2.40)
 **Objective**: Implement live risk management, anomaly detection, alerting, and operational stability.
 
 **Completed Deliverables**:
@@ -93,11 +93,12 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 - ✅ **Audit Logging**: Immutable logs for all execution attempts
 - ✅ **Local Monitoring**: Docker-based health checks on 192.168.0.241
 - ✅ **Anomaly Detection**: IsolationForest pipeline integrated into LangGraph workflow (Sprint 2.36 Track A)
-- ✅ **Data Explorer**: Advanced filtering/charting scaffold at /data-explorer (Sprint 2.36 Track C)
-
-**In Progress (Sprint 2.36)**:
-- 🔄 **Alerting Service**: Email/Slack notifications on anomaly detection (Track B)
-- 🔄 **Data Explorer API**: Wiring frontend to backend price/collector endpoints (Track C)
+- ✅ **Data Explorer**: Filtering/charting at /data-explorer with backend API wiring (Sprint 2.36 Track C)
+- ✅ **Alerting Service**: AlertService + AlertRule/AlertLog models + API + LangGraph integration (Sprint 2.36 Track B)
+- ✅ **Collector Plugin System**: ICollector interface, CollectorRegistry, 16 plugins (Sprint 2.37)
+- ✅ **Collector Observability**: Sample records viewer, RSS collector fixes (Sprint 2.38)
+- ✅ **Keyword Enrichment Pilot**: NewsKeywordMatch, taxonomy module, CryptoSlate enrichment (Sprint 2.39)
+- ✅ **Keyword Enrichment Rollout**: All 6 RSS collectors enriched, available-coins endpoint (Sprint 2.40)
 
 ---
 
@@ -115,19 +116,22 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ---
 
-## 7. Upcoming Sprints
+## 7. Recent & Upcoming Sprints
 
-### Sprint 2.36 - Advanced Analytics & Alerting (ACTIVE)
-*   **Goal**: Anomaly detection, alerting service, and data explorer for comprehensive market monitoring.
-*   **Status**: Active — Track A (Anomaly Detection) shipped, Track B (Alerting) and Track C (Data Explorer API) in progress.
+### Sprint 2.36 - Advanced Analytics & Alerting (COMPLETE)
+*   Anomaly detection pipeline, alerting service, data explorer with backend API wiring.
 
-### Sprint 2.37 - Collector Uplift & Plugin Architecture
-*   **Goal**: Plugin-based architecture for data collection management.
-*   **Key Features**:
-    *   **Plugin System**: `ICollector` interface and `CollectorRegistry` for auto-discovery.
-    *   **Admin UI**: Dashboard to Activate, Configure, and Monitor plugins.
-    *   **Reference Porting**: Integrate `CoinDesk` and `Yahoo` scrapers as standard plugins.
-*   **Integration**: Direct linkage to **The 4 Ledgers**.
+### Sprint 2.37 - Collector Rehabilitation (COMPLETE)
+*   ICollector plugin system, 16 collectors ported, legacy removal.
+
+### Sprint 2.38 - Collector Observability (COMPLETE)
+*   Sample records viewer, RSS collector persistence fix.
+
+### Sprint 2.39 - CryptoSlate Keyword Enrichment Pilot (COMPLETE)
+*   NewsKeywordMatch model, keyword taxonomy, CryptoSlate enrichment, duplicate handling fix.
+
+### Sprint 2.40 - Keyword Enrichment Rollout (ACTIVE)
+*   Roll out keyword enrichment to all RSS collectors, available-coins endpoint, ledger filtering.
 
 ### Sprint 3.0 - The Lab (v3) - Agentic Evolution
 *   **Goal**: Introduce advanced multi-agent workflows for deeper market analysis.
@@ -264,10 +268,10 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ **Documentation Uplift** (Sprint 2.14): 4-tier architecture + AI governance
 - ✅ **Infrastructure Pivot** (Sprint 2.35): Migration from AWS to local Docker/Traefik stack
 
-### Current Metrics (Sprint 2.36)
-- **Test Coverage**: >97% (target maintained across sprints)
+### Current Metrics (Sprint 2.40)
+- **Test Coverage**: >97% (872 tests, target maintained across sprints)
 - **Production Uptime**: Local server (192.168.0.241) with Docker health checks
-- **Documentation**: 7,000+ lines of living documentation, 4-tier architecture
+- **Collectors**: 16 plugins, 6 with keyword enrichment
 - **Agent Framework**: Multi-track parallel development with worktree isolation
 
 ### Future Metrics (Phase 3-5)
@@ -355,6 +359,6 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 
 **End of Strategic Roadmap**
 
-**Next Review**: After Sprint 2.36 completion
+**Next Review**: After Sprint 3.0 planning
 **Maintained by**: The Architect
-**Last Major Update**: Sprint 2.36 Phase 4 (Risk & Reliability)
+**Last Major Update**: Sprint 2.40 (Phase 4 complete)
