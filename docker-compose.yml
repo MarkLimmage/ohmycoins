@@ -161,10 +161,11 @@ services:
       - RUN_COLLECTORS=False
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/utils/health-check/')"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
+      start_period: 30s
 
     build:
       context: ./backend
@@ -234,10 +235,11 @@ services:
     # Run with a single worker to prevent duplicate scheduling
     command: /bin/bash -c "fastapi run --workers 1 app/main.py"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/utils/health-check/')"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
+      start_period: 30s
 
   watcher:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
