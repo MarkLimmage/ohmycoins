@@ -48,13 +48,19 @@ export const CollectorCard = ({
       <Card.Body>
         {/* Header: Plugin name + description + Switch */}
         <Flex justify="space-between" align="start" mb={4}>
-          <VStack align="start" gap={1} flex={1}>
-            <Heading size="sm">{card.plugin_name}</Heading>
-            <Text fontSize="xs" color="gray.600">
+          <VStack align="start" gap={1} flex={1} minW={0}>
+            <Heading size="sm" truncate>
+              {card.plugin_name}
+            </Heading>
+            <Text fontSize="xs" color="gray.600" truncate>
               {isConfigured ? card.schedule_cron : card.plugin_description}
             </Text>
           </VStack>
-          <Switch.Root checked={card.is_active} onCheckedChange={onToggle}>
+          <Switch.Root
+            checked={card.is_active}
+            onCheckedChange={onToggle}
+            flexShrink={0}
+          >
             <Switch.HiddenInput />
             <Switch.Control>
               <Switch.Thumb />
