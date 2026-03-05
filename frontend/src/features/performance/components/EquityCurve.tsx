@@ -3,11 +3,11 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts"
+import { SafeChart } from "@/components/ui/safe-chart"
 
 interface EquityDataPoint {
   date: string
@@ -30,7 +30,7 @@ export const EquityCurve: React.FC<EquityCurveProps> = ({ data }) => {
         </div>
       ) : (
         <div className="w-full h-[300px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <SafeChart>
             <LineChart
               data={data}
               margin={{
@@ -77,7 +77,7 @@ export const EquityCurve: React.FC<EquityCurveProps> = ({ data }) => {
                 dot={false}
               />
             </LineChart>
-          </ResponsiveContainer>
+          </SafeChart>
         </div>
       )}
     </div>

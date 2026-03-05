@@ -5,11 +5,11 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts"
+import { SafeChart } from "@/components/ui/safe-chart"
 import { useColorModeValue } from "../../ui/color-mode"
 import type { GlassLedgerData } from "../types"
 
@@ -88,7 +88,7 @@ export function GlassTVLChart({ data, onDrillDown }: GlassTVLChartProps) {
       role="img"
       aria-label="Glass Ledger TVL and Fees Chart"
     >
-      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <SafeChart>
         <ComposedChart
           data={data.historicalData}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -155,7 +155,7 @@ export function GlassTVLChart({ data, onDrillDown }: GlassTVLChartProps) {
             activeDot={{ r: 4, strokeWidth: 0 }}
           />
         </ComposedChart>
-      </ResponsiveContainer>
+      </SafeChart>
     </Box>
   )
 }

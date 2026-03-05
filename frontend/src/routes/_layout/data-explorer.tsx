@@ -20,10 +20,10 @@ import {
   Line,
   LineChart,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   XAxis,
   YAxis,
 } from "recharts"
+import { SafeChart } from "@/components/ui/safe-chart"
 import {
   transformPriceDataForBarChart,
   transformPriceDataForLineChart,
@@ -206,7 +206,7 @@ function DataExplorerPage() {
                 </Flex>
               ) : (
                 <Box height="400px" width="100%">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <SafeChart>
                     <LineChart
                       data={lineChartData}
                       margin={{
@@ -228,7 +228,7 @@ function DataExplorerPage() {
                         dot={false}
                       />
                     </LineChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 </Box>
               )}
             </VStack>
@@ -253,7 +253,7 @@ function DataExplorerPage() {
                 </Flex>
               ) : (
                 <Box height="350px" width="100%">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <SafeChart>
                     <BarChart
                       data={barChartData}
                       margin={{
@@ -270,7 +270,7 @@ function DataExplorerPage() {
                       <Legend />
                       <Bar dataKey="price" fill="#8884d8" name="Price (USD)" />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </SafeChart>
                 </Box>
               )}
 

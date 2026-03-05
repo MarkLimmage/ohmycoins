@@ -15,10 +15,10 @@ import {
   CartesianGrid,
   Legend,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   XAxis,
   YAxis,
 } from "recharts"
+import { SafeChart } from "@/components/ui/safe-chart"
 import { Tooltip } from "@/components/ui/tooltip"
 import { Checkbox } from "../../components/ui/checkbox"
 import { useAutoRefresh } from "../../context/AutoRefreshContext"
@@ -91,7 +91,7 @@ export const CollectorHealth = () => {
           </Box>
         ) : (
           <Box height="400px">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <SafeChart>
               <BarChart
                 data={volumeData}
                 margin={{
@@ -110,7 +110,7 @@ export const CollectorHealth = () => {
                 <Bar dataKey="Human" stackId="a" fill="#82ca9d" />
                 <Bar dataKey="Catalyst" stackId="a" fill="#ffc658" />
               </BarChart>
-            </ResponsiveContainer>
+            </SafeChart>
           </Box>
         )}
       </VStack>

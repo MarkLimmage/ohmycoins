@@ -11,7 +11,8 @@ import {
   VStack,
 } from "@chakra-ui/react"
 import { FiDatabase, FiEdit, FiZap } from "react-icons/fi"
-import { Line, LineChart, ResponsiveContainer } from "recharts"
+import { Line, LineChart } from "recharts"
+import { SafeChart } from "@/components/ui/safe-chart"
 import { Tooltip } from "@/components/ui/tooltip"
 import { useCollectorStats } from "./hooks"
 import type { CollectorCardData } from "./types"
@@ -102,7 +103,7 @@ export const CollectorCard = ({
         {/* Sparkline - only when instance exists and has data */}
         {isConfigured && stats && stats.length > 0 && (
           <Box height="60px" my={4}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <SafeChart>
               <LineChart data={stats}>
                 <Line
                   type="monotone"
@@ -112,7 +113,7 @@ export const CollectorCard = ({
                   dot={false}
                 />
               </LineChart>
-            </ResponsiveContainer>
+            </SafeChart>
           </Box>
         )}
 

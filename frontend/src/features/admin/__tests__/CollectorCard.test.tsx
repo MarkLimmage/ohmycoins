@@ -10,14 +10,16 @@ const renderWithChakra = (ui: React.ReactElement) => {
   return render(<ChakraProvider value={defaultSystem}>{ui}</ChakraProvider>)
 }
 
-// Mock Recharts to avoid responsive container issues in tests
+// Mock SafeChart wrapper and Recharts
+vi.mock("@/components/ui/safe-chart", () => ({
+  SafeChart: ({ children }: { children: any }) => (
+    <div data-testid="safe-chart">{children}</div>
+  ),
+}))
 vi.mock("recharts", () => {
   const OriginalModule = vi.importActual("recharts")
   return {
     ...OriginalModule,
-    ResponsiveContainer: ({ children }: { children: any }) => (
-      <div data-testid="responsive-container">{children}</div>
-    ),
     LineChart: ({ children }: { children: any }) => (
       <div data-testid="line-chart">{children}</div>
     ),
