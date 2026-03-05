@@ -206,7 +206,7 @@ function DataExplorerPage() {
                 </Flex>
               ) : (
                 <Box height="400px" width="100%">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart
                       data={lineChartData}
                       margin={{
@@ -253,7 +253,7 @@ function DataExplorerPage() {
                 </Flex>
               ) : (
                 <Box height="350px" width="100%">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart
                       data={barChartData}
                       margin={{

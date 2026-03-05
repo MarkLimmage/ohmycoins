@@ -102,7 +102,7 @@ export const CollectorCard = ({
         {/* Sparkline - only when instance exists and has data */}
         {isConfigured && stats && stats.length > 0 && (
           <Box height="60px" my={4}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={stats}>
                 <Line
                   type="monotone"

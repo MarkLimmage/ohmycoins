@@ -88,7 +88,7 @@ export function GlassTVLChart({ data, onDrillDown }: GlassTVLChartProps) {
       role="img"
       aria-label="Glass Ledger TVL and Fees Chart"
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <ComposedChart
           data={data.historicalData}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
