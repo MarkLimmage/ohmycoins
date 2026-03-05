@@ -53,18 +53,16 @@ class StrategyAdapterCollector(BaseCollector):
                 continue
 
             try:
-                nested = session.begin_nested()
-                session.add(item)
-                session.flush()
+                with session.begin_nested():
+                    session.add(item)
+                    session.flush()
                 count += 1
             except IntegrityError:
-                nested.rollback()
                 logger.debug(
                     f"Duplicate item skipped for {self.strategy.name}: "
                     f"{getattr(item, 'link', '?')}"
                 )
             except Exception as e:
-                nested.rollback()
                 logger.error(f"Failed to store item for {self.strategy.name}: {e}")
 
         return count

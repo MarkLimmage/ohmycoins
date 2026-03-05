@@ -30,8 +30,8 @@ async def test_store_data_skips_duplicates() -> None:
     )
 
     session = MagicMock()
-    nested = MagicMock()
-    session.begin_nested = MagicMock(return_value=nested)
+    nested_ctx = MagicMock()
+    session.begin_nested = MagicMock(return_value=nested_ctx)
 
     # First item succeeds, second raises IntegrityError
     call_count = 0
@@ -48,7 +48,6 @@ async def test_store_data_skips_duplicates() -> None:
 
     count = await adapter.store_data([item1, item2], session)
     assert count == 1
-    assert nested.rollback.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -117,11 +116,10 @@ async def test_store_data_handles_generic_exception() -> None:
     )
 
     session = MagicMock()
-    nested = MagicMock()
-    session.begin_nested = MagicMock(return_value=nested)
+    nested_ctx = MagicMock()
+    session.begin_nested = MagicMock(return_value=nested_ctx)
     session.flush = MagicMock(side_effect=RuntimeError("unexpected"))
 
     item = _make_news_item("https://example.com/1")
     count = await adapter.store_data([item], session)
     assert count == 0
-    assert nested.rollback.call_count == 1
