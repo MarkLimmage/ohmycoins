@@ -99,11 +99,11 @@ export const CollectorCard = ({
           </SimpleGrid>
         )}
 
-        {/* Sparkline - only when instance exists */}
-        {isConfigured && (
+        {/* Sparkline - only when instance exists and has data */}
+        {isConfigured && stats && stats.length > 0 && (
           <Box height="60px" my={4}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats || []}>
+              <LineChart data={stats}>
                 <Line
                   type="monotone"
                   dataKey="count"

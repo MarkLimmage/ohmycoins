@@ -78,11 +78,22 @@ export const CollectorHealth = () => {
         )}
         {volumeLoading ? (
           <Spinner size="md" />
+        ) : !volumeData || volumeData.length === 0 ? (
+          <Box
+            height="400px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text color="gray.400">
+              No collection data in the last 24 hours
+            </Text>
+          </Box>
         ) : (
           <Box height="400px">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={volumeData || []}
+                data={volumeData}
                 margin={{
                   top: 20,
                   right: 30,
