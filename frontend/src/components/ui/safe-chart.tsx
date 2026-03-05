@@ -1,27 +1,19 @@
-import { useEffect, useRef, useState } from "react"
-import { ResponsiveContainer } from "recharts"
-
-type Dimension = number | `${number}%`
+import { cloneElement, useEffect, useRef, useState } from "react"
 
 interface SafeChartProps {
-  children: React.ReactElement
-  width?: Dimension
-  height?: Dimension
+  children: React.ReactElement<{ width?: number; height?: number }>
 }
 
 /**
- * Wrapper around Recharts ResponsiveContainer that waits for the parent
- * to have positive dimensions before rendering. This prevents the
- * "width(-1) and height(-1)" console warning that fires when charts
- * render before their container has been laid out by the browser.
+ * Drop-in replacement for Recharts ResponsiveContainer that measures
+ * the parent via ResizeObserver and passes pixel dimensions directly
+ * to the chart child, bypassing ResponsiveContainer entirely.
  */
-export const SafeChart = ({
-  children,
-  width = "100%",
-  height = "100%",
-}: SafeChartProps) => {
+export const SafeChart = ({ children }: SafeChartProps) => {
   const ref = useRef<HTMLDivElement>(null)
-  const [ready, setReady] = useState(false)
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null,
+  )
 
   useEffect(() => {
     const el = ref.current
@@ -29,9 +21,9 @@ export const SafeChart = ({
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          setReady(true)
-          observer.disconnect()
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0) {
+          setSize({ width, height })
         }
       }
     })
@@ -42,11 +34,7 @@ export const SafeChart = ({
 
   return (
     <div ref={ref} style={{ width: "100%", height: "100%" }}>
-      {ready && (
-        <ResponsiveContainer width={width} height={height}>
-          {children}
-        </ResponsiveContainer>
-      )}
+      {size && cloneElement(children, { width: size.width, height: size.height })}
     </div>
   )
 }

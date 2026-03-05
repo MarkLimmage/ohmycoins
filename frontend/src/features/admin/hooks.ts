@@ -162,7 +162,8 @@ export const useCollectorStats = (id: string, enabled = true) => {
       }))
     },
     enabled: enabled && !!id,
-    staleTime: 60000,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 }
 
