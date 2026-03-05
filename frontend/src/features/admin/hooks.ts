@@ -48,8 +48,7 @@ export const useCollectors = () => {
       const data = response as any[] // As list of dict/model
       return data.map(mapApiCollectorToInstance)
     },
-    // Poll every 5 seconds to get status updates
-    refetchInterval: 5000,
+    refetchInterval: 30000,
   })
 
   // Create Instance

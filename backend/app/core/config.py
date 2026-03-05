@@ -130,8 +130,8 @@ class Settings(BaseSettings):
 
     # Rate limiting configuration (Sprint 2.11)
     RATE_LIMIT_ENABLED: bool = True
-    RATE_LIMIT_PER_MINUTE: int = 60
-    RATE_LIMIT_PER_HOUR: int = 1000
+    RATE_LIMIT_PER_MINUTE: int = 200
+    RATE_LIMIT_PER_HOUR: int = 5000
     RATE_LIMIT_ADMIN_MULTIPLIER: int = 5
 
     # LLM Provider configuration (Phase 3)
