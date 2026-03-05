@@ -132,7 +132,7 @@ class TestSampleRecords:
         data = response.json()
         assert data["records"] == []
         assert data["total_count"] == 0
-        assert data["data_type"] == "News Items"
+        assert data["data_type"] == "News Items (Enriched)"
 
     def test_plugin_data_map_covers_all_plugins(self) -> None:
         """Test that PLUGIN_DATA_MAP has entries for all expected plugins."""
@@ -154,6 +154,11 @@ class TestSampleRecords:
             "news_cryptoslate_keywords",
             "news_decrypt",
             "news_newsbtc",
+            "news_beincrypto_keywords",
+            "news_cointelegraph_keywords",
+            "news_newsbtc_keywords",
+            "news_decrypt_keywords",
+            "news_coindesk_keywords",
         }
         assert set(PLUGIN_DATA_MAP.keys()) == expected_plugins
         # Verify each entry has required attributes
