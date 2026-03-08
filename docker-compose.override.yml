@@ -1,24 +1,19 @@
-# Sprint 2.42 Track A — Port isolation + bind mounts for live edits
 services:
-  redis:
+  proxy:
     ports:
-      - "6380:6379"
+      - "8001:80"
   backend:
     volumes:
+      - /home/mark/omc/logs/hub:/var/log/omc-agents
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
     environment:
       - POSTGRES_PORT=5432
-  orchestrator:
+  celery_worker:
+    volumes:
+      - /home/mark/omc/logs/hub:/var/log/omc-agents
     environment:
-      - RUN_COLLECTORS=False
       - POSTGRES_PORT=5432
   prestart:
-    environment:
-      - POSTGRES_PORT=5432
-  celery_worker:
-    environment:
-      - POSTGRES_PORT=5432
-  watcher:
     environment:
       - POSTGRES_PORT=5432
