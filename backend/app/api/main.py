@@ -12,6 +12,7 @@ from app.api.routes import (
     pnl,
     private,
     risk,
+    signals,
     strategy_promotions,
     trade_audit,
     trading,
@@ -42,6 +43,7 @@ api_router.include_router(trading.router, prefix="/floor/trading", tags=["tradin
 api_router.include_router(floor.router, prefix="/floor", tags=["floor"])
 api_router.include_router(collectors.router, prefix="/collectors", tags=["collectors"])
 api_router.include_router(enrichment.router, prefix="/enrichment", tags=["enrichment"])
+api_router.include_router(signals.router, prefix="/signals", tags=["signals"])
 
 
 if settings.ENVIRONMENT == "local":

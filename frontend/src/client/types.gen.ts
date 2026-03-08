@@ -1802,6 +1802,64 @@ export type RiskReadAuditLogsData = {
 
 export type RiskReadAuditLogsResponse = (AuditLogs);
 
+export type SignalsGetCoinSignalsData = {
+    /**
+     * Filter by enrichment type (optional)
+     */
+    enrichmentType?: (string | null);
+    /**
+     * Number of hours to look back
+     */
+    hours?: number;
+    symbol: string;
+};
+
+export type SignalsGetCoinSignalsResponse = ({
+    [key: string]: unknown;
+});
+
+export type SignalsGetSignalSummaryResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
+export type SignalsGetSignalTrendsData = {
+    /**
+     * Filter by coin (optional)
+     */
+    coin?: (string | null);
+    /**
+     * Number of hours to look back
+     */
+    hours?: number;
+};
+
+export type SignalsGetSignalTrendsResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
+export type SignalsGetSignalEntitiesData = {
+    /**
+     * Filter by entity name (optional)
+     */
+    entityName?: (string | null);
+    /**
+     * Filter by entity type (optional)
+     */
+    entityType?: (string | null);
+    /**
+     * Number of hours to look back
+     */
+    hours?: number;
+};
+
+export type SignalsGetSignalEntitiesResponse = ({
+    [key: string]: unknown;
+});
+
+export type SignalsRefreshViewsResponse = ({
+    [key: string]: (string);
+});
+
 export type TradingPlaceOrderData = {
     requestBody: OrderRequest;
 };
