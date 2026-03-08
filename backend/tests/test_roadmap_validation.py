@@ -169,10 +169,10 @@ class TestPhase25Validation:
         defillama_path = Path(__file__).parent.parent / "app" / "collectors" / "strategies" / "glass_defillama.py"
         assert defillama_path.exists()
 
-    def test_cryptopanic_collector_exists(self):
-        """Verify CryptoPanic collector is implemented (Sprint 2.37: migrated to plugin system)"""
-        cryptopanic_path = Path(__file__).parent.parent / "app" / "collectors" / "strategies" / "news_cryptopanic.py"
-        assert cryptopanic_path.exists()
+    def test_news_coindesk_collector_exists(self):
+        """Verify CoinDesk news collector is implemented (Sprint 2.41: CryptoPanic removed — no API key)"""
+        coindesk_path = Path(__file__).parent.parent / "app" / "collectors" / "strategies" / "news_coindesk.py"
+        assert coindesk_path.exists()
 
     def test_collector_base_classes_exist(self):
         """Verify collector framework base classes exist (Sprint 2.37: scraper_collector replaced by strategy_adapter)"""
@@ -298,8 +298,8 @@ class TestTestCoverage:
         assert test_path.exists()
 
     def test_defillama_tests_exist(self):
-        """Verify DeFiLlama collector tests exist (Sprint 2.37: consolidated into sprint237 test file)"""
-        test_path = Path(__file__).parent / "services" / "collectors" / "test_sprint237_collectors.py"
+        """Verify DeFiLlama collector tests exist (Sprint 2.41: sprint237 tests removed with dead collectors)"""
+        test_path = Path(__file__).parent / "services" / "test_coinspot_strategy.py"
         assert test_path.exists()
 
     def test_session_manager_tests_exist(self):

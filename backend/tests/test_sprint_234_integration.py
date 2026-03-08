@@ -11,8 +11,8 @@ def test_sprint_2_34_imports():
     from app.collectors.strategies.glass_chain_walker import GlassChainWalker
     assert GlassChainWalker
     
-    from app.collectors.strategies.human_rss import HumanRSSCollector
-    assert HumanRSSCollector
+    from app.collectors.strategies.human_reddit import HumanReddit
+    assert HumanReddit
     import feedparser
     assert feedparser.__version__
 
