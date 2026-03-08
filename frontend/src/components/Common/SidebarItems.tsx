@@ -8,6 +8,7 @@ import {
   FiSettings,
   FiShield,
   FiUsers,
+  FiZap,
 } from "react-icons/fi"
 import type { IconType } from "react-icons/lib"
 
@@ -16,6 +17,7 @@ import type { UserPublic } from "@/client"
 const items = [
   { icon: FiHome, title: "Dashboard", path: "/" },
   { icon: FiDatabase, title: "Collectors", path: "/collectors" },
+  { icon: FiZap, title: "Enrichment", path: "/enrichment" },
   { icon: FiShield, title: "Audit Logs", path: "/audit" },
   { icon: FiCpu, title: "AI Providers", path: "/llm-settings" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
