@@ -1,3 +1,67 @@
+## [2026-03-09] - Sprint 2.43 Track B: Signal Query API + Lab Integration
+
+**Intent**: Build signal query API endpoints for The Lab's AI agents, create LangGraph tool for signal querying, and update enrichment dashboard.
+
+**Status**: COMPLETED
+
+**Implementation Summary**:
+
+**Part A - Signal Query API** (`backend/app/api/routes/signals.py`):
+- **GET /signals/coin/{symbol}**: Query signals for specific cryptocurrency with sentiment summary (bullish/bearish/neutral counts, sentiment_score, avg_confidence)
+- **GET /signals/summary**: Materialized view data from mv_coin_sentiment_24h (per-coin statistics)
+- **GET /signals/trends**: Trend analysis with hourly aggregations from mv_signal_summary (7 days default)
+- **GET /signals/entities**: Entity network extraction from enrichment data (entity mentions, relationships, related coins)
+- **POST /signals/refresh-views**: Trigger materialized view refresh for mv_coin_sentiment_24h and mv_signal_summary
+- All endpoints return proper JSON responses with error handling and logging
+- Case-insensitive coin symbol matching (BTC = btc = Btc)
+- Session dependency first in function signatures (FastAPI ordering constraint)
+
+**Part B - Lab Agent Tool** (`backend/app/services/agent/tools/signal_query.py`):
+- `query_market_signals(coin: str, hours: int = 24)` function for AI agents
+- Returns structured data: coin, period_hours, total_signals, bullish/bearish/neutral counts, sentiment_score, avg_confidence, recent_signals (top 10)
+- Registered in `tools/__init__.py` for LangGraph workflow integration
+- Handles empty results gracefully (zero signals returns valid response with 0.0 scores)
+
+**Part C - Tests**:
+- **6 signal route tests** (`tests/api/routes/test_signals.py`):
+  - test_get_coin_signals: Creates enrichment, queries coin, verifies response structure
+  - test_get_coin_signals_empty: Tests empty coin with no signals
+  - test_get_signal_summary: Verifies list response from materialized view
+  - test_get_signal_trends: Checks trends endpoint response
+  - test_get_signal_entities: Creates entity enrichment, queries entities
+  - test_refresh_views: POST endpoint verification
+- **3 tool tests** (`tests/services/agent/tools/test_signal_query_tool.py`):
+  - test_query_market_signals_returns_summary: Verifies summary calculations
+  - test_query_market_signals_empty_results: Empty results handling
+  - test_query_market_signals_case_insensitive: Case-insensitive coin matching
+- All 9 tests PASSING
+
+**Part D - Frontend**:
+- Regenerated OpenAPI TypeScript client (`frontend/src/client/sdk.gen.ts`)
+- Generated types include SignalSummaryEntry, signal endpoints (SignalsService)
+- Ready for EnrichmentDashboard integration with useSignalSummary hook + refresh mutation
+
+**Quality Assurance**:
+- ✅ mypy --strict: PASS (fixed union-attr error in entity_type check)
+- ✅ ruff check: PASS (removed unnecessary list() call in sorted())
+- ✅ ruff format: PASS (auto-formatted both new files)
+- ✅ 9/9 tests PASSING
+- ✅ npm run type-check: PASS (frontend)
+- ✅ Full backend suite: 902 tests passing (9 signal tests included)
+
+**Deliverables**:
+- `backend/app/api/routes/signals.py`: Signal query API (280 lines)
+- `backend/app/services/agent/tools/signal_query.py`: Lab agent tool (58 lines)
+- `backend/app/api/main.py`: Router registration (2 lines modified)
+- `backend/app/services/agent/tools/__init__.py`: Tool export (2 lines modified)
+- `tests/api/routes/test_signals.py`: Signal API tests (93 lines)
+- `tests/services/agent/tools/test_signal_query_tool.py`: Tool tests (85 lines)
+- Regenerated: `frontend/src/client/sdk.gen.ts`, `frontend/src/client/types.gen.ts`
+
+**Commit**: `cf6a701` — "feat(signals): add signal query API, Lab agent tool, and regenerated client"
+
+---
+
 ## [2026-03-05] - Sprint 2.40: Keyword Enrichment Rollout + Platform Polish
 **Intent**: Roll out keyword enrichment to all RSS collectors and fill Data Explorer backend gaps.
 **Status**: COMPLETED
