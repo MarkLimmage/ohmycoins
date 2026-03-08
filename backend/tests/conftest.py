@@ -25,12 +25,19 @@ from app.models import (
     AuditLog,
     CatalystEvents,
     CoinspotCredentials,
+    Collector,
+    CollectorRuns,
     DeployedAlgorithm,
+    ExchangeOHLCV,
+    NewsItem,
     NewsSentiment,
+    OnChainMetrics,
     Order,
     Position,
     PriceData5Min,
+    ProtocolFundamentals,
     SmartMoneyFlow,
+    SocialSentiment,
     StrategyPromotion,
     User,
     UserLLMCredentials,
@@ -92,6 +99,13 @@ def db() -> Generator[Session, None, None]:
             session.execute(delete(CatalystEvents))
             session.execute(delete(NewsSentiment))
             session.execute(delete(SmartMoneyFlow))
+            session.execute(delete(SocialSentiment))
+            session.execute(delete(ProtocolFundamentals))
+            session.execute(delete(OnChainMetrics))
+            session.execute(delete(ExchangeOHLCV))
+            session.execute(delete(CollectorRuns))
+            session.execute(delete(Collector))
+            session.execute(delete(NewsItem))
 
             # Delete audit logs and alerts
             session.execute(delete(AuditLog))

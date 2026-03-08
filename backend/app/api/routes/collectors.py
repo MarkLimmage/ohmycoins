@@ -517,12 +517,17 @@ def get_chart_data(
     Default range: 7 days (168 hours = 14 buckets of 12 hours each).
     """
     # Parse hours into date range
+    logger.info(f"Chart data request: collector_name={collector_name}, hours={hours}")
     now = datetime.now(timezone.utc)
     start_time = now - timedelta(hours=hours)
 
     # Build query with 12-hour bucketing
     base_select: Select[Any] = select(
-        func.date_trunc(text("'12 hours'"), CollectorRuns.started_at).label("bucket"),
+        func.date_bin(
+            text("interval '12 hours'"),
+            CollectorRuns.started_at,
+            text("timestamp '2000-01-01'"),
+        ).label("bucket"),
         func.sum(CollectorRuns.records_collected).label("records"),
         func.count(1).label("runs"),
         func.sum(cast(CollectorRuns.status == "failed", Integer)).label("errors"),
@@ -542,6 +547,7 @@ def get_chart_data(
             .order_by(text("bucket"))
         )
 
+    logger.info(f"SQL: {runs_query}")
     results = session.exec(runs_query).all()  # type: ignore[call-overload]
 
     return [
