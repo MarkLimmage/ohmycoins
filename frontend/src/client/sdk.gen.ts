@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
+import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CollectorsGetChartDataData, CollectorsGetChartDataResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetAvailableCoinsResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -1025,8 +1025,8 @@ export class CollectorsService {
      * Get Summary Stats
      * Get aggregate stats per collector.
      *
-     * Response: [{collector_name, total_runs, success_count, error_count,
-     * total_records, avg_duration_seconds, last_success_at, uptime_pct}]
+     * Response: [{collector_name, total_runs, success_count, warning_count, error_count,
+     * total_records, avg_duration_seconds, last_success_at, error_rate}]
      * @returns unknown Successful Response
      * @throws ApiError
      */
@@ -1034,6 +1034,32 @@ export class CollectorsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/collectors/stats/summary'
+        });
+    }
+    
+    /**
+     * Get Chart Data
+     * Get 12-hour aggregated chart data for collector performance.
+     *
+     * Response: [{bucket: "2026-03-07T00:00:00Z", records: N, runs: M, errors: K}, ...]
+     * Default range: 7 days (168 hours = 14 buckets of 12 hours each).
+     * @param data The data for the request.
+     * @param data.collectorName Filter by collector name
+     * @param data.hours Hours to aggregate (default 168 = 7 days)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getChartData(data: CollectorsGetChartDataData = {}): CancelablePromise<CollectorsGetChartDataResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/collectors/stats/chart-data',
+            query: {
+                collector_name: data.collectorName,
+                hours: data.hours
+            },
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }
@@ -2304,6 +2330,21 @@ export class UtilsService {
     }
     
     /**
+     * Get Available Coins
+     * Return distinct cryptocurrency symbols available in the price data.
+     *
+     * Used by the Data Explorer to populate the coin selection dropdown.
+     * @returns AvailableCoinsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAvailableCoins(): CancelablePromise<UtilsGetAvailableCoinsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/utils/available-coins/'
+        });
+    }
+    
+    /**
      * Get Price Data
      * Fetch price data for a specific cryptocurrency within a date range.
      *
@@ -2313,6 +2354,7 @@ export class UtilsService {
      * @param data.startDate Start date for price data
      * @param data.endDate End date for price data
      * @param data.limit Maximum number of records to return
+     * @param data.ledger Filter by ledger (glass, human, catalyst, exchange)
      * @returns PriceDataResponse Successful Response
      * @throws ApiError
      */
@@ -2324,7 +2366,8 @@ export class UtilsService {
                 coin_type: data.coinType,
                 start_date: data.startDate,
                 end_date: data.endDate,
-                limit: data.limit
+                limit: data.limit,
+                ledger: data.ledger
             },
             errors: {
                 422: 'Validation Error'
