@@ -45,7 +45,7 @@ const mockCard: CollectorCardData = {
   schedule_cron: "*/15 * * * *",
   last_run: "2024-01-01T12:00:00Z",
   is_active: true,
-  success_rate: 95.5,
+  error_rate: 4.5,
   total_records: 150,
   avg_duration: 1.5,
   total_runs: 20,

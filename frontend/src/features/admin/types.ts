@@ -65,7 +65,7 @@ export interface CollectorCardData {
   schedule_cron: string
   last_run: string | null
   is_active: boolean
-  success_rate: number | null
+  error_rate: number | null
   total_records: number | null
   avg_duration: number | null
   total_runs: number | null
