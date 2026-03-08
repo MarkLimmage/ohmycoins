@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
+from app.core.config import HTTP_USER_AGENT
 from app.models import CatalystEvents
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    "User-Agent": HTTP_USER_AGENT
                 }
                 async with session.get(
                     url,
@@ -128,7 +129,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    "User-Agent": HTTP_USER_AGENT
                 }
 
                 async with session.get(

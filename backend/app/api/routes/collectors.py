@@ -12,6 +12,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from sqlalchemy import cast, Integer, func, text
+from sqlalchemy.sql import Select
 from sqlmodel import Session, desc, select
 
 from app.api.deps import SessionDep
@@ -438,8 +440,8 @@ def get_summary_stats(session: SessionDep) -> list[dict[str, Any]]:
     """
     Get aggregate stats per collector.
 
-    Response: [{collector_name, total_runs, success_count, error_count,
-                total_records, avg_duration_seconds, last_success_at, uptime_pct}]
+    Response: [{collector_name, total_runs, success_count, warning_count, error_count,
+                total_records, avg_duration_seconds, last_success_at, error_rate}]
     """
     # Get all unique collectors
     statement = select(CollectorRuns.collector_name).distinct()
@@ -480,8 +482,8 @@ def get_summary_stats(session: SessionDep) -> list[dict[str, Any]]:
                 last_success = run.started_at
                 break
 
-        # Calculate uptime percentage
-        uptime_pct = (success_count / total_runs * 100) if total_runs > 0 else 0.0
+        # Calculate error rate
+        error_rate = (error_count / total_runs * 100) if total_runs > 0 else 0.0
 
         summary.append(
             {
@@ -493,8 +495,63 @@ def get_summary_stats(session: SessionDep) -> list[dict[str, Any]]:
                 "total_records": total_records,
                 "avg_duration_seconds": round(avg_duration, 2),
                 "last_success_at": last_success,
-                "uptime_pct": round(uptime_pct, 1),
+                "error_rate": round(error_rate, 1),
             }
         )
 
     return summary
+
+
+@router.get("/stats/chart-data", response_model=list[dict[str, Any]])
+def get_chart_data(
+    session: SessionDep,
+    collector_name: str | None = Query(None, description="Filter by collector name"),
+    hours: int = Query(168, ge=1, le=2160, description="Hours to aggregate (default 168 = 7 days)"),
+) -> list[dict[str, Any]]:
+    """
+    Get 12-hour aggregated chart data for collector performance.
+
+    Response: [{bucket: "2026-03-07T00:00:00Z", records: N, runs: M, errors: K}, ...]
+    Default range: 7 days (168 hours = 14 buckets of 12 hours each).
+    """
+    # Parse hours into date range
+    now = datetime.now(timezone.utc)
+    start_time = now - timedelta(hours=hours)
+
+    # Build query with 12-hour bucketing
+    base_select: Select[Any] = select(  # type: ignore[no-redef]
+        func.date_trunc(
+            text("'12 hours'"), CollectorRuns.started_at
+        ).label("bucket"),
+        func.sum(CollectorRuns.records_collected).label("records"),
+        func.count(1).label("runs"),
+        func.sum(cast(CollectorRuns.status == "failed", Integer)).label("errors"),
+    )
+
+    if collector_name:
+        runs_query = (
+            base_select
+            .where(CollectorRuns.collector_name == collector_name)
+            .where(CollectorRuns.started_at >= start_time)
+            .group_by(text("bucket"))
+            .order_by(text("bucket"))
+        )
+    else:
+        runs_query = (
+            base_select
+            .where(CollectorRuns.started_at >= start_time)
+            .group_by(text("bucket"))
+            .order_by(text("bucket"))
+        )
+
+    results = session.exec(runs_query).all()
+
+    return [
+        {
+            "bucket": bucket.isoformat() if bucket else None,
+            "records": int(records or 0),
+            "runs": int(runs or 0),
+            "errors": int(errors or 0),
+        }
+        for bucket, records, runs, errors in results
+    ]

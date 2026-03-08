@@ -40,7 +40,7 @@ class TestCollectorIntegration:
         # Check specific collector strategies by their registered names
         expected_strategies = [
             "GlassChainWalker",
-            "HumanRSSCollector",
+            "human_reddit",
             "CoinspotExchange",
         ]
 
