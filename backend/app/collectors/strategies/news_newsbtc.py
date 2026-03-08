@@ -13,6 +13,7 @@ from app.collectors.strategies.keyword_taxonomy import (
 )
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
+from app.core.config import HTTP_USER_AGENT
 from app.models import NewsItem, NewsKeywordMatch
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ class NewsBTCCollector(ICollector):
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     url,
-                    headers={"User-Agent": "OhMyCoins/1.0"},
+                    headers={"User-Agent": HTTP_USER_AGENT},
                     timeout=aiohttp.ClientTimeout(total=10),
                 ) as resp:
                     return resp.status == 200

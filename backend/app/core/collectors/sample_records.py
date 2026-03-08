@@ -16,11 +16,9 @@ from app.models import (
     CatalystEvents,
     NewsItem,
     NewsKeywordMatch,
-    NewsSentiment,
     OnChainMetrics,
     PriceData5Min,
     ProtocolFundamentals,
-    SmartMoneyFlow,
     SocialSentiment,
 )
 
@@ -70,43 +68,6 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
         ],
         data_type_label="On-Chain Metrics",
     ),
-    "glass_nansen": PluginDataConfig(
-        model=SmartMoneyFlow,
-        order_by="collected_at",
-        display_columns=[
-            "token",
-            "net_flow_usd",
-            "buying_wallet_count",
-            "selling_wallet_count",
-            "collected_at",
-        ],
-        data_type_label="Smart Money Flows",
-    ),
-    "news_cryptopanic": PluginDataConfig(
-        model=NewsSentiment,
-        order_by="collected_at",
-        display_columns=[
-            "title",
-            "source",
-            "sentiment",
-            "sentiment_score",
-            "total_votes",
-            "published_at",
-        ],
-        data_type_label="News Sentiment",
-    ),
-    "human_newscatcher": PluginDataConfig(
-        model=NewsSentiment,
-        order_by="collected_at",
-        display_columns=[
-            "title",
-            "source",
-            "sentiment",
-            "sentiment_score",
-            "published_at",
-        ],
-        data_type_label="News Sentiment",
-    ),
     "human_reddit": PluginDataConfig(
         model=SocialSentiment,
         order_by="posted_at",
@@ -153,12 +114,6 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
         data_type_label="Price Data (5min)",
     ),
     # All RSS/news collectors → NewsItem table, filtered by source
-    "HumanRSSCollector": PluginDataConfig(
-        model=NewsItem,
-        order_by="collected_at",
-        display_columns=["title", "source", "link", "published_at", "collected_at"],
-        data_type_label="News Items",
-    ),
     "news_cointelegraph": PluginDataConfig(
         model=NewsItem,
         order_by="collected_at",
@@ -184,19 +139,6 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
         ],
         data_type_label="News Items (Enriched)",
         source_filter="CoinDesk",
-    ),
-    "news_beincrypto": PluginDataConfig(
-        model=NewsItem,
-        order_by="collected_at",
-        display_columns=[
-            "title",
-            "sentiment_label",
-            "sentiment_score",
-            "currencies",
-            "published_at",
-        ],
-        data_type_label="News Items (Enriched)",
-        source_filter="BeInCrypto",
     ),
     "news_cryptoslate": PluginDataConfig(
         model=NewsItem,
@@ -344,7 +286,7 @@ def _get_currencies_for_news_items(
         return {}
     stmt: Any = (
         select(NewsKeywordMatch.news_item_link, NewsKeywordMatch.currencies)
-        .where(NewsKeywordMatch.news_item_link.in_(links))  # type: ignore[union-attr]
+        .where(NewsKeywordMatch.news_item_link.in_(links))  # type: ignore[attr-defined]
     )
     rows = session.exec(stmt).all()
     result: dict[str, set[str]] = {}

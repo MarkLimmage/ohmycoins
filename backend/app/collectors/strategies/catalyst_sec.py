@@ -14,6 +14,7 @@ import aiohttp
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
+from app.core.config import HTTP_USER_AGENT
 from app.models import CatalystEvents
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ class CatalystSEC(ICollector):
         """Test connectivity to SEC API."""
         try:
             async with aiohttp.ClientSession() as session:
-                headers = {"User-Agent": "OhMyCoins/1.0"}
+                headers = {"User-Agent": HTTP_USER_AGENT}
                 # Test with a known CIK
                 async with session.get(
                     "https://data.sec.gov/submissions/CIK0001679788.json",
@@ -102,7 +103,7 @@ class CatalystSEC(ICollector):
         all_filings = []
 
         async with aiohttp.ClientSession() as session:
-            headers = {"User-Agent": "OhMyCoins/1.0"}
+            headers = {"User-Agent": HTTP_USER_AGENT}
 
             for cik in companies:
                 try:

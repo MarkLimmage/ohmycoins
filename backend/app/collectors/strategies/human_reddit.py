@@ -15,6 +15,7 @@ import aiohttp
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
+from app.core.config import HTTP_USER_AGENT
 from app.models import NewsSentiment
 
 logger = logging.getLogger(__name__)
@@ -129,7 +130,7 @@ class HumanReddit(ICollector):
         """Test connectivity to Reddit API."""
         try:
             async with aiohttp.ClientSession() as session:
-                headers = {"User-Agent": "OhMyCoins/1.0"}
+                headers = {"User-Agent": HTTP_USER_AGENT}
                 async with session.get(
                     "https://www.reddit.com/r/CryptoCurrency/hot.json",
                     headers=headers,
