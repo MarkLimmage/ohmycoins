@@ -1,47 +1,34 @@
-# Current Sprint: 2.42
+# Current Sprint: 2.43
 
 **Status**: COMPLETED
-**Objective**: Enrichment Framework — IEnricher Pipeline + LLM Sentiment Integration
-**Previous Sprint**: 2.41 (News Collector Foundation Fix - COMPLETED)
+**Objective**: Signal Data Model — `news_enrichment` Migration + Lab Signal Queries
+**Previous Sprint**: 2.42 (Enrichment Framework - COMPLETED)
 
 ## Context
 
-Sprint 2.41 cleaned up dead collectors, centralized User-Agent, and fixed metrics. This sprint builds an extensible enrichment pipeline that extracts sentiment, coins, and keywords from news items using both rule-based (keyword taxonomy) and LLM-based (Gemini) enrichers. Enrichment runs automatically after collection.
+Sprint 2.42 built the extensible enrichment pipeline (IEnricher, KeywordEnricher, LLMEnricher, EnrichmentPipeline). This sprint replaces the `news_keyword_match` table with a unified `news_enrichment` table using JSONB for flexible enrichment storage, adds materialized views for fast signal aggregation, and exposes signal query endpoints for The Lab's AI agents.
 
 ## Tasks
 
-1. [x] **Track A — Enrichment Backend** ✅
-   - IEnricher interface + ISentimentProvider interface
-   - KeywordEnricher (rule-based keyword taxonomy enrichment)
-   - LLMEnricher + GeminiSentimentProvider (multi-coin LLM sentiment)
-   - EnrichmentPipeline orchestrator with run tracking
-   - EnrichmentRun model + Alembic migration
-   - Auto-trigger after collection in StrategyAdapterCollector
-   - API: POST /api/v1/enrichment/run, GET /stats, GET /runs
-   - 34 tests (29 framework + 5 API route), 878 total passing
+1. [x] **Track A — Signal Data Model & Migration** ✅
+   - NewsEnrichment model with JSONB `data` column + GIN indexes
+   - Alembic migration: create table + migrate data from news_keyword_match
+   - Updated KeywordEnricher + LLMEnricher pipeline to write to news_enrichment
+   - POLE EntityEnricher: regex-based entity extraction (30+ patterns)
+   - Materialized views: mv_coin_sentiment_24h, mv_signal_summary
+   - View refresh utility integrated with EnrichmentPipeline
+   - 27 new tests (model CRUD, entity enricher, pipeline storage)
 
-2. [x] **Track B — Enrichment Dashboard** ✅
-   - EnrichmentOverview, EnricherCards, EnrichmentRunsTable components
-   - Manual trigger button with loading/success/error states
-   - Hooks: useEnrichmentStats, useEnrichmentRuns, useTriggerEnrichment
-   - Regenerated OpenAPI client with EnrichmentService
-   - Sidebar navigation link, route at /enrichment
-   - type-check + lint clean
-
-## Break-In Work (Post-Completion)
-
-3. [x] **Linting & Type Safety Fixes** ✅
-   - Addressed mypy strict errors in `backend/app/api/routes/collectors.py` (SQLAlchemy select/where type mismatches).
-   - Fixed `backend/app/core/collectors/sample_records.py` type errors (`in_` operator).
-   - Verified clean lint run in container: `docker compose run --rm backend bash scripts/lint.sh`.
-
-4. [x] **Collector Stats Bugfix** ✅
-   - Resolves 500 Error on dashboard charts (`date_trunc` 12h interval error). Replaced with `date_bin` for correct 12-hour bucketing in `backend/app/api/routes/collectors.py`.
-   - improved test hygiene: Updated `backend/tests/conftest.py` to truncate all tables (including `CollectorRuns`, `NewsItem`) between tests to prevent data leakage.
+2. [x] **Track B — Signal Query API + Lab Integration** ✅
+   - Signal query endpoints: GET /signals/coin/{symbol}, /summary, /trends, /entities
+   - POST /signals/refresh-views for materialized view refresh
+   - Lab agent tool: query_market_signals for LangGraph workflow
+   - Regenerated OpenAPI client with SignalsService
+   - 9 new tests (6 API route + 3 agent tool), 902 total passing
 
 ## Verification
 
-- All tests pass in container
+- All tests pass in container (902 passed)
 - mypy --strict clean
 - ruff check + ruff format clean
-- npm run type-check + npm run lint clean
+- npm run type-check clean
