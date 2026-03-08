@@ -10,7 +10,8 @@ from sqlmodel import Session
 
 from app.collectors.strategies.keyword_taxonomy import aggregate_sentiment
 from app.enrichment.base import IEnricher
-from app.models import EnrichmentRun, NewsItem, NewsKeywordMatch
+from app.enrichment.views import refresh_materialized_views
+from app.models import EnrichmentRun, NewsEnrichment, NewsItem
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,12 @@ class EnrichmentPipeline:
         session.add(run)
         session.commit()
 
+        # Refresh materialized views
+        try:
+            refresh_materialized_views(session)
+        except Exception as e:
+            logger.warning(f"Failed to refresh materialized views: {e}")
+
         return run
 
     def _store_results(
@@ -116,35 +123,42 @@ class EnrichmentPipeline:
         """
         Store enrichment results in database.
 
-        Results from keyword enricher → NewsKeywordMatch rows
-        Results from LLM enricher → NewsKeywordMatch rows with "llm_sentiment" keyword
+        Results are stored in NewsEnrichment table with flexible JSONB data.
         """
-        if enricher_name == "keyword":
-            self._store_keyword_results(item, results, session)
-        elif enricher_name == "llm_sentiment":
-            self._store_llm_results(item, results, session)
+        for result in results:
+            try:
+                # Use savepoint to allow per-result rollback on unique constraint violation
+                savepoint = session.begin_nested()
+                try:
+                    enrichment = NewsEnrichment(
+                        news_item_link=item.link,
+                        enricher_name=result.enricher_name,
+                        enrichment_type=result.enrichment_type,
+                        data=result.data,
+                        currencies=result.currencies,
+                        confidence=result.confidence,
+                    )
+                    session.add(enrichment)
+                    session.flush()
+                    savepoint.commit()
+                except Exception as e:
+                    savepoint.rollback()
+                    logger.warning(f"Failed to store enrichment: {e}")
+            except Exception as e:
+                logger.warning(f"Failed to store enrichment: {e}")
 
-    def _store_keyword_results(
+        # Update item sentiment score from keyword results if this is a keyword enricher
+        if enricher_name == "keyword":
+            self._update_sentiment_from_keywords(item, results, session)
+
+    def _update_sentiment_from_keywords(
         self, item: NewsItem, results: list[Any], session: Session
     ) -> None:
-        """Store keyword enrichment results."""
-        # Collect all keywords and sentiment
-        keyword_matches = []
+        """Update item sentiment score from keyword enrichment results."""
         all_keywords = []
 
         for result in results:
             data = result.data
-            keyword_matches.append(
-                {
-                    "keyword": data["keyword"],
-                    "category": data["category"],
-                    "direction": data["direction"],
-                    "impact": data["impact"],
-                    "temporal_signal": data["temporal_signal"],
-                    "match_context": data["match_context"],
-                    "currencies": result.currencies,
-                }
-            )
             all_keywords.append(
                 {
                     "keyword": data["keyword"],
@@ -153,25 +167,6 @@ class EnrichmentPipeline:
                     "impact": data["impact"],
                 }
             )
-
-        # Store each match
-        for match_data in keyword_matches:
-            try:
-                kw_match = NewsKeywordMatch(
-                    news_item_link=item.link,
-                    keyword=match_data["keyword"],
-                    category=match_data["category"],
-                    direction=match_data["direction"],
-                    impact=match_data["impact"],
-                    currencies=match_data["currencies"],
-                    match_context=match_data["match_context"],
-                    temporal_signal=match_data["temporal_signal"],
-                    source_collector="enrichment_pipeline",
-                )
-                session.add(kw_match)
-                session.flush()
-            except Exception as e:
-                logger.warning(f"Failed to store keyword match: {e}")
 
         # Update item sentiment score from aggregated keywords
         if all_keywords:
@@ -194,28 +189,3 @@ class EnrichmentPipeline:
             if item.sentiment_score is None:  # Don't override existing sentiment
                 item.sentiment_score = sentiment_score
                 item.sentiment_label = sentiment_label
-
-    def _store_llm_results(
-        self, item: NewsItem, results: list[Any], session: Session
-    ) -> None:
-        """Store LLM sentiment enrichment results."""
-        for result in results:
-            try:
-                data = result.data
-                kw_match = NewsKeywordMatch(
-                    news_item_link=item.link,
-                    keyword="llm_sentiment",
-                    category="sentiment",
-                    direction=data["direction"],
-                    impact="high",
-                    currencies=result.currencies,
-                    match_context=data["rationale"][:500]
-                    if data["rationale"]
-                    else None,
-                    temporal_signal=None,
-                    source_collector="enrichment_llm",
-                )
-                session.add(kw_match)
-                session.flush()
-            except Exception as e:
-                logger.warning(f"Failed to store LLM sentiment match: {e}")
