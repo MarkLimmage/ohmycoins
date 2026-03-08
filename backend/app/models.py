@@ -4,6 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import Any
 
 import sqlalchemy as sa
 from pydantic import EmailStr, field_validator
@@ -850,6 +851,44 @@ class NewsKeywordMatch(SQLModel, table=True):
     temporal_signal: str | None = Field(default=None, max_length=50)
     source_collector: str = Field(max_length=100, index=True)
     matched_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+
+class NewsEnrichment(SQLModel, table=True):
+    """Unified enrichment data with JSONB flexible storage."""
+
+    __tablename__ = "news_enrichment"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "news_item_link",
+            "enricher_name",
+            "enrichment_type",
+            name="uq_enrichment",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    news_item_link: str = Field(
+        max_length=1000,
+        foreign_key="news_item.link",
+        index=True,
+    )
+    enricher_name: str = Field(max_length=100, index=True)
+    enrichment_type: str = Field(max_length=50)
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=Column(postgresql.JSONB, nullable=False, server_default="{}"),
+    )
+    currencies: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(
+            postgresql.ARRAY(sa.String()), nullable=False, server_default="{}"
+        ),
+    )
+    confidence: float = Field(default=0.0)
+    enriched_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )

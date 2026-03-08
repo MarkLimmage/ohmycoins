@@ -12,7 +12,7 @@ from app.enrichment.keyword_enricher import KeywordEnricher
 from app.enrichment.llm_enricher import LLMEnricher
 from app.enrichment.pipeline import EnrichmentPipeline
 from app.enrichment.providers.gemini import GeminiSentimentProvider
-from app.models import EnrichmentRun, NewsItem
+from app.models import EnrichmentRun, NewsEnrichment, NewsItem
 
 logger = logging.getLogger(__name__)
 
@@ -73,16 +73,14 @@ def get_enrichment_stats(session: SessionDep) -> dict[str, Any]:
 
     Returns overall coverage and per-enricher stats.
     """
-    from app.models import NewsKeywordMatch
-
     # Total items
     total_items_statement = select(func.count()).select_from(NewsItem)
     total_items_result = session.exec(total_items_statement).one()
     total_items = total_items_result if isinstance(total_items_result, int) else 0
 
-    # Enriched items (have at least one NewsKeywordMatch)
+    # Enriched items (have at least one NewsEnrichment)
     enriched_items_statement = select(
-        func.count(func.distinct(NewsKeywordMatch.news_item_link))
+        func.count(func.distinct(NewsEnrichment.news_item_link))
     )
     enriched_items_result = session.exec(enriched_items_statement).one()
     enriched_items = (
