@@ -1,16 +1,8 @@
 """Tests for the enrichment API routes."""
 
-import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.models import NewsItem
-
-
-@pytest.fixture
-def client() -> TestClient:
-    """Create a test client."""
-    return TestClient(app)
 
 
 def test_enrichment_run_endpoint(client: TestClient, session) -> None:

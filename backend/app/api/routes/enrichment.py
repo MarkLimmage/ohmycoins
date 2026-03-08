@@ -1,13 +1,11 @@
 """Enrichment pipeline API endpoints."""
 
-from __future__ import annotations
-
 import logging
-from datetime import datetime, timezone
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from app.api.deps import SessionDep
 from app.enrichment.keyword_enricher import KeywordEnricher
@@ -23,9 +21,9 @@ router = APIRouter()
 
 @router.post("/run")
 async def trigger_enrichment(
+    session: SessionDep,
     enricher: str = Query("all", description="Enricher to use: 'all', 'keyword', 'llm'"),
     limit: int = Query(100, description="Max items to enrich"),
-    session: Session = Depends(SessionDep),
 ) -> dict[str, int]:
     """
     Trigger batch enrichment on un-enriched news items.
@@ -67,7 +65,7 @@ async def trigger_enrichment(
 
 
 @router.get("/stats")
-def get_enrichment_stats(session: Session = Depends(SessionDep)) -> dict[str, Any]:
+def get_enrichment_stats(session: SessionDep) -> dict[str, Any]:
     """
     Get enrichment statistics.
 
@@ -135,8 +133,8 @@ def get_enrichment_stats(session: Session = Depends(SessionDep)) -> dict[str, An
 
 @router.get("/runs")
 def get_enrichment_runs(
+    session: SessionDep,
     limit: int = Query(50, description="Max recent runs to return"),
-    session: Session = Depends(SessionDep),
 ) -> dict[str, Any]:
     """Get recent enrichment runs."""
     # Get all runs and sort by completed_at in Python
@@ -170,7 +168,3 @@ def get_enrichment_runs(
         ],
         "count": len(runs),
     }
-
-
-# Type import at the end to avoid circular imports
-from typing import Any  # noqa: E402
