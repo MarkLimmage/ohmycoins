@@ -64,7 +64,9 @@ class GeminiSentimentProvider(ISentimentProvider):
         try:
             # Call Gemini LLM
             response = await self._llm.ainvoke(prompt)
-            content = response.content if hasattr(response, "content") else str(response)
+            content = (
+                response.content if hasattr(response, "content") else str(response)
+            )
 
             # Parse JSON response
             results = self._parse_response(content)
@@ -125,7 +127,7 @@ Return ONLY the JSON object, no additional text."""
                 for coin_data in data.get("coins", []):
                     # Skip entries missing required fields
                     if not coin_data.get("symbol"):
-                        logger.warning(f"Skipping malformed coin entry: missing symbol")
+                        logger.warning("Skipping malformed coin entry: missing symbol")
                         continue
                     # Skip entries missing sentiment (core field for sentiment analysis)
                     if not coin_data.get("sentiment"):

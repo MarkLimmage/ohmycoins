@@ -101,9 +101,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
 
         try:
             async with aiohttp.ClientSession() as session:
-                headers = {
-                    "User-Agent": HTTP_USER_AGENT
-                }
+                headers = {"User-Agent": HTTP_USER_AGENT}
                 async with session.get(
                     url,
                     headers=headers,
@@ -128,9 +126,7 @@ class CatalystCoinSpotAnnouncements(ICollector):
 
         try:
             async with aiohttp.ClientSession() as session:
-                headers = {
-                    "User-Agent": HTTP_USER_AGENT
-                }
+                headers = {"User-Agent": HTTP_USER_AGENT}
 
                 async with session.get(
                     url,

@@ -28,6 +28,13 @@ Sprint 2.41 cleaned up dead collectors, centralized User-Agent, and fixed metric
    - Sidebar navigation link, route at /enrichment
    - type-check + lint clean
 
+## Break-In Work (Post-Completion)
+
+3. [x] **Linting & Type Safety Fixes** ✅
+   - Addressed mypy strict errors in `backend/app/api/routes/collectors.py` (SQLAlchemy select/where type mismatches).
+   - Fixed `backend/app/core/collectors/sample_records.py` type errors (`in_` operator).
+   - Verified clean lint run in container: `docker compose run --rm backend bash scripts/lint.sh`.
+
 ## Verification
 
 - All tests pass in container

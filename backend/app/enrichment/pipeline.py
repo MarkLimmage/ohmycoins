@@ -59,7 +59,9 @@ class EnrichmentPipeline:
                         try:
                             results = await enricher.enrich(item)
                             if results:
-                                self._store_results(item, enricher.name, results, session)
+                                self._store_results(
+                                    item, enricher.name, results, session
+                                )
                                 enrichment_created = True
                         except Exception as e:
                             logger.error(f"Enricher {enricher.name} failed: {e}")
@@ -207,7 +209,9 @@ class EnrichmentPipeline:
                     direction=data["direction"],
                     impact="high",
                     currencies=result.currencies,
-                    match_context=data["rationale"][:500] if data["rationale"] else None,
+                    match_context=data["rationale"][:500]
+                    if data["rationale"]
+                    else None,
                     temporal_signal=None,
                     source_collector="enrichment_llm",
                 )

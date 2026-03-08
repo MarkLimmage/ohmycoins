@@ -21,9 +21,7 @@ class KeywordEnricher(IEnricher):
 
     def can_enrich(self, item: object) -> bool:
         """Check if item can be enriched (must be NewsItem with title/summary)."""
-        return isinstance(item, NewsItem) and bool(
-            item.title and (item.summary or "")
-        )
+        return isinstance(item, NewsItem) and bool(item.title and (item.summary or ""))
 
     async def enrich(self, item: object) -> list[EnrichmentResult]:
         """

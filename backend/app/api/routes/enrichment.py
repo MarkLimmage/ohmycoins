@@ -22,7 +22,9 @@ router = APIRouter()
 @router.post("/run")
 async def trigger_enrichment(
     session: SessionDep,
-    enricher: str = Query("all", description="Enricher to use: 'all', 'keyword', 'llm'"),
+    enricher: str = Query(
+        "all", description="Enricher to use: 'all', 'keyword', 'llm'"
+    ),
     limit: int = Query(100, description="Max items to enrich"),
 ) -> dict[str, int]:
     """
@@ -88,9 +90,7 @@ def get_enrichment_stats(session: SessionDep) -> dict[str, Any]:
     )
 
     unenriched_items = total_items - enriched_items
-    coverage_pct = (
-        (enriched_items / total_items * 100) if total_items > 0 else 0.0
-    )
+    coverage_pct = (enriched_items / total_items * 100) if total_items > 0 else 0.0
 
     # Per-enricher stats - get list of all enrichment runs
     enricher_stats: list[dict[str, Any]] = []
@@ -108,9 +108,7 @@ def get_enrichment_stats(session: SessionDep) -> dict[str, Any]:
     for enricher_name, runs in enricher_data.items():
         total_runs = len(runs)
         items_enriched = sum(r.items_enriched for r in runs)
-        last_run = max(
-            (r.completed_at for r in runs if r.completed_at), default=None
-        )
+        last_run = max((r.completed_at for r in runs if r.completed_at), default=None)
 
         enricher_stats.append(
             {

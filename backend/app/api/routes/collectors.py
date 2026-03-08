@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
-from sqlalchemy import cast, Integer, func, text
+from sqlalchemy import Integer, cast, func, text
 from sqlalchemy.sql import Select
 from sqlmodel import Session, desc, select
 
@@ -506,7 +506,9 @@ def get_summary_stats(session: SessionDep) -> list[dict[str, Any]]:
 def get_chart_data(
     session: SessionDep,
     collector_name: str | None = Query(None, description="Filter by collector name"),
-    hours: int = Query(168, ge=1, le=2160, description="Hours to aggregate (default 168 = 7 days)"),
+    hours: int = Query(
+        168, ge=1, le=2160, description="Hours to aggregate (default 168 = 7 days)"
+    ),
 ) -> list[dict[str, Any]]:
     """
     Get 12-hour aggregated chart data for collector performance.
@@ -519,10 +521,8 @@ def get_chart_data(
     start_time = now - timedelta(hours=hours)
 
     # Build query with 12-hour bucketing
-    base_select: Select[Any] = select(  # type: ignore[no-redef]
-        func.date_trunc(
-            text("'12 hours'"), CollectorRuns.started_at
-        ).label("bucket"),
+    base_select: Select[Any] = select(
+        func.date_trunc(text("'12 hours'"), CollectorRuns.started_at).label("bucket"),
         func.sum(CollectorRuns.records_collected).label("records"),
         func.count(1).label("runs"),
         func.sum(cast(CollectorRuns.status == "failed", Integer)).label("errors"),
@@ -530,21 +530,19 @@ def get_chart_data(
 
     if collector_name:
         runs_query = (
-            base_select
-            .where(CollectorRuns.collector_name == collector_name)
-            .where(CollectorRuns.started_at >= start_time)
+            base_select.where(CollectorRuns.collector_name == collector_name)  # type: ignore[arg-type]
+            .where(CollectorRuns.started_at >= start_time)  # type: ignore[arg-type]
             .group_by(text("bucket"))
             .order_by(text("bucket"))
         )
     else:
         runs_query = (
-            base_select
-            .where(CollectorRuns.started_at >= start_time)
+            base_select.where(CollectorRuns.started_at >= start_time)  # type: ignore[arg-type]
             .group_by(text("bucket"))
             .order_by(text("bucket"))
         )
 
-    results = session.exec(runs_query).all()
+    results = session.exec(runs_query).all()  # type: ignore[call-overload]
 
     return [
         {

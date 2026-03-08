@@ -279,15 +279,19 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
 
 
 def _get_currencies_for_news_items(
-    session: Session, links: list[str],
+    session: Session,
+    links: list[str],
 ) -> dict[str, list[str]]:
     """Look up aggregated currencies from NewsKeywordMatch for a batch of news links."""
     if not links:
         return {}
+    # fmt: off
     stmt: Any = (
-        select(NewsKeywordMatch.news_item_link, NewsKeywordMatch.currencies)
-        .where(NewsKeywordMatch.news_item_link.in_(links))  # type: ignore[attr-defined]
+        select(NewsKeywordMatch.news_item_link, NewsKeywordMatch.currencies).where(
+            NewsKeywordMatch.news_item_link.in_(links)  # type: ignore[attr-defined]
+        )
     )
+    # fmt: on
     rows = session.exec(stmt).all()
     result: dict[str, set[str]] = {}
     for link, currencies in rows:
@@ -337,9 +341,7 @@ def get_sample_records(
 
     # For NewsItem models, look up currencies from keyword matches
     currencies_map: dict[str, list[str]] = {}
-    needs_currencies = (
-        model is NewsItem and "currencies" in config.display_columns
-    )
+    needs_currencies = model is NewsItem and "currencies" in config.display_columns
     if needs_currencies and rows:
         links = [row.link for row in rows]
         currencies_map = _get_currencies_for_news_items(session, links)
