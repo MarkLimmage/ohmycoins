@@ -732,6 +732,22 @@ export const AuditLogsSchema = {
     title: 'AuditLogs'
 } as const;
 
+export const AvailableCoinsResponseSchema = {
+    properties: {
+        coins: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Coins'
+        }
+    },
+    type: 'object',
+    required: ['coins'],
+    title: 'AvailableCoinsResponse',
+    description: 'Available cryptocurrency symbols in the database'
+} as const;
+
 export const Body_login_login_access_tokenSchema = {
     properties: {
         grant_type: {

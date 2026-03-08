@@ -147,20 +147,20 @@ export const useCollectors = () => {
   }
 }
 
-export const useCollectorStats = (id: string, enabled = true) => {
+export const useCollectorStats = (name: string, enabled = true) => {
   return useQuery({
-    queryKey: ["collector-stats", id],
+    queryKey: ["collector-stats", name],
     queryFn: async (): Promise<CollectorStatsPoint[]> => {
-      const response = await CollectorsService.getStats({
-        id: Number(id),
-        range: "24h",
+      const response = await CollectorsService.getChartData({
+        collectorName: name,
+        hours: 168,
       })
       return (response as any[]).map((r: any) => ({
-        timestamp: r.timestamp,
-        count: r.count ?? 0,
+        timestamp: r.bucket,
+        count: r.records ?? 0,
       }))
     },
-    enabled: enabled && !!id,
+    enabled: enabled && !!name,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   })
@@ -191,7 +191,7 @@ export const usePluginCardData = () => {
         schedule_cron: instance?.schedule_cron ?? "*/15 * * * *",
         last_run: instance?.last_run ?? null,
         is_active: instance?.is_active ?? false,
-        success_rate: stats?.uptime_pct ?? null,
+        error_rate: stats?.error_rate ?? null,
         total_records: stats?.total_records ?? null,
         avg_duration: stats?.avg_duration_seconds ?? null,
         total_runs: stats?.total_runs ?? null,

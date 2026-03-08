@@ -33,8 +33,8 @@ export const CollectorCard = ({
   onViewData,
 }: CollectorCardProps) => {
   const { data: stats } = useCollectorStats(
-    card.instance_id ?? "",
-    card.instance_id !== null,
+    card.instance_name ?? "",
+    card.instance_name !== null,
   )
 
   const isConfigured = card.instance_id !== null
@@ -73,10 +73,20 @@ export const CollectorCard = ({
           <SimpleGrid columns={2} gap={3} mb={4}>
             <Box>
               <Text fontSize="xs" color="gray.500">
-                Success Rate
+                Error Rate
               </Text>
-              <Text fontSize="sm" fontWeight="bold">
-                {(card.success_rate ?? 0).toFixed(1)}%
+              <Text
+                fontSize="sm"
+                fontWeight="bold"
+                color={
+                  card.error_rate === 0
+                    ? "green.500"
+                    : card.error_rate! <= 10
+                      ? "yellow.500"
+                      : "red.500"
+                }
+              >
+                {(card.error_rate ?? 0).toFixed(1)}%
               </Text>
             </Box>
             <Box>

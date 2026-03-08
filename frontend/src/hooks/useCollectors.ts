@@ -38,7 +38,7 @@ export interface AggregateStats {
   total_records: number
   avg_duration_seconds: number
   last_success_at: string | null
-  uptime_pct: number
+  error_rate: number
 }
 
 export const useCollectorInstances = () => {

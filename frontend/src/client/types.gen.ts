@@ -285,6 +285,13 @@ export type AuditLogs = {
     count: number;
 };
 
+/**
+ * Available cryptocurrency symbols in the database
+ */
+export type AvailableCoinsResponse = {
+    coins: Array<(string)>;
+};
+
 export type Body_login_login_access_token = {
     grant_type?: (string | null);
     username: string;
@@ -1504,6 +1511,21 @@ export type CollectorsGetSummaryStatsResponse = (Array<{
     [key: string]: unknown;
 }>);
 
+export type CollectorsGetChartDataData = {
+    /**
+     * Filter by collector name
+     */
+    collectorName?: (string | null);
+    /**
+     * Hours to aggregate (default 168 = 7 days)
+     */
+    hours?: number;
+};
+
+export type CollectorsGetChartDataResponse = (Array<{
+    [key: string]: unknown;
+}>);
+
 export type CredentialsGetCredentialsResponse = (CoinspotCredentialsPublic);
 
 export type CredentialsUpdateCredentialsData = {
@@ -1867,6 +1889,8 @@ export type UtilsTestEmailResponse = (Message);
 
 export type UtilsHealthCheckResponse = (boolean);
 
+export type UtilsGetAvailableCoinsResponse = (AvailableCoinsResponse);
+
 export type UtilsGetPriceDataData = {
     /**
      * Cryptocurrency symbol (e.g., 'BTC', 'ETH')
@@ -1876,6 +1900,10 @@ export type UtilsGetPriceDataData = {
      * End date for price data
      */
     endDate?: (string | null);
+    /**
+     * Filter by ledger (glass, human, catalyst, exchange)
+     */
+    ledger?: (string | null);
     /**
      * Maximum number of records to return
      */
