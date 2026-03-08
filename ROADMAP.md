@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 5.1
-**Last Updated**: Mar 4, 2026
-**Current Phase**: Sprint 2.40 — Phase 4 Complete, transitioning to Phase 5
+**Version**: 5.2
+**Last Updated**: Mar 9, 2026
+**Current Phase**: Sprint 2.43 — Phase 4 Complete, transitioning to Phase 5
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -99,6 +99,9 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 - ✅ **Collector Observability**: Sample records viewer, RSS collector fixes (Sprint 2.38)
 - ✅ **Keyword Enrichment Pilot**: NewsKeywordMatch, taxonomy module, CryptoSlate enrichment (Sprint 2.39)
 - ✅ **Keyword Enrichment Rollout**: All 6 RSS collectors enriched, available-coins endpoint (Sprint 2.40)
+- ✅ **Collector Cleanup**: Dead collector removal, error_rate metrics, 12h chart aggregation (Sprint 2.41)
+- ✅ **Enrichment Pipeline**: IEnricher interface, KeywordEnricher, LLMEnricher (Gemini), EnrichmentPipeline, enrichment dashboard (Sprint 2.42)
+- ✅ **Signal Data Model & API**: NewsEnrichment JSONB model, materialized views, 5 signal query endpoints, Lab agent tool (Sprint 2.43)
 
 ---
 
@@ -135,6 +138,15 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ### Sprint 2.41 - News Collector Foundation Fix (COMPLETE)
 *   Removed 5 dead collectors, centralized User-Agent, error_rate metrics, 12h chart aggregation.
+
+### Sprint 2.42 - Enrichment Pipeline (COMPLETE)
+*   IEnricher pipeline, KeywordEnricher, LLMEnricher (Gemini), EnrichmentPipeline, enrichment dashboard.
+
+### Sprint 2.43 - Signal Data Model & Query API (COMPLETE)
+*   NewsEnrichment JSONB model, EntityEnricher, materialized views, 5 signal endpoints, Lab agent tool.
+
+### Sprint 2.44 - Lab-to-Floor Promotion Workflow (NEXT)
+*   Promotion pipeline to convert Lab artifacts → executable algorithms with approval workflow.
 
 ### Sprint 3.0 - The Lab (v3) - Agentic Evolution
 *   **Goal**: Introduce advanced multi-agent workflows for deeper market analysis.
@@ -271,10 +283,11 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ **Documentation Uplift** (Sprint 2.14): 4-tier architecture + AI governance
 - ✅ **Infrastructure Pivot** (Sprint 2.35): Migration from AWS to local Docker/Traefik stack
 
-### Current Metrics (Sprint 2.40)
-- **Test Coverage**: >97% (872 tests, target maintained across sprints)
+### Current Metrics (Sprint 2.43)
+- **Test Coverage**: >97% (902 tests, target maintained across sprints)
 - **Production Uptime**: Local server (192.168.0.241) with Docker health checks
-- **Collectors**: 16 plugins, 6 with keyword enrichment
+- **Collectors**: 11 active plugins with enrichment pipeline (IEnricher)
+- **Signal API**: 5 query endpoints with materialized views for Lab consumption
 - **Agent Framework**: Multi-track parallel development with worktree isolation
 
 ### Future Metrics (Phase 3-5)
@@ -321,8 +334,9 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ Emergency kill switch tested and documented
 - ✅ Risk management enforced (stop-loss, position limits)
 - ✅ Anomaly detection pipeline integrated
-- 🔄 Alerting service operational (Slack + email)
-- 🔄 Data Explorer wired to backend APIs
+- ✅ Alerting service operational
+- ✅ Data Explorer wired to backend APIs
+- ✅ Enrichment pipeline with signal query API
 - 📋 Lab-to-Floor promotion workflow functional
 
 ### Phase 5 Success (Advanced Analytics)
@@ -362,6 +376,6 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 
 **End of Strategic Roadmap**
 
-**Next Review**: After Sprint 3.0 planning
+**Next Review**: After Sprint 2.44 planning
 **Maintained by**: The Architect
-**Last Major Update**: Sprint 2.40 (Phase 4 complete)
+**Last Major Update**: Sprint 2.43 (enrichment + signals complete)

@@ -31,3 +31,8 @@ frontend/openapi-ts-error-*.log
 
 .env
 logs/
+
+# Stray files
+docker-compose.tmp
+status.json
+repomix.config.json
