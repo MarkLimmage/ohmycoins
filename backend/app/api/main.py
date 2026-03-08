@@ -6,6 +6,7 @@ from app.api.routes import (
     alerts,
     collectors,
     credentials,
+    enrichment,
     floor,
     login,
     pnl,
@@ -40,6 +41,7 @@ api_router.include_router(pnl.router, prefix="/floor/pnl", tags=["pnl"])
 api_router.include_router(trading.router, prefix="/floor/trading", tags=["trading"])
 api_router.include_router(floor.router, prefix="/floor", tags=["floor"])
 api_router.include_router(collectors.router, prefix="/collectors", tags=["collectors"])
+api_router.include_router(enrichment.router, prefix="/enrichment", tags=["enrichment"])
 
 
 if settings.ENVIRONMENT == "local":
