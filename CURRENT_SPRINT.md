@@ -35,6 +35,10 @@ Sprint 2.41 cleaned up dead collectors, centralized User-Agent, and fixed metric
    - Fixed `backend/app/core/collectors/sample_records.py` type errors (`in_` operator).
    - Verified clean lint run in container: `docker compose run --rm backend bash scripts/lint.sh`.
 
+4. [x] **Collector Stats Bugfix** ✅
+   - Resolves 500 Error on dashboard charts (`date_trunc` 12h interval error). Replaced with `date_bin` for correct 12-hour bucketing in `backend/app/api/routes/collectors.py`.
+   - improved test hygiene: Updated `backend/tests/conftest.py` to truncate all tables (including `CollectorRuns`, `NewsItem`) between tests to prevent data leakage.
+
 ## Verification
 
 - All tests pass in container
