@@ -1,12 +1,5 @@
 import type React from "react"
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts"
 import { SafeChart } from "@/components/ui/safe-chart"
 
 interface EquityDataPoint {

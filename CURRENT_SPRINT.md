@@ -1,40 +1,36 @@
-# Current Sprint: 2.41
+# Current Sprint: 2.42
 
 **Status**: COMPLETED
-**Objective**: News Collector Foundation Fix — Deduplicate, Clean, Fix Metrics
-**Previous Sprint**: 2.40 (Keyword Enrichment Rollout - COMPLETED)
+**Objective**: Enrichment Framework — IEnricher Pipeline + LLM Sentiment Integration
+**Previous Sprint**: 2.41 (News Collector Foundation Fix - COMPLETED)
 
 ## Context
 
-Sprint 2.40 rolled out keyword enrichment to all RSS collectors and added the available-coins endpoint. This sprint cleans up the collector infrastructure: removes dead/duplicate collectors, fixes misleading success metrics, centralizes User-Agent strings, and improves chart visualization with 12-hour aggregation.
-
-## Pre-Sprint: Production Database Cleanup
-
-SQL run manually to remove duplicate/dead collector rows and collector_runs. BeInCryptoNews disabled (Cloudflare JS challenge). 12 active collectors remaining after cleanup.
+Sprint 2.41 cleaned up dead collectors, centralized User-Agent, and fixed metrics. This sprint builds an extensible enrichment pipeline that extracts sentiment, coins, and keywords from news items using both rule-based (keyword taxonomy) and LLM-based (Gemini) enrichers. Enrichment runs automatically after collection.
 
 ## Tasks
 
-1. [x] **Track A — Backend Collector Cleanup**
-   - Deleted 5 dead collector strategy files (news_cryptopanic, human_newscatcher, glass_nansen, human_rss, news_beincrypto)
-   - Deleted 4 associated test files
-   - Updated `initial_data.py` seeding — removed 5 dead collector entries
-   - Centralized `HTTP_USER_AGENT` constant in `core/config.py`, applied to 7 active collectors
-   - Fixed `get_summary_stats()` — `error_rate` replaces `uptime_pct`
-   - Added `GET /api/v1/collectors/stats/chart-data` endpoint with 12-hour bucketing
-   - Updated `sample_records.py` — removed 5 dead plugin mappings
-   - Fixed 4 validation tests referencing deleted collectors
+1. [x] **Track A — Enrichment Backend** ✅
+   - IEnricher interface + ISentimentProvider interface
+   - KeywordEnricher (rule-based keyword taxonomy enrichment)
+   - LLMEnricher + GeminiSentimentProvider (multi-coin LLM sentiment)
+   - EnrichmentPipeline orchestrator with run tracking
+   - EnrichmentRun model + Alembic migration
+   - Auto-trigger after collection in StrategyAdapterCollector
+   - API: POST /api/v1/enrichment/run, GET /stats, GET /runs
+   - 34 tests (29 framework + 5 API route), 878 total passing
 
-2. [x] **Track B — Frontend Metrics & Charts**
-   - Regenerated OpenAPI TypeScript client
-   - Collector cards show `error_rate` with color coding (0%=green, 1-10%=yellow, >10%=red)
-   - Sparkline charts wired to new 12h aggregated chart-data endpoint
-   - Updated `CollectorCardData` type and test fixtures
+2. [x] **Track B — Enrichment Dashboard** ✅
+   - EnrichmentOverview, EnricherCards, EnrichmentRunsTable components
+   - Manual trigger button with loading/success/error states
+   - Hooks: useEnrichmentStats, useEnrichmentRuns, useTriggerEnrichment
+   - Regenerated OpenAPI client with EnrichmentService
+   - Sidebar navigation link, route at /enrichment
+   - type-check + lint clean
 
 ## Verification
 
-- 844 tests passing, 0 failures
-- mypy --strict: clean
-- ruff check + ruff format: clean
-- TypeScript type-check: clean
-- Active collectors: 11 plugins (down from 16)
-- Pre-existing tech debt: test_executor.py / test_trading_ws.py hangs (Redis emergency_stop key — Sprint 2.35)
+- All tests pass in container
+- mypy --strict clean
+- ruff check + ruff format clean
+- npm run type-check + npm run lint clean

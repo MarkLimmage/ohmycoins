@@ -1544,6 +1544,36 @@ export type CredentialsDeleteCredentialsResponse = (Message);
 
 export type CredentialsValidateCredentialsResponse = (Message);
 
+export type EnrichmentTriggerEnrichmentData = {
+    /**
+     * Enricher to use: 'all', 'keyword', 'llm'
+     */
+    enricher?: string;
+    /**
+     * Max items to enrich
+     */
+    limit?: number;
+};
+
+export type EnrichmentTriggerEnrichmentResponse = ({
+    [key: string]: (number);
+});
+
+export type EnrichmentGetEnrichmentStatsResponse = ({
+    [key: string]: unknown;
+});
+
+export type EnrichmentGetEnrichmentRunsData = {
+    /**
+     * Max recent runs to return
+     */
+    limit?: number;
+};
+
+export type EnrichmentGetEnrichmentRunsResponse = ({
+    [key: string]: unknown;
+});
+
 export type FloorPauseAlgorithmData = {
     algorithmId: string;
 };
