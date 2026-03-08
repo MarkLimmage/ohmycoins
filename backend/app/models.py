@@ -2086,3 +2086,28 @@ class AlertLogsPublic(SQLModel):
 
     data: list[AlertLogPublic]
     count: int
+
+
+# ── Enrichment ─────────────────────────────────────────────────────────
+
+
+class EnrichmentRun(SQLModel, table=True):
+    """Track enrichment pipeline execution."""
+
+    __tablename__ = "enrichment_run"
+
+    id: int | None = Field(default=None, primary_key=True)
+    enricher_name: str = Field(max_length=100, index=True)
+    items_processed: int
+    items_enriched: int
+    items_skipped: int
+    items_failed: int
+    started_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    completed_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True))
+    )
+    status: str = Field(max_length=20)  # "running", "completed", "failed"
+    error_message: str | None = Field(default=None, sa_column=Column(sa.Text))
+    trigger: str = Field(max_length=20)  # "auto", "manual"

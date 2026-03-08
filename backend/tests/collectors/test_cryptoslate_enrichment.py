@@ -35,6 +35,7 @@ SAMPLE_RSS_WITH_KEYWORDS = """<?xml version="1.0" encoding="UTF-8"?>
 
 @pytest.mark.asyncio
 async def test_collect_returns_newsitem_and_keyword_matches() -> None:
+    """Test that collector returns NewsItem objects (enrichment is done by pipeline now)."""
     collector = CryptoSlateCollector()
 
     mock_resp = MagicMock()
@@ -52,23 +53,14 @@ async def test_collect_returns_newsitem_and_keyword_matches() -> None:
     with patch("aiohttp.ClientSession", return_value=mock_session):
         results = await collector.collect({})
 
-    # Should have NewsItem and NewsKeywordMatch instances
+    # After migration to pipeline architecture, collectors only return NewsItem
+    # Enrichment happens asynchronously via EnrichmentPipeline
     news_items = [r for r in results if isinstance(r, NewsItem)]
     keyword_matches = [r for r in results if isinstance(r, NewsKeywordMatch)]
 
     assert len(news_items) == 3
-    assert len(keyword_matches) > 0
-
-    # First article should have matches for Fed, rate cut, ETF, approval
-    first_item_matches = [
-        m for m in keyword_matches
-        if m.news_item_link == "https://cryptoslate.com/fed-rate-cut-btc-etf"
-    ]
-    matched_keywords = [m.keyword for m in first_item_matches]
-    assert "Federal Reserve" in matched_keywords
-    assert "rate cut" in matched_keywords
-    assert "ETF" in matched_keywords
-    assert "approval" in matched_keywords
+    # Keyword matches are no longer returned by the collector
+    assert len(keyword_matches) == 0
 
 
 @pytest.mark.asyncio
@@ -106,6 +98,7 @@ async def test_collect_no_keywords_for_generic_text() -> None:
 
 @pytest.mark.asyncio
 async def test_sentiment_populated_on_newsitem() -> None:
+    """Test that collector returns NewsItem (sentiment enrichment happens via pipeline now)."""
     collector = CryptoSlateCollector()
 
     rss = """<?xml version="1.0" encoding="UTF-8"?>
@@ -136,9 +129,10 @@ async def test_sentiment_populated_on_newsitem() -> None:
     news_items = [r for r in results if isinstance(r, NewsItem)]
     assert len(news_items) == 1
     item = news_items[0]
-    assert item.sentiment_score is not None
-    assert item.sentiment_label is not None
-    assert item.sentiment_label in ("bullish", "bearish", "neutral")
+    # After migration to pipeline architecture, sentiment is no longer populated by collector
+    # It gets enriched by EnrichmentPipeline instead
+    assert item.sentiment_score is None
+    assert item.sentiment_label is None
 
 
 def test_aggregate_sentiment_bullish() -> None:
