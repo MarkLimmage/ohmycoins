@@ -130,8 +130,11 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 ### Sprint 2.39 - CryptoSlate Keyword Enrichment Pilot (COMPLETE)
 *   NewsKeywordMatch model, keyword taxonomy, CryptoSlate enrichment, duplicate handling fix.
 
-### Sprint 2.40 - Keyword Enrichment Rollout (ACTIVE)
+### Sprint 2.40 - Keyword Enrichment Rollout (COMPLETE)
 *   Roll out keyword enrichment to all RSS collectors, available-coins endpoint, ledger filtering.
+
+### Sprint 2.41 - News Collector Foundation Fix (COMPLETE)
+*   Removed 5 dead collectors, centralized User-Agent, error_rate metrics, 12h chart aggregation.
 
 ### Sprint 3.0 - The Lab (v3) - Agentic Evolution
 *   **Goal**: Introduce advanced multi-agent workflows for deeper market analysis.
