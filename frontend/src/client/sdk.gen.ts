@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CollectorsGetChartDataData, CollectorsGetChartDataResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, EnrichmentTriggerEnrichmentData, EnrichmentTriggerEnrichmentResponse, EnrichmentGetEnrichmentStatsResponse, EnrichmentGetEnrichmentRunsData, EnrichmentGetEnrichmentRunsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetAvailableCoinsResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
+import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CollectorsGetChartDataData, CollectorsGetChartDataResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, EnrichmentTriggerEnrichmentData, EnrichmentTriggerEnrichmentResponse, EnrichmentGetEnrichmentStatsResponse, EnrichmentGetEnrichmentRunsData, EnrichmentGetEnrichmentRunsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, SignalsGetCoinSignalsData, SignalsGetCoinSignalsResponse, SignalsGetSignalSummaryResponse, SignalsGetSignalTrendsData, SignalsGetSignalTrendsResponse, SignalsGetSignalEntitiesData, SignalsGetSignalEntitiesResponse, SignalsRefreshViewsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetAvailableCoinsResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -1937,6 +1937,119 @@ export class RiskService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+}
+
+export class SignalsService {
+    /**
+     * Get Coin Signals
+     * Get all signals for a specific coin.
+     *
+     * Returns a list of enrichment signals and a summary with sentiment analysis.
+     * @param data The data for the request.
+     * @param data.symbol
+     * @param data.hours Number of hours to look back
+     * @param data.enrichmentType Filter by enrichment type (optional)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getCoinSignals(data: SignalsGetCoinSignalsData): CancelablePromise<SignalsGetCoinSignalsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/signals/coin/{symbol}',
+            path: {
+                symbol: data.symbol
+            },
+            query: {
+                hours: data.hours,
+                enrichment_type: data.enrichmentType
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Signal Summary
+     * Get materialized view data for coin sentiment summary.
+     *
+     * Returns per-coin statistics from mv_coin_sentiment_24h.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getSignalSummary(): CancelablePromise<SignalsGetSignalSummaryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/signals/summary'
+        });
+    }
+    
+    /**
+     * Get Signal Trends
+     * Get trend analysis from materialized view.
+     *
+     * Returns hourly aggregated signal data from mv_signal_summary.
+     * @param data The data for the request.
+     * @param data.coin Filter by coin (optional)
+     * @param data.hours Number of hours to look back
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getSignalTrends(data: SignalsGetSignalTrendsData = {}): CancelablePromise<SignalsGetSignalTrendsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/signals/trends',
+            query: {
+                coin: data.coin,
+                hours: data.hours
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Signal Entities
+     * Get entity network from enrichment data.
+     *
+     * Extracts entities mentioned in enrichment signals and returns aggregated network data.
+     * @param data The data for the request.
+     * @param data.entityName Filter by entity name (optional)
+     * @param data.entityType Filter by entity type (optional)
+     * @param data.hours Number of hours to look back
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getSignalEntities(data: SignalsGetSignalEntitiesData = {}): CancelablePromise<SignalsGetSignalEntitiesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/signals/entities',
+            query: {
+                entity_name: data.entityName,
+                entity_type: data.entityType,
+                hours: data.hours
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Refresh Views
+     * Trigger materialized view refresh.
+     *
+     * Refreshes mv_coin_sentiment_24h and mv_signal_summary.
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static refreshViews(): CancelablePromise<SignalsRefreshViewsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/signals/refresh-views'
         });
     }
 }

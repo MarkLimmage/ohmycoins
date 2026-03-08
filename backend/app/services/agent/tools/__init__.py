@@ -43,6 +43,9 @@ from .reporting_tools import (
     generate_recommendations,
     generate_summary,
 )
+from .signal_query import (
+    query_market_signals,
+)
 
 __all__ = [
     # Data Retrieval Tools
@@ -74,4 +77,6 @@ __all__ = [
     "create_comparison_report",
     "generate_recommendations",
     "create_visualizations",
+    # Signal Query Tools
+    "query_market_signals",
 ]
