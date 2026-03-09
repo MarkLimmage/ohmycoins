@@ -25,10 +25,22 @@ export const useLabWebSocket = ({
   const ws = useRef<WebSocket | null>(null)
   const messageIds = useRef(new Set<string>())
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!sessionId || !enabled) return
 
-    const token = OpenAPI.TOKEN
+    let token: string | undefined
+    const rawToken = OpenAPI.TOKEN
+    if (typeof rawToken === "function") {
+      try {
+        token = await (rawToken as () => Promise<string>)()
+      } catch (err) {
+        console.error("Failed to resolve token:", err)
+        return
+      }
+    } else {
+      token = rawToken
+    }
+
     const baseUrl =
       OpenAPI.BASE?.replace(/^http/, "ws") || "wss://api.ohmycoins.com"
     const wsUrl = `${baseUrl}/ws/agent/${sessionId}/stream?token=${token}`
@@ -93,7 +105,9 @@ export const useLabWebSocket = ({
     setSessionStatus(null)
     messageIds.current.clear()
 
-    connect()
+    connect().catch((err) => {
+      console.error("Connection error:", err)
+    })
 
     return () => {
       if (ws.current?.readyState === WebSocket.OPEN) {
