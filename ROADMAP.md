@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 5.2
+**Version**: 5.3
 **Last Updated**: Mar 9, 2026
-**Current Phase**: Sprint 2.43 — Phase 4 Complete, transitioning to Phase 5
+**Current Phase**: Sprint 2.45 — Phase 5 In Progress
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -105,15 +105,25 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ---
 
-### 📋 Phase 5: Advanced Analytics & Optimization
+### 🔄 Phase 5: Advanced Analytics & Optimization
 
-**Status**: Future  
-**Objective**: Advanced visualization, ensemble methods, and continuous optimization.
+**Status**: In Progress (Sprint 2.44+)
+**Objective**: Agentic data science workflows, model lifecycle, and continuous optimization.
+
+**Completed Deliverables**:
+- ✅ **Lab Live Session Experience**: AgentRunner background execution, WebSocket streaming, Lab page with session management (Sprint 2.44)
+
+**In Progress**:
+- 🔄 **Agentic Data Science Pipeline**: Blueprint Card → training with visual progress → model serialization → Floor promotion (Sprint 2.45)
+- 📋 **Optuna Hyperparameter Search**: Lab agent tool for automated hyperparameter tuning (Sprint 2.45)
 
 **Planned Capabilities**:
-- **Algorithm Optimization**: Hyperparameter tuning, ensemble methods
-- **Mobile App**: Read-only monitoring
-- **Explainable AI**: Transparency for algorithm decisions
+- **Model Playground**: ModelPlaygroundPanel — inference test UI (Sprint 2.46)
+- **Backtesting Framework**: XGBoost models, proper walk-forward validation (Sprint 2.47)
+- **Explainable AI**: SHAP values, decision path visualization (Sprint 2.48)
+- **Collector Performance & Freshness** (Sprint 2.49)
+- **MLflow Integration**: When experiment scale justifies it (Phase 5+)
+- **Feast Feature Store**: When training-serving skew becomes a problem (Phase 5+)
 
 ---
 
@@ -145,11 +155,23 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 ### Sprint 2.43 - Signal Data Model & Query API (COMPLETE)
 *   NewsEnrichment JSONB model, EntityEnricher, materialized views, 5 signal endpoints, Lab agent tool.
 
-### Sprint 2.44 - Lab-to-Floor Promotion Workflow (NEXT)
-*   Promotion pipeline to convert Lab artifacts → executable algorithms with approval workflow.
+### Sprint 2.44 - Lab Live Session Experience (COMPLETE)
+*   AgentRunner background execution, WebSocket streaming, Lab page with session management. 925 tests.
 
-### Sprint 3.0 - The Lab (v3) - Agentic Evolution
-*   **Goal**: Introduce advanced multi-agent workflows for deeper market analysis.
+### Sprint 2.45 - Agentic Data Science Pipeline (IN PROGRESS)
+*   Hotfixes (WS token, recursion limit) + ModelBlueprint schema + model serialization (joblib) + Optuna hyperparameter tool + structured metric events + Blueprint Card + Training Progress Charts + Artifact Viewer + Promote Modal.
+
+### Sprint 2.46 - Model Playground (PLANNED)
+*   ModelPlaygroundPanel — inference test UI for trained models, POST /lab/algorithms/{id}/predict endpoint.
+
+### Sprint 2.47 - Backtesting Framework Hardening (PLANNED)
+*   XGBoost model integration, proper walk-forward validation, historical simulation improvements.
+
+### Sprint 2.48 - Explainable AI (PLANNED)
+*   SHAP values, decision path visualization, model transparency features.
+
+### Sprint 2.49 - Collector Performance & Freshness (PLANNED)
+*   Collector health monitoring, data freshness alerts, performance optimization.
 
 ---
 
@@ -283,11 +305,12 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ **Documentation Uplift** (Sprint 2.14): 4-tier architecture + AI governance
 - ✅ **Infrastructure Pivot** (Sprint 2.35): Migration from AWS to local Docker/Traefik stack
 
-### Current Metrics (Sprint 2.43)
-- **Test Coverage**: >97% (902 tests, target maintained across sprints)
+### Current Metrics (Sprint 2.44)
+- **Test Coverage**: >97% (925 tests, target maintained across sprints)
 - **Production Uptime**: Local server (192.168.0.241) with Docker health checks
 - **Collectors**: 11 active plugins with enrichment pipeline (IEnricher)
 - **Signal API**: 5 query endpoints with materialized views for Lab consumption
+- **Lab**: Live session execution with WebSocket streaming and real-time terminal
 - **Agent Framework**: Multi-track parallel development with worktree isolation
 
 ### Future Metrics (Phase 3-5)
@@ -337,7 +360,7 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ Alerting service operational
 - ✅ Data Explorer wired to backend APIs
 - ✅ Enrichment pipeline with signal query API
-- 📋 Lab-to-Floor promotion workflow functional
+- 🔄 Lab-to-Floor promotion workflow (Sprint 2.45 — in progress)
 
 ### Phase 5 Success (Advanced Analytics)
 - 📋 Backtesting framework with 1+ year historical data
@@ -376,6 +399,6 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 
 **End of Strategic Roadmap**
 
-**Next Review**: After Sprint 2.44 planning
+**Next Review**: After Sprint 2.45 completion
 **Maintained by**: The Architect
-**Last Major Update**: Sprint 2.43 (enrichment + signals complete)
+**Last Major Update**: Sprint 2.45 (agentic data science pipeline)
