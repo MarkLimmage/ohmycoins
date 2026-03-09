@@ -1,17 +1,26 @@
 services:
   proxy:
     ports:
-      - "8001:80"
+      - "8010:80"
+      - "8091:8080"
+  db:
+    ports:
+      - "5433:5432"
   backend:
     volumes:
-      - /home/mark/omc/logs/hub:/var/log/omc-agents
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
+      - agent-artifacts:/data/agent_artifacts
+    environment:
+      - POSTGRES_PORT=5432
+  orchestrator:
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - agent-artifacts:/data/agent_artifacts
     environment:
       - POSTGRES_PORT=5432
   celery_worker:
-    volumes:
-      - /home/mark/omc/logs/hub:/var/log/omc-agents
     environment:
       - POSTGRES_PORT=5432
   prestart:

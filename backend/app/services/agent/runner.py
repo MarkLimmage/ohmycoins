@@ -119,23 +119,66 @@ class AgentRunner:
                         agent_name = node_name
 
                         if isinstance(node_state, dict):
-                            content = (
-                                node_state.get("report")
-                                or node_state.get("error")
-                                or json.dumps(
+                            # Sprint 2.45: Check for structured event types first
+                            if node_state.get("trained_models"):
+                                msg_type = "metric"
+                                trained = node_state.get("trained_models", {})
+                                content = json.dumps(
                                     {
-                                        k: str(v)[:200]
-                                        for k, v in node_state.items()
-                                        if v
+                                        "metric_type": "training_metrics",
+                                        "data": {
+                                            k: str(v)[:500]
+                                            for k, v in trained.items()
+                                            if v
+                                        },
                                     },
                                     default=str,
                                 )
-                            )
-                            if node_state.get("error"):
-                                msg_type = "result"
-                            elif node_state.get("current_step"):
-                                msg_type = "thought"
-                                content = f"Step: {node_state['current_step']}"
+                            elif node_state.get("evaluation_results"):
+                                msg_type = "metric"
+                                eval_results = node_state.get("evaluation_results", {})
+                                content = json.dumps(
+                                    {
+                                        "metric_type": "evaluation_metrics",
+                                        "data": {
+                                            k: str(v)[:500]
+                                            for k, v in eval_results.items()
+                                            if v
+                                        },
+                                    },
+                                    default=str,
+                                )
+                            elif node_state.get("awaiting_choice") and node_state.get(
+                                "choices_available"
+                            ):
+                                msg_type = "blueprint"
+                                content = json.dumps(
+                                    {
+                                        "choices": node_state.get(
+                                            "choices_available", []
+                                        ),
+                                    },
+                                    default=str,
+                                )
+                            else:
+                                # Original content extraction logic
+                                content = (
+                                    node_state.get("report")
+                                    or node_state.get("error")
+                                    or json.dumps(
+                                        {
+                                            k: str(v)[:200]
+                                            for k, v in node_state.items()
+                                            if v
+                                        },
+                                        default=str,
+                                    )
+                                )
+                                if node_state.get("error"):
+                                    msg_type = "result"
+                                elif node_state.get("current_step"):
+                                    msg_type = "thought"
+                                    content = f"Step: {node_state['current_step']}"
                         else:
                             content = str(node_state)
 

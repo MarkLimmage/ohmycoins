@@ -474,3 +474,38 @@ def cross_validate_model(
         "scoring": scoring,
         "model_type": model_type,
     }
+
+
+def serialize_model_to_disk(
+    model: Any,
+    session_id: str,
+    model_name: str,
+    scaler: Any | None = None,
+    metadata: dict[str, Any] | None = None,
+    base_dir: str = "/data/agent_artifacts",
+) -> dict[str, str]:
+    """Serialize a trained model to disk using joblib."""
+    import json
+    from pathlib import Path
+
+    import joblib
+
+    artifact_dir = Path(base_dir) / session_id
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+
+    model_path = artifact_dir / f"{model_name}.joblib"
+    joblib.dump(model, model_path)
+
+    result = {"model_path": str(model_path)}
+
+    if scaler is not None:
+        scaler_path = artifact_dir / f"{model_name}_scaler.joblib"
+        joblib.dump(scaler, scaler_path)
+        result["scaler_path"] = str(scaler_path)
+
+    if metadata:
+        meta_path = artifact_dir / f"{model_name}_metadata.json"
+        meta_path.write_text(json.dumps(metadata, default=str))
+        result["metadata_path"] = str(meta_path)
+
+    return result

@@ -1080,7 +1080,9 @@ class LangGraphWorkflow:
             Final workflow state
         """
         # Execute the graph with the initial state
-        final_state = await self.graph.ainvoke(initial_state)
+        final_state = await self.graph.ainvoke(
+            initial_state, config={"recursion_limit": 50}
+        )
         return final_state
 
     async def stream_execute(self, initial_state: AgentState):
@@ -1093,5 +1095,7 @@ class LangGraphWorkflow:
         Yields:
             State updates as the workflow progresses
         """
-        async for state in self.graph.astream(initial_state):
+        async for state in self.graph.astream(
+            initial_state, config={"recursion_limit": 50}
+        ):
             yield state

@@ -159,6 +159,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - RUN_COLLECTORS=False
+    volumes:
+      - agent-artifacts:/data/agent_artifacts
 
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/utils/health-check/')"]
@@ -209,6 +211,7 @@ services:
     volumes:
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
+      - agent-artifacts:/data/agent_artifacts
     env_file:
       - .env
     environment:
@@ -340,6 +343,7 @@ services:
 volumes:
   app-db-data:
   app-redis-data:
+  agent-artifacts:
 
 networks:
   traefik-public:
