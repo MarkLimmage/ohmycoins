@@ -8,7 +8,14 @@ export interface AgentTerminalProps {
 
 export interface AgentMessage {
   id: string
-  type: "thought" | "tool" | "result" | "input_request" | "output"
+  type:
+    | "thought"
+    | "tool"
+    | "result"
+    | "input_request"
+    | "output"
+    | "blueprint"
+    | "metric"
   content: string
   timestamp: string
   metadata?: {
