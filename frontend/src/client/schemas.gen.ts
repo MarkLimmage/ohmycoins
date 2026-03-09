@@ -111,6 +111,19 @@ export const AgentSessionCreateSchema = {
             minLength: 1,
             title: 'User Goal',
             description: 'Natural language trading goal'
+        },
+        llm_credential_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Llm Credential Id',
+            description: 'Optional user LLM credential ID (null uses system default)'
         }
     },
     type: 'object',

@@ -1159,6 +1159,10 @@ class AgentSessionCreate(SQLModel):
     user_goal: str = Field(
         min_length=1, max_length=5000, description="Natural language trading goal"
     )
+    llm_credential_id: uuid.UUID | None = Field(
+        default=None,
+        description="Optional user LLM credential ID (null uses system default)",
+    )
 
 
 class AgentSessionPublic(AgentSessionBase):

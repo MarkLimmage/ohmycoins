@@ -1,34 +1,39 @@
-# Current Sprint: 2.43
+# Current Sprint: 2.44
 
-**Status**: COMPLETED
-**Objective**: Signal Data Model — `news_enrichment` Migration + Lab Signal Queries
-**Previous Sprint**: 2.42 (Enrichment Framework - COMPLETED)
+**Status**: IN PROGRESS
+**Objective**: The Lab — Live Session Experience
+**Previous Sprint**: 2.43 (Signal Data Model — COMPLETED)
 
 ## Context
 
-Sprint 2.42 built the extensible enrichment pipeline (IEnricher, KeywordEnricher, LLMEnricher, EnrichmentPipeline). This sprint replaces the `news_keyword_match` table with a unified `news_enrichment` table using JSONB for flexible enrichment storage, adds materialized views for fast signal aggregation, and exposes signal query endpoints for The Lab's AI agents.
+Sprint 2.43 built the signal data model and query API for Lab agents. This sprint makes the Lab usable from the UI: background session execution, WebSocket streaming, and a full Lab page with session management.
 
 ## Tasks
 
-1. [x] **Track A — Signal Data Model & Migration** ✅
-   - NewsEnrichment model with JSONB `data` column + GIN indexes
-   - Alembic migration: create table + migrate data from news_keyword_match
-   - Updated KeywordEnricher + LLMEnricher pipeline to write to news_enrichment
-   - POLE EntityEnricher: regex-based entity extraction (30+ patterns)
-   - Materialized views: mv_coin_sentiment_24h, mv_signal_summary
-   - View refresh utility integrated with EnrichmentPipeline
-   - 27 new tests (model CRUD, entity enricher, pipeline storage)
+1. [x] **Track A — Backend: Background Execution + WebSocket Streaming**
+   - A1: Added `llm_credential_id` to `AgentSessionCreate` schema
+   - A2: Created `AgentRunner` — background session execution via `asyncio.create_task`, Redis pub/sub streaming
+   - A3: WebSocket endpoint `/ws/agent/{session_id}/stream` — historical replay + live pub/sub relay
+   - A4: Updated session creation route to use runner (non-blocking)
+   - A5: Wired runner shutdown into app lifespan
+   - A6: 24 new tests (runner unit tests, WS auth/replay/streaming, session API)
+   - mypy --strict + ruff clean
 
-2. [x] **Track B — Signal Query API + Lab Integration** ✅
-   - Signal query endpoints: GET /signals/coin/{symbol}, /summary, /trends, /entities
-   - POST /signals/refresh-views for materialized view refresh
-   - Lab agent tool: query_market_signals for LangGraph workflow
-   - Regenerated OpenAPI client with SignalsService
-   - 9 new tests (6 API route + 3 agent tool), 902 total passing
+2. [x] **Track B — Frontend: Lab Page + Session Management**
+   - B1: Lab route at `/lab` following enrichment pattern
+   - B2: Added "The Lab" to sidebar with FiTerminal icon
+   - B3: TanStack Query hooks for sessions, credentials
+   - B4: `useLabWebSocket` hook with dedup and finite lifecycle
+   - B5: LabDashboard — two-panel layout (session list + AgentTerminal)
+   - B6: SessionCreateForm modal with goal + LLM provider selector
+   - B7: SessionList with status badges, timestamps, selection
+   - B8: Regenerated OpenAPI client with `llm_credential_id` field
+   - TypeScript type-check + Biome lint clean
 
 ## Verification
 
-- All tests pass in container (902 passed)
-- mypy --strict clean
-- ruff check + ruff format clean
-- npm run type-check clean
+- [x] Full test suite: 925 passed (23 new), 9 failed (pre-existing), 4 errors (pre-existing)
+- [x] mypy --strict clean
+- [x] ruff check + ruff format clean
+- [x] npm run type-check clean
+- [x] npm run lint clean (1 pre-existing error in eventBus.ts)

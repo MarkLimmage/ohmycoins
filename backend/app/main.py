@@ -17,6 +17,7 @@ from app.api.middleware import RateLimitMiddleware
 from app.api.routes import websockets
 from app.core.config import settings
 from app.core.db import engine
+from app.services.agent.runner import shutdown_runner
 from app.services.collectors.config import (
     setup_collectors,
     start_collection,
@@ -78,6 +79,9 @@ async def lifespan(_app: FastAPI):
     execution_scheduler.load_deployed_algorithms()
 
     yield
+
+    # Shutdown: Stop agent runner
+    await shutdown_runner()
 
     # Shutdown: Stop Phase 2.5 Collectors
     stop_collection()

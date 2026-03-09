@@ -33,11 +33,11 @@ from app.services.agent.nodes.approval import (
 from app.services.agent.nodes.choice_presentation import handle_choice_selection
 from app.services.agent.nodes.clarification import handle_clarification_response
 from app.services.agent.override import apply_user_override, get_override_points
+from app.services.agent.runner import get_runner
 
 router = APIRouter()
 
 # Global session manager, orchestrator, and artifact manager
-# TODO: Move to dependency injection in production
 session_manager = SessionManager()
 orchestrator = AgentOrchestrator(session_manager)
 artifact_manager = ArtifactManager()
@@ -66,16 +66,9 @@ async def create_agent_session(
     # Create session in database
     session = await session_manager.create_session(db, current_user.id, session_in)
 
-    # Start the agent workflow asynchronously
-    # TODO: Use background tasks or celery for production
-    try:
-        await orchestrator.start_session(db, session.id)
-    except Exception as e:
-        # If start fails, update session status
-        await session_manager.update_session_status(
-            db, session.id, "failed", error_message=str(e)
-        )
-        raise HTTPException(status_code=500, detail=f"Failed to start session: {e}")
+    # Launch background execution via AgentRunner (non-blocking)
+    runner = get_runner()
+    runner.start_session(session.id)
 
     return session
 

@@ -62,6 +62,10 @@ export type AgentSessionCreate = {
      * Natural language trading goal
      */
     user_goal: string;
+    /**
+     * Optional user LLM credential ID (null uses system default)
+     */
+    llm_credential_id?: (string | null);
 };
 
 /**

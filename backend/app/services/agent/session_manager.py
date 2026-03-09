@@ -60,6 +60,7 @@ class SessionManager:
         session = AgentSession(
             user_id=user_id,
             user_goal=session_data.user_goal,
+            llm_credential_id=session_data.llm_credential_id,
             status=AgentSessionStatus.PENDING,
         )
         db.add(session)

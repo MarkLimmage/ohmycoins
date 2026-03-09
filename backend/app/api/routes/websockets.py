@@ -1,10 +1,12 @@
 import asyncio
 import json
 import random
+import uuid
 from datetime import datetime
 from typing import Annotated, Any
 
 import jwt
+import redis.asyncio as aioredis
 from fastapi import (
     APIRouter,
     Depends,
@@ -16,12 +18,12 @@ from fastapi import (
 )
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, ValidationError
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.api.deps import get_current_active_superuser, get_db
 from app.core import security
 from app.core.config import settings
-from app.models import TokenPayload, User
+from app.models import AgentSession, AgentSessionMessage, TokenPayload, User
 from app.services.websocket_manager import manager
 
 router = APIRouter()
@@ -241,3 +243,125 @@ async def websocket_floor_pnl(
     except WebSocketDisconnect:
         task.cancel()
         manager.disconnect(websocket, channel_id)
+
+
+@router.websocket("/agent/{session_id}/stream")
+async def websocket_agent_stream(
+    websocket: WebSocket,
+    session_id: uuid.UUID,
+    user: Annotated[User, Depends(get_websocket_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    """
+    Real-time streaming for agent session execution.
+
+    1. Replays historical messages from DB (for reconnection).
+    2. Subscribes to Redis pub/sub channel for live updates.
+    3. Closes when session completes/fails/cancels.
+    """
+    # Verify session exists and belongs to user
+    statement = select(AgentSession).where(AgentSession.id == session_id)
+    session_obj = db.exec(statement).first()
+
+    if not session_obj:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Session not found"
+        )
+    if session_obj.user_id != user.id:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Not authorized"
+        )
+
+    await websocket.accept()
+
+    # Step 1: Replay historical messages
+    hist_statement = (
+        select(AgentSessionMessage)
+        .where(AgentSessionMessage.session_id == session_id)
+        .order_by(AgentSessionMessage.created_at)  # type: ignore[arg-type]
+    )
+    history = db.exec(hist_statement).all()
+    for msg in history:
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "id": str(msg.id),
+                    "type": "output",
+                    "content": msg.content,
+                    "agent_name": msg.agent_name,
+                    "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+                    "replay": True,
+                }
+            )
+        )
+
+    # If session already finished, send done and close
+    if session_obj.status in ("completed", "failed", "cancelled"):
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "status",
+                    "content": f"Session {session_obj.status}",
+                    "status": session_obj.status,
+                    "done": True,
+                }
+            )
+        )
+        await websocket.close()
+        return
+
+    # Step 2: Subscribe to Redis pub/sub for live updates
+    channel_name = f"agent:session:{session_id}:stream"
+    redis_client: aioredis.Redis | None = None
+    pubsub: aioredis.client.PubSub | None = None
+
+    try:
+        redis_client = await aioredis.from_url(  # type: ignore[no-untyped-call]
+            settings.REDIS_URL,
+            encoding="utf-8",
+            decode_responses=True,
+        )
+        assert redis_client is not None
+        pubsub = redis_client.pubsub()
+        await pubsub.subscribe(channel_name)
+
+        async def relay_from_redis() -> None:
+            """Forward Redis pub/sub messages to WebSocket."""
+            assert pubsub is not None
+            async for raw_msg in pubsub.listen():
+                if raw_msg["type"] != "message":
+                    continue
+                data = raw_msg["data"]
+                await websocket.send_text(data)
+                # Check for completion
+                try:
+                    parsed = json.loads(data)
+                    if parsed.get("done"):
+                        return
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+        relay_task = asyncio.create_task(relay_from_redis())
+
+        try:
+            # Keep connection alive while relay runs
+            while not relay_task.done():
+                try:
+                    await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
+                except asyncio.TimeoutError:
+                    continue
+        except WebSocketDisconnect:
+            pass
+        finally:
+            relay_task.cancel()
+            try:
+                await relay_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
+    finally:
+        if pubsub:
+            await pubsub.unsubscribe(channel_name)
+            await pubsub.aclose()  # type: ignore[no-untyped-call]
+        if redis_client:
+            await redis_client.aclose()
