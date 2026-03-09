@@ -4,6 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## ⚠️ HARD RULES — Read Before Doing Anything
+
+These are non-negotiable. Violating them has caused production breakage and wasted tokens.
+
+### 1. The Architect never writes code
+The Architect (this session) plans, delegates, reviews, and merges. **It does not write backend or frontend implementation code itself.** This means:
+- No editing `backend/app/**`, `backend/tests/**`, or `frontend/src/**` directly
+- No running `docker compose exec backend bash scripts/test.sh` itself as a primary action
+- If tempted to "just fix this quickly" — **stop**. Spawn a Haiku dev agent instead.
+
+### 2. All dev work goes to Haiku agents
+Every implementation task — no matter how small — must be delegated via the `Agent` tool with `subagent_type="dev"` (model: haiku). This includes:
+- Writing or editing source files
+- Running tests to verify implementation
+- Fixing lint errors in implementation files
+
+Exception: the Architect may run read-only commands (git log, git status, git diff) and perform git merges/pushes.
+
+### 3. Worktree provisioning is the Architect's job (no Dockmaster needed)
+The Architect provisions worktrees directly using 4 shell commands — no Dockmaster spawn required unless there is a genuine Docker networking problem. See Multi-Track Development section.
+
+### 4. One task, one owner
+Once delegated, do not duplicate the work. If a dev agent is running, do not also run the same tests or edits. Send a status inquiry if stalled.
+
+---
+
 ## Project Overview
 
 **Oh My Coins (OMC)** is an autonomous multi-agent cryptocurrency trading platform with a "Lab-to-Floor" pipeline: collect data → analyze with AI agents → deploy strategies → execute trades. It targets a local Linux server deployment (not cloud).
