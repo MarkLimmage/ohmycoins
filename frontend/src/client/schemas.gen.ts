@@ -1118,6 +1118,57 @@ export const MessageSchema = {
     title: 'Message'
 } as const;
 
+export const ModelInfoSchema = {
+    properties: {
+        artifact_id: {
+            type: 'string',
+            title: 'Artifact Id'
+        },
+        model_type: {
+            type: 'string',
+            title: 'Model Type'
+        },
+        task_type: {
+            type: 'string',
+            title: 'Task Type'
+        },
+        feature_columns: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Feature Columns'
+        },
+        training_metrics: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Training Metrics'
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['artifact_id', 'model_type', 'task_type', 'feature_columns'],
+    title: 'ModelInfo',
+    description: 'Model metadata for the playground UI.'
+} as const;
+
 export const NewPasswordSchema = {
     properties: {
         token: {
@@ -1818,6 +1869,82 @@ export const PositionPublicSchema = {
     description: 'Schema for returning position via API'
 } as const;
 
+export const PredictionRequestSchema = {
+    properties: {
+        feature_values: {
+            additionalProperties: {
+                type: 'number'
+            },
+            type: 'object',
+            title: 'Feature Values'
+        }
+    },
+    type: 'object',
+    required: ['feature_values'],
+    title: 'PredictionRequest',
+    description: 'Request to run a prediction on a saved model.'
+} as const;
+
+export const PredictionResponseSchema = {
+    properties: {
+        prediction: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string'
+                }
+            ],
+            title: 'Prediction'
+        },
+        prediction_label: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Prediction Label'
+        },
+        probabilities: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Probabilities'
+        },
+        model_type: {
+            type: 'string',
+            title: 'Model Type'
+        },
+        task_type: {
+            type: 'string',
+            title: 'Task Type'
+        },
+        feature_columns_used: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Feature Columns Used'
+        }
+    },
+    type: 'object',
+    required: ['prediction', 'model_type', 'task_type', 'feature_columns_used'],
+    title: 'PredictionResponse',
+    description: 'Response from a model prediction.'
+} as const;
+
 export const PriceDataPointSchema = {
     properties: {
         timestamp: {
@@ -1883,6 +2010,39 @@ export const PrivateUserCreateSchema = {
     type: 'object',
     required: ['email', 'password', 'full_name'],
     title: 'PrivateUserCreate'
+} as const;
+
+export const PromoteArtifactRequestSchema = {
+    properties: {
+        algorithm_name: {
+            type: 'string',
+            title: 'Algorithm Name'
+        },
+        description: {
+            type: 'string',
+            title: 'Description',
+            default: ''
+        },
+        position_limit: {
+            type: 'number',
+            title: 'Position Limit',
+            default: 100
+        },
+        daily_loss_limit: {
+            type: 'number',
+            title: 'Daily Loss Limit',
+            default: 5
+        },
+        execution_frequency: {
+            type: 'integer',
+            title: 'Execution Frequency',
+            default: 14400
+        }
+    },
+    type: 'object',
+    required: ['algorithm_name'],
+    title: 'PromoteArtifactRequest',
+    description: 'Request to promote an artifact to a Floor algorithm.'
 } as const;
 
 export const RealizedPnLResponseSchema = {

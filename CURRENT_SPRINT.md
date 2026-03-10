@@ -1,96 +1,88 @@
-# Current Sprint: 2.45
+# Current Sprint: 2.46
 
-**Status**: COMPLETED
-**Objective**: Agentic Data Science — Blueprint + Promotion Pipeline
-**Previous Sprint**: 2.44 (Lab Live Session Experience — COMPLETED)
+**Status**: IN PROGRESS
+**Objective**: Model Playground + Sprint 2.45 Integration Fixes
+**Previous Sprint**: 2.45 (Agentic Data Science Pipeline — COMPLETED)
 
 ## Context
 
-Sprint 2.44 shipped the Lab live session experience: background execution via AgentRunner, WebSocket streaming, and a full Lab page with session management. Sprint 2.45 focuses on the "Goal-First" agentic data science UX: user types a natural language ML goal → agent produces a Blueprint Card for approval → training runs with visual progress → model artefact is promoted to the Floor with safety rules.
-
-Includes critical hotfixes for Sprint 2.44 production bugs (WebSocket token, LangGraph recursion).
+Sprint 2.45 shipped all backend + frontend code (946 tests, clean lints) but has 3 integration gaps making the new Lab UI components invisible: (1) Traefik missing `/ws/` route — fixed pre-sprint, (2) ArtifactViewer never receives data — artifacts not registered in DB, frontend never fetches, (3) PromoteModal is a no-op — no algorithm creation endpoint. Sprint 2.46 fixes these gaps and adds the Model Playground feature per the roadmap.
 
 ## Tasks
 
-### Track H — Hotfixes (CRITICAL)
+### Track H — Hotfixes (Sprint 2.45 Integration Gaps)
 
-1. [x] **H1 — WebSocket token stringification**
-   - File: `frontend/src/features/lab/hooks/useLabWebSocket.ts:31`
-   - Bug: `OpenAPI.TOKEN` is `async () => string` — template literal stringifies the function reference
-   - Fix: Await token resolution with `typeof` check
+1. [x] **H0 — Traefik WebSocket routing** (fixed pre-sprint)
+   - File: `docker-compose.yml:181`
+   - Bug: PathPrefix rule only had `/api`, `/docs`, `/openapi.json` — missing `/ws/`
+   - Fix: Added `|| PathPrefix(\`/ws\`)` to backend router rule
 
-2. [x] **H2 — LangGraph recursion limit**
-   - File: `backend/app/services/agent/langgraph_workflow.py`
-   - Bug: `graph.astream()`/`graph.ainvoke()` have no `recursion_limit` — non-ML goals loop indefinitely
-   - Fix: Add `config={"recursion_limit": 50}` to both methods
+2. [ ] **H1 — Register serialized models as DB artifacts**
+   - File: `backend/app/services/agent/runner.py`
+   - Bug: `serialize_model_to_disk()` writes to `/data/agent_artifacts/` but never calls `ArtifactManager.save_artifact()` → DB empty
+   - Fix: After workflow completion in runner.py, scan artifact dir and register files via ArtifactManager
 
-### Track A — Backend: Blueprint + Serialization + Optuna
+3. [ ] **H2 — Wire ArtifactViewer to backend API**
+   - Files: `frontend/src/features/lab/hooks.ts`, `frontend/src/features/lab/LabDashboard.tsx`
+   - Bug: `useState<Artifact[]>([])` with no setter, no API call
+   - Fix: Add `useSessionArtifacts()` hook using existing `AgentService.getSessionArtifacts()`, map to Artifact type
 
-3. [x] **A1 — Model serialization**
-   - Add `serialize_model_to_disk()` function using `joblib.dump()` in `model_training_tools.py`
-   - Move artifact storage from `/tmp/` to `/data/agent_artifacts/` (add volume mount to docker-compose.yml)
+4. [ ] **H3 — Wire PromoteModal to real API**
+   - Files: `backend/app/api/routes/agent.py`, `backend/app/services/agent/schemas.py`, `frontend/src/features/lab/hooks.ts`, `frontend/src/features/lab/LabDashboard.tsx`
+   - Bug: No `POST /algorithms/` endpoint, PromoteModal only console.logs
+   - Fix: Add `POST /artifacts/{id}/promote` convenience endpoint (creates Algorithm + StrategyPromotion), wire frontend
 
-4. [x] **A2 — ModelBlueprint schema**
-   - New Pydantic model `ModelBlueprint` in `services/agent/schemas.py`
-   - Emit `blueprint` message type to WS stream when agent detects ML intent
-   - Wire to `awaiting_choice` approval gate in AgentState
+5. [ ] **H4 — Update ROADMAP.md**
+   - Sprint 2.45 → COMPLETED, Sprint 2.46 → IN PROGRESS
 
-5. [x] **A3 — Optuna hyperparameter tool**
-   - Add `optuna` to requirements
-   - New tool `hyperparameter_search()` in `services/agent/tools/hyperparameter_search.py`
-   - Supports `random_forest` and `gradient_boosting` for classification/regression
+### Track A — Backend: Model Playground
 
-6. [x] **A4 — Structured metric events**
-   - Emit `"metric"` messages with `training_metrics` and `feature_importance` types from LangGraph nodes
+6. [ ] **A1 — Model Playground Service + Endpoints**
+   - New: `backend/app/services/agent/playground.py` — `ModelPlaygroundService`
+   - Endpoints: `GET /artifacts/{id}/info` (model metadata), `POST /artifacts/{id}/predict` (run prediction)
+   - Schemas: `PredictionRequest`, `PredictionResponse`, `ModelInfo` in `schemas.py`
 
-7. [x] **A5 — Tests**
-   - `test_model_serialization.py` — joblib roundtrip
-   - `test_blueprint.py` — schema validation + message emission
-   - `test_optuna_tool.py` — Optuna study runs, returns best_params
+7. [ ] **A2 — Playground Tests**
+   - New: `backend/tests/services/agent/test_playground.py`, `backend/tests/api/routes/test_agent_playground.py`
+   - Unit + API tests for load/predict/info, classification + regression, error cases
+   - Target: ~10 new tests
 
-### Track B — Frontend: Blueprint Card + Artifact Viewer + Promotion UI
+### Track B — Frontend: Model Playground UI
 
-8. [x] **B1 — BlueprintCard component**
-   - Renders blueprint message: target, features, model_type, params
-   - "Approve Blueprint" button resolves `awaiting_choice`
+8. [ ] **B1 — ModelPlaygroundPanel component**
+   - New: `frontend/src/features/lab/components/ModelPlaygroundPanel.tsx`
+   - Fetches model info, renders feature inputs, runs predictions, shows results
 
-9. [x] **B2 — TrainingProgressChart component**
-   - Live training metrics from `metric` messages
-   - Feature importance visualization
+9. [ ] **B2 — Dashboard integration**
+   - Files: `ArtifactViewer.tsx` (add Test button), `LabDashboard.tsx` (playground state)
+   - Add `useModelInfo()` and `useModelPredict()` hooks
 
-10. [x] **B3 — ArtifactViewer component**
-    - Lists session artifacts via `GET /sessions/{id}/artifacts`
-    - "Promote to Floor" button per model artifact
-
-11. [x] **B4 — PromoteModal component**
-    - Form: algorithm name, description, execution rules (position_limit, daily_loss_limit, execution_frequency)
-    - Tear Sheet: renders `performance_metrics_json`
-    - Submits `POST /algorithms/` then `POST /strategy-promotions/`
-
-12. [ ] **B5 — Regenerate OpenAPI client** (deferred — no new API endpoints this sprint)
+10. [ ] **B3 — Regenerate OpenAPI client**
+    - Run after all backend endpoints land and merge
+    - `bash scripts/generate-client.sh`
 
 ## Key Files
 
 | File | Change |
 |------|--------|
-| `frontend/src/features/lab/hooks/useLabWebSocket.ts` | H1: await token |
-| `backend/app/services/agent/langgraph_workflow.py` | H2: recursion_limit; A4: metric events |
-| `backend/app/services/agent/tools/model_training_tools.py` | A1: joblib serialization |
-| `docker-compose.yml` | A1: agent-artifacts volume mount |
-| `backend/app/services/agent/schemas.py` | A2: ModelBlueprint schema (new) |
-| `backend/app/services/agent/tools/hyperparameter_search.py` | A3: Optuna tool (new) |
-| `frontend/src/features/lab/components/BlueprintCard.tsx` | B1: new |
-| `frontend/src/features/lab/components/TrainingProgressChart.tsx` | B2: new |
-| `frontend/src/features/lab/components/ArtifactViewer.tsx` | B3: new |
-| `frontend/src/features/lab/components/PromoteModal.tsx` | B4: new |
-| `frontend/src/features/lab/LabDashboard.tsx` | Integrate B1-B4 |
+| `docker-compose.yml` | H0: `/ws/` PathPrefix (done) |
+| `backend/app/services/agent/runner.py` | H1: artifact registration |
+| `backend/app/api/routes/agent.py` | H3: promote endpoint; A1: predict + info |
+| `backend/app/services/agent/playground.py` | A1: new — ModelPlaygroundService |
+| `backend/app/services/agent/schemas.py` | H3 + A1: new schemas |
+| `frontend/src/features/lab/hooks.ts` | H2 + H3 + B2: new hooks |
+| `frontend/src/features/lab/LabDashboard.tsx` | H2 + H3 + B2: wiring |
+| `frontend/src/features/lab/components/ModelPlaygroundPanel.tsx` | B1: new |
+| `frontend/src/features/lab/components/ArtifactViewer.tsx` | B2: Test button |
 
 ## Verification
 
-- [x] Full test suite: 946 tests passing (21 new)
-- [x] mypy --strict clean
-- [x] ruff check + ruff format clean
-- [x] npm run type-check clean
-- [x] npm run lint clean (1 pre-existing error in eventBus.ts)
-- [x] H1: WS connects with valid JWT token
-- [x] H2: Non-ML session completes within recursion limit
+- [ ] Full test suite passing (946 + ~10 new)
+- [ ] mypy --strict clean
+- [ ] ruff check + ruff format clean
+- [ ] npm run type-check clean
+- [ ] npm run lint clean
+- [ ] Manual: ArtifactViewer shows model files after session
+- [ ] Manual: Promote creates Algorithm + StrategyPromotion
+- [ ] Manual: Model Playground predicts with custom inputs
+- [ ] WebSocket connects (Traefik fix verified)

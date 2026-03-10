@@ -413,6 +413,20 @@ export type Message = {
     message: string;
 };
 
+/**
+ * Model metadata for the playground UI.
+ */
+export type ModelInfo = {
+    artifact_id: string;
+    model_type: string;
+    task_type: string;
+    feature_columns: Array<(string)>;
+    training_metrics?: ({
+    [key: string]: unknown;
+} | null);
+    created_at?: (string | null);
+};
+
 export type NewPassword = {
     token: string;
     new_password: string;
@@ -803,6 +817,29 @@ export type PositionPublic = {
 };
 
 /**
+ * Request to run a prediction on a saved model.
+ */
+export type PredictionRequest = {
+    feature_values: {
+        [key: string]: (number);
+    };
+};
+
+/**
+ * Response from a model prediction.
+ */
+export type PredictionResponse = {
+    prediction: (number | string);
+    prediction_label?: (string | null);
+    probabilities?: ({
+    [key: string]: (number);
+} | null);
+    model_type: string;
+    task_type: string;
+    feature_columns_used: Array<(string)>;
+};
+
+/**
  * Price data point for charting
  */
 export type PriceDataPoint = {
@@ -824,6 +861,17 @@ export type PrivateUserCreate = {
     password: string;
     full_name: string;
     is_verified?: boolean;
+};
+
+/**
+ * Request to promote an artifact to a Floor algorithm.
+ */
+export type PromoteArtifactRequest = {
+    algorithm_name: string;
+    description?: string;
+    position_limit?: number;
+    daily_loss_limit?: number;
+    execution_frequency?: number;
 };
 
 /**
@@ -1361,6 +1409,28 @@ export type AgentDeleteArtifactResponse = ({
 export type AgentGetArtifactStatsResponse = ({
     [key: string]: unknown;
 });
+
+export type AgentPromoteArtifactData = {
+    artifactId: string;
+    requestBody: PromoteArtifactRequest;
+};
+
+export type AgentPromoteArtifactResponse = ({
+    [key: string]: unknown;
+});
+
+export type AgentGetArtifactInfoData = {
+    artifactId: string;
+};
+
+export type AgentGetArtifactInfoResponse = (ModelInfo);
+
+export type AgentPredictWithArtifactData = {
+    artifactId: string;
+    requestBody: PredictionRequest;
+};
+
+export type AgentPredictWithArtifactResponse = (PredictionResponse);
 
 export type AlertsListAlertRulesData = {
     limit?: number;
