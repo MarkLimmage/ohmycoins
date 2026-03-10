@@ -8,6 +8,7 @@ Week 11-12 additions: Artifact management endpoints (download, delete)
 
 import os
 import uuid
+from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -23,6 +24,8 @@ from app.models import (
     AgentSessionMessagePublic,
     AgentSessionPublic,
     AgentSessionsPublic,
+    Algorithm,
+    StrategyPromotion,
 )
 from app.services.agent import AgentOrchestrator, SessionManager
 from app.services.agent.artifacts import ArtifactManager
@@ -33,7 +36,14 @@ from app.services.agent.nodes.approval import (
 from app.services.agent.nodes.choice_presentation import handle_choice_selection
 from app.services.agent.nodes.clarification import handle_clarification_response
 from app.services.agent.override import apply_user_override, get_override_points
+from app.services.agent.playground import ModelPlaygroundService
 from app.services.agent.runner import get_runner
+from app.services.agent.schemas import (
+    ModelInfo,
+    PredictionRequest,
+    PredictionResponse,
+    PromoteArtifactRequest,
+)
 
 router = APIRouter()
 
@@ -41,6 +51,7 @@ router = APIRouter()
 session_manager = SessionManager()
 orchestrator = AgentOrchestrator(session_manager)
 artifact_manager = ArtifactManager()
+playground_service = ModelPlaygroundService()
 
 
 @router.post("/sessions", response_model=AgentSessionPublic, status_code=201)
@@ -762,3 +773,104 @@ async def get_artifact_stats(
     # Get stats - this shows all artifacts, but in production you might want to filter by user
     stats = artifact_manager.get_storage_stats(db)
     return stats
+
+
+@router.post("/artifacts/{artifact_id}/promote")
+async def promote_artifact(
+    *,
+    artifact_id: uuid.UUID,
+    request_body: PromoteArtifactRequest,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Promote an artifact to a Floor algorithm."""
+    artifact = artifact_manager.get_artifact(artifact_id, db)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    algorithm = Algorithm(
+        name=request_body.algorithm_name,
+        description=request_body.description,
+        algorithm_type="ml_model",
+        artifact_id=artifact_id,
+        status="draft",
+        created_by=current_user.id,
+        default_execution_frequency=request_body.execution_frequency,
+        default_position_limit=Decimal(str(request_body.position_limit)),
+    )
+    db.add(algorithm)
+    db.flush()
+
+    promotion = StrategyPromotion(
+        algorithm_id=algorithm.id,
+        from_environment="lab",
+        to_environment="floor",
+        status="pending",
+        created_by=current_user.id,
+    )
+    db.add(promotion)
+    db.commit()
+    db.refresh(algorithm)
+    db.refresh(promotion)
+
+    return {
+        "algorithm_id": str(algorithm.id),
+        "promotion_id": str(promotion.id),
+        "status": "pending",
+    }
+
+
+@router.get("/artifacts/{artifact_id}/info", response_model=ModelInfo)
+async def get_artifact_info(
+    *,
+    artifact_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """Get model metadata for the playground UI."""
+    artifact = artifact_manager.get_artifact(artifact_id, db)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        info = playground_service.get_model_info(artifact_id, db)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return info
+
+
+@router.post("/artifacts/{artifact_id}/predict", response_model=PredictionResponse)
+async def predict_with_artifact(
+    *,
+    artifact_id: uuid.UUID,
+    request_body: PredictionRequest,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """Run a prediction using a saved model artifact."""
+    artifact = artifact_manager.get_artifact(artifact_id, db)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        model, scaler, metadata = playground_service.load_model(artifact_id, db)
+        result = playground_service.predict(model, scaler, request_body.feature_values, metadata)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Prediction failed: {str(e)}")
+
+    return result

@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import uuid
+from pathlib import Path
 from typing import Any
 
 import redis.asyncio as aioredis
@@ -20,6 +21,7 @@ from app.core.config import settings
 from app.core.db import engine
 from app.models import AgentSessionStatus
 
+from .artifacts import ArtifactManager
 from .orchestrator import AgentOrchestrator
 from .session_manager import SessionManager
 
@@ -202,6 +204,35 @@ class AgentRunner:
                                 "timestamp": None,  # will be set by consumer
                             },
                         )
+
+                # Register any artifacts written to disk during the workflow
+                artifact_dir = Path(f"/data/agent_artifacts/{session_id}")
+                if artifact_dir.exists():
+                    artifact_mgr = ArtifactManager(base_dir="/data/agent_artifacts")
+                    for file_path in artifact_dir.iterdir():
+                        if file_path.is_file():
+                            ext = file_path.suffix.lower()
+                            if ext in ('.joblib', '.pkl'):
+                                artifact_type = "model"
+                            elif ext == '.json':
+                                artifact_type = "data"
+                            else:
+                                artifact_type = "other"
+
+                            existing = artifact_mgr.list_artifacts(session_id, db_session=db)
+                            already_registered = any(
+                                a.file_path and Path(a.file_path).name == file_path.name
+                                for a in existing
+                            )
+                            if not already_registered:
+                                artifact_mgr.save_artifact(
+                                    session_id=session_id,
+                                    artifact_type=artifact_type,
+                                    name=file_path.name,
+                                    file_path=file_path,
+                                    description=f"Auto-registered {artifact_type} artifact",
+                                    db_session=db,
+                                )
 
                 # Mark completed
                 await self.session_manager.update_session_status(

@@ -31,3 +31,41 @@ class FeatureImportance(BaseModel):
 
     feature_name: str
     importance: float
+
+
+class PromoteArtifactRequest(BaseModel):
+    """Request to promote an artifact to a Floor algorithm."""
+
+    algorithm_name: str
+    description: str = ""
+    position_limit: float = 100.0
+    daily_loss_limit: float = 5.0
+    execution_frequency: int = 14400  # 4 hours in seconds
+
+
+class PredictionRequest(BaseModel):
+    """Request to run a prediction on a saved model."""
+
+    feature_values: dict[str, float]
+
+
+class PredictionResponse(BaseModel):
+    """Response from a model prediction."""
+
+    prediction: float | str
+    prediction_label: str | None = None
+    probabilities: dict[str, float] | None = None
+    model_type: str
+    task_type: str
+    feature_columns_used: list[str]
+
+
+class ModelInfo(BaseModel):
+    """Model metadata for the playground UI."""
+
+    artifact_id: str
+    model_type: str
+    task_type: str
+    feature_columns: list[str]
+    training_metrics: dict[str, Any] | None = None
+    created_at: str | None = None
