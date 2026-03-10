@@ -1,7 +1,8 @@
 import { Box, Button, HStack, Icon, Text, VStack } from "@chakra-ui/react"
-import { FiDownload, FiUpload } from "react-icons/fi"
+import { FiDownload, FiPlay, FiUpload } from "react-icons/fi"
 
 export interface Artifact {
+  id?: string
   name: string
   path: string
   type: "model" | "data" | "report" | "other"
@@ -11,6 +12,7 @@ export interface Artifact {
 interface ArtifactViewerProps {
   artifacts: Artifact[]
   onPromote?: (artifact: Artifact) => void
+  onTest?: (artifact: Artifact) => void
 }
 
 function getTypeColor(type: string): string {
@@ -30,7 +32,11 @@ function formatSize(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
 }
 
-export function ArtifactViewer({ artifacts, onPromote }: ArtifactViewerProps) {
+export function ArtifactViewer({
+  artifacts,
+  onPromote,
+  onTest,
+}: ArtifactViewerProps) {
   return (
     <Box
       bg="gray.800"
@@ -90,6 +96,18 @@ export function ArtifactViewer({ artifacts, onPromote }: ArtifactViewerProps) {
                     <Icon as={FiDownload} mr={1} />
                     Download
                   </Button>
+                  {artifact.type === "model" && onTest && (
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      colorScheme="green"
+                      onClick={() => onTest(artifact)}
+                      fontSize="xs"
+                    >
+                      <Icon as={FiPlay} mr={1} />
+                      Test
+                    </Button>
+                  )}
                   {artifact.type === "model" && onPromote && (
                     <Button
                       size="xs"
