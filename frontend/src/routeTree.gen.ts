@@ -19,6 +19,7 @@ import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutPerformanceRouteImport } from './routes/_layout/performance'
 import { Route as LayoutLlmSettingsRouteImport } from './routes/_layout/llm-settings'
 import { Route as LayoutLabRouteImport } from './routes/_layout/lab'
+import { Route as LayoutFloorRouteImport } from './routes/_layout/floor'
 import { Route as LayoutEnrichmentRouteImport } from './routes/_layout/enrichment'
 import { Route as LayoutDataExplorerRouteImport } from './routes/_layout/data-explorer'
 import { Route as LayoutCollectorsRouteImport } from './routes/_layout/collectors'
@@ -74,6 +75,11 @@ const LayoutLabRoute = LayoutLabRouteImport.update({
   path: '/lab',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutFloorRoute = LayoutFloorRouteImport.update({
+  id: '/floor',
+  path: '/floor',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutEnrichmentRoute = LayoutEnrichmentRouteImport.update({
   id: '/enrichment',
   path: '/enrichment',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/collectors': typeof LayoutCollectorsRoute
   '/data-explorer': typeof LayoutDataExplorerRoute
   '/enrichment': typeof LayoutEnrichmentRoute
+  '/floor': typeof LayoutFloorRoute
   '/lab': typeof LayoutLabRoute
   '/llm-settings': typeof LayoutLlmSettingsRoute
   '/performance': typeof LayoutPerformanceRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/collectors': typeof LayoutCollectorsRoute
   '/data-explorer': typeof LayoutDataExplorerRoute
   '/enrichment': typeof LayoutEnrichmentRoute
+  '/floor': typeof LayoutFloorRoute
   '/lab': typeof LayoutLabRoute
   '/llm-settings': typeof LayoutLlmSettingsRoute
   '/performance': typeof LayoutPerformanceRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_layout/collectors': typeof LayoutCollectorsRoute
   '/_layout/data-explorer': typeof LayoutDataExplorerRoute
   '/_layout/enrichment': typeof LayoutEnrichmentRoute
+  '/_layout/floor': typeof LayoutFloorRoute
   '/_layout/lab': typeof LayoutLabRoute
   '/_layout/llm-settings': typeof LayoutLlmSettingsRoute
   '/_layout/performance': typeof LayoutPerformanceRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/collectors'
     | '/data-explorer'
     | '/enrichment'
+    | '/floor'
     | '/lab'
     | '/llm-settings'
     | '/performance'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/collectors'
     | '/data-explorer'
     | '/enrichment'
+    | '/floor'
     | '/lab'
     | '/llm-settings'
     | '/performance'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_layout/collectors'
     | '/_layout/data-explorer'
     | '/_layout/enrichment'
+    | '/_layout/floor'
     | '/_layout/lab'
     | '/_layout/llm-settings'
     | '/_layout/performance'
@@ -282,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLabRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/floor': {
+      id: '/_layout/floor'
+      path: '/floor'
+      fullPath: '/floor'
+      preLoaderRoute: typeof LayoutFloorRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/enrichment': {
       id: '/_layout/enrichment'
       path: '/enrichment'
@@ -326,6 +345,7 @@ interface LayoutRouteChildren {
   LayoutCollectorsRoute: typeof LayoutCollectorsRoute
   LayoutDataExplorerRoute: typeof LayoutDataExplorerRoute
   LayoutEnrichmentRoute: typeof LayoutEnrichmentRoute
+  LayoutFloorRoute: typeof LayoutFloorRoute
   LayoutLabRoute: typeof LayoutLabRoute
   LayoutLlmSettingsRoute: typeof LayoutLlmSettingsRoute
   LayoutPerformanceRoute: typeof LayoutPerformanceRoute
@@ -339,6 +359,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutCollectorsRoute: LayoutCollectorsRoute,
   LayoutDataExplorerRoute: LayoutDataExplorerRoute,
   LayoutEnrichmentRoute: LayoutEnrichmentRoute,
+  LayoutFloorRoute: LayoutFloorRoute,
   LayoutLabRoute: LayoutLabRoute,
   LayoutLlmSettingsRoute: LayoutLlmSettingsRoute,
   LayoutPerformanceRoute: LayoutPerformanceRoute,

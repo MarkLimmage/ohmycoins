@@ -8,6 +8,7 @@ import {
   FiSettings,
   FiShield,
   FiTerminal,
+  FiTrendingUp,
   FiUsers,
   FiZap,
 } from "react-icons/fi"
@@ -20,6 +21,7 @@ const items = [
   { icon: FiDatabase, title: "Collectors", path: "/collectors" },
   { icon: FiZap, title: "Enrichment", path: "/enrichment" },
   { icon: FiTerminal, title: "The Lab", path: "/lab" },
+  { icon: FiTrendingUp, title: "The Floor", path: "/floor" },
   { icon: FiShield, title: "Audit Logs", path: "/audit" },
   { icon: FiCpu, title: "AI Providers", path: "/llm-settings" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
