@@ -1,88 +1,96 @@
-# Current Sprint: 2.46
+# Current Sprint: 2.47
 
 **Status**: IN PROGRESS
-**Objective**: Model Playground + Sprint 2.45 Integration Fixes
-**Previous Sprint**: 2.45 (Agentic Data Science Pipeline — COMPLETED)
+**Objective**: Backtesting Framework Hardening
+**Previous Sprint**: 2.46 (Model Playground — COMPLETED)
 
 ## Context
 
-Sprint 2.45 shipped all backend + frontend code (946 tests, clean lints) but has 3 integration gaps making the new Lab UI components invisible: (1) Traefik missing `/ws/` route — fixed pre-sprint, (2) ArtifactViewer never receives data — artifacts not registered in DB, frontend never fetches, (3) PromoteModal is a no-op — no algorithm creation endpoint. Sprint 2.46 fixes these gaps and adds the Model Playground feature per the roadmap.
+Sprint 2.46 shipped Model Playground, artifact wiring, and promote endpoint (959 tests, clean lints). The Lab can now train ML models (12 sklearn types), optimize hyperparameters (Optuna), serialize models to disk, and test predictions via the Playground.
+
+Sprint 2.47 addresses key gaps: XGBoost is installed but not integrated, training uses random splits (data leakage risk for time-series), no backtesting engine exists, and no performance metrics beyond basic PnL.
 
 ## Tasks
 
-### Track H — Hotfixes (Sprint 2.45 Integration Gaps)
+### Track H — Housekeeping
 
-1. [x] **H0 — Traefik WebSocket routing** (fixed pre-sprint)
-   - File: `docker-compose.yml:181`
-   - Bug: PathPrefix rule only had `/api`, `/docs`, `/openapi.json` — missing `/ws/`
-   - Fix: Added `|| PathPrefix(\`/ws\`)` to backend router rule
+1. [x] **H1 — Close Sprint 2.46**
+   - Updated CURRENT_SPRINT.md, ROADMAP.md
 
-2. [ ] **H1 — Register serialized models as DB artifacts**
-   - File: `backend/app/services/agent/runner.py`
-   - Bug: `serialize_model_to_disk()` writes to `/data/agent_artifacts/` but never calls `ArtifactManager.save_artifact()` → DB empty
-   - Fix: After workflow completion in runner.py, scan artifact dir and register files via ArtifactManager
+### Track A — Backend: Backtesting Framework
 
-3. [ ] **H2 — Wire ArtifactViewer to backend API**
-   - Files: `frontend/src/features/lab/hooks.ts`, `frontend/src/features/lab/LabDashboard.tsx`
-   - Bug: `useState<Artifact[]>([])` with no setter, no API call
-   - Fix: Add `useSessionArtifacts()` hook using existing `AgentService.getSessionArtifacts()`, map to Artifact type
+2. [ ] **A1 — XGBoost Integration**
+   - Files: `model_training_tools.py`, `hyperparameter_search.py`
+   - Add `xgboost` model type to classification/regression training + Optuna search
 
-4. [ ] **H3 — Wire PromoteModal to real API**
-   - Files: `backend/app/api/routes/agent.py`, `backend/app/services/agent/schemas.py`, `frontend/src/features/lab/hooks.ts`, `frontend/src/features/lab/LabDashboard.tsx`
-   - Bug: No `POST /algorithms/` endpoint, PromoteModal only console.logs
-   - Fix: Add `POST /artifacts/{id}/promote` convenience endpoint (creates Algorithm + StrategyPromotion), wire frontend
+3. [ ] **A2 — Walk-Forward Validation**
+   - File: `model_training_tools.py`
+   - Add `validation_strategy` parameter: `random` (default), `time_series`, `expanding_window`
+   - TimeSeriesSplit with n_splits=5, no shuffle, preserves temporal order
 
-5. [ ] **H4 — Update ROADMAP.md**
-   - Sprint 2.45 → COMPLETED, Sprint 2.46 → IN PROGRESS
+4. [ ] **A3 — Performance Metrics Calculator**
+   - New: `backend/app/services/trading/metrics.py`
+   - `calculate_backtest_metrics()`: Sharpe, Sortino, max drawdown, win rate, profit factor
 
-### Track A — Backend: Model Playground
+5. [ ] **A4 — BacktestRun DB Model + Migration**
+   - File: `backend/app/models.py`
+   - New BacktestRun table with schemas + Alembic migration
 
-6. [ ] **A1 — Model Playground Service + Endpoints**
-   - New: `backend/app/services/agent/playground.py` — `ModelPlaygroundService`
-   - Endpoints: `GET /artifacts/{id}/info` (model metadata), `POST /artifacts/{id}/predict` (run prediction)
-   - Schemas: `PredictionRequest`, `PredictionResponse`, `ModelInfo` in `schemas.py`
+6. [ ] **A5 — Backtesting Engine**
+   - New: `backend/app/services/trading/backtester.py`
+   - BacktestEngine: load algorithm, query prices, simulate trades, calculate metrics
 
-7. [ ] **A2 — Playground Tests**
-   - New: `backend/tests/services/agent/test_playground.py`, `backend/tests/api/routes/test_agent_playground.py`
-   - Unit + API tests for load/predict/info, classification + regression, error cases
-   - Target: ~10 new tests
+7. [ ] **A6 — API Endpoints**
+   - New: `backend/app/api/routes/backtests.py`
+   - POST /floor/backtests, GET /floor/backtests/{id}, GET /floor/backtests
 
-### Track B — Frontend: Model Playground UI
+8. [ ] **A7 — Tests (~16 new)**
+   - test_metrics.py (4), test_backtester.py (4), test_backtests.py (4)
+   - test_optuna_tool.py additions (2), test_model_training_tools additions (2)
 
-8. [ ] **B1 — ModelPlaygroundPanel component**
-   - New: `frontend/src/features/lab/components/ModelPlaygroundPanel.tsx`
-   - Fetches model info, renders feature inputs, runs predictions, shows results
+### Track B — Frontend: Backtesting UI
 
-9. [ ] **B2 — Dashboard integration**
-   - Files: `ArtifactViewer.tsx` (add Test button), `LabDashboard.tsx` (playground state)
-   - Add `useModelInfo()` and `useModelPredict()` hooks
+9. [ ] **B1 — Backtest Hooks**
+   - New: `frontend/src/features/floor/hooks/useBacktest.ts`
 
-10. [ ] **B3 — Regenerate OpenAPI client**
-    - Run after all backend endpoints land and merge
-    - `bash scripts/generate-client.sh`
+10. [ ] **B2 — BacktestConfigPanel Component**
+    - New: `frontend/src/features/floor/components/BacktestConfigPanel.tsx`
+
+11. [ ] **B3 — BacktestResultsPanel Component**
+    - New: `frontend/src/features/floor/components/BacktestResultsPanel.tsx`
+
+12. [ ] **B4 — Floor Route**
+    - New: `frontend/src/routes/_layout/floor.tsx`
+
+13. [ ] **B5 — Sidebar Navigation**
+    - File: `frontend/src/components/Common/SidebarItems.tsx`
+
+14. [ ] **B6 — OpenAPI Client Regeneration**
 
 ## Key Files
 
 | File | Change |
 |------|--------|
-| `docker-compose.yml` | H0: `/ws/` PathPrefix (done) |
-| `backend/app/services/agent/runner.py` | H1: artifact registration |
-| `backend/app/api/routes/agent.py` | H3: promote endpoint; A1: predict + info |
-| `backend/app/services/agent/playground.py` | A1: new — ModelPlaygroundService |
-| `backend/app/services/agent/schemas.py` | H3 + A1: new schemas |
-| `frontend/src/features/lab/hooks.ts` | H2 + H3 + B2: new hooks |
-| `frontend/src/features/lab/LabDashboard.tsx` | H2 + H3 + B2: wiring |
-| `frontend/src/features/lab/components/ModelPlaygroundPanel.tsx` | B1: new |
-| `frontend/src/features/lab/components/ArtifactViewer.tsx` | B2: Test button |
+| `backend/app/services/agent/tools/model_training_tools.py` | A1, A2 |
+| `backend/app/services/agent/tools/hyperparameter_search.py` | A1 |
+| `backend/app/services/trading/metrics.py` | A3: new |
+| `backend/app/models.py` | A4: BacktestRun model |
+| `backend/app/services/trading/backtester.py` | A5: new |
+| `backend/app/api/routes/backtests.py` | A6: new |
+| `backend/app/api/main.py` | A6: register router |
+| `frontend/src/features/floor/hooks/useBacktest.ts` | B1: new |
+| `frontend/src/features/floor/components/BacktestConfigPanel.tsx` | B2: new |
+| `frontend/src/features/floor/components/BacktestResultsPanel.tsx` | B3: new |
+| `frontend/src/routes/_layout/floor.tsx` | B4: new |
+| `frontend/src/components/Common/SidebarItems.tsx` | B5: Floor link |
 
 ## Verification
 
-- [ ] Full test suite passing (946 + ~10 new)
-- [ ] mypy --strict clean
-- [ ] ruff check + ruff format clean
-- [ ] npm run type-check clean
-- [ ] npm run lint clean
-- [ ] Manual: ArtifactViewer shows model files after session
-- [ ] Manual: Promote creates Algorithm + StrategyPromotion
-- [ ] Manual: Model Playground predicts with custom inputs
-- [ ] WebSocket connects (Traefik fix verified)
+- [ ] `docker compose exec backend bash scripts/test.sh` — 959+ passing (+ ~16 new)
+- [ ] `docker compose exec backend bash scripts/lint.sh` — mypy + ruff clean
+- [ ] `cd frontend && npm run type-check` — clean
+- [ ] `cd frontend && npm run lint` — Biome clean
+- [ ] Manual: XGBoost model trains successfully
+- [ ] Manual: TimeSeriesSplit validation produces no future leakage
+- [ ] Manual: POST /floor/backtests with BTC, 30-day range returns metrics + equity curve
+- [ ] Manual: /floor page renders with Algorithms + Backtesting tabs

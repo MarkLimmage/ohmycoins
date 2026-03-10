@@ -36,3 +36,5 @@ logs/
 docker-compose.tmp
 status.json
 repomix.config.json
+
+mcp.json

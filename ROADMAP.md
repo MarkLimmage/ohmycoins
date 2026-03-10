@@ -2,7 +2,7 @@
 
 **Version**: 5.4
 **Last Updated**: Mar 10, 2026
-**Current Phase**: Sprint 2.46 — Phase 5 In Progress
+**Current Phase**: Sprint 2.47 — Phase 5 In Progress
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -114,11 +114,12 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 - ✅ **Lab Live Session Experience**: AgentRunner background execution, WebSocket streaming, Lab page with session management (Sprint 2.44)
 - ✅ **Agentic Data Science Pipeline**: Blueprint Card, training with visual progress, model serialization (joblib), Optuna hyperparameter search, Floor promotion UI (Sprint 2.45)
 
+- ✅ **Model Playground**: ModelPlaygroundPanel — inference test UI, predict endpoint, artifact wiring fixes (Sprint 2.46)
+
 **In Progress**:
-- 🔄 **Model Playground**: ModelPlaygroundPanel — inference test UI, predict endpoint, artifact wiring fixes (Sprint 2.46)
+- 🔄 **Backtesting Framework**: XGBoost models, proper walk-forward validation, historical simulation (Sprint 2.47)
 
 **Planned Capabilities**:
-- **Backtesting Framework**: XGBoost models, proper walk-forward validation (Sprint 2.47)
 - **Explainable AI**: SHAP values, decision path visualization (Sprint 2.48)
 - **Collector Performance & Freshness** (Sprint 2.49)
 - **MLflow Integration**: When experiment scale justifies it (Phase 5+)
@@ -160,10 +161,10 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 ### Sprint 2.45 - Agentic Data Science Pipeline (COMPLETE)
 *   Hotfixes (WS token, recursion limit) + ModelBlueprint schema + model serialization (joblib) + Optuna hyperparameter tool + structured metric events + Blueprint Card + Training Progress Charts + Artifact Viewer + Promote Modal. 946 tests.
 
-### Sprint 2.46 - Model Playground (IN PROGRESS)
-*   ModelPlaygroundPanel — inference test UI for trained models, POST /lab/algorithms/{id}/predict endpoint.
+### Sprint 2.46 - Model Playground (COMPLETE)
+*   ModelPlaygroundPanel — inference test UI, artifact wiring, promote endpoint. 959 tests.
 
-### Sprint 2.47 - Backtesting Framework Hardening (PLANNED)
+### Sprint 2.47 - Backtesting Framework Hardening (IN PROGRESS)
 *   XGBoost model integration, proper walk-forward validation, historical simulation improvements.
 
 ### Sprint 2.48 - Explainable AI (PLANNED)
@@ -304,12 +305,12 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ **Documentation Uplift** (Sprint 2.14): 4-tier architecture + AI governance
 - ✅ **Infrastructure Pivot** (Sprint 2.35): Migration from AWS to local Docker/Traefik stack
 
-### Current Metrics (Sprint 2.44)
-- **Test Coverage**: >97% (925 tests, target maintained across sprints)
+### Current Metrics (Sprint 2.46)
+- **Test Coverage**: >97% (959 tests, target maintained across sprints)
 - **Production Uptime**: Local server (192.168.0.241) with Docker health checks
 - **Collectors**: 11 active plugins with enrichment pipeline (IEnricher)
 - **Signal API**: 5 query endpoints with materialized views for Lab consumption
-- **Lab**: Live session execution with WebSocket streaming and real-time terminal
+- **Lab**: Live session execution with WebSocket streaming, Model Playground, artifact management
 - **Agent Framework**: Multi-track parallel development with worktree isolation
 
 ### Future Metrics (Phase 3-5)
@@ -359,7 +360,7 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 - ✅ Alerting service operational
 - ✅ Data Explorer wired to backend APIs
 - ✅ Enrichment pipeline with signal query API
-- 🔄 Lab-to-Floor promotion workflow (Sprint 2.45 — in progress)
+- ✅ Lab-to-Floor promotion workflow (Sprint 2.46)
 
 ### Phase 5 Success (Advanced Analytics)
 - 📋 Backtesting framework with 1+ year historical data
@@ -398,6 +399,6 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 
 **End of Strategic Roadmap**
 
-**Next Review**: After Sprint 2.45 completion
+**Next Review**: After Sprint 2.47 completion
 **Maintained by**: The Architect
-**Last Major Update**: Sprint 2.45 (agentic data science pipeline)
+**Last Major Update**: Sprint 2.47 (backtesting framework hardening)
