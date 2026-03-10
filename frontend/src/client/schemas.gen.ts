@@ -761,6 +761,180 @@ export const AvailableCoinsResponseSchema = {
     description: 'Available cryptocurrency symbols in the database'
 } as const;
 
+export const BacktestRunCreateSchema = {
+    properties: {
+        algorithm_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Algorithm Id'
+        },
+        coin_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Coin Type'
+        },
+        start_date: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Start Date'
+        },
+        end_date: {
+            type: 'string',
+            format: 'date-time',
+            title: 'End Date'
+        },
+        initial_capital: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                }
+            ],
+            title: 'Initial Capital',
+            default: '10000.00'
+        }
+    },
+    type: 'object',
+    required: ['algorithm_id', 'coin_type', 'start_date', 'end_date'],
+    title: 'BacktestRunCreate',
+    description: 'Schema for creating a backtest run'
+} as const;
+
+export const BacktestRunListSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/BacktestRunPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'BacktestRunList',
+    description: 'Paginated list of backtest runs'
+} as const;
+
+export const BacktestRunPublicSchema = {
+    properties: {
+        algorithm_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Algorithm Id'
+        },
+        coin_type: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Coin Type'
+        },
+        start_date: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Start Date'
+        },
+        end_date: {
+            type: 'string',
+            format: 'date-time',
+            title: 'End Date'
+        },
+        initial_capital: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Initial Capital',
+            default: '10000.00'
+        },
+        status: {
+            type: 'string',
+            maxLength: 20,
+            title: 'Status',
+            default: 'pending'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        results_json: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Results Json'
+        },
+        equity_curve_json: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Equity Curve Json'
+        },
+        trade_log_json: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Trade Log Json'
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        completed_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Completed At'
+        }
+    },
+    type: 'object',
+    required: ['algorithm_id', 'coin_type', 'start_date', 'end_date', 'id', 'user_id', 'results_json', 'equity_curve_json', 'trade_log_json', 'error_message', 'created_at', 'completed_at'],
+    title: 'BacktestRunPublic',
+    description: 'Schema for returning a backtest run via API'
+} as const;
+
 export const Body_login_login_access_tokenSchema = {
     properties: {
         grant_type: {

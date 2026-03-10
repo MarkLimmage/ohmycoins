@@ -296,6 +296,45 @@ export type AvailableCoinsResponse = {
     coins: Array<(string)>;
 };
 
+/**
+ * Schema for creating a backtest run
+ */
+export type BacktestRunCreate = {
+    algorithm_id: string;
+    coin_type: string;
+    start_date: string;
+    end_date: string;
+    initial_capital?: (number | string);
+};
+
+/**
+ * Paginated list of backtest runs
+ */
+export type BacktestRunList = {
+    data: Array<BacktestRunPublic>;
+    count: number;
+};
+
+/**
+ * Schema for returning a backtest run via API
+ */
+export type BacktestRunPublic = {
+    algorithm_id: string;
+    coin_type: string;
+    start_date: string;
+    end_date: string;
+    initial_capital?: string;
+    status?: string;
+    id: string;
+    user_id: string;
+    results_json: (string | null);
+    equity_curve_json: (string | null);
+    trade_log_json: (string | null);
+    error_message: (string | null);
+    created_at: string;
+    completed_at: (string | null);
+};
+
 export type Body_login_login_access_token = {
     grant_type?: (string | null);
     username: string;
@@ -1485,6 +1524,25 @@ export type AuditCreateTradeAuditData = {
 };
 
 export type AuditCreateTradeAuditResponse = (TradeAuditPublic);
+
+export type BacktestsCreateBacktestData = {
+    requestBody: BacktestRunCreate;
+};
+
+export type BacktestsCreateBacktestResponse = (BacktestRunPublic);
+
+export type BacktestsListBacktestsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type BacktestsListBacktestsResponse = (BacktestRunList);
+
+export type BacktestsGetBacktestData = {
+    backtestId: string;
+};
+
+export type BacktestsGetBacktestResponse = (BacktestRunPublic);
 
 export type CollectorsListPluginsResponse = (Array<{
     [key: string]: unknown;
