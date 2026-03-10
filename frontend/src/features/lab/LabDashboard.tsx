@@ -13,6 +13,7 @@ import { OpenAPI } from "@/client"
 import AgentTerminal from "@/components/Lab/AgentTerminal"
 import { type Artifact, ArtifactViewer } from "./components/ArtifactViewer"
 import { BlueprintCard, type BlueprintData } from "./components/BlueprintCard"
+import { ModelPlaygroundPanel } from "./components/ModelPlaygroundPanel"
 import { type PromoteFormData, PromoteModal } from "./components/PromoteModal"
 import { SessionCreateForm } from "./components/SessionCreateForm"
 import { SessionList } from "./components/SessionList"
@@ -20,7 +21,12 @@ import {
   type TrainingMetric,
   TrainingProgressChart,
 } from "./components/TrainingProgressChart"
-import { useCancelSession, useLabSessions } from "./hooks"
+import {
+  useCancelSession,
+  useLabSessions,
+  usePromoteArtifact,
+  useSessionArtifacts,
+} from "./hooks"
 import { useLabWebSocket } from "./hooks/useLabWebSocket"
 
 export function LabDashboard() {
@@ -31,15 +37,30 @@ export function LabDashboard() {
   const [resolvedToken, setResolvedToken] = useState<string | undefined>()
   const [blueprintData, setBlueprintData] = useState<BlueprintData | null>(null)
   const [trainingMetrics, setTrainingMetrics] = useState<TrainingMetric[]>([])
-  const [artifacts] = useState<Artifact[]>([])
   const [approvedBlueprints, setApprovedBlueprints] = useState<Set<string>>(
     new Set(),
   )
   const [promoteModalOpen, setPromoteModalOpen] = useState(false)
-  const [promoteArtifact, setPromoteArtifact] = useState<Artifact | null>(null)
+  const [promoteArtifactState, setPromoteArtifactState] =
+    useState<Artifact | null>(null)
+  const [playgroundArtifact, setPlaygroundArtifact] = useState<Artifact | null>(
+    null,
+  )
 
   const { data: sessionsData } = useLabSessions()
+  const { data: artifactsData } = useSessionArtifacts(selectedSessionId)
   const cancelSession = useCancelSession()
+  const promoteArtifact = usePromoteArtifact()
+
+  const artifacts: Artifact[] = (artifactsData || []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    path: a.file_path || "",
+    type: (["model", "data", "report"].includes(a.artifact_type)
+      ? a.artifact_type
+      : "other") as Artifact["type"],
+    size: a.size_bytes || undefined,
+  }))
 
   // Resolve token once on mount
   useEffect(() => {
@@ -183,9 +204,18 @@ export function LabDashboard() {
                 <ArtifactViewer
                   artifacts={artifacts}
                   onPromote={(artifact) => {
-                    setPromoteArtifact(artifact)
+                    setPromoteArtifactState(artifact)
                     setPromoteModalOpen(true)
                   }}
+                  onTest={setPlaygroundArtifact}
+                />
+              )}
+
+              {/* Model Playground */}
+              {playgroundArtifact?.id && (
+                <ModelPlaygroundPanel
+                  artifactId={playgroundArtifact.id}
+                  onClose={() => setPlaygroundArtifact(null)}
                 />
               )}
             </VStack>
@@ -215,13 +245,27 @@ export function LabDashboard() {
         isOpen={promoteModalOpen}
         onClose={() => {
           setPromoteModalOpen(false)
-          setPromoteArtifact(null)
+          setPromoteArtifactState(null)
         }}
-        artifactName={promoteArtifact?.name}
+        artifactName={promoteArtifactState?.name}
         onSubmit={(data: PromoteFormData) => {
-          console.log("Promote data:", data)
+          if (!promoteArtifactState?.id) return
+          const freqMap: Record<string, number> = {
+            "1h": 3600,
+            "4h": 14400,
+            "12h": 43200,
+            "24h": 86400,
+          }
+          promoteArtifact.mutate({
+            artifactId: promoteArtifactState.id,
+            algorithmName: data.algorithm_name,
+            description: data.description,
+            positionLimit: data.position_limit,
+            dailyLossLimit: data.daily_loss_limit,
+            executionFrequency: freqMap[data.execution_frequency] || 14400,
+          })
           setPromoteModalOpen(false)
-          setPromoteArtifact(null)
+          setPromoteArtifactState(null)
         }}
       />
     </VStack>
