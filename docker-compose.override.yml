@@ -1,28 +1,13 @@
 services:
-  proxy:
-    ports:
-      - "8010:80"
-      - "8091:8080"
-  db:
-    ports:
-      - "5433:5432"
   backend:
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/tests:/app/tests
-      - agent-artifacts:/data/agent_artifacts
     environment:
       - POSTGRES_PORT=5432
   orchestrator:
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/tests:/app/tests
-      - agent-artifacts:/data/agent_artifacts
-    environment:
-      - POSTGRES_PORT=5432
-  celery_worker:
     environment:
       - POSTGRES_PORT=5432
   prestart:
+    environment:
+      - POSTGRES_PORT=5432
+  celery_worker:
     environment:
       - POSTGRES_PORT=5432

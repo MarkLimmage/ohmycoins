@@ -146,3 +146,36 @@ class TestHyperparameterSearch:
         )
 
         assert result["n_trials"] == 3
+
+    def test_xgboost_classification(self, classification_data: pd.DataFrame) -> None:
+        """Test hyperparameter search with XGBoost classifier."""
+        result = hyperparameter_search(
+            training_data=classification_data,
+            target_column="target",
+            model_type="xgboost",
+            task_type="classification",
+            n_trials=5,
+            cv_folds=3,
+        )
+
+        assert result["model_type"] == "xgboost"
+        assert result["task_type"] == "classification"
+        assert result["scoring"] == "accuracy"
+        assert "learning_rate" in result["best_params"]
+        assert "n_estimators" in result["best_params"]
+        assert "colsample_bytree" in result["best_params"]
+
+    def test_xgboost_regression(self, regression_data: pd.DataFrame) -> None:
+        """Test hyperparameter search with XGBoost regressor."""
+        result = hyperparameter_search(
+            training_data=regression_data,
+            target_column="target",
+            model_type="xgboost",
+            task_type="regression",
+            n_trials=5,
+            cv_folds=3,
+        )
+
+        assert result["model_type"] == "xgboost"
+        assert result["task_type"] == "regression"
+        assert result["scoring"] == "neg_mean_squared_error"

@@ -26,10 +26,11 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from xgboost import XGBClassifier, XGBRegressor
 
 
 def train_classification_model(
@@ -42,11 +43,13 @@ def train_classification_model(
         "decision_tree",
         "gradient_boosting",
         "svm",
+        "xgboost",
     ] = "random_forest",
     hyperparameters: dict[str, Any] | None = None,
     test_size: float = 0.2,
     random_state: int = 42,
     scale_features: bool = True,
+    validation_strategy: Literal["random", "time_series", "expanding_window"] = "random",
 ) -> dict[str, Any]:
     """
     Train a classification model on cryptocurrency data.
@@ -60,6 +63,7 @@ def train_classification_model(
         test_size: Fraction of data to use for testing (0.0-1.0)
         random_state: Random seed for reproducibility
         scale_features: Whether to scale features using StandardScaler
+        validation_strategy: Strategy for data splitting ("random", "time_series", or "expanding_window")
 
     Returns:
         Dictionary containing:
@@ -80,10 +84,17 @@ def train_classification_model(
     # Handle missing values
     X = X.fillna(X.mean())
 
-    # Split data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=y
-    )
+    # Split data based on validation strategy
+    if validation_strategy in ("time_series", "expanding_window"):
+        tscv = TimeSeriesSplit(n_splits=5)
+        splits = list(tscv.split(X))
+        train_idx, test_idx = splits[-1]  # Use last fold for final evaluation
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
 
     # Scale features if requested
     scaler = None
@@ -156,6 +167,20 @@ def train_classification_model(
             probability=True,
             **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]},
         )
+    elif model_type == "xgboost":
+        model = XGBClassifier(
+            random_state=random_state,
+            n_estimators=hyperparams.get("n_estimators", 100),
+            learning_rate=hyperparams.get("learning_rate", 0.1),
+            max_depth=hyperparams.get("max_depth", 3),
+            use_label_encoder=False,
+            eval_metric="logloss",
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k not in ["n_estimators", "learning_rate", "max_depth"]
+            },
+        )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
@@ -217,6 +242,7 @@ def train_classification_model(
         "test_size": len(X_test),
         "model_type": model_type,
         "hyperparameters": hyperparams,
+        "validation_strategy": validation_strategy,
     }
 
 
@@ -232,11 +258,13 @@ def train_regression_model(
         "decision_tree",
         "gradient_boosting",
         "svr",
+        "xgboost",
     ] = "random_forest",
     hyperparameters: dict[str, Any] | None = None,
     test_size: float = 0.2,
     random_state: int = 42,
     scale_features: bool = True,
+    validation_strategy: Literal["random", "time_series", "expanding_window"] = "random",
 ) -> dict[str, Any]:
     """
     Train a regression model on cryptocurrency data.
@@ -250,6 +278,7 @@ def train_regression_model(
         test_size: Fraction of data to use for testing (0.0-1.0)
         random_state: Random seed for reproducibility
         scale_features: Whether to scale features using StandardScaler
+        validation_strategy: Strategy for data splitting ("random", "time_series", or "expanding_window")
 
     Returns:
         Dictionary containing:
@@ -271,10 +300,17 @@ def train_regression_model(
     X = X.fillna(X.mean())
     y = y.fillna(y.mean())
 
-    # Split data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state
-    )
+    # Split data based on validation strategy
+    if validation_strategy in ("time_series", "expanding_window"):
+        tscv = TimeSeriesSplit(n_splits=5)
+        splits = list(tscv.split(X))
+        train_idx, test_idx = splits[-1]  # Use last fold for final evaluation
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state
+        )
 
     # Scale features if requested
     scaler = None
@@ -352,6 +388,18 @@ def train_regression_model(
             kernel=hyperparams.get("kernel", "rbf"),
             **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]},
         )
+    elif model_type == "xgboost":
+        model = XGBRegressor(
+            random_state=random_state,
+            n_estimators=hyperparams.get("n_estimators", 100),
+            learning_rate=hyperparams.get("learning_rate", 0.1),
+            max_depth=hyperparams.get("max_depth", 3),
+            **{
+                k: v
+                for k, v in hyperparams.items()
+                if k not in ["n_estimators", "learning_rate", "max_depth"]
+            },
+        )
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
@@ -387,6 +435,7 @@ def train_regression_model(
         "test_size": len(X_test),
         "model_type": model_type,
         "hyperparameters": hyperparams,
+        "validation_strategy": validation_strategy,
     }
 
 

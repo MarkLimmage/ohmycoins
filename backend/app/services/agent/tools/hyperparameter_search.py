@@ -14,6 +14,7 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 from sklearn.model_selection import cross_val_score
+from xgboost import XGBClassifier, XGBRegressor
 
 # Silence Optuna logging
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -105,6 +106,42 @@ def hyperparameter_search(
                     max_depth=max_depth,
                     subsample=subsample,
                     random_state=42,
+                )
+
+        elif model_type == "xgboost":
+            learning_rate = trial.suggest_float("learning_rate", 0.01, 0.3)
+            n_estimators = trial.suggest_int("n_estimators", 10, 200)
+            max_depth = trial.suggest_int("max_depth", 2, 10)
+            subsample = trial.suggest_float("subsample", 0.5, 1.0)
+            colsample_bytree = trial.suggest_float("colsample_bytree", 0.5, 1.0)
+            reg_alpha = trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True)
+            reg_lambda = trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True)
+
+            if task_type == "classification":
+                model = XGBClassifier(
+                    learning_rate=learning_rate,
+                    n_estimators=n_estimators,
+                    max_depth=max_depth,
+                    subsample=subsample,
+                    colsample_bytree=colsample_bytree,
+                    reg_alpha=reg_alpha,
+                    reg_lambda=reg_lambda,
+                    use_label_encoder=False,
+                    eval_metric="logloss",
+                    random_state=42,
+                    n_jobs=-1,
+                )
+            else:
+                model = XGBRegressor(
+                    learning_rate=learning_rate,
+                    n_estimators=n_estimators,
+                    max_depth=max_depth,
+                    subsample=subsample,
+                    colsample_bytree=colsample_bytree,
+                    reg_alpha=reg_alpha,
+                    reg_lambda=reg_lambda,
+                    random_state=42,
+                    n_jobs=-1,
                 )
 
         else:
