@@ -9,32 +9,16 @@ import {
 } from "react-icons/fi"
 import type { AgentMessage as AgentMessageType } from "./types"
 
-const messageTypeConfig = {
-  thought: {
-    color: "#d1d5db", // gray-300
-    icon: FiMessageSquare,
-    fontStyle: "italic",
-  },
-  tool: {
-    color: "#60a5fa", // blue-400
-    icon: FiTool,
-  },
-  result: {
-    successColor: "#4ade80", // green-400
-    errorColor: "#f87171", // red-400
-    successIcon: FiCheckCircle,
-    errorIcon: FiAlertCircle,
-  },
-  input_request: {
-    color: "#fbbf24", // amber-400
-    icon: FiCode,
-  },
-  output: {
-    color: "inherit",
-    bgColor: "rgba(59, 130, 246, 0.1)",
-    fontWeight: "bold",
-  },
-}
+import { Box, HStack, Icon, Text, VStack, useColorModeValue } from "@chakra-ui/react"
+import { format } from "date-fns"
+import {
+  FiAlertCircle,
+  FiCheckCircle,
+  FiCode,
+  FiMessageSquare,
+  FiTool,
+} from "react-icons/fi"
+import type { AgentMessage as AgentMessageType } from "./types"
 
 interface AgentMessageProps {
   message: AgentMessageType
@@ -43,31 +27,39 @@ interface AgentMessageProps {
 const AgentMessage = ({ message }: AgentMessageProps) => {
   const { type, content, timestamp, metadata } = message
 
+  // Hooks for adaptive colors
+  const thoughtColor = useColorModeValue("gray.500", "gray.400")
+  const toolColor = useColorModeValue("blue.600", "blue.400")
+  const successColor = useColorModeValue("green.600", "green.400")
+  const errorColor = useColorModeValue("red.600", "red.400")
+  const inputColor = useColorModeValue("yellow.600", "yellow.400")
+  const outputBg = useColorModeValue("blue.50", "whiteAlpha.200")
+  const codeBg = useColorModeValue("gray.100", "whiteAlpha.200")
+  const codeLangColor = useColorModeValue("gray.500", "gray.400")
+
   const getMessageStyle = () => {
     switch (type) {
       case "thought":
         return {
-          color: messageTypeConfig.thought.color,
-          fontStyle: messageTypeConfig.thought.fontStyle,
+          color: thoughtColor,
+          fontStyle: "italic",
         }
       case "tool":
         return {
-          color: messageTypeConfig.tool.color,
+          color: toolColor,
         }
       case "result":
         return {
-          color: metadata?.error
-            ? messageTypeConfig.result.errorColor
-            : messageTypeConfig.result.successColor,
+          color: metadata?.error ? errorColor : successColor,
         }
       case "input_request":
         return {
-          color: messageTypeConfig.input_request.color,
+          color: inputColor,
         }
       case "output":
         return {
-          fontWeight: messageTypeConfig.output.fontWeight,
-          bgColor: messageTypeConfig.output.bgColor,
+          fontWeight: "bold",
+          bg: outputBg,
           px: 2,
           py: 1,
           borderRadius: "md",
@@ -80,15 +72,13 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
   const getIcon = () => {
     switch (type) {
       case "thought":
-        return messageTypeConfig.thought.icon
+        return FiMessageSquare
       case "tool":
-        return messageTypeConfig.tool.icon
+        return FiTool
       case "result":
-        return metadata?.error
-          ? messageTypeConfig.result.errorIcon
-          : messageTypeConfig.result.successIcon
+        return metadata?.error ? FiAlertCircle : FiCheckCircle
       case "input_request":
-        return messageTypeConfig.input_request.icon
+        return FiCode
       default:
         return null
     }
@@ -99,6 +89,8 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
   const formattedTime = format(new Date(timestamp), "HH:mm:ss.SSS")
 
   const renderContent = () => {
+    // Regex to split code blocks: capturing both language and code content
+    // Note: This regex assumes well-formed markdown code blocks
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
     const parts = content.split(codeBlockRegex)
 
@@ -115,55 +107,69 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
         </Text>
       )
     }
-
-    const renderPart = (part: string, index: number) => {
-      if (index % 3 === 0) {
-        return part ? (
+    
+    // When split by regex with capturing groups, the array looks like:
+    // [text_before, language, code, text_after, ...]
+    const elements = []
+    let i = 0
+    while (i < parts.length) {
+      // 1. Text part
+      const textPart = parts[i]
+      if (textPart) {
+        elements.push(
           <Text
-            key={`text-${index}`}
+            key={`text-${i}`}
             fontFamily="monospace"
             fontSize="sm"
             whiteSpace="pre-wrap"
             wordBreak="break-word"
             {...messageStyle}
           >
-            {part}
+            {textPart}
           </Text>
-        ) : null
-      }
-      if (index % 3 === 1) {
-        const language = part
-        const code = parts[index + 1]
-        return (
-          <Box
-            key={`code-${index}`}
-            bg="rgba(0, 0, 0, 0.3)"
-            p={2}
-            borderRadius="md"
-            my={1}
-          >
-            {language && (
-              <Text fontSize="xs" color="gray.400" mb={1}>
-                {language}
-              </Text>
-            )}
-            <Text
-              fontFamily="monospace"
-              fontSize="sm"
-              whiteSpace="pre"
-              overflowX="auto"
-              color="green.300"
-            >
-              {code}
-            </Text>
-          </Box>
         )
       }
-      return null
+      i++
+      
+      // Check if we have a match (language and code)
+      if (i < parts.length) {
+        const language = parts[i]
+        const code = parts[i + 1]
+        
+        if (code !== undefined) {
+             elements.push(
+              <Box
+                key={`code-${i}`}
+                bg={codeBg}
+                p={2}
+                borderRadius="md"
+                my={1}
+                overflowX="auto"
+              >
+                {language && (
+                  <Text fontSize="xs" color={codeLangColor} mb={1} textTransform="lowercase">
+                    {language}
+                  </Text>
+                )}
+                <Text
+                  fontFamily="monospace"
+                  fontSize="xs"
+                  whiteSpace="pre"
+                >
+                  {code}
+                </Text>
+              </Box>
+            )
+        }
+        // Advance past language and code
+        i += 2
+      }
     }
-
-    return <Box>{parts.map((part, index) => renderPart(part, index))}</Box>
+    return elements
   }
+
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200")
+  const hoverBg = useColorModeValue("gray.50", "whiteAlpha.50")
 
   return (
     <Box
@@ -172,8 +178,8 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
       py={2}
       px={3}
       borderBottom="1px solid"
-      borderColor="whiteAlpha.200"
-      _hover={{ bg: "whiteAlpha.50" }}
+      borderColor={borderColor}
+      _hover={{ bg: hoverBg }}
     >
       <VStack align="stretch" gap={1}>
         <HStack gap={2} alignItems="flex-start">

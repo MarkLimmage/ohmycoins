@@ -6,7 +6,7 @@ export const useLabSessions = (skip = 0, limit = 50) => {
     queryKey: ["lab-sessions", skip, limit],
     queryFn: () => AgentService.listAgentSessions({ skip, limit }),
     staleTime: 10_000,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   })
 }
 
@@ -16,7 +16,7 @@ export const useLabSession = (sessionId: string | null) => {
     queryFn: () => AgentService.getAgentSession({ sessionId: sessionId! }),
     enabled: !!sessionId,
     staleTime: 5_000,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   })
 }
 
@@ -69,7 +69,7 @@ export const useSessionArtifacts = (sessionId: string | null) => {
     queryFn: () => AgentService.getSessionArtifacts({ sessionId: sessionId! }),
     enabled: !!sessionId,
     staleTime: 10_000,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   })
 }
 

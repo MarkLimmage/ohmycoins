@@ -8,6 +8,7 @@ import {
   Spinner,
   Text,
   VStack,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
@@ -48,6 +49,17 @@ const AgentTerminal = ({
   const autoScrollRef = useRef(true)
 
   const { showSuccessToast, showErrorToast } = useCustomToast()
+
+  const bg = useColorModeValue("white", "gray.900")
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.300")
+  const headerBg = useColorModeValue("gray.50", "gray.800")
+  const inputBg = useColorModeValue("white", "gray.700")
+  const textColor = useColorModeValue("gray.700", "gray.200")
+  const subTextColor = useColorModeValue("gray.500", "gray.400")
+  const scrollbarTrack = useColorModeValue("rgba(0, 0, 0, 0.05)", "rgba(0, 0, 0, 0.2)")
+  const scrollbarThumb = useColorModeValue("rgba(0, 0, 0, 0.2)", "rgba(255, 255, 255, 0.2)")
+  const scrollbarThumbHover = useColorModeValue("rgba(0, 0, 0, 0.3)", "rgba(255, 255, 255, 0.3)")
+  const ghostHover = useColorModeValue("gray.100", "whiteAlpha.200")
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -96,9 +108,6 @@ const AgentTerminal = ({
           if (data.id && prev.some((msg) => msg.id === data.id)) {
             return prev
           }
-          // Also check for duplicate content/timestamp to be safe
-          // (Backend replay might not send IDs or sends different IDs)
-          // But here we see backend sends proper replay=True messages with IDs.
           
           return [...prev, newMessage]
         })
@@ -229,21 +238,21 @@ const AgentTerminal = ({
     <Flex
       direction="column"
       h="100%"
-      bg="gray.900"
+      bg={bg}
       borderRadius="lg"
       overflow="hidden"
       border="1px solid"
-      borderColor="whiteAlpha.300"
+      borderColor={borderColor}
       role="region"
       aria-label="Agent Terminal"
     >
       {/* Header */}
       <HStack
-        bg="gray.800"
+        bg={headerBg}
         px={4}
         py={3}
         borderBottom="1px solid"
-        borderColor="whiteAlpha.300"
+        borderColor={borderColor}
         justify="space-between"
       >
         <HStack gap={3}>
@@ -255,15 +264,15 @@ const AgentTerminal = ({
               bg={isConnected ? "green.400" : "red.400"}
               aria-label={isConnected ? "Connected" : "Disconnected"}
             />
-            <Text fontSize="sm" fontWeight="semibold" color="gray.200">
+            <Text fontSize="sm" fontWeight="semibold" color={textColor}>
               Session: {sessionId.slice(0, 8)}...
             </Text>
           </HStack>
 
           {isConnected && (
             <HStack gap={1}>
-              <Spinner size="xs" color="gray.400" />
-              <Text fontSize="xs" color="gray.400">
+              <Spinner size="xs" color={subTextColor} />
+              <Text fontSize="xs" color={subTextColor}>
                 Streaming
               </Text>
             </HStack>
@@ -282,6 +291,8 @@ const AgentTerminal = ({
             }}
             aria-label="Search transcript"
             title="Search (Ctrl/Cmd+F)"
+            color={subTextColor}
+            _hover={{ bg: ghostHover }}
           >
             <Icon fontSize="md">
               <FiSearch />
@@ -294,6 +305,8 @@ const AgentTerminal = ({
             onClick={handleCopyTranscript}
             aria-label="Copy transcript"
             title="Copy transcript (Ctrl/Cmd+C)"
+            color={subTextColor}
+            _hover={{ bg: ghostHover }}
           >
             <Icon fontSize="md">
               <FiCopy />
@@ -306,6 +319,8 @@ const AgentTerminal = ({
             onClick={handleExport}
             aria-label="Export transcript"
             title="Export transcript"
+            color={subTextColor}
+            _hover={{ bg: ghostHover }}
           >
             <Icon fontSize="md">
               <FiDownload />
@@ -331,14 +346,14 @@ const AgentTerminal = ({
       {/* Search Bar */}
       {showSearch && (
         <HStack
-          bg="gray.800"
+          bg={headerBg}
           px={4}
           py={2}
           borderBottom="1px solid"
-          borderColor="whiteAlpha.300"
+          borderColor={borderColor}
           gap={2}
         >
-          <Icon fontSize="sm" color="gray.400">
+          <Icon fontSize="sm" color={subTextColor}>
             <FiSearch />
           </Icon>
           <Input
@@ -348,8 +363,9 @@ const AgentTerminal = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             size="sm"
             variant="subtle"
-            bg="gray.700"
-            borderColor="whiteAlpha.300"
+            bg={inputBg}
+            borderColor={borderColor}
+            color={textColor}
             _focus={{
               borderColor: "blue.400",
               outline: "2px solid",
@@ -357,7 +373,7 @@ const AgentTerminal = ({
             }}
             aria-label="Search messages"
           />
-          <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">
+          <Text fontSize="xs" color={subTextColor} whiteSpace="nowrap">
             {displayMessages.length} of {messages.length}
           </Text>
           <Button
@@ -368,6 +384,8 @@ const AgentTerminal = ({
               setSearchQuery("")
             }}
             aria-label="Close search"
+            color={subTextColor}
+            _hover={{ bg: ghostHover }}
           >
             <Icon fontSize="sm">
               <FiX />
@@ -383,20 +401,21 @@ const AgentTerminal = ({
         overflowY="auto"
         overflowX="hidden"
         onScroll={handleScroll}
+        bg={bg}
         css={{
           scrollBehavior: "smooth",
           "&::-webkit-scrollbar": {
             width: "8px",
           },
           "&::-webkit-scrollbar-track": {
-            background: "rgba(0, 0, 0, 0.2)",
+            background: scrollbarTrack,
           },
           "&::-webkit-scrollbar-thumb": {
-            background: "rgba(255, 255, 255, 0.2)",
+            background: scrollbarThumb,
             borderRadius: "4px",
           },
           "&::-webkit-scrollbar-thumb:hover": {
-            background: "rgba(255, 255, 255, 0.3)",
+            background: scrollbarThumbHover,
           },
         }}
       >
@@ -413,7 +432,7 @@ const AgentTerminal = ({
               h="100%"
               align="center"
               justify="center"
-              color="gray.500"
+              color={subTextColor}
               py={8}
             >
               <Text fontSize="sm">

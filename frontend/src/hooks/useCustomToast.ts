@@ -1,23 +1,24 @@
 "use client"
 
 import { toaster } from "@/components/ui/toaster"
+import { useCallback } from "react"
 
 const useCustomToast = () => {
-  const showSuccessToast = (description: string) => {
+  const showSuccessToast = useCallback((description: string) => {
     toaster.create({
-      title: "Success!",
+      title: "Success",
       description,
       type: "success",
     })
-  }
+  }, [])
 
-  const showErrorToast = (description: string) => {
+  const showErrorToast = useCallback((description: string) => {
     toaster.create({
-      title: "Something went wrong!",
+      title: "Something went wrong",
       description,
       type: "error",
     })
-  }
+  }, [])
 
   return { showSuccessToast, showErrorToast }
 }

@@ -1,4 +1,4 @@
-import { Badge, Box, HStack, Text, VStack, IconButton } from "@chakra-ui/react"
+import { Badge, Box, HStack, Text, VStack, IconButton, useColorModeValue } from "@chakra-ui/react"
 import { formatDistanceToNow } from "date-fns"
 import { FiTrash2 } from "react-icons/fi"
 import type { AgentSessionPublic } from "@/client"
@@ -24,16 +24,24 @@ export function SessionList({
   onSelect,
   onDelete,
 }: SessionListProps) {
+  const bg = useColorModeValue("white", "gray.900")
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200")
+  const headerText = useColorModeValue("gray.600", "gray.400")
+  const selectedBg = useColorModeValue("blue.50", "whiteAlpha.100")
+  const hoverBg = useColorModeValue("gray.50", "whiteAlpha.50")
+  const primaryText = useColorModeValue("gray.800", "gray.100")
+  const secondaryText = useColorModeValue("gray.500", "gray.400")
+
   if (sessions.length === 0) {
     return (
       <Box
         p={6}
         borderRadius="lg"
         border="1px solid"
-        borderColor="whiteAlpha.200"
-        bg="gray.900"
+        borderColor={borderColor}
+        bg={bg}
       >
-        <Text color="gray.500" fontSize="sm" textAlign="center">
+        <Text color={secondaryText} fontSize="sm" textAlign="center">
           No sessions yet. Create one to get started.
         </Text>
       </Box>
@@ -46,14 +54,14 @@ export function SessionList({
       gap={0}
       borderRadius="lg"
       border="1px solid"
-      borderColor="whiteAlpha.200"
-      bg="gray.900"
+      borderColor={borderColor}
+      bg={bg}
       overflow="hidden"
       maxH="600px"
       overflowY="auto"
     >
-      <Box px={3} py={2} borderBottom="1px solid" borderColor="whiteAlpha.200">
-        <Text fontSize="xs" fontWeight="bold" color="gray.300">
+      <Box px={3} py={2} borderBottom="1px solid" borderColor={borderColor}>
+        <Text fontSize="xs" fontWeight="bold" color={headerText}>
           Sessions ({sessions.length})
         </Text>
       </Box>
@@ -73,16 +81,16 @@ export function SessionList({
             py={3}
             cursor="pointer"
             onClick={() => onSelect(session.id)}
-            bg={isSelected ? "whiteAlpha.100" : "transparent"}
+            bg={isSelected ? selectedBg : "transparent"}
             borderLeft={isSelected ? "3px solid" : "3px solid transparent"}
             borderColor={isSelected ? "blue.400" : "transparent"}
-            _hover={{ bg: "whiteAlpha.50" }}
+            _hover={{ bg: hoverBg }}
             borderBottom="1px solid"
-            borderBottomColor="whiteAlpha.100"
+            borderBottomColor={borderColor}
           >
             <VStack align="stretch" gap={1}>
               <HStack justify="space-between">
-                <Text fontSize="sm" fontWeight="medium" lineClamp={1} flex={1} color="gray.100">
+                <Text fontSize="sm" fontWeight="medium" lineClamp={1} flex={1} color={primaryText}>
                   {session.user_goal}
                 </Text>
                 <HStack gap={1}>
@@ -111,15 +119,15 @@ export function SessionList({
                 </HStack>
               </HStack>
               <HStack justify="space-between">
-                <Text fontSize="xs" color="gray.400" fontFamily="mono">
+                <Text fontSize="xs" color={secondaryText} fontFamily="mono">
                   {session.id.slice(0, 8)}
                 </Text>
-                <Text fontSize="xs" color="gray.400">
+                <Text fontSize="xs" color={secondaryText}>
                   {timeAgo}
                 </Text>
               </HStack>
               {session.error_message && (
-                <Text fontSize="xs" color="red.400" lineClamp={1}>
+                <Text fontSize="xs" color="red.500" lineClamp={1}>
                   {session.error_message}
                 </Text>
               )}
