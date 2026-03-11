@@ -91,7 +91,17 @@ const AgentTerminal = ({
           metadata: data.metadata,
         }
 
-        setMessages((prev) => [...prev, newMessage])
+        setMessages((prev) => {
+          // If we have an ID, check if it already exists
+          if (data.id && prev.some((msg) => msg.id === data.id)) {
+            return prev
+          }
+          // Also check for duplicate content/timestamp to be safe
+          // (Backend replay might not send IDs or sends different IDs)
+          // But here we see backend sends proper replay=True messages with IDs.
+          
+          return [...prev, newMessage]
+        })
 
         if (autoScrollRef.current) {
           setTimeout(() => scrollToBottom(), 100)

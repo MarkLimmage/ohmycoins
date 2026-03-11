@@ -11,22 +11,22 @@ import type { AgentMessage as AgentMessageType } from "./types"
 
 const messageTypeConfig = {
   thought: {
-    color: "#6b7280",
+    color: "#d1d5db", // gray-300
     icon: FiMessageSquare,
     fontStyle: "italic",
   },
   tool: {
-    color: "#3b82f6",
+    color: "#60a5fa", // blue-400
     icon: FiTool,
   },
   result: {
-    successColor: "#22c55e",
-    errorColor: "#ef4444",
+    successColor: "#4ade80", // green-400
+    errorColor: "#f87171", // red-400
     successIcon: FiCheckCircle,
     errorIcon: FiAlertCircle,
   },
   input_request: {
-    color: "#f59e0b",
+    color: "#fbbf24", // amber-400
     icon: FiCode,
   },
   output: {

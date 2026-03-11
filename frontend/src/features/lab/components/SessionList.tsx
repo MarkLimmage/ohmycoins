@@ -53,7 +53,7 @@ export function SessionList({
       overflowY="auto"
     >
       <Box px={3} py={2} borderBottom="1px solid" borderColor="whiteAlpha.200">
-        <Text fontSize="xs" fontWeight="bold" color="gray.400">
+        <Text fontSize="xs" fontWeight="bold" color="gray.300">
           Sessions ({sessions.length})
         </Text>
       </Box>
@@ -82,7 +82,7 @@ export function SessionList({
           >
             <VStack align="stretch" gap={1}>
               <HStack justify="space-between">
-                <Text fontSize="sm" fontWeight="medium" lineClamp={1} flex={1}>
+                <Text fontSize="sm" fontWeight="medium" lineClamp={1} flex={1} color="gray.100">
                   {session.user_goal}
                 </Text>
                 <HStack gap={1}>
@@ -111,10 +111,10 @@ export function SessionList({
                 </HStack>
               </HStack>
               <HStack justify="space-between">
-                <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                <Text fontSize="xs" color="gray.400" fontFamily="mono">
                   {session.id.slice(0, 8)}
                 </Text>
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="gray.400">
                   {timeAgo}
                 </Text>
               </HStack>
