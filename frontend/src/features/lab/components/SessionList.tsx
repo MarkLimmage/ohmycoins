@@ -1,4 +1,5 @@
-import { Badge, Box, HStack, Text, VStack, IconButton, useColorModeValue } from "@chakra-ui/react"
+import { Badge, Box, HStack, Text, VStack, IconButton } from "@chakra-ui/react"
+import { useColorModeValue } from "@/components/ui/color-mode"
 import { formatDistanceToNow } from "date-fns"
 import { FiTrash2 } from "react-icons/fi"
 import type { AgentSessionPublic } from "@/client"

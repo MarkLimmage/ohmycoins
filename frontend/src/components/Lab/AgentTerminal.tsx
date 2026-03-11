@@ -8,8 +8,8 @@ import {
   Spinner,
   Text,
   VStack,
-  useColorModeValue,
 } from "@chakra-ui/react"
+import { useColorModeValue } from "@/components/ui/color-mode"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   FiArrowDown,

@@ -1,15 +1,5 @@
 import { Box, HStack, Icon, Text, VStack } from "@chakra-ui/react"
-import { format } from "date-fns"
-import {
-  FiAlertCircle,
-  FiCheckCircle,
-  FiCode,
-  FiMessageSquare,
-  FiTool,
-} from "react-icons/fi"
-import type { AgentMessage as AgentMessageType } from "./types"
-
-import { Box, HStack, Icon, Text, VStack, useColorModeValue } from "@chakra-ui/react"
+import { useColorModeValue } from "@/components/ui/color-mode"
 import { format } from "date-fns"
 import {
   FiAlertCircle,
