@@ -1,6 +1,6 @@
 # Current Sprint: 2.48
 
-**Status**: IN PROGRESS
+**Status**: COMPLETED
 **Objective**: Explainable AI + Feature Store
 **Previous Sprint**: 2.47 (Backtesting Framework Hardening — COMPLETED)
 
@@ -21,63 +21,63 @@ Sprint 2.48 addresses two gaps:
 
 ### Track A — Backend: Explainable AI (SHAP)
 
-2. [ ] **A1 — Add `shap` dependency**
+2. [x] **A1 — Add `shap` dependency**
    - File: `backend/pyproject.toml`
 
-3. [ ] **A2 — SHAP Explainability Service**
+3. [x] **A2 — SHAP Explainability Service**
    - New: `backend/app/services/agent/explainability.py`
    - ExplainabilityService: TreeExplainer (RF/GB/DT/XGB), LinearExplainer (LogReg/LinReg/Ridge/Lasso), unsupported (SVM)
 
-4. [ ] **A3 — Extend Prediction with SHAP**
+4. [x] **A3 — Extend Prediction with SHAP**
    - File: `backend/app/services/agent/playground.py`
    - predict_with_explanation() for per-prediction SHAP values
 
-5. [ ] **A4 — API Endpoints**
+5. [x] **A4 — API Endpoints**
    - File: `backend/app/api/routes/agent.py`, `schemas.py`
    - POST /artifacts/{id}/explain, GET /artifacts/{id}/explain
    - Extend POST /artifacts/{id}/predict with include_explanation
 
-6. [ ] **A5 — Tests (~12 new)**
+6. [x] **A5 — Tests (~12 new)**
    - New: `backend/tests/services/agent/test_explainability.py`
    - Additions to `test_agent_playground.py`
 
 ### Track B — Frontend: Explainability UI
 
-7. [ ] **B1 — Explainability Hooks**
+7. [x] **B1 — Explainability Hooks**
    - New: `frontend/src/features/lab/hooks/useExplainability.ts`
 
-8. [ ] **B2 — FeatureImportanceChart Component**
+8. [x] **B2 — FeatureImportanceChart Component**
    - New: `frontend/src/features/lab/components/FeatureImportanceChart.tsx`
 
-9. [ ] **B3 — PredictionExplanation Component**
+9. [x] **B3 — PredictionExplanation Component**
    - New: `frontend/src/features/lab/components/PredictionExplanation.tsx`
 
 10. [ ] **B4 — SHAPSummaryPlot Component**
     - New: `frontend/src/features/lab/components/SHAPSummaryPlot.tsx`
 
-11. [ ] **B5 — Integration into ModelPlaygroundPanel**
+11. [x] **B5 — Integration into ModelPlaygroundPanel**
     - File: `frontend/src/features/lab/components/ModelPlaygroundPanel.tsx`
 
-12. [ ] **B6 — Integration into ArtifactViewer**
+12. [x] **B6 — Integration into ArtifactViewer**
     - File: `frontend/src/features/lab/components/ArtifactViewer.tsx`
 
-13. [ ] **B7 — OpenAPI Client Regeneration**
+13. [x] **B7 — OpenAPI Client Regeneration**
 
 ### Track C — Backend: Feature Store (Materialized Views)
 
-14. [ ] **C1 — Alembic Migration for Materialized Views**
+14. [x] **C1 — Alembic Migration for Materialized Views**
     - New: `backend/app/alembic/versions/xxxx_feature_store_mvs.py`
     - 4 MVs: mv_coin_targets_5min, mv_sentiment_signals_1h, mv_catalyst_impact_decay, mv_training_set_v1
 
-15. [ ] **C2 — MV Refresh Scheduler**
+15. [x] **C2 — MV Refresh Scheduler**
     - File: `backend/app/enrichment/views.py`
     - Extend refresh_materialized_views() with Feature Store MVs
 
-16. [ ] **C3 — Training Data Retrieval Tool**
+16. [x] **C3 — Training Data Retrieval Tool**
     - File: `backend/app/services/agent/tools/data_retrieval_tools.py`
     - fetch_training_data() querying mv_training_set_v1
 
-17. [ ] **C4 — Tests (~6 new)**
+17. [x] **C4 — Tests (~6 new)**
     - New: `backend/tests/services/agent/test_feature_store.py`
 
 ## Key Files

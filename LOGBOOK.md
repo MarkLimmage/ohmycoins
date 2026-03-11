@@ -1,3 +1,32 @@
+## [2026-03-11] - Sprint 2.48 Complete
+
+**Intent**: Implement Explainable AI (SHAP) and Feature Store (Materialized Views).
+
+**Status**: COMPLETED
+
+**Implementation Summary**:
+
+**Track A — Backend: Explainable AI (SHAP)**:
+- Implemented `ExplainabilityService` supporting TreeExplainer (XGBoost/RF) and LinearExplainer.
+- Extended `ModelPlaygroundService` to support `predict_with_explanation()`.
+- Added API endpoints: `POST /artifacts/{id}/explain` and extended `predict` with `include_explanation=true`.
+- 34 new tests passing.
+
+**Track B — Frontend: Explainability UI**:
+- Added `useExplainability` hook for managing explanation state.
+- Created `FeatureImportanceChart` (Bar chart) and `PredictionExplanation` (Waterfall chart) components.
+- Integrated "Explain" button into `ArtifactViewer` and `ModelPlaygroundPanel`.
+- Regenerated OpenAPI client to support new endpoints.
+
+**Track C — Backend: Feature Store (Data Engineering)**:
+- Implemented 4 Materialized Views via Alembic migration:
+  - `mv_coin_targets_5min` (Targets with 1h/24h look-ahead).
+  - `mv_sentiment_signals_1h` (Aggregated signals).
+  - `mv_catalyst_impact_decay` (Exponential decay for events).
+  - `mv_training_set_v1` (Unified training set with T-1h lag).
+- Added refresh scheduler logic.
+- Documented Architecture in `docs/requirements/feature_store/`.
+
 ## [2026-03-10] - Sprint 2.45 Track A: Backend Implementation Complete
 
 **Intent**: Implement all backend infrastructure for Sprint 2.45 (H2 hotfix + A1-A5 tasks)
