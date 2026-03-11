@@ -96,17 +96,18 @@ export function SessionList({
                   </Badge>
                   <IconButton
                     aria-label="Delete session"
-                    icon={<FiTrash2 />}
                     size="xs"
                     variant="ghost"
-                    colorScheme="red"
+                    colorPalette="red"
                     onClick={(e) => {
                       e.stopPropagation()
                       if (window.confirm("Are you sure you want to delete this session?")) {
                         onDelete(session.id)
                       }
                     }}
-                  />
+                  >
+                    <FiTrash2 />
+                  </IconButton>
                 </HStack>
               </HStack>
               <HStack justify="space-between">
