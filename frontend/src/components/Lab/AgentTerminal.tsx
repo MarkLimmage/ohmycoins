@@ -89,18 +89,30 @@ const AgentTerminal = ({
     if (sessionHistory) {
       setMessages((prev) => {
         const historyMessages: AgentMessageType[] = sessionHistory.map(
-          (msg) => ({
-            id: msg.id,
-            type:
-              msg.role === "user"
-                ? "input_request"
-                : msg.role === "system"
-                  ? "thought"
-                  : "output", // Defaulting assistant/others to output
-            content: msg.content,
-            timestamp: msg.created_at,
-            metadata: undefined,
-          }),
+          (msg: any) => {
+            let metadata = undefined
+            if (msg.metadata_json) {
+              try {
+                metadata = JSON.parse(msg.metadata_json)
+              } catch (e) {
+                console.error("Failed to parse metadata_json", e)
+              }
+            }
+
+            let type: AgentMessageType["type"] = "output"
+            if (msg.role === "user") type = "input_request"
+            else if (msg.role === "system") type = "thought"
+            else if (msg.role === "function" || msg.role === "tool") type = "result"
+            else if (msg.role === "assistant" && metadata?.tool_calls) type = "tool"
+            
+            return {
+              id: msg.id,
+              type,
+              content: msg.content,
+              timestamp: msg.created_at,
+              metadata,
+            }
+          },
         )
 
         // Merge history with existing messages, avoiding duplicates
