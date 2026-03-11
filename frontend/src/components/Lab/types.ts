@@ -22,6 +22,8 @@ export interface AgentMessage {
     tool_name?: string
     execution_time?: number
     error?: string
+    // Allow any other metadata for detailed step info
+    [key: string]: any
   }
 }
 

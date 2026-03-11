@@ -103,7 +103,11 @@ const AgentTerminal = ({
             if (msg.role === "user") type = "input_request"
             else if (msg.role === "system") type = "thought"
             else if (msg.role === "function" || msg.role === "tool") type = "result"
-            else if (msg.role === "assistant" && metadata?.tool_calls) type = "tool"
+            else if (msg.role === "assistant") {
+              if (metadata?.tool_calls) type = "tool"
+              else if (msg.content.startsWith("Step: ")) type = "thought"
+              else if (metadata?.error) type = "result"
+            }
             
             return {
               id: msg.id,

@@ -1,9 +1,12 @@
-import { Box, HStack, Icon, Text, VStack } from "@chakra-ui/react"
+import { Box, Button, HStack, Icon, Text, VStack } from "@chakra-ui/react"
 import { useColorModeValue } from "@/components/ui/color-mode"
 import { format } from "date-fns"
+import { useState } from "react"
 import {
   FiAlertCircle,
   FiCheckCircle,
+  FiChevronDown,
+  FiChevronRight,
   FiCode,
   FiMessageSquare,
   FiTool,
@@ -16,6 +19,7 @@ interface AgentMessageProps {
 
 const AgentMessage = ({ message }: AgentMessageProps) => {
   const { type, content, timestamp, metadata } = message
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // Hooks for adaptive colors
   const thoughtColor = useColorModeValue("gray.500", "gray.400")
@@ -26,6 +30,11 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
   const outputBg = useColorModeValue("blue.50", "whiteAlpha.200")
   const codeBg = useColorModeValue("gray.100", "whiteAlpha.200")
   const codeLangColor = useColorModeValue("gray.500", "gray.400")
+  const metaColor = useColorModeValue("gray.600", "gray.300")
+  const metaBg = useColorModeValue("gray.50", "whiteAlpha.100")
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200")
+  const hoverBg = useColorModeValue("gray.50", "whiteAlpha.50")
+  const chevronColor = useColorModeValue("gray.400", "gray.500")
 
   const getMessageStyle = () => {
     switch (type) {
@@ -78,9 +87,10 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
   const messageStyle = getMessageStyle()
   const formattedTime = format(new Date(timestamp), "HH:mm:ss.SSS")
 
+  const hasDetails = metadata && Object.keys(metadata).length > 0 &&
+    Object.keys(metadata).some(k => !["tool_name", "execution_time", "error"].includes(k) || (k === "raw" && metadata.raw))
+
   const renderContent = () => {
-    // Regex to split code blocks: capturing both language and code content
-    // Note: This regex assumes well-formed markdown code blocks
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
     const parts = content.split(codeBlockRegex)
 
@@ -98,12 +108,9 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
       )
     }
     
-    // When split by regex with capturing groups, the array looks like:
-    // [text_before, language, code, text_after, ...]
     const elements = []
     let i = 0
     while (i < parts.length) {
-      // 1. Text part
       const textPart = parts[i]
       if (textPart) {
         elements.push(
@@ -121,7 +128,6 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
       }
       i++
       
-      // Check if we have a match (language and code)
       if (i < parts.length) {
         const language = parts[i]
         const code = parts[i + 1]
@@ -151,15 +157,11 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
               </Box>
             )
         }
-        // Advance past language and code
         i += 2
       }
     }
     return elements
   }
-
-  const borderColor = useColorModeValue("gray.200", "whiteAlpha.200")
-  const hoverBg = useColorModeValue("gray.50", "whiteAlpha.50")
 
   return (
     <Box
@@ -196,22 +198,49 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
             </Text>
           </HStack>
 
-          <Box flex={1}>{renderContent()}</Box>
+          <Box flex={1}>
+            {renderContent()}
+            
+            {hasDetails && isExpanded && (
+              <Box
+                mt={2}
+                p={2}
+                bg={metaBg}
+                borderRadius="md"
+                fontSize="xs"
+                fontFamily="monospace"
+                color={metaColor}
+                border="1px solid"
+                borderColor={borderColor}
+                overflowX="auto"
+              >
+                <Text fontWeight="bold" mb={1} fontSize="10px" color="gray.500" textTransform="uppercase">Message Details</Text>
+                <Text whiteSpace="pre-wrap" wordBreak="break-word">
+                  {JSON.stringify(metadata, null, 2)}
+                </Text>
+              </Box>
+            )}
+          </Box>
+
+          {hasDetails && (
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={() => setIsExpanded(!isExpanded)}
+              aria-label={isExpanded ? "Collapse details" : "Expand details"}
+              title={isExpanded ? "Collapse details" : "Expand details"}
+              minW="auto"
+              h="auto"
+              p={1}
+              color={chevronColor}
+              _hover={{ color: "gray.700", bg: "blackAlpha.100" }}
+            >
+              <Icon fontSize="md">
+                {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
+              </Icon>
+            </Button>
+          )}
         </HStack>
-
-        {metadata?.tool_name && (
-          <Text fontSize="xs" color="gray.500" pl="90px">
-            Tool: {metadata.tool_name}
-            {metadata.execution_time !== undefined &&
-              ` (${metadata.execution_time}ms)`}
-          </Text>
-        )}
-
-        {metadata?.error && type !== "result" && (
-          <Text fontSize="xs" color="red.400" pl="90px" fontStyle="italic">
-            Error: {metadata.error}
-          </Text>
-        )}
       </VStack>
     </Box>
   )

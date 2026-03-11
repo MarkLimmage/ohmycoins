@@ -124,6 +124,7 @@ class AgentRunner:
                         content = ""
                         msg_type = "output"
                         agent_name = node_name
+                        metadata_json = None
 
                         if isinstance(node_state, dict):
                             # Sprint 2.45: Check for structured event types first
@@ -186,8 +187,10 @@ class AgentRunner:
                                 )
                                 if node_state.get("error"):
                                     msg_type = "result"
+                                    metadata_json = content
                                 elif node_state.get("current_step"):
                                     msg_type = "thought"
+                                    metadata_json = content
                                     content = f"Step: {node_state['current_step']}"
                         else:
                             content = str(node_state)
@@ -199,9 +202,17 @@ class AgentRunner:
                             role="assistant",
                             content=content,
                             agent_name=agent_name,
+                            metadata=metadata_json,
                         )
 
                         # Publish to Redis for live WS consumers
+                        pub_metadata = None
+                        if metadata_json:
+                            try:
+                                pub_metadata = json.loads(metadata_json)
+                            except Exception:
+                                pub_metadata = {"raw": metadata_json}
+
                         await self._publish(
                             redis,
                             channel,
@@ -210,6 +221,7 @@ class AgentRunner:
                                 "content": content,
                                 "agent_name": agent_name,
                                 "timestamp": None,  # will be set by consumer
+                                "metadata": pub_metadata,
                             },
                         )
 
