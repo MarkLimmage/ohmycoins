@@ -29,6 +29,7 @@ from app.models import (
 )
 from app.services.agent import AgentOrchestrator, SessionManager
 from app.services.agent.artifacts import ArtifactManager
+from app.services.agent.explainability import ExplainabilityService
 from app.services.agent.nodes.approval import (
     handle_approval_granted,
     handle_approval_rejected,
@@ -39,6 +40,7 @@ from app.services.agent.override import apply_user_override, get_override_points
 from app.services.agent.playground import ModelPlaygroundService
 from app.services.agent.runner import get_runner
 from app.services.agent.schemas import (
+    ExplanationResponse,
     ModelInfo,
     PredictionRequest,
     PredictionResponse,
@@ -52,6 +54,7 @@ session_manager = SessionManager()
 orchestrator = AgentOrchestrator(session_manager)
 artifact_manager = ArtifactManager()
 playground_service = ModelPlaygroundService()
+explainability_service = ExplainabilityService()
 
 
 @router.post("/sessions", response_model=AgentSessionPublic, status_code=201)
@@ -848,6 +851,59 @@ async def get_artifact_info(
     return info
 
 
+@router.post("/artifacts/{artifact_id}/explain", response_model=ExplanationResponse)
+async def explain_artifact(
+    *,
+    artifact_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """Compute and cache global SHAP explanation for a model."""
+    artifact = artifact_manager.get_artifact(artifact_id, db)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        result = explainability_service.compute_global_shap(artifact_id, db)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Explanation failed: {str(e)}")
+
+    return result
+
+
+@router.get("/artifacts/{artifact_id}/explain", response_model=ExplanationResponse)
+async def get_explanation(
+    *,
+    artifact_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """Get cached SHAP explanation for a model."""
+    artifact = artifact_manager.get_artifact(artifact_id, db)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    session = await session_manager.get_session(db, artifact.session_id)
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    try:
+        result = explainability_service.compute_global_shap(artifact_id, db)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    if not result.get("cached", False) and not result.get("supported", False):
+        raise HTTPException(status_code=404, detail="No cached explanation found")
+
+    return result
+
+
 @router.post("/artifacts/{artifact_id}/predict", response_model=PredictionResponse)
 async def predict_with_artifact(
     *,
@@ -868,6 +924,16 @@ async def predict_with_artifact(
     try:
         model, scaler, metadata = playground_service.load_model(artifact_id, db)
         result = playground_service.predict(model, scaler, request_body.feature_values, metadata)
+        if request_body.include_explanation:
+            shap_result = explainability_service.compute_prediction_shap(
+                model, scaler, request_body.feature_values, metadata
+            )
+            if shap_result:
+                result["shap_values"] = shap_result["shap_values"]
+                result["shap_base_value"] = shap_result["base_value"]
+            else:
+                result["shap_values"] = None
+                result["shap_base_value"] = None
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
