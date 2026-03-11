@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { OpenAPI } from "@/client"
+import { getWebSocketBaseUrl } from "@/utils/env"
 import type { AgentMessage } from "@/components/Lab/types"
 
 interface UseLabWebSocketOptions {
@@ -41,8 +42,7 @@ export const useLabWebSocket = ({
       token = rawToken
     }
 
-    const baseUrl =
-      OpenAPI.BASE?.replace(/^http/, "ws") || "wss://api.ohmycoins.com"
+    const baseUrl = getWebSocketBaseUrl()
     const wsUrl = `${baseUrl}/ws/agent/${sessionId}/stream?token=${token}`
 
     try {

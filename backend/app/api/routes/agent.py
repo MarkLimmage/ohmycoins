@@ -190,13 +190,25 @@ async def delete_agent_session(
             status_code=403, detail="Not authorized to delete this session"
         )
 
-    # Cancel if running
-    if session.status == "running":
-        await orchestrator.cancel_session(db, session_id)
+    try:
+        # Cancel if running
+        if session.status == "running":
+            await orchestrator.cancel_session(db, session_id)
 
-    # Delete from database (cascade will delete messages and artifacts)
-    db.delete(session)
-    db.commit()
+        # Delete from database (cascade will delete messages and artifacts)
+        # Verify relationships are loaded/loadable to prevent partial deletion errors
+        # This is a safety check for the uselist=True fix
+        _ = session.messages
+        _ = session.artifacts
+
+        db.delete(session)
+        db.commit()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        # Rollback in case of partial failure
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
 
     return {"message": "Session deleted successfully"}
 

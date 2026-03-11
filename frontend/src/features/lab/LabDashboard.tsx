@@ -28,6 +28,8 @@ import {
   usePromoteArtifact,
   useSessionArtifacts,
 } from "./hooks"
+import { getWebSocketBaseUrl } from "@/utils/env"
+
 import { useLabWebSocket } from "./hooks/useLabWebSocket"
 
 export function LabDashboard() {
@@ -119,8 +121,7 @@ export function LabDashboard() {
     selectedSession?.status === "pending" ||
     selectedSession?.status === "running"
 
-  const baseUrl =
-    OpenAPI.BASE?.replace(/^http/, "ws") || "wss://api.ohmycoins.com"
+  const baseUrl = getWebSocketBaseUrl()
   const streamUrl =
     selectedSessionId && resolvedToken
       ? `${baseUrl}/ws/agent/${selectedSessionId}/stream?token=${resolvedToken}`

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { OpenAPI } from "@/client" // Assuming client setup
+import { getWebSocketBaseUrl } from "@/utils/env"
 import type { AlgorithmData, PLTickerData } from "../types"
 
 // Mock initial data to prevent crashes while loading
@@ -33,10 +34,22 @@ export const useFloorWebSocket = () => {
   const connect = useCallback(async () => {
     if (ws.current?.readyState === WebSocket.OPEN) return
 
-    const token = OpenAPI.TOKEN
+    let token: string | undefined
+    const rawToken = OpenAPI.TOKEN
+    if (typeof rawToken === "function") {
+      try {
+        token = await (rawToken as () => Promise<string>)()
+      } catch (err) {
+        console.error("Failed to resolve token for Floor WS:", err)
+        return
+      }
+    } else {
+      token = rawToken
+    }
+
     // Replace http/https with ws/wss
-    const baseUrl =
-      OpenAPI.BASE?.replace(/^http/, "ws") || "wss://api.ohmycoins.com"
+    const baseUrl = getWebSocketBaseUrl()
+    // TODO: Verify if the endpoint is correctly structured for the backend
     const wsUrl = `${baseUrl}/ws/floor/pnl?token=${token}`
 
     try {
