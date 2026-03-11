@@ -1084,6 +1084,7 @@ class AgentSession(AgentSessionBase, table=True):
             lazy="selectin",
             cascade="all, delete-orphan",
             back_populates="session",
+            uselist=True,
         ),
     )
     artifacts: list[AgentArtifact] = Relationship(
@@ -1093,6 +1094,7 @@ class AgentSession(AgentSessionBase, table=True):
             lazy="selectin",
             cascade="all, delete-orphan",
             back_populates="session",
+            uselist=True,
         ),
     )
 

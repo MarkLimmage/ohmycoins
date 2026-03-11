@@ -23,6 +23,7 @@ import {
 } from "./components/TrainingProgressChart"
 import {
   useCancelSession,
+  useDeleteSession,
   useLabSessions,
   usePromoteArtifact,
   useSessionArtifacts,
@@ -50,6 +51,7 @@ export function LabDashboard() {
   const { data: sessionsData } = useLabSessions()
   const { data: artifactsData } = useSessionArtifacts(selectedSessionId)
   const cancelSession = useCancelSession()
+  const deleteSession = useDeleteSession()
   const promoteArtifact = usePromoteArtifact()
 
   const artifacts: Artifact[] = (artifactsData || []).map((a) => ({
@@ -165,6 +167,12 @@ export function LabDashboard() {
             sessions={sessionsData?.data || []}
             selectedId={selectedSessionId}
             onSelect={setSelectedSessionId}
+            onDelete={(id) => {
+              deleteSession.mutate(id)
+              if (id === selectedSessionId) {
+                setSelectedSessionId(null)
+              }
+            }}
           />
         </Box>
 

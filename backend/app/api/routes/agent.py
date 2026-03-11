@@ -234,7 +234,7 @@ async def get_session_messages(
             status_code=403, detail="Not authorized to access this session"
         )
 
-    return session.messages
+    return session.messages or []
 
 
 @router.get(
@@ -270,7 +270,7 @@ async def get_session_artifacts(
             status_code=403, detail="Not authorized to access this session"
         )
 
-    return session.artifacts
+    return session.artifacts or []
 
 
 @router.post("/sessions/{session_id}/cancel", response_model=dict[str, str])

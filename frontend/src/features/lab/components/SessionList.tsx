@@ -1,11 +1,13 @@
-import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react"
+import { Badge, Box, HStack, Text, VStack, IconButton } from "@chakra-ui/react"
 import { formatDistanceToNow } from "date-fns"
+import { FiTrash2 } from "react-icons/fi"
 import type { AgentSessionPublic } from "@/client"
 
 interface SessionListProps {
   sessions: AgentSessionPublic[]
   selectedId: string | null
   onSelect: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 const statusConfig: Record<string, { color: string; label: string }> = {
@@ -20,6 +22,7 @@ export function SessionList({
   sessions,
   selectedId,
   onSelect,
+  onDelete,
 }: SessionListProps) {
   if (sessions.length === 0) {
     return (
@@ -82,14 +85,29 @@ export function SessionList({
                 <Text fontSize="sm" fontWeight="medium" lineClamp={1} flex={1}>
                   {session.user_goal}
                 </Text>
-                <Badge
-                  colorPalette={config.color}
-                  size="sm"
-                  variant="subtle"
-                  flexShrink={0}
-                >
-                  {config.label}
-                </Badge>
+                <HStack gap={1}>
+                  <Badge
+                    colorPalette={config.color}
+                    size="sm"
+                    variant="subtle"
+                    flexShrink={0}
+                  >
+                    {config.label}
+                  </Badge>
+                  <IconButton
+                    aria-label="Delete session"
+                    icon={<FiTrash2 />}
+                    size="xs"
+                    variant="ghost"
+                    colorScheme="red"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (window.confirm("Are you sure you want to delete this session?")) {
+                        onDelete(session.id)
+                      }
+                    }}
+                  />
+                </HStack>
               </HStack>
               <HStack justify="space-between">
                 <Text fontSize="xs" color="gray.500" fontFamily="mono">
