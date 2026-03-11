@@ -247,8 +247,15 @@ async def get_session_messages(
         raise HTTPException(
             status_code=403, detail="Not authorized to access this session"
         )
-
-    return session.messages or []
+    
+    # Use direct query to ensure ordering and avoid lazy loading issues
+    statement = (
+        select(AgentSessionMessage)
+        .where(AgentSessionMessage.session_id == session_id)
+        .order_by(AgentSessionMessage.created_at)
+    )
+    messages = db.exec(statement).all()
+    return messages
 
 
 @router.get(

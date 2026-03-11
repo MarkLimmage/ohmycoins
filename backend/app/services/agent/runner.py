@@ -167,6 +167,9 @@ class AgentRunner:
                                     },
                                     default=str,
                                 )
+                            elif node_state.get("result"):
+                                msg_type = "output"
+                                content = node_state["result"]
                             else:
                                 # Original content extraction logic
                                 content = (

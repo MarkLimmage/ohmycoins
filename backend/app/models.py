@@ -1235,6 +1235,9 @@ class AgentSessionMessagePublic(SQLModel):
     agent_name: str | None = Field(
         default=None, description="Name of the specific agent"
     )
+    metadata_json: str | None = Field(
+        default=None, description="JSON metadata for message"
+    )
     created_at: datetime = Field(description="Message creation timestamp")
 
     # UI Loading State Support
