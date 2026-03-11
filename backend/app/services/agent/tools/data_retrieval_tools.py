@@ -439,3 +439,76 @@ async def fetch_user_positions(
         }
         for result in results
     ]
+
+
+async def fetch_training_data(
+    session: Session,
+    coin_type: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    limit: int = 10000,
+) -> list[dict[str, Any]]:
+    """
+    Fetch pre-aligned training data from the Feature Store materialized view.
+
+    Queries mv_training_set_v1 which provides targets, price features,
+    sentiment features (with strict T-1h lag), and catalyst features.
+
+    Args:
+        session: Database session
+        coin_type: Optional filter by cryptocurrency symbol
+        start_date: Optional start date
+        end_date: Optional end date
+        limit: Maximum rows to return (default 10000)
+
+    Returns:
+        List of training data dictionaries
+    """
+    from sqlalchemy import text as sa_text
+
+    conditions = []
+    params: dict[str, Any] = {"limit": limit}
+
+    if coin_type:
+        conditions.append("coin_type = :coin_type")
+        params["coin_type"] = coin_type
+    if start_date:
+        conditions.append("timestamp >= :start_date")
+        params["start_date"] = start_date
+    if end_date:
+        conditions.append("timestamp <= :end_date")
+        params["end_date"] = end_date
+
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+    query = sa_text(f"""
+        SELECT timestamp, coin_type, target_return_1h, target_return_24h,
+               volatility_24h, sentiment_1h_lag, news_vol_1h_lag, catalyst_score_decay
+        FROM mv_training_set_v1
+        WHERE {where_clause}
+        ORDER BY timestamp
+        LIMIT :limit
+    """)
+
+    try:
+        result = session.execute(query, params)
+        rows = result.fetchall()
+    except Exception as e:
+        error_msg = str(e)
+        if "does not exist" in error_msg:
+            return [{"error": "Feature Store views not yet created. Run alembic upgrade head and refresh views first."}]
+        raise
+
+    return [
+        {
+            "timestamp": row[0].isoformat() if row[0] else None,
+            "coin_type": row[1],
+            "target_return_1h": float(row[2]) if row[2] is not None else None,
+            "target_return_24h": float(row[3]) if row[3] is not None else None,
+            "volatility_24h": float(row[4]) if row[4] is not None else None,
+            "sentiment_1h_lag": float(row[5]) if row[5] is not None else None,
+            "news_vol_1h_lag": int(row[6]) if row[6] is not None else None,
+            "catalyst_score_decay": float(row[7]) if row[7] is not None else None,
+        }
+        for row in rows
+    ]
