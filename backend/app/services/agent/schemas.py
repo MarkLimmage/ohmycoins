@@ -47,6 +47,7 @@ class PredictionRequest(BaseModel):
     """Request to run a prediction on a saved model."""
 
     feature_values: dict[str, float]
+    include_explanation: bool = False
 
 
 class PredictionResponse(BaseModel):
@@ -58,6 +59,8 @@ class PredictionResponse(BaseModel):
     model_type: str
     task_type: str
     feature_columns_used: list[str]
+    shap_values: dict[str, float] | None = None
+    shap_base_value: float | None = None
 
 
 class ModelInfo(BaseModel):
@@ -69,3 +72,16 @@ class ModelInfo(BaseModel):
     feature_columns: list[str]
     training_metrics: dict[str, Any] | None = None
     created_at: str | None = None
+
+
+class ExplanationResponse(BaseModel):
+    """Response from model explanation."""
+
+    supported: bool
+    reason: str | None = None
+    feature_importance: list[FeatureImportance] | None = None
+    plot_artifact_id: str | None = None
+    plot_path: str | None = None
+    model_type: str
+    shap_base_value: float | None = None
+    cached: bool = False

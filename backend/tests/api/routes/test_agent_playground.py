@@ -99,3 +99,54 @@ class TestPromoteArtifact:
             json={"algorithm_name": "Test"},
         )
         assert response.status_code == 401
+
+
+class TestExplainArtifact:
+    def test_explain_artifact_not_found(self, client: TestClient, auth_headers: dict[str, str]) -> None:
+        artifact_id = uuid.uuid4()
+        response = client.post(
+            f"/api/v1/lab/agent/artifacts/{artifact_id}/explain",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+    def test_explain_requires_auth(self, client: TestClient) -> None:
+        artifact_id = uuid.uuid4()
+        response = client.post(
+            f"/api/v1/lab/agent/artifacts/{artifact_id}/explain",
+        )
+        assert response.status_code == 401
+
+    def test_get_explanation_not_found(self, client: TestClient, auth_headers: dict[str, str]) -> None:
+        artifact_id = uuid.uuid4()
+        response = client.get(
+            f"/api/v1/lab/agent/artifacts/{artifact_id}/explain",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+    def test_get_explanation_requires_auth(self, client: TestClient) -> None:
+        artifact_id = uuid.uuid4()
+        response = client.get(
+            f"/api/v1/lab/agent/artifacts/{artifact_id}/explain",
+        )
+        assert response.status_code == 401
+
+
+class TestPredictWithExplanation:
+    def test_predict_with_explanation_not_found(self, client: TestClient, auth_headers: dict[str, str]) -> None:
+        artifact_id = uuid.uuid4()
+        response = client.post(
+            f"/api/v1/lab/agent/artifacts/{artifact_id}/predict",
+            json={"feature_values": {"x1": 1.0}, "include_explanation": True},
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+    def test_predict_with_explanation_requires_auth(self, client: TestClient) -> None:
+        artifact_id = uuid.uuid4()
+        response = client.post(
+            f"/api/v1/lab/agent/artifacts/{artifact_id}/predict",
+            json={"feature_values": {"x1": 1.0}, "include_explanation": True},
+        )
+        assert response.status_code == 401

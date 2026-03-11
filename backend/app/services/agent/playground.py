@@ -59,7 +59,7 @@ class ModelPlaygroundService:
         prediction = model.predict(df)[0]
 
         result: dict[str, Any] = {
-            "prediction": float(prediction) if isinstance(prediction, (int, float, np.integer, np.floating)) else str(prediction),
+            "prediction": float(prediction) if isinstance(prediction, int | float | np.integer | np.floating) else str(prediction),
             "model_type": type(model).__name__,
             "task_type": metadata.get("task_type", "unknown"),
             "feature_columns_used": feature_columns,
@@ -70,10 +70,30 @@ class ModelPlaygroundService:
             try:
                 probas = model.predict_proba(df)[0]
                 classes = model.classes_
-                result["probabilities"] = {str(c): float(p) for c, p in zip(classes, probas)}
+                result["probabilities"] = {str(c): float(p) for c, p in zip(classes, probas, strict=False)}
                 result["prediction_label"] = str(prediction)
             except Exception:
                 pass
+
+        return result
+
+    def predict_with_explanation(
+        self, model: Any, scaler: Any, feature_values: dict[str, float], metadata: dict
+    ) -> dict:
+        """Run prediction with optional SHAP explanation."""
+        from .explainability import ExplainabilityService
+
+        result = self.predict(model, scaler, feature_values, metadata)
+
+        explainability = ExplainabilityService()
+        shap_result = explainability.compute_prediction_shap(model, scaler, feature_values, metadata)
+
+        if shap_result:
+            result["shap_values"] = shap_result["shap_values"]
+            result["shap_base_value"] = shap_result["base_value"]
+        else:
+            result["shap_values"] = None
+            result["shap_base_value"] = None
 
         return result
 
