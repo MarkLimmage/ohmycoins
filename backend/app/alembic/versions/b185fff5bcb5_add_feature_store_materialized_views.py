@@ -17,6 +17,7 @@ depends_on = None
 
 def upgrade():
     # 1. mv_coin_targets_5min — future returns + volatility
+    op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_coin_targets_5min CASCADE")
     op.execute("""
         CREATE MATERIALIZED VIEW mv_coin_targets_5min AS
         SELECT
@@ -31,6 +32,7 @@ def upgrade():
     op.execute("CREATE UNIQUE INDEX idx_mv_targets_coin_time ON mv_coin_targets_5min(coin_type, timestamp)")
 
     # 2. mv_sentiment_signals_1h — hourly sentiment aggregation
+    op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_sentiment_signals_1h CASCADE")
     op.execute("""
         CREATE MATERIALIZED VIEW mv_sentiment_signals_1h AS
         SELECT
@@ -47,6 +49,7 @@ def upgrade():
     op.execute("CREATE UNIQUE INDEX idx_mv_sentiment_coin_hour ON mv_sentiment_signals_1h(coin_type, hour_bucket)")
 
     # 3. mv_catalyst_impact_decay — exponential decay
+    op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_catalyst_impact_decay CASCADE")
     op.execute("""
         CREATE MATERIALIZED VIEW mv_catalyst_impact_decay AS
         SELECT
@@ -62,6 +65,7 @@ def upgrade():
     op.execute("CREATE UNIQUE INDEX idx_mv_catalyst_decay_coin_time ON mv_catalyst_impact_decay(coin_type, timestamp)")
 
     # 4. mv_training_set_v1 — unified training dataset
+    op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_training_set_v1 CASCADE")
     op.execute("""
         CREATE MATERIALIZED VIEW mv_training_set_v1 AS
         SELECT
