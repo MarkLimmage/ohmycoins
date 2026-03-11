@@ -19,6 +19,7 @@ import {
   FiX,
   FiXCircle,
 } from "react-icons/fi"
+import { useLabSessionMessages } from "@/features/lab/hooks"
 import useCustomToast from "@/hooks/useCustomToast"
 import AgentMessage from "./AgentMessage"
 import type {
@@ -41,6 +42,7 @@ const AgentTerminal = ({
   const [filteredMessages, setFilteredMessages] = useState<AgentMessageType[]>(
     [],
   )
+  const { data: sessionHistory } = useLabSessionMessages(sessionId)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -82,6 +84,47 @@ const AgentTerminal = ({
       setFilteredMessages(messages)
     }
   }, [searchQuery, messages])
+
+  useEffect(() => {
+    if (sessionHistory) {
+      setMessages((prev) => {
+        const historyMessages: AgentMessageType[] = sessionHistory.map(
+          (msg) => ({
+            id: msg.id,
+            type:
+              msg.role === "user"
+                ? "input_request"
+                : msg.role === "system"
+                  ? "thought"
+                  : "output", // Defaulting assistant/others to output
+            content: msg.content,
+            timestamp: msg.created_at,
+            metadata: undefined,
+          }),
+        )
+
+        // Merge history with existing messages, avoiding duplicates
+        const existingIds = new Set(prev.map((m) => m.id))
+        const newMessages = historyMessages.filter(
+          (m) => !existingIds.has(m.id),
+        )
+
+        if (newMessages.length === 0) return prev
+
+        // Combine and sort by timestamp
+        const combined = [...prev, ...newMessages].sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        )
+        return combined
+      })
+      
+      // Scroll to bottom after loading history if auto-scroll is enabled
+      if (autoScrollRef.current) {
+        setTimeout(() => scrollToBottom(), 100)
+      }
+    }
+  }, [sessionHistory, scrollToBottom])
 
   useEffect(() => {
     const ws = new WebSocket(streamUrl)
@@ -161,10 +204,38 @@ const AgentTerminal = ({
       .join("\n\n")
 
     try {
-      await navigator.clipboard.writeText(transcript)
-      showSuccessToast("Transcript copied to clipboard")
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(transcript)
+        showSuccessToast("Transcript copied to clipboard")
+      } else {
+        throw new Error("Clipboard API unavailable")
+      }
     } catch (_error) {
-      showErrorToast("Could not copy transcript to clipboard")
+      // Fallback for non-secure contexts
+      try {
+        const textArea = document.createElement("textarea")
+        textArea.value = transcript
+        
+        // Ensure textarea is not visible but part of DOM
+        textArea.style.position = "fixed"
+        textArea.style.left = "-9999px"
+        textArea.style.top = "0"
+        
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        
+        const successful = document.execCommand("copy")
+        document.body.removeChild(textArea)
+        
+        if (successful) {
+          showSuccessToast("Transcript copied to clipboard")
+        } else {
+          showErrorToast("Could not copy transcript to clipboard")
+        }
+      } catch (e) {
+        showErrorToast("Could not copy transcript to clipboard")
+      }
     }
   }, [messages, showSuccessToast, showErrorToast])
 

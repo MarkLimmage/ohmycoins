@@ -73,6 +73,15 @@ export const useSessionArtifacts = (sessionId: string | null) => {
   })
 }
 
+export const useLabSessionMessages = (sessionId: string | null) => {
+  return useQuery({
+    queryKey: ["lab-session-messages", sessionId],
+    queryFn: () => AgentService.getSessionMessages({ sessionId: sessionId! }),
+    enabled: !!sessionId,
+    staleTime: 5_000,
+  })
+}
+
 export const usePromoteArtifact = () => {
   const queryClient = useQueryClient()
   return useMutation({
