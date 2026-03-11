@@ -14,13 +14,15 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlmodel import select
+from sqlmodel import select, delete
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     AgentArtifactPublic,
     AgentSession,
     AgentSessionCreate,
+    AgentSessionMessage,
+    AgentArtifact,
     AgentSessionMessagePublic,
     AgentSessionPublic,
     AgentSessionsPublic,
@@ -195,12 +197,12 @@ async def delete_agent_session(
         if session.status == "running":
             await orchestrator.cancel_session(db, session_id)
 
-        # Delete from database (cascade will delete messages and artifacts)
-        # Verify relationships are loaded/loadable to prevent partial deletion errors
-        # This is a safety check for the uselist=True fix
-        _ = session.messages
-        _ = session.artifacts
-
+        # Manually delete related records to avoid SQLAlchemy cascade issues
+        # This is safer than relying on ORM when relationship loading is unstable
+        db.exec(delete(AgentSessionMessage).where(AgentSessionMessage.session_id == session_id))
+        db.exec(delete(AgentArtifact).where(AgentArtifact.session_id == session_id))
+        
+        # Now delete the session itself
         db.delete(session)
         db.commit()
     except Exception as e:

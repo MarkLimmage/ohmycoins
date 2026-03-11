@@ -87,7 +87,12 @@ class AgentRunner:
 
                 from .langgraph_workflow import AgentState, LangGraphWorkflow
 
-                workflow = LangGraphWorkflow(session=None)
+                # Initialize workflow with database session and user context
+                workflow = LangGraphWorkflow(
+                    session=db,
+                    user_id=session.user_id,
+                    credential_id=session.llm_credential_id,
+                )
                 initial_state: AgentState = {
                     "session_id": str(session_id),
                     "user_goal": session.user_goal,
