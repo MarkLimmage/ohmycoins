@@ -1,5 +1,5 @@
 import { Box, Button, HStack, Icon, Text, VStack } from "@chakra-ui/react"
-import { FiDownload, FiPlay, FiUpload } from "react-icons/fi"
+import { FiDownload, FiInfo, FiPlay, FiUpload } from "react-icons/fi"
 
 export interface Artifact {
   id?: string
@@ -13,6 +13,7 @@ interface ArtifactViewerProps {
   artifacts: Artifact[]
   onPromote?: (artifact: Artifact) => void
   onTest?: (artifact: Artifact) => void
+  onExplain?: (artifact: Artifact) => void
 }
 
 function getTypeColor(type: string): string {
@@ -36,6 +37,7 @@ export function ArtifactViewer({
   artifacts,
   onPromote,
   onTest,
+  onExplain,
 }: ArtifactViewerProps) {
   return (
     <Box
@@ -106,6 +108,18 @@ export function ArtifactViewer({
                     >
                       <Icon as={FiPlay} mr={1} />
                       Test
+                    </Button>
+                  )}
+                  {artifact.type === "model" && onExplain && (
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      colorScheme="purple"
+                      onClick={() => onExplain(artifact)}
+                      fontSize="xs"
+                    >
+                      <Icon as={FiInfo} mr={1} />
+                      Explain
                     </Button>
                   )}
                   {artifact.type === "model" && onPromote && (

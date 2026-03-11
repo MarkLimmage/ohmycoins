@@ -1,7 +1,11 @@
-import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react"
+import { Box, Button, HStack, Icon, Text, VStack } from "@chakra-ui/react"
 import { useState } from "react"
-import { FiPlay, FiX } from "react-icons/fi"
-import { useModelInfo, useModelPredict } from "../hooks"
+import { FiInfo, FiPlay, FiX } from "react-icons/fi"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useModelInfo } from "../hooks"
+import { useExplainModel, useModelPredict } from "../hooks/useExplainability"
+import { FeatureImportanceChart } from "./FeatureImportanceChart"
+import { PredictionExplanation } from "./PredictionExplanation"
 
 interface ModelPlaygroundPanelProps {
   artifactId: string
@@ -18,7 +22,9 @@ export function ModelPlaygroundPanel({
     error: infoError,
   } = useModelInfo(artifactId)
   const predict = useModelPredict()
+  const explain = useExplainModel()
   const [featureValues, setFeatureValues] = useState<Record<string, string>>({})
+  const [includeExplanation, setIncludeExplanation] = useState(false)
 
   const handlePredict = () => {
     if (!modelInfo) return
@@ -26,7 +32,11 @@ export function ModelPlaygroundPanel({
     for (const col of modelInfo.feature_columns) {
       numericValues[col] = parseFloat(featureValues[col] || "0") || 0
     }
-    predict.mutate({ artifactId, featureValues: numericValues })
+    predict.mutate({
+      artifactId,
+      featureValues: numericValues,
+      includeExplanation,
+    })
   }
 
   return (
@@ -124,16 +134,38 @@ export function ModelPlaygroundPanel({
               ))}
             </VStack>
 
-            {/* Predict button */}
-            <Button
-              size="sm"
-              colorScheme="blue"
-              onClick={handlePredict}
-              loading={predict.isPending}
+            {/* Explanation checkbox */}
+            <Checkbox
+              checked={includeExplanation}
+              onCheckedChange={(checked) => setIncludeExplanation(!!checked)}
             >
-              <FiPlay style={{ marginRight: "4px" }} />
-              Run Prediction
-            </Button>
+              <Text fontSize="xs" color="gray.300">
+                Include SHAP explanation
+              </Text>
+            </Checkbox>
+
+            {/* Predict button */}
+            <HStack gap={2}>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={handlePredict}
+                loading={predict.isPending}
+              >
+                <FiPlay style={{ marginRight: "4px" }} />
+                Run Prediction
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="purple"
+                onClick={() => explain.mutate(artifactId)}
+                loading={explain.isPending}
+              >
+                <Icon as={FiInfo} mr={1} />
+                Explain Model
+              </Button>
+            </HStack>
 
             {/* Results */}
             {predict.data && (
@@ -196,6 +228,36 @@ export function ModelPlaygroundPanel({
             {predict.error && (
               <Text fontSize="sm" color="red.400">
                 Prediction failed. Check model compatibility.
+              </Text>
+            )}
+
+            {/* Explanation results */}
+            {predict.data?.shap_values &&
+              predict.data?.shap_base_value !== undefined && (
+                <PredictionExplanation
+                  shapValues={predict.data.shap_values}
+                  baseValue={predict.data.shap_base_value}
+                  prediction={
+                    predict.data.prediction_label || predict.data.prediction
+                  }
+                />
+              )}
+
+            {explain.data?.supported && explain.data.feature_importance && (
+              <FeatureImportanceChart
+                features={explain.data.feature_importance}
+              />
+            )}
+
+            {explain.data && !explain.data.supported && explain.data.reason && (
+              <Text fontSize="sm" color="yellow.400">
+                Explanation not available: {explain.data.reason}
+              </Text>
+            )}
+
+            {explain.error && (
+              <Text fontSize="sm" color="red.400">
+                Failed to generate explanation
               </Text>
             )}
           </>

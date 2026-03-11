@@ -415,6 +415,28 @@ export type ControlResponse = {
 };
 
 /**
+ * Response from model explanation.
+ */
+export type ExplanationResponse = {
+    supported: boolean;
+    reason?: (string | null);
+    feature_importance?: (Array<FeatureImportance> | null);
+    plot_artifact_id?: (string | null);
+    plot_path?: (string | null);
+    model_type: string;
+    shap_base_value?: (number | null);
+    cached?: boolean;
+};
+
+/**
+ * Feature importance from a trained model.
+ */
+export type FeatureImportance = {
+    feature_name: string;
+    importance: number;
+};
+
+/**
  * Single entry in historical P&L data
  */
 export type HistoricalPnLEntry = {
@@ -862,6 +884,7 @@ export type PredictionRequest = {
     feature_values: {
         [key: string]: (number);
     };
+    include_explanation?: boolean;
 };
 
 /**
@@ -876,6 +899,10 @@ export type PredictionResponse = {
     model_type: string;
     task_type: string;
     feature_columns_used: Array<(string)>;
+    shap_values?: ({
+    [key: string]: (number);
+} | null);
+    shap_base_value?: (number | null);
 };
 
 /**
@@ -1463,6 +1490,18 @@ export type AgentGetArtifactInfoData = {
 };
 
 export type AgentGetArtifactInfoResponse = (ModelInfo);
+
+export type AgentExplainArtifactData = {
+    artifactId: string;
+};
+
+export type AgentExplainArtifactResponse = (ExplanationResponse);
+
+export type AgentGetExplanationData = {
+    artifactId: string;
+};
+
+export type AgentGetExplanationResponse = (ExplanationResponse);
 
 export type AgentPredictWithArtifactData = {
     artifactId: string;

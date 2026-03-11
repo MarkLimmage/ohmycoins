@@ -1224,6 +1224,103 @@ export const ControlResponseSchema = {
     title: 'ControlResponse'
 } as const;
 
+export const ExplanationResponseSchema = {
+    properties: {
+        supported: {
+            type: 'boolean',
+            title: 'Supported'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        },
+        feature_importance: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/FeatureImportance'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Feature Importance'
+        },
+        plot_artifact_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plot Artifact Id'
+        },
+        plot_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plot Path'
+        },
+        model_type: {
+            type: 'string',
+            title: 'Model Type'
+        },
+        shap_base_value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Shap Base Value'
+        },
+        cached: {
+            type: 'boolean',
+            title: 'Cached',
+            default: false
+        }
+    },
+    type: 'object',
+    required: ['supported', 'model_type'],
+    title: 'ExplanationResponse',
+    description: 'Response from model explanation.'
+} as const;
+
+export const FeatureImportanceSchema = {
+    properties: {
+        feature_name: {
+            type: 'string',
+            title: 'Feature Name'
+        },
+        importance: {
+            type: 'number',
+            title: 'Importance'
+        }
+    },
+    type: 'object',
+    required: ['feature_name', 'importance'],
+    title: 'FeatureImportance',
+    description: 'Feature importance from a trained model.'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -2051,6 +2148,11 @@ export const PredictionRequestSchema = {
             },
             type: 'object',
             title: 'Feature Values'
+        },
+        include_explanation: {
+            type: 'boolean',
+            title: 'Include Explanation',
+            default: false
         }
     },
     type: 'object',
@@ -2111,6 +2213,31 @@ export const PredictionResponseSchema = {
             },
             type: 'array',
             title: 'Feature Columns Used'
+        },
+        shap_values: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Shap Values'
+        },
+        shap_base_value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Shap Base Value'
         }
     },
     type: 'object',
