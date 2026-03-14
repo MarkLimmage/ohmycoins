@@ -135,7 +135,8 @@ async def websocket_lab(
                 user_input = data
 
             # Initialize state
-            initial_state: DSLCState = {
+            # Explicitly cast to dict to satisfy MyPy if StateT binding is loose
+            initial_state_dict: dict[str, Any] = {
                 "session_id": session_id,
                 "current_stage": DSLCStage.BUSINESS_UNDERSTANDING,
                 "chat_history": [{"role": "user", "content": user_input}],
@@ -147,7 +148,7 @@ async def websocket_lab(
             # Run the graph and stream events
             # Route LangGraph async streams to JSON payloads
             async for event in graph.astream(
-                initial_state,
+                initial_state_dict,
                 config={"configurable": {"thread_id": session_id}},
             ):
                 # event is a dict of node_name -> state_update

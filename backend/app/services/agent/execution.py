@@ -8,7 +8,7 @@ from app.services.dagger_wrapper import DaggerExecutor
 class SandboxExecutor:
     """Executes Python code inside a Dagger container using DaggerExecutor."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.dagger_executor = DaggerExecutor()
 
     async def execute_code(

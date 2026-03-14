@@ -48,7 +48,7 @@ def _format_execution_output(
 
 async def _emit_status_update(
     session_id: str, stage: StageID, status: NodeStatus, message: str | None = None
-):
+) -> None:
     """Emits a status_update event via WebSocket."""
     payload = {"status": status, "message": message}
     await manager.broadcast_json(
@@ -59,7 +59,7 @@ async def _emit_status_update(
 
 async def _emit_render_output(
     session_id: str, stage: StageID, payload: RenderOutputPayload
-):
+) -> None:
     """Emits a render_output event via WebSocket."""
     await manager.broadcast_json(
         {"event_type": "render_output", "stage": stage, "payload": payload},
@@ -67,7 +67,9 @@ async def _emit_render_output(
     )
 
 
-async def _emit_error(session_id: str, stage: StageID, message: str, code: int = 500):
+async def _emit_error(
+    session_id: str, stage: StageID, message: str, code: int = 500
+) -> None:
     """Emits an error event via WebSocket."""
     payload = {"message": message, "code": code}
     await manager.broadcast_json(
@@ -317,7 +319,7 @@ if 'df' in locals():
     acc = accuracy_score(y_test, y_pred)
 
     # Output metadata as JSON Blueprint
-    metrics = {
+    metrics: dict[str, Any] = {
         "model_id": "xgb_v1",
         "accuracy": float(acc),
         "feature_importance": dict(zip(features, map(float, model.feature_importances_)))
@@ -414,7 +416,7 @@ async def node_error(state: LabState) -> dict[str, Any]:
     # Error Node
     # Goal: Handle failures and END
     session_id = state.get("session_id", "default")
-    error_msg = state.get("error", "Unknown error")
+    error_msg = state.get("error") or "Unknown error"
     stage = state.get("current_stage", StageID.DATA_ACQUISITION) # Default or current
 
     # We might not need to emit error here if it was already emitted,

@@ -6,30 +6,24 @@
 
 ## 1. The Incident
 
-Your recent commit failed the integration pipeline during the merge sequence. The codebase has been reverted to its pre-merge state. You must resolve the issues below before we can attempt integration again.
+Your code failed the integration pipeline (MyPy Type Check). The codebase has been reverted.
 
-**Failing Stage:** MyPy Type Checking / Syntax Check
-**Culprit File(s):** backend/app/services/agent/graph.py
+**Failing Stage:** Static Analysis (MyPy)
+**Culprit File(s):** 
+- `backend/app/services/agent/nodes/lab_nodes.py`
+- `backend/app/api/routes/websockets.py`
+- `backend/app/services/agent/execution.py`
 
 ## 2. The Raw Logs
 
-Review the exact terminal output below to diagnose the failure. Do not guess the error; read the stack trace.
-
 ```text
-+ mypy app
-app/services/agent/graph.py:109: error: unexpected indent  [syntax]
-Found 1 error in 1 file (errors prevented further checking)
+app/services/agent/nodes/lab_nodes.py:49: error: Function is missing a return type annotation [no-untyped-def]
+app/services/agent/nodes/lab_nodes.py:113: error: Dict entry 0 has incompatible type "str": "dict[str, float]" [dict-item]
+app/services/agent/nodes/lab_nodes.py:423: error: Argument 3 to "_emit_error" has incompatible type "str | None"; expected "str" [arg-type]
+app/api/routes/websockets.py:150: error: Argument 1 to "astream" of "Pregel" has incompatible type "DSLCState"; expected "StateT | Command[Any] | None" [arg-type]
+app/services/agent/execution.py:11: error: Function is missing a return type annotation [no-untyped-def]
 ```
 
-## 3. The Directive (Your Mission)
+## 3. The Directive
 
-You have been reactivated solely to fix this integration failure.
-
-**Execution Rules:**
-
-1.  **Scope Lock:** Do not rewrite the entire file or refactor unrelated architecture. Target *only* the specific lines causing the type mismatch, linting error, or test failure.
-2.  **Contract Adherence:** Ensure your fix does not violate the API_CONTRACTS.md.
-3.  **The "Good Enough" Rule:** If you are fighting a deeply nested MyPy generic type inference that has no bearing on runtime execution, you are authorized to use `# type: ignore` with a brief comment to unblock the build.
-4.  **Verification:** Run the local test or linter script (e.g., `scripts/lint.sh`) in your environment to verify the fix before reporting completion.
-
-**Next Step:** Acknowledge this failure report, fix the code, push your commit, and notify the Supervisor that the branch is ready for another merge attempt.
+Fix the Type Errors. Ensure `_emit_error` handles None. Fix the TypedDict/Dict mismatch in `lab_nodes.py`.
