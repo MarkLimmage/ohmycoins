@@ -92,7 +92,7 @@ workflow.add_edge("evaluation", "deployment")
 workflow.add_edge("deployment", END)
 
 # Compile graph with persistence and interrupts
-# Requirements: 
+# Requirements:
 # "Approval Gates: ... interrupt node before transitioning from EXPLORATION to MODELING, and MODELING to EVALUATION."
 # Interrupting *before* the node means the graph pauses right before executing that node.
 checkpointer = MemorySaver()
@@ -105,6 +105,3 @@ graph = workflow.compile(
 # The graph is currently strictly linear. To enforce no-loop, we ensure no backward edges are added.
 # Backward edges would handle retries, but "infinite loop" must be prevented.
 # This implementation is currently DAG (Directed Acyclic Graph) by design.
-
-    interrupt_before=["modeling", "evaluation"]
-)
