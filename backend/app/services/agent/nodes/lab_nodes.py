@@ -101,17 +101,17 @@ async def _mock_execute_code(code: str, stage: StageID) -> dict[str, Any]:
         }
     elif stage == StageID.MODELING:
         # Simulate Blueprint
-        metrics = {
+        modeling_metrics: dict[str, Any] = {
             "target_variable": "target_return_1h",
             "feature_list": ["volatility_24h", "sentiment_1h", "news_vol_1h"],
             "ml_task_type": "CLASSIFICATION",
             "algorithm_recommendation": "XGBClassifier",
             "primary_evaluation_metric": "f1_score",
         }
-        return {"stdout": json.dumps(metrics), "stderr": ""}
+        return {"stdout": json.dumps(modeling_metrics), "stderr": ""}
     elif stage == StageID.EVALUATION:
         # Simulate Tearsheet
-        metrics = {
+        evaluation_metrics: dict[str, Any] = {
             "metrics": {
                 "f1_score": 0.82,
                 "precision": 0.85,
@@ -120,7 +120,7 @@ async def _mock_execute_code(code: str, stage: StageID) -> dict[str, Any]:
             "assumed_pnl_percent": 14.5,
             "mlflow_run_id": "mock_run_id_123"
         }
-        return {"stdout": json.dumps(metrics), "stderr": ""}
+        return {"stdout": json.dumps(evaluation_metrics), "stderr": ""}
 
     return {"stdout": "Executed mock code.", "stderr": ""}
 

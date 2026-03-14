@@ -148,7 +148,7 @@ async def websocket_lab(
             # Run the graph and stream events
             # Route LangGraph async streams to JSON payloads
             async for event in graph.astream(
-                initial_state_dict,
+                cast(DSLCState, initial_state_dict),
                 config={"configurable": {"thread_id": session_id}},
             ):
                 # event is a dict of node_name -> state_update
