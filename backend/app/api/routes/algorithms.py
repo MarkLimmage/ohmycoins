@@ -9,7 +9,7 @@ from mlflow.tracking import MlflowClient
 from pydantic import BaseModel
 from sqlmodel import Session
 
-from app.api.deps import get_current_active_user, get_db
+from app.api.deps import get_current_user, get_db
 from app.models import Algorithm, User
 
 router = APIRouter()
@@ -36,7 +36,7 @@ class PromotionResponse(BaseModel):
 def promote_algorithm(
     request: PromotionRequest,
     session: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
 ) -> Any:
     """
     Promote an algorithm from Lab (MLflow Run) to Floor (Algorithm Registry).
