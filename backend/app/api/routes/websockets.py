@@ -128,6 +128,9 @@ async def websocket_lab(
     from app.services.agent.lab_graph import app as graph
     from app.services.agent.lab_schema import LabState, NodeStatus, StageID
 
+    # API Contract sequence tracker
+    sequence_id = 0
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -137,6 +140,9 @@ async def websocket_lab(
                 user_msg_content = payload.get("message", "")
             except (json.JSONDecodeError, TypeError):
                 user_msg_content = data
+
+            # Initialize sequence counter for API contract
+            # sequence_id = 0  <-- REMOVE THIS LINE (commented out effectively by not including in newString)
 
             # Initialize state using LabState schema
             initial_state: LabState = {
@@ -179,10 +185,13 @@ async def websocket_lab(
                         last_msg = state_update["messages"][-1]
                         content = last_msg.content
                         if content:
+                            sequence_id += 1
                             await websocket.send_json(
                                 {
                                     "event_type": "stream_chat",
                                     "stage": current_stage,
+                                    "sequence_id": sequence_id,
+                                    "timestamp": datetime.utcnow().isoformat(),
                                     "payload": {"text_delta": content},
                                 }
                             )
@@ -198,10 +207,13 @@ async def websocket_lab(
     except Exception as e:
         # Send error event
         try:
+            sequence_id += 1  # Increment sequence ID for error response
             await websocket.send_json(
                 {
                     "event_type": "error",
                     "stage": "UNKNOWN",
+                    "sequence_id": sequence_id,
+                    "timestamp": datetime.utcnow().isoformat(),
                     "payload": {"message": str(e), "code": "500"},
                 }
             )

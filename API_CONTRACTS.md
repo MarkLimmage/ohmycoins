@@ -29,6 +29,8 @@ Every message sent from the FastAPI backend to the React frontend must strictly 
 {
   "event_type": "stream_chat | status_update | render_output | error",
   "stage": "<StageID>",
+  "sequence_id": <int>,
+  "timestamp": "<ISO-8601 UTC>",
   "payload": { ... } 
 }
 
