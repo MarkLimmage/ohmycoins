@@ -10,7 +10,6 @@ from app.services.agent.lab_schema import (
     RenderOutputPayload,
     StageID,
 )
-from app.services.agent.tools.sandbox import execute_sandbox_code
 from app.services.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,7 @@ async def _emit_error(
     )
 
 
-async def _mock_execute_code(code: str, stage: StageID) -> dict[str, Any]:
+async def _mock_execute_code(_code: str, stage: StageID) -> dict[str, Any]:
     """Mock execution to avoid real backend dependencies."""
     if stage == StageID.DATA_ACQUISITION:
         # Simulate loading data
@@ -91,9 +90,7 @@ async def _mock_execute_code(code: str, stage: StageID) -> dict[str, Any]:
         return {
             "stdout": json.dumps(
                 {
-                    "data": [
-                        {"x": [1, 2, 3], "y": [10, 15, 13], "type": "scatter"}
-                    ],
+                    "data": [{"x": [1, 2, 3], "y": [10, 15, 13], "type": "scatter"}],
                     "layout": {"title": "Mock Price Chart"},
                 }
             ),
@@ -112,13 +109,9 @@ async def _mock_execute_code(code: str, stage: StageID) -> dict[str, Any]:
     elif stage == StageID.EVALUATION:
         # Simulate Tearsheet
         evaluation_metrics: dict[str, Any] = {
-            "metrics": {
-                "f1_score": 0.82,
-                "precision": 0.85,
-                "recall": 0.79
-            },
+            "metrics": {"f1_score": 0.82, "precision": 0.85, "recall": 0.79},
             "assumed_pnl_percent": 14.5,
-            "mlflow_run_id": "mock_run_id_123"
+            "mlflow_run_id": "mock_run_id_123",
         }
         return {"stdout": json.dumps(evaluation_metrics), "stderr": ""}
 
@@ -180,14 +173,14 @@ else:
         # Here we assume success unless explicitly flagged.
         insufficient_data = False
         if insufficient_data:
-             await _emit_status_update(
+            await _emit_status_update(
                 session_id, stage, NodeStatus.STALE, "Insufficient Data"
             )
-             return {
+            return {
                 "error": "insufficient_data",
                 "current_stage": stage,
                 "status": NodeStatus.STALE,
-             }
+            }
 
     except Exception as e:
         logger.error(f"Sandbox execution failed: {e}")
@@ -195,7 +188,7 @@ else:
         return {
             "error": str(e),
             "current_stage": stage,
-            "status": NodeStatus.STALE, # Or error status
+            "status": NodeStatus.STALE,  # Or error status
         }
 
     await _emit_render_output(session_id, stage, payload)
@@ -208,7 +201,6 @@ else:
         "status": NodeStatus.COMPLETE,
         "messages": [AIMessage(content=f"Data acquired successfully from {mv_name}.")],
     }
-
 
 
 async def node_preparation(state: LabState) -> dict[str, Any]:
@@ -417,7 +409,7 @@ async def node_error(state: LabState) -> dict[str, Any]:
     # Goal: Handle failures and END
     session_id = state.get("session_id", "default")
     error_msg = state.get("error") or "Unknown error"
-    stage = state.get("current_stage", StageID.DATA_ACQUISITION) # Default or current
+    stage = state.get("current_stage", StageID.DATA_ACQUISITION)  # Default or current
 
     # We might not need to emit error here if it was already emitted,
     # but strictly ensuring it is good practice.
@@ -425,6 +417,6 @@ async def node_error(state: LabState) -> dict[str, Any]:
     await _emit_error(session_id, stage, error_msg)
 
     return {
-        "status": NodeStatus.STALE, # Or some terminal status
+        "status": NodeStatus.STALE,  # Or some terminal status
         "messages": [AIMessage(content=f"Workflow halted due to error: {error_msg}")],
     }

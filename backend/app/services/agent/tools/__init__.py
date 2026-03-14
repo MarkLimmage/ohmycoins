@@ -10,6 +10,9 @@ Week 11 implementation: Reporting tools.
 from .anomaly_detection import (
     detect_price_anomalies,
 )
+from .dagger_tool import (
+    run_code_in_dagger,
+)
 from .data_analysis_tools import (
     analyze_on_chain_signals,
     analyze_sentiment_trends,
@@ -45,9 +48,6 @@ from .reporting_tools import (
 )
 from .signal_query import (
     query_market_signals,
-)
-from .dagger_tool import (
-    run_code_in_dagger,
 )
 
 __all__ = [

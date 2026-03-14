@@ -6,11 +6,11 @@ from app.services.agent.nodes.lab_nodes import (
     node_business_understanding,
     node_data_acquisition,
     node_deployment,
+    node_error,
     node_evaluation,
     node_exploration,
     node_modeling,
     node_preparation,
-    node_error,
 )
 
 
@@ -69,4 +69,3 @@ app = workflow.compile(
     checkpointer=checkpointer,
     interrupt_before=[StageID.PREPARATION.value, StageID.MODELING.value],
 )
-

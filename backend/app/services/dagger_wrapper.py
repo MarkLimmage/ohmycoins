@@ -1,9 +1,9 @@
-import dagger
-import sys
-import os
-import shutil
 import asyncio
-from typing import Dict, Any, List, Optional
+import os
+from typing import Any
+
+import dagger
+
 
 class DaggerExecutor:
     """
@@ -20,10 +20,10 @@ class DaggerExecutor:
     async def execute_script(
         self,
         script_content: str,
-        data_path: Optional[str],
+        data_path: str | None,
         output_dir: str,
-        mlflow_tracking_uri: str = "http://mlflow_server:5000"
-    ) -> Dict[str, Any]:
+        mlflow_tracking_uri: str = "http://mlflow_server:5000",
+    ) -> dict[str, Any]:
         """
         Executes the provided Python script in a Dagger container with a 300s timeout.
 
@@ -56,35 +56,34 @@ class DaggerExecutor:
                     output_dir,
                     mlflow_tracking_uri,
                     script_filename,
-                    data_filename
+                    data_filename,
                 ),
-                timeout=300.0
+                timeout=300.0,
             )
         except asyncio.TimeoutError:
             return {
                 "status": "error",
                 "message": "Execution timed out (300s limit enforced).",
                 "stdout": "",
-                "stderr": "TimeoutError: Script execution exceeded 300 seconds."
+                "stderr": "TimeoutError: Script execution exceeded 300 seconds.",
             }
         except Exception as e:
             return {
                 "status": "error",
                 "message": str(e),
                 "stdout": "",
-                "stderr": str(e)
+                "stderr": str(e),
             }
 
     async def _run_dagger(
         self,
         script_content: str,
-        data_path: Optional[str],
+        data_path: str | None,
         output_dir: str,
         mlflow_tracking_uri: str,
         script_filename: str,
-        data_filename: str
-    ) -> Dict[str, Any]:
-
+        data_filename: str,
+    ) -> dict[str, Any]:
         # Initialize Dagger client
         # Config log_output to stderr allows seeing Dagger internal logs in host stderr
         # Removed explicit log_output to avoid potential type issues with TextIOWrapper vs TextIO
@@ -92,11 +91,12 @@ class DaggerExecutor:
             # 1. Build the container from the Dockerfile in root
             # This ensures we use the correct environment with TA-Lib, shap, etc.
             # We assume the script is running with CWD at project root for correct context
-            project_root = os.getcwd() # Assumption: CWD is project root
+            project_root = os.getcwd()  # Assumption: CWD is project root
 
             # Use docker_build from directory context
             container = (
-                client.host().directory(project_root)
+                client.host()
+                .directory(project_root)
                 .docker_build(dockerfile=self.dockerfile_path)
                 .with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
                 .with_workdir("/workspace")
@@ -105,13 +105,14 @@ class DaggerExecutor:
             # 2. Mount input files
             # script_content -> /workspace/algo_script.py
             # data_path (host) -> /workspace/training_data.parquet (if provided)
-            container = (
-                container
-                .with_new_file(f"/workspace/{script_filename}", contents=script_content)
+            container = container.with_new_file(
+                f"/workspace/{script_filename}", contents=script_content
             )
 
             if data_path:
-                container = container.with_file(f"/workspace/{data_filename}", client.host().file(data_path))
+                container = container.with_file(
+                    f"/workspace/{data_filename}", client.host().file(data_path)
+                )
 
             # 3. Execute the script
             # We expect the script to read 'training_data.parquet' and output files to /workspace/out
@@ -133,6 +134,5 @@ class DaggerExecutor:
             "status": "success",
             "stdout": stdout,
             "stderr": stderr,
-            "output_dir": output_dir
+            "output_dir": output_dir,
         }
-

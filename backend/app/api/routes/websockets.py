@@ -123,9 +123,10 @@ async def websocket_lab(
     await websocket.accept()
 
     # Import the correct graph and schema
-    from app.services.agent.lab_graph import app as graph
-    from app.services.agent.lab_schema import LabState, StageID, NodeStatus
     from langchain_core.messages import HumanMessage
+
+    from app.services.agent.lab_graph import app as graph
+    from app.services.agent.lab_schema import LabState, NodeStatus, StageID
 
     try:
         while True:
@@ -164,14 +165,14 @@ async def websocket_lab(
                 stream_mode="updates",
             ):
                 # event is a dict of node_name -> state_update
-                for node_name, state_update in event.items():
+                for _node_name, state_update in event.items():
                     current_stage = state_update.get("current_stage", "UNKNOWN")
 
                     # 1. Status Update (Implicitly handled by node emissions, but fallback here)
                     # Note: Our nodes now emit websockets directly, so this loop might be redundant
                     # for status updates, unless we want to catch graph-level transitions.
                     if "current_stage" in state_update:
-                        pass # Nodes emit their own status updates now
+                        pass  # Nodes emit their own status updates now
 
                     # 2. Chat Stream (Simulated for now as full message)
                     if "messages" in state_update and state_update["messages"]:
@@ -182,7 +183,7 @@ async def websocket_lab(
                                 {
                                     "event_type": "stream_chat",
                                     "stage": current_stage,
-                                    "payload": {"text_delta": content}
+                                    "payload": {"text_delta": content},
                                 }
                             )
 
