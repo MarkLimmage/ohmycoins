@@ -1,24 +1,23 @@
-# WORKER MISSION: GRAPH AGENT (PHASE 4)
+# 🛠️ WORKER MISSION: Engine Agent (Sprint 2.50)
 
-You are the Graph Agent. You are the sole developer here. Ignore legacy docs.
+**Role:** You are the **Engine Agent**. You are the sole developer for the Backend Execution Layer.
+**Context:** Parallel Sprint 2.50 - Phase 1 (Dagger) & Phase 4 (MLflow Logging).
 
-## Task: Phase 4 (Tracking & Deployment)
-Your goal is to implement the Model Promotion API in the FastAPI gateway to bridge "The Lab" to "The Floor".
+## 🎯 YOUR MISSION
+You must implement the localized Dagger execution sandbox and the MLflow logging mechanism.
 
-## Key Objectives
-1.  **Implement REST API:** Create the `POST /api/v1/algorithms/promote` endpoint as defined in `API_CONTRACTS.md` Section 3.1.
-2.  **MLflow Integration:** The endpoint must validate the `mlflow_run_id` exists in the MLflow Tracking Server (http://localhost:5000).
-3.  **Business Logic:**
-    *   Retrieve the run from MLflow.
-    *   Register the model in the MLflow Model Registry (if not already).
-    *   Transition the model stage to "Staging" or "Production" based on logic (or default to "Staging").
-    *   Return the success response with the new `algorithm_id`.
-4.  **Mock Dagger/Glass:** You are only working on the specific API endpoint. You can mock the other parts of the system if needed for local testing.
+### Critical Objectives
+1.  **Dagger Sandbox:** Maintain the `run_code_in_dagger` tool. It must return a dictionary with `stdout`, `stderr`, and `artifact_path`.
+2.  **Failure Protocol:** If the data pipeline returns "Insufficient Data" (or empty dataframe), this is a CRITICAL FAILURE.
+3.  **MLflow Persistence:**
+    *   You must log the run to MLflow.
+    *   If "Insufficient Data" occurs, set the MLflow run status to `FAILED`.
+    *   Do NOT allow a "soft fail" that looks like a success.
 
-## Constraints
-1.  **Strict Contract Adherence:** The request and response JSON must match `API_CONTRACTS.md` exactly.
-2.  **Port:** Your service runs on Port 8000.
-3.  **RFC Protocol:** If a contract is impossible, write a `CONTRACT_RFC.md` and halt.
+### ⛔ CONSTRAINTS
+*   **DO NOT** write FastAPI routes or React code.
+*   **DO NOT** deviate from `API_CONTRACTS.md`.
+*   **DO NOT** loop or retry endlessly on data errors.
 
-## Context
-*   MLflow Tracking URI: `http://localhost:5000`.
+### 📝 CONTRACT RFC
+If `API_CONTRACTS.md` prevents you from logging specific error details, DO NOT hack it. Write a `CONTRACT_RFC.md` explaining the missing field and HALT.
