@@ -100,6 +100,106 @@ async def websocket_glass_live(
     _user: Annotated[User, Depends(get_websocket_user)],
 ) -> None:
     """
+    Real-time feed for Glass (market data).
+    """
+    channel_id = "glass"
+    await manager.connect(websocket, channel_id)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, channel_id)
+
+
+@router.websocket("/lab/{session_id}")
+async def websocket_lab(
+    websocket: WebSocket,
+    session_id: str,
+    # _user: Annotated[User, Depends(get_websocket_user)], # authentication for later
+) -> None:
+    """
+    Bi-directional WebSocket for 'The Lab' LangGraph agent.
+    """
+    await websocket.accept()
+    
+    from app.services.agent.lab_graph import app as lab_agent
+    from app.services.agent.lab_schema import LabState, StageID, NodeStatus
+    from langchain_core.messages import HumanMessage
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Expecting JSON with user message or command
+            # For simplicity assuming raw text for now or simple JSON
+            try:
+                payload = json.loads(data)
+                user_input = payload.get("message", "")
+            except:
+                user_input = data
+            
+            # Initialize state if needed
+            initial_state = {
+                "messages": [HumanMessage(content=user_input)],
+                "session_id": session_id,
+                "current_stage": StageID.BUSINESS_UNDERSTANDING, # Default for new runs
+                "status": NodeStatus.PENDING,
+                "retry_count": 0
+            }
+            
+            # Run the graph and stream events
+            # We use stream_mode="updates" to get state changes from each node
+            async for event in lab_agent.astream(initial_state, config={"configurable": {"thread_id": session_id}}):
+                # event is a dict of node_name -> state_update
+                for node_name, state_update in event.items():
+                    # Check for messages to stream
+                    if "messages" in state_update and state_update["messages"]:
+                        last_msg = state_update["messages"][-1]
+                        if hasattr(last_msg, "content"):
+                             await websocket.send_json({
+                                "event_type": "stream_chat",
+                                "stage": node_name, # Map node name to StageID
+                                "payload": {"text_delta": last_msg.content}
+                            })
+
+                    # Check for results to render
+                    # Mapping node results to render_output events
+                    result_keys = {
+                       "data_acquisition_result": StageID.DATA_ACQUISITION,
+                       "exploration_result": StageID.EXPLORATION,
+                       "modeling_result": StageID.MODELING,
+                       "evaluation_result": StageID.EVALUATION
+                    }
+                    
+                    for key, stage in result_keys.items():
+                        if key in state_update and state_update[key]:
+                             await websocket.send_json({
+                                "event_type": "render_output",
+                                "stage": stage,
+                                "payload": state_update[key]
+                            })
+                    
+                    # Send status update
+                    await websocket.send_json({
+                        "event_type": "status_update",
+                        "stage": node_name,
+                        "payload": {"status": "COMPLETE"} # mocking success
+                    })
+                    
+    except WebSocketDisconnect:
+        # Handle disconnect
+        pass
+    except Exception as e:
+        # Send error event
+        await websocket.send_json({
+            "event_type": "error",
+            "stage": "UNKNOWN", # Could track current stage
+            "payload": {
+                "message": str(e),
+                "code": "INTERNAL_ERROR"
+            }
+        })
+) -> None:
+    """
     Real-time feed for Glass Ledger (TVL/Fees).
     """
     channel_id = "glass"
