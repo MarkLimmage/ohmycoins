@@ -379,31 +379,48 @@ async def websocket_agent_stream(
         .order_by(AgentSessionMessage.created_at)  # type: ignore[arg-type]
     )
     history = db.exec(hist_statement).all()
-    for msg in history:
-        await websocket.send_text(
-            json.dumps(
-                {
-                    "id": str(msg.id),
-                    "type": "output",
-                    "content": msg.content,
-                    "agent_name": msg.agent_name,
-                    "timestamp": msg.created_at.isoformat() if msg.created_at else None,
-                    "replay": True,
-                }
-            )
+    for i, msg in enumerate(history, start=1):
+        # Infer type from content if possible, or default to status_update
+        event_type = "status_update"
+        stage = "BUSINESS_UNDERSTANDING"
+
+        # Construct legacy payload
+        payload = {
+            "content": msg.content,
+            "agent_name": msg.agent_name,
+        }
+        if msg.metadata_json:
+            try:
+                payload["metadata"] = json.loads(msg.metadata_json)
+            except Exception:
+                payload["metadata"] = {"raw": msg.metadata_json}
+
+        await websocket.send_json(
+            {
+                "event_type": event_type,
+                "stage": stage,
+                "sequence_id": i,
+                "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+                "payload": payload,
+            }
         )
 
     # If session already finished, send done and close
     if session_obj.status in ("completed", "failed", "cancelled"):
-        await websocket.send_text(
-            json.dumps(
-                {
-                    "type": "status",
-                    "content": f"Session {session_obj.status}",
+        # We need next sequence_id
+        final_seq_id = len(history) + 1
+        await websocket.send_json(
+            {
+                "event_type": "status_update",
+                "stage": "DEPLOYMENT",
+                "sequence_id": final_seq_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "payload": {
                     "status": session_obj.status,
+                    "message": f"Session {session_obj.status}",
                     "done": True,
-                }
-            )
+                },
+            }
         )
         await websocket.close()
         return

@@ -11,6 +11,7 @@ from typing import Any
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
 from sqlmodel import Session
 
 from app.models import AgentSessionStatus
@@ -35,8 +36,10 @@ class AgentOrchestrator:
             session_manager: Session manager for state persistence
         """
         self.session_manager = session_manager
+        self.checkpointer = MemorySaver()
         self.workflow = LangGraphWorkflow(
-            session=None
+            session=None,
+            checkpointer=self.checkpointer
         )  # Session will be set per execution
 
     async def start_session(self, db: Session, session_id: uuid.UUID) -> dict[str, Any]:
@@ -121,6 +124,7 @@ class AgentOrchestrator:
                 session=db,
                 user_id=session.user_id,
                 credential_id=session.llm_credential_id,
+                checkpointer=self.checkpointer,
             )
 
             # Track which LLM was selected by the factory
