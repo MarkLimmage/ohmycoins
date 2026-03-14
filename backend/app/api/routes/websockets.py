@@ -122,7 +122,10 @@ async def websocket_lab(
     """
     await websocket.accept()
 
-    from app.services.agent.graph import graph, DSLCState, DSLCStage
+    # Import the correct graph and schema
+    from app.services.agent.lab_graph import app as graph
+    from app.services.agent.lab_schema import LabState, StageID, NodeStatus
+    from langchain_core.messages import HumanMessage
 
     try:
         while True:
@@ -130,48 +133,50 @@ async def websocket_lab(
             # Expecting JSON with user message or command
             try:
                 payload = json.loads(data)
-                user_input = payload.get("message", "")
+                user_msg_content = payload.get("message", "")
             except (json.JSONDecodeError, TypeError):
-                user_input = data
+                user_msg_content = data
 
-            # Initialize state
-            # Explicitly cast to dict to satisfy MyPy if StateT binding is loose
-            initial_state_dict: dict[str, Any] = {
+            # Initialize state using LabState schema
+            initial_state: LabState = {
                 "session_id": session_id,
-                "current_stage": DSLCStage.BUSINESS_UNDERSTANDING,
-                "chat_history": [{"role": "user", "content": user_input}],
-                "artifacts": {},
-                "stale_flags": {},
-                "context": {}
+                "current_stage": StageID.BUSINESS_UNDERSTANDING,
+                "messages": [HumanMessage(content=user_msg_content)],
+                "status": NodeStatus.PENDING,
+                "user_goal": user_msg_content,  # Initial goal is the user prompt
+                "dataset_name": None,
+                "features": [],
+                "data_acquisition_result": None,
+                "exploration_result": None,
+                "modeling_result": None,
+                "evaluation_result": None,
+                "error": None,
+                "retry_count": 0,
+                "human_approved": False,
             }
 
             # Run the graph and stream events
             # Route LangGraph async streams to JSON payloads
+            # No casting needed if initial_state is typed correctly as LabState
             async for event in graph.astream(
-                cast(DSLCState, initial_state_dict),
+                cast(Any, initial_state),
                 config={"configurable": {"thread_id": session_id}},
+                stream_mode="updates",
             ):
                 # event is a dict of node_name -> state_update
                 for node_name, state_update in event.items():
                     current_stage = state_update.get("current_stage", "UNKNOWN")
 
-                    # 1. Status Update
+                    # 1. Status Update (Implicitly handled by node emissions, but fallback here)
+                    # Note: Our nodes now emit websockets directly, so this loop might be redundant
+                    # for status updates, unless we want to catch graph-level transitions.
                     if "current_stage" in state_update:
-                       await websocket.send_json(
-                           {
-                               "event_type": "status_update",
-                               "stage": current_stage,
-                               "payload": {
-                                   "status": "COMPLETE", # Placeholder status
-                                   "message": f"Completed {node_name}"
-                               }
-                           }
-                       )
-                    
+                        pass # Nodes emit their own status updates now
+
                     # 2. Chat Stream (Simulated for now as full message)
-                    if "chat_history" in state_update and state_update["chat_history"]:
-                        last_msg = state_update["chat_history"][-1]
-                        content = last_msg.get("content", "")
+                    if "messages" in state_update and state_update["messages"]:
+                        last_msg = state_update["messages"][-1]
+                        content = last_msg.content
                         if content:
                             await websocket.send_json(
                                 {
@@ -182,31 +187,12 @@ async def websocket_lab(
                             )
 
                     # 3. Render Output (Artifacts)
-                    if "artifacts" in state_update and state_update["artifacts"]:
-                        artifacts = state_update["artifacts"]
-                        # Check if we have an artifact for the current stage
-                        if current_stage in artifacts:
-                             await websocket.send_json({
-                                 "event_type": "render_output",
-                                 "stage": current_stage,
-                                 "payload": {
-                                     "mime_type": "application/json", 
-                                     "content": {"uri": artifacts[current_stage]},
-                                     "code_snippet": None,
-                                     "hyperparameters": None
-                                 }
-                             })
-
-            # Send final completion message
-            await websocket.send_json({
-                "event_type": "status_update",
-                "stage": "DEPLOYMENT",
-                "payload": {"status": "DONE"}
-            })
-
+                    # Similarly, nodes emit render_output, so redundant here unless capturing
+                    # return values that were not emitted.
+                    pass
 
     except WebSocketDisconnect:
-        # manager.disconnect(websocket, channel_id) # If using manager
+        # manager.disconnect(websocket, channel_id) # Lab isn't using manager directly here yet
         pass
     except Exception as e:
         # Send error event
