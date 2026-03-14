@@ -1,3 +1,28 @@
+## [2026-03-14] - Sprint 2.49: Lab 2.0 Backend & Infrastructure
+
+**Intent**: Finalize the "Lab 2.0" backend architecture, enabling the Agentic Data Science capabilities via Dagger and LangGraph.
+
+**Status**: COMPLETED (Backend/Infra)
+
+**Implementation Summary**:
+
+**Track A — Execution Sandbox (Dagger)**:
+- **Real Wiring**: Refactored `lab_nodes.py` to use `SandboxExecutor` instead of mocks.
+- **Strict Typing**: Fixed all Mypy strict mode errors in `sandbox.py` and `execution.py`.
+- **Infrastructure**: Fixed `shap` dependency in Dockerfile to prevent backend crash.
+
+**Track B — Data Engineering (Materialized Views)**:
+- **Migration `c2a4b6c8d0e2`**: Added `mv_ohlcv_1m` Materialized View to support 1-minute aggregation for the Lab.
+- **Idempotency**: Updated migration script to aggressively drop conflicting views/tables to ensure successful deployment on GitHub Runners.
+
+**Track C — Code Quality & Linting**:
+- **Strict Compliance**: Achieved 100% pass rate on `scripts/lint.sh` (Mypy, Ruff).
+- **Fixes**: Resolved complex SQLModel/SQLAlchemy typing issues in `agent.py` (delete operations) and `websockets.py`.
+
+**Track D — Stability**:
+- **WebSockets**: Fixed syntax errors and scope issues in the real-time agent feed.
+- **Pipeline**: Verified local build and deployment; pushed to main to trigger CI/CD.
+
 ## [2026-03-11] - Sprint 2.48 Complete
 
 **Intent**: Implement Explainable AI (SHAP) and Feature Store (Materialized Views).

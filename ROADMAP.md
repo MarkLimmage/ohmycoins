@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
 **Version**: 5.5
-**Last Updated**: Mar 11, 2026
-**Current Phase**: Sprint 2.48 — Phase 5 In Progress
+**Last Updated**: Mar 14, 2026
+**Current Phase**: Sprint 2.49 — Phase 6 In Progress
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -176,8 +176,13 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 ### Sprint 2.47 - Backtesting Framework Hardening (COMPLETE)
 *   XGBoost models, walk-forward validation (TimeSeriesSplit), BacktestEngine, performance metrics, Floor UI. 966 tests.
 
-### Sprint 2.48 - Explainable AI + Feature Store (IN PROGRESS)
+### Sprint 2.48 - Explainable AI + Feature Store (COMPLETE)
 *   SHAP values, decision path visualization, model transparency features. Database-native Feature Store with 4 materialized views.
+
+### Sprint 2.49 - Lab 2.0 Integration & Release (IN PROGRESS)
+*   Finalizing the "Lab 2.0" backend architecture: Dagger-based execution, LangGraph workflow, strict typing compliance, and idempotent CI/CD migrations.
+
+---
 
 ### Sprint 2.49 - Collector Performance & Freshness (PLANNED)
 *   Collector health monitoring, data freshness alerts, performance optimization.
