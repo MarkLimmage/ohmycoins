@@ -19,14 +19,16 @@ class DaggerExecutor:
             "pyarrow",
             "scikit-learn",
             "joblib",
-            "numpy"
+            "numpy",
+            "mlflow"
         ]
 
     async def execute_script(
         self,
         script_content: str,
         data_path: str,
-        output_dir: str
+        output_dir: str,
+        mlflow_tracking_uri: str = "http://mlflow_server:5000"
     ) -> Dict[str, Any]:
         """
         Executes the provided Python script in a Dagger container.
@@ -60,6 +62,7 @@ class DaggerExecutor:
                     client.container()
                     .from_(self.image)
                     .with_exec(["pip", "install"] + self.dependencies)
+                    .with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
                     .with_workdir("/app")
                 )
                 
@@ -97,11 +100,21 @@ class DaggerExecutor:
             if os.path.exists(pycache):
                 shutil.rmtree(pycache)
 
+            # Check for MLflow run ID
+            mlflow_run_id = None
+            run_id_file = os.path.join(output_dir, "mlflow_run_id.txt")
+            if os.path.exists(run_id_file):
+                with open(run_id_file, "r") as f:
+                    mlflow_run_id = f.read().strip()
+                # Optionally remove the run ID file from artifacts if not needed
+                # os.remove(run_id_file)
+
             return {
                 "stdout": stdout,
                 "stderr": stderr,
                 "status": "success",
-                "output_dir": output_dir
+                "output_dir": output_dir,
+                "mlflow_run_id": mlflow_run_id
             }
 
         except dagger.DaggerError as e:
