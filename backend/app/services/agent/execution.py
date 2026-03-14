@@ -1,6 +1,6 @@
 import sys
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import glob
 
 from app.services.dagger_wrapper import DaggerExecutor
@@ -14,7 +14,7 @@ class SandboxExecutor:
     async def execute_code(
         self, 
         code: str, 
-        data_path: str,
+        data_path: Optional[str],
         output_dir: str = "/tmp/omc_artifacts"
     ) -> Dict[str, Any]:
         """
