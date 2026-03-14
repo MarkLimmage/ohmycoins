@@ -122,101 +122,103 @@ async def websocket_lab(
     """
     await websocket.accept()
 
-    from langchain_core.messages import HumanMessage
-
-    from app.services.agent.lab_graph import app as lab_agent
-    from app.services.agent.lab_schema import LabState, NodeStatus, StageID
+    from app.services.agent.graph import graph, DSLCState, DSLCStage
 
     try:
         while True:
             data = await websocket.receive_text()
             # Expecting JSON with user message or command
-            # For simplicity assuming raw text for now or simple JSON
             try:
                 payload = json.loads(data)
                 user_input = payload.get("message", "")
             except (json.JSONDecodeError, TypeError):
                 user_input = data
 
-            # Initialize state if needed
-            initial_state: LabState = {
-                "messages": [HumanMessage(content=user_input)],
+            # Initialize state
+            initial_state: DSLCState = {
                 "session_id": session_id,
-                "current_stage": StageID.BUSINESS_UNDERSTANDING,  # Default for new runs
-                "status": NodeStatus.PENDING,
-                "retry_count": 0,
-                # Required fields with defaults
-                "user_goal": "",
-                "dataset_name": None,
-                "features": [],
-                "data_acquisition_result": None,
-                "exploration_result": None,
-                "modeling_result": None,
-                "evaluation_result": None,
-                "error": None,
-                "human_approved": False,
+                "current_stage": DSLCStage.BUSINESS_UNDERSTANDING,
+                "chat_history": [{"role": "user", "content": user_input}],
+                "artifacts": {},
+                "stale_flags": {},
+                "context": {}
             }
 
             # Run the graph and stream events
-            # We use stream_mode="updates" to get state changes from each node
-            async for event in lab_agent.astream(
-                cast(Any, initial_state),
+            # Route LangGraph async streams to JSON payloads
+            async for event in graph.astream(
+                initial_state,
                 config={"configurable": {"thread_id": session_id}},
             ):
                 # event is a dict of node_name -> state_update
                 for node_name, state_update in event.items():
-                    # Check for messages to stream
-                    if "messages" in state_update and state_update["messages"]:
-                        last_msg = state_update["messages"][-1]
-                        if hasattr(last_msg, "content"):
+                    current_stage = state_update.get("current_stage", "UNKNOWN")
+
+                    # 1. Status Update
+                    if "current_stage" in state_update:
+                       await websocket.send_json(
+                           {
+                               "event_type": "status_update",
+                               "stage": current_stage,
+                               "payload": {
+                                   "status": "COMPLETE", # Placeholder status
+                                   "message": f"Completed {node_name}"
+                               }
+                           }
+                       )
+                    
+                    # 2. Chat Stream (Simulated for now as full message)
+                    if "chat_history" in state_update and state_update["chat_history"]:
+                        last_msg = state_update["chat_history"][-1]
+                        content = last_msg.get("content", "")
+                        if content:
                             await websocket.send_json(
                                 {
                                     "event_type": "stream_chat",
-                                    "stage": node_name,  # Map node name to StageID
-                                    "payload": {"text_delta": last_msg.content},
+                                    "stage": current_stage,
+                                    "payload": {"text_delta": content}
                                 }
                             )
 
-                    # Check for results to render
-                    # Mapping node results to render_output events
-                    result_keys = {
-                        "data_acquisition_result": StageID.DATA_ACQUISITION,
-                        "exploration_result": StageID.EXPLORATION,
-                        "modeling_result": StageID.MODELING,
-                        "evaluation_result": StageID.EVALUATION,
-                    }
+                    # 3. Render Output (Artifacts)
+                    if "artifacts" in state_update and state_update["artifacts"]:
+                        artifacts = state_update["artifacts"]
+                        # Check if we have an artifact for the current stage
+                        if current_stage in artifacts:
+                             await websocket.send_json({
+                                 "event_type": "render_output",
+                                 "stage": current_stage,
+                                 "payload": {
+                                     "mime_type": "application/json", 
+                                     "content": {"uri": artifacts[current_stage]},
+                                     "code_snippet": None,
+                                     "hyperparameters": None
+                                 }
+                             })
 
-                    for key, stage in result_keys.items():
-                        if key in state_update and state_update[key]:
-                            await websocket.send_json(
-                                {
-                                    "event_type": "render_output",
-                                    "stage": stage,
-                                    "payload": state_update[key],
-                                }
-                            )
+            # Send final completion message
+            await websocket.send_json({
+                "event_type": "status_update",
+                "stage": "DEPLOYMENT",
+                "payload": {"status": "DONE"}
+            })
 
-                    # Send status update
-                    await websocket.send_json(
-                        {
-                            "event_type": "status_update",
-                            "stage": node_name,
-                            "payload": {"status": "COMPLETE"},  # mocking success
-                        }
-                    )
 
     except WebSocketDisconnect:
-        # Handle disconnect
+        # manager.disconnect(websocket, channel_id) # If using manager
         pass
     except Exception as e:
         # Send error event
-        await websocket.send_json(
-            {
-                "event_type": "error",
-                "stage": "UNKNOWN",  # Could track current stage
-                "payload": {"message": str(e), "code": "INTERNAL_ERROR"},
-            }
-        )
+        try:
+            await websocket.send_json(
+                {
+                    "event_type": "error",
+                    "stage": "UNKNOWN",
+                    "payload": {"message": str(e), "code": "500"},
+                }
+            )
+        except Exception:
+            pass
 
 
 @router.websocket("/human/live")
