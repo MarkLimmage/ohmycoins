@@ -93,9 +93,10 @@ class DaggerExecutor:
             # We assume the script is running with CWD at project root for correct context
             project_root = os.getcwd() # Assumption: CWD is project root
             
+            # Use docker_build from directory context
             container = (
-                client.container()
-                .build(client.host().directory(project_root), dockerfile=self.dockerfile_path)
+                client.host().directory(project_root)
+                .docker_build(dockerfile=self.dockerfile_path)
                 .with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
                 .with_workdir("/workspace")
             )
