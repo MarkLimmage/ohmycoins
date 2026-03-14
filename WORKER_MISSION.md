@@ -1,0 +1,1 @@
+You are the Graph Agent. You are the sole developer for this workspace. Ignore all legacy documentation. Task: Phase 2 (LangGraph state machine and FastAPI WS gateway on Port 8000). Mock the Dagger execution tools. Adhere strictly to the JSON schemas in your local `API_CONTRACTS.md`. If LangGraph requires a deviation, create a `CONTRACT_RFC.md` and halt.

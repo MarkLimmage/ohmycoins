@@ -120,6 +120,16 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 **In Progress**:
 - 🔄 **Explainable AI + Feature Store**: SHAP values, decision path visualization, database-native Feature Store with materialized views (Sprint 2.48)
 
+### 🚀 Phase 5.5: The Lab 2.0 Architecture (Strategic Pivot)
+
+**Objective**: Re-platform "The Lab" into a fully isolated, secure, and stateful development environment using Dagger and LangGraph.
+
+**Key Deliverables (See [ROADMAP_STRATEGY.md](docs/requirements/the_lab/ROADMAP_STRATEGY.md))**:
+- 🔄 **Dagger Execution Sandbox**: Phase 1 - Secure, containerized code execution with hard resource limits.
+- 🔄 **LangGraph Orchestrator**: Phase 2 - Stateful AI workflow management with "Human-in-the-Loop" approval gates.
+- 🔄 **React Flow & WebSocket Grid**: Phase 3 - Real-time, node-based visualization of the data science lifecycle.
+- 🔄 **MLflow Integration**: Phase 4 - Full experiment tracking and artifact lineage.
+
 **Planned Capabilities**:
 - **Collector Performance & Freshness** (Sprint 2.49)
 - **MLflow Integration**: When experiment scale justifies it (Phase 5+)
