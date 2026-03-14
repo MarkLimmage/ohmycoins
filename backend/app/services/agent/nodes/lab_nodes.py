@@ -11,6 +11,7 @@ from app.services.agent.lab_schema import (
     StageID,
 )
 from app.services.agent.tools.sandbox import execute_sandbox_code
+from app.services.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
 
@@ -45,24 +46,113 @@ def _format_execution_output(
     }
 
 
+async def _emit_status_update(
+    session_id: str, stage: StageID, status: NodeStatus, message: str | None = None
+):
+    """Emits a status_update event via WebSocket."""
+    payload = {"status": status, "message": message}
+    await manager.broadcast_json(
+        {"event_type": "status_update", "stage": stage, "payload": payload},
+        channel_id=session_id,
+    )
+
+
+async def _emit_render_output(
+    session_id: str, stage: StageID, payload: RenderOutputPayload
+):
+    """Emits a render_output event via WebSocket."""
+    await manager.broadcast_json(
+        {"event_type": "render_output", "stage": stage, "payload": payload},
+        channel_id=session_id,
+    )
+
+
+async def _emit_error(session_id: str, stage: StageID, message: str, code: int = 500):
+    """Emits an error event via WebSocket."""
+    payload = {"message": message, "code": code}
+    await manager.broadcast_json(
+        {"event_type": "error", "stage": stage, "payload": payload},
+        channel_id=session_id,
+    )
+
+
+async def _mock_execute_code(code: str, stage: StageID) -> dict[str, Any]:
+    """Mock execution to avoid real backend dependencies."""
+    if stage == StageID.DATA_ACQUISITION:
+        # Simulate loading data
+        return {
+            "stdout": "   open    high     low   close  volume\n0  100.0  101.0   99.0   100.5    1000\n1  100.5  102.0  100.0   101.5    1200\n\nShape: (2000, 5)\n\nColumns: ['open', 'high', 'low', 'close', 'volume']",
+            "stderr": "",
+        }
+    elif stage == StageID.EXPLORATION:
+        # Simulate Plotly JSON
+        return {
+            "stdout": json.dumps(
+                {
+                    "data": [
+                        {"x": [1, 2, 3], "y": [10, 15, 13], "type": "scatter"}
+                    ],
+                    "layout": {"title": "Mock Price Chart"},
+                }
+            ),
+            "stderr": "",
+        }
+    elif stage == StageID.MODELING:
+        # Simulate Blueprint
+        metrics = {
+            "target_variable": "target_return_1h",
+            "feature_list": ["volatility_24h", "sentiment_1h", "news_vol_1h"],
+            "ml_task_type": "CLASSIFICATION",
+            "algorithm_recommendation": "XGBClassifier",
+            "primary_evaluation_metric": "f1_score",
+        }
+        return {"stdout": json.dumps(metrics), "stderr": ""}
+    elif stage == StageID.EVALUATION:
+        # Simulate Tearsheet
+        metrics = {
+            "metrics": {
+                "f1_score": 0.82,
+                "precision": 0.85,
+                "recall": 0.79
+            },
+            "assumed_pnl_percent": 14.5,
+            "mlflow_run_id": "mock_run_id_123"
+        }
+        return {"stdout": json.dumps(metrics), "stderr": ""}
+
+    return {"stdout": "Executed mock code.", "stderr": ""}
+
+
 async def node_business_understanding(state: LabState) -> dict[str, Any]:
     # Phase 1: Business Understanding
     # Goal: Clarify user intent
+    session_id = state.get("session_id", "default")
+    stage = StageID.BUSINESS_UNDERSTANDING
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+
     message = state["messages"][-1]
     user_input = message.content
 
-    # Simple logic for now: set the goal
+    # Simulate some processing time or LLM call
+    # For now, immediate completion
+
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+
     return {
         "user_goal": user_input,
-        "current_stage": StageID.BUSINESS_UNDERSTANDING,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
     }
 
 
 async def node_data_acquisition(state: LabState) -> dict[str, Any]:
     # Phase 2: Data Acquisition
-    # Goal: Get data using real Sandbox tools
+    # Goal: Get data
     session_id = state.get("session_id", "default")
+    stage = StageID.DATA_ACQUISITION
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
 
     # In a full implementation, this node would select the dataset based on user input
     # For now, we default to a standard OHLCV view
@@ -79,42 +169,74 @@ else:
     print("Error: DataFrame not loaded from parquet.")
 """
     try:
-        result = await execute_sandbox_code(session_id, code, mv_name=mv_name)
+        # Mock execution instead of real sandbox
+        result = await _mock_execute_code(code, stage)
         payload = _format_execution_output(result, code, "text/markdown")
+
+        # Check for insufficient data (Mock logic)
+        # In a real scenario, we'd parse the output or check `result`.
+        # Here we assume success unless explicitly flagged.
+        insufficient_data = False
+        if insufficient_data:
+             await _emit_status_update(
+                session_id, stage, NodeStatus.STALE, "Insufficient Data"
+            )
+             return {
+                "error": "insufficient_data",
+                "current_stage": stage,
+                "status": NodeStatus.STALE,
+             }
+
     except Exception as e:
         logger.error(f"Sandbox execution failed: {e}")
-        payload = {
-            "mime_type": "text/markdown",
-            "content": f"Execution Error: {str(e)}",
-            "code_snippet": code,
-            "hyperparameters": None,
+        await _emit_error(session_id, stage, str(e))
+        return {
+            "error": str(e),
+            "current_stage": stage,
+            "status": NodeStatus.STALE, # Or error status
         }
+
+    await _emit_render_output(session_id, stage, payload)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
 
     return {
         "dataset_name": mv_name,
         "data_acquisition_result": payload,
-        "current_stage": StageID.DATA_ACQUISITION,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
         "messages": [AIMessage(content=f"Data acquired successfully from {mv_name}.")],
     }
 
 
-async def node_preparation(state: LabState) -> dict[str, Any]:  # noqa: ARG001
+
+async def node_preparation(state: LabState) -> dict[str, Any]:
     # Phase 3: Preparation
-    # Goal: Clean data (Placeholder logic for now, no execution needed unless heavy lifting)
+    # Goal: Clean data
+    session_id = state.get("session_id", "default")
+    stage = StageID.PREPARATION
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+
+    # Mock preparation logic
+    features = ["open", "high", "low", "close", "volume"]
+
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
 
     return {
-        "current_stage": StageID.PREPARATION,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
-        "features": ["open", "high", "low", "close", "volume"],
+        "features": features,
         "messages": [AIMessage(content="Data prepared. Features verified.")],
     }
 
 
 async def node_exploration(state: LabState) -> dict[str, Any]:
     # Phase 4: Exploration
-    # Goal: Visualize data using Plotly in Sandbox
+    # Goal: Visualize data using Plotly
     session_id = state.get("session_id", "default")
+    stage = StageID.EXPLORATION
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
 
     code = """
 import plotly.express as px
@@ -135,26 +257,26 @@ else:
     print(json.dumps({"error": "No data available for plotting"}))
 """
     try:
-        # Re-use the data from previous stage if possible, or reload.
-        # For simplicity in this stateless sandbox, we might reload or rely on cached parquet
-        result = await execute_sandbox_code(
-            session_id, code, mv_name=None
-        )  # mv_name=None uses existing parquet
+        # Mock execution
+        result = await _mock_execute_code(code, stage)
         payload = _format_execution_output(
             result, code, "application/vnd.plotly.v1+json"
         )
     except Exception as e:
         logger.error(f"Exploration failed: {e}")
-        payload = {
-            "mime_type": "text/markdown",
-            "content": f"Error: {e}",
-            "code_snippet": code,
-            "hyperparameters": None,
+        await _emit_error(session_id, stage, str(e))
+        return {
+            "error": str(e),
+            "current_stage": stage,
+            "status": NodeStatus.STALE,
         }
+
+    await _emit_render_output(session_id, stage, payload)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
 
     return {
         "exploration_result": payload,
-        "current_stage": StageID.EXPLORATION,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
         "messages": [
             AIMessage(content="Exploratory analysis complete. Plot generated.")
@@ -164,8 +286,11 @@ else:
 
 async def node_modeling(state: LabState) -> dict[str, Any]:
     # Phase 5: Modeling
-    # Goal: Train model in Sandbox
+    # Goal: Train model
     session_id = state.get("session_id", "default")
+    stage = StageID.MODELING
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
 
     code = """
 from xgboost import XGBClassifier
@@ -202,20 +327,24 @@ else:
     print(json.dumps({"error": "No data"}))
 """
     try:
-        result = await execute_sandbox_code(session_id, code)
+        # Mock execution
+        result = await _mock_execute_code(code, stage)
         payload = _format_execution_output(result, code, "application/json+blueprint")
     except Exception as e:
         logger.error(f"Modeling failed: {e}")
-        payload = {
-            "mime_type": "text/markdown",
-            "content": f"Error: {e}",
-            "code_snippet": code,
-            "hyperparameters": None,
+        await _emit_error(session_id, stage, str(e))
+        return {
+            "error": str(e),
+            "current_stage": stage,
+            "status": NodeStatus.STALE,
         }
+
+    await _emit_render_output(session_id, stage, payload)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
 
     return {
         "modeling_result": payload,
-        "current_stage": StageID.MODELING,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
         "messages": [AIMessage(content="Model trained inside sandbox.")],
     }
@@ -223,8 +352,11 @@ else:
 
 async def node_evaluation(state: LabState) -> dict[str, Any]:
     # Phase 6: Evaluation
-    # Goal: Evaluate model in Sandbox
+    # Goal: Evaluate model
     session_id = state.get("session_id", "default")
+    stage = StageID.EVALUATION
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
 
     code = """
 import json
@@ -239,31 +371,58 @@ metrics = {
 print(json.dumps(metrics))
 """
     try:
-        result = await execute_sandbox_code(session_id, code)
+        # Mock execution
+        result = await _mock_execute_code(code, stage)
         payload = _format_execution_output(result, code, "application/json+tearsheet")
     except Exception as e:
         logger.error(f"Evaluation failed: {e}")
-        payload = {
-            "mime_type": "text/markdown",
-            "content": f"Error: {e}",
-            "code_snippet": code,
-            "hyperparameters": None,
+        await _emit_error(session_id, stage, str(e))
+        return {
+            "error": str(e),
+            "current_stage": stage,
+            "status": NodeStatus.STALE,
         }
+
+    await _emit_render_output(session_id, stage, payload)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
 
     return {
         "evaluation_result": payload,
-        "current_stage": StageID.EVALUATION,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
         "messages": [AIMessage(content="Evaluation metrics calculated.")],
     }
 
 
-async def node_deployment(state: LabState) -> dict[str, Any]:  # noqa: ARG001
+async def node_deployment(state: LabState) -> dict[str, Any]:
     # Phase 7: Deployment
     # Goal: Deploy (mock)
+    session_id = state.get("session_id", "default")
+    stage = StageID.DEPLOYMENT
+
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "Deployed")
 
     return {
-        "current_stage": StageID.DEPLOYMENT,
+        "current_stage": stage,
         "status": NodeStatus.COMPLETE,
         "messages": [AIMessage(content="Model deployed to production.")],
+    }
+
+
+async def node_error(state: LabState) -> dict[str, Any]:
+    # Error Node
+    # Goal: Handle failures and END
+    session_id = state.get("session_id", "default")
+    error_msg = state.get("error", "Unknown error")
+    stage = state.get("current_stage", StageID.DATA_ACQUISITION) # Default or current
+
+    # We might not need to emit error here if it was already emitted,
+    # but strictly ensuring it is good practice.
+    # Check if we should emit generic error
+    await _emit_error(session_id, stage, error_msg)
+
+    return {
+        "status": NodeStatus.STALE, # Or some terminal status
+        "messages": [AIMessage(content=f"Workflow halted due to error: {error_msg}")],
     }

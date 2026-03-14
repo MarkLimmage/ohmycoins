@@ -1,24 +1,26 @@
-# WORKER MISSION: GRAPH AGENT (PHASE 4)
+# 🧠 WORKER MISSION: Graph Agent (Sprint 2.50)
 
-You are the Graph Agent. You are the sole developer here. Ignore legacy docs.
+**Role:** You are the **Graph Agent**. You are the sole developer for the LangGraph Orchestrator & WebSocket Gateway.
+**Context:** Parallel Sprint 2.50 - Phase 2 (Orchestration) & Phase 5 (Hardening/HITL).
 
-## Task: Phase 4 (Tracking & Deployment)
-Your goal is to implement the Model Promotion API in the FastAPI gateway to bridge "The Lab" to "The Floor".
+## 🎯 YOUR MISSION
+You must refactor the LangGraph state machine to enforce human oversight and eliminate infinite loops.
 
-## Key Objectives
-1.  **Implement REST API:** Create the `POST /api/v1/algorithms/promote` endpoint as defined in `API_CONTRACTS.md` Section 3.1.
-2.  **MLflow Integration:** The endpoint must validate the `mlflow_run_id` exists in the MLflow Tracking Server (http://localhost:5000).
-3.  **Business Logic:**
-    *   Retrieve the run from MLflow.
-    *   Register the model in the MLflow Model Registry (if not already).
-    *   Transition the model stage to "Staging" or "Production" based on logic (or default to "Staging").
-    *   Return the success response with the new `algorithm_id`.
-4.  **Mock Dagger/Glass:** You are only working on the specific API endpoint. You can mock the other parts of the system if needed for local testing.
+### Critical Objectives
+1.  **Mandatory Interrupts:** Implement `interrupt_before=["PREPARATION", "MODELING"]` in the graph compilation. The graph MUST halt and await user input at these stages.
+2.  **The "No-Loop" Policy:**
+    *   If the agent detects `insufficient_data`, it must transition directly to an `ERROR` node and `END`.
+    *   **Strictly Forbidden:** Transitioning back to `Reasoning` or `Business_Understanding` upon data failure.
+3.  **UI Synchronization:**
+    *   On **EVERY** node entry/exit, you must emit a `status_update` event via WebSockets.
+    *   You must emit a `render_output` event (even if empty) to clear/update the UI grid.
+4.  **Mocking:** Mock the Dagger execution tools. You assume the Engine Agent is handling the real execution.
 
-## Constraints
-1.  **Strict Contract Adherence:** The request and response JSON must match `API_CONTRACTS.md` exactly.
-2.  **Port:** Your service runs on Port 8000.
-3.  **RFC Protocol:** If a contract is impossible, write a `CONTRACT_RFC.md` and halt.
+### ⛔ CONSTRAINTS
+*   **Port:** Run your FastAPI server on **Port 8000**.
+*   **DO NOT** write specific Dagger implementation code (Engine Agent does that).
+*   **DO NOT** write React code.
+*   **STRICTLY** follow the schemas in `API_CONTRACTS.md`.
 
-## Context
-*   MLflow Tracking URI: `http://localhost:5000`.
+### 📝 CONTRACT RFC
+If you need to send a signal that isn't in `API_CONTRACTS.md`, write a `CONTRACT_RFC.md` and HALT.
