@@ -37,7 +37,9 @@ def generate_features(prices_df: pd.DataFrame) -> pd.DataFrame:
     df["returns_5d"] = price.pct_change(periods=5).fillna(0)
 
     # Volatility (20-period rolling std of returns)
-    df["volatility_20d"] = df["returns_1d"].rolling(window=20, min_periods=1).std().fillna(0)
+    df["volatility_20d"] = (
+        df["returns_1d"].rolling(window=20, min_periods=1).std().fillna(0)
+    )
 
     # RSI 14
     delta = price.diff()
@@ -101,7 +103,9 @@ class BacktestEngine:
             prices = self.session.exec(statement).all()
 
             if not prices:
-                raise ValueError(f"No price data found for {coin_type} between {start_date} and {end_date}")
+                raise ValueError(
+                    f"No price data found for {coin_type} between {start_date} and {end_date}"
+                )
 
             # Convert to DataFrame
             prices_df = pd.DataFrame(
@@ -160,7 +164,9 @@ class BacktestEngine:
 
         # Load model
         playground = ModelPlaygroundService()
-        model, scaler, metadata = playground.load_model(algorithm.artifact_id, self.session)
+        model, scaler, metadata = playground.load_model(
+            algorithm.artifact_id, self.session
+        )
 
         # Generate features
         features_df = generate_features(prices_df)
@@ -169,8 +175,13 @@ class BacktestEngine:
         # If no feature columns in metadata, use default generated features
         if not feature_columns:
             feature_columns = [
-                "SMA_10", "SMA_50", "RSI_14", "returns_1d",
-                "returns_5d", "volatility_20d", "volume_ma_10",
+                "SMA_10",
+                "SMA_50",
+                "RSI_14",
+                "returns_1d",
+                "returns_5d",
+                "volatility_20d",
+                "volume_ma_10",
             ]
 
         # Simulate
@@ -188,13 +199,19 @@ class BacktestEngine:
             timestamp = str(row["timestamp"])
 
             # Build feature dict for prediction
-            feature_values = {col: float(row.get(col, 0.0)) for col in feature_columns if col in row.index}
+            feature_values = {
+                col: float(row.get(col, 0.0))
+                for col in feature_columns
+                if col in row.index
+            }
 
             # Get prediction
             try:
                 df_pred = pd.DataFrame([feature_values])
                 if scaler is not None:
-                    df_pred = pd.DataFrame(scaler.transform(df_pred), columns=list(feature_values.keys()))
+                    df_pred = pd.DataFrame(
+                        scaler.transform(df_pred), columns=list(feature_values.keys())
+                    )
                 prediction = model.predict(df_pred)[0]
             except Exception:
                 prediction = 0  # Hold
@@ -207,25 +224,29 @@ class BacktestEngine:
                 qty = cash / price
                 holdings = qty
                 cash = 0.0
-                trades.append({
-                    "timestamp": timestamp,
-                    "action": "buy",
-                    "price": price,
-                    "quantity": qty,
-                    "pnl": 0.0,
-                })
+                trades.append(
+                    {
+                        "timestamp": timestamp,
+                        "action": "buy",
+                        "price": price,
+                        "quantity": qty,
+                        "pnl": 0.0,
+                    }
+                )
             elif signal == 0 and holdings > 0:
                 # Sell
                 revenue = holdings * price
                 cost_basis = trades[-1]["price"] * holdings if trades else 0
                 pnl = revenue - cost_basis
-                trades.append({
-                    "timestamp": timestamp,
-                    "action": "sell",
-                    "price": price,
-                    "quantity": holdings,
-                    "pnl": pnl,
-                })
+                trades.append(
+                    {
+                        "timestamp": timestamp,
+                        "action": "sell",
+                        "price": price,
+                        "quantity": holdings,
+                        "pnl": pnl,
+                    }
+                )
                 cash = revenue
                 holdings = 0.0
 
@@ -250,8 +271,12 @@ class BacktestEngine:
         long_window = config.get("long_window", 50)
 
         # Calculate moving averages
-        prices_df["sma_short"] = prices_df["last"].rolling(window=short_window, min_periods=1).mean()
-        prices_df["sma_long"] = prices_df["last"].rolling(window=long_window, min_periods=1).mean()
+        prices_df["sma_short"] = (
+            prices_df["last"].rolling(window=short_window, min_periods=1).mean()
+        )
+        prices_df["sma_long"] = (
+            prices_df["last"].rolling(window=long_window, min_periods=1).mean()
+        )
 
         cash = initial_capital
         holdings = 0.0
@@ -275,13 +300,15 @@ class BacktestEngine:
                 qty = cash / price
                 holdings = qty
                 cash = 0.0
-                trades.append({
-                    "timestamp": timestamp,
-                    "action": "buy",
-                    "price": price,
-                    "quantity": qty,
-                    "pnl": 0.0,
-                })
+                trades.append(
+                    {
+                        "timestamp": timestamp,
+                        "action": "buy",
+                        "price": price,
+                        "quantity": qty,
+                        "pnl": 0.0,
+                    }
+                )
             elif (
                 prev_row["sma_short"] >= prev_row["sma_long"]
                 and row["sma_short"] < row["sma_long"]
@@ -291,13 +318,15 @@ class BacktestEngine:
                 revenue = holdings * price
                 cost_basis = trades[-1]["price"] * holdings if trades else 0
                 pnl = revenue - cost_basis
-                trades.append({
-                    "timestamp": timestamp,
-                    "action": "sell",
-                    "price": price,
-                    "quantity": holdings,
-                    "pnl": pnl,
-                })
+                trades.append(
+                    {
+                        "timestamp": timestamp,
+                        "action": "sell",
+                        "price": price,
+                        "quantity": holdings,
+                        "pnl": pnl,
+                    }
+                )
                 cash = revenue
                 holdings = 0.0
 

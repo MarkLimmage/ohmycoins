@@ -49,8 +49,14 @@ def calculate_backtest_metrics(
     # Sharpe ratio (annualized, 252 trading days)
     if returns:
         mean_return = sum(returns) / len(returns)
-        std_return = math.sqrt(sum((r - mean_return) ** 2 for r in returns) / len(returns)) if len(returns) > 1 else 0.0
-        sharpe_ratio = (mean_return / std_return * math.sqrt(252)) if std_return > 0 else 0.0
+        std_return = (
+            math.sqrt(sum((r - mean_return) ** 2 for r in returns) / len(returns))
+            if len(returns) > 1
+            else 0.0
+        )
+        sharpe_ratio = (
+            (mean_return / std_return * math.sqrt(252)) if std_return > 0 else 0.0
+        )
     else:
         sharpe_ratio = 0.0
         mean_return = 0.0
@@ -58,8 +64,12 @@ def calculate_backtest_metrics(
     # Sortino ratio (downside deviation only)
     downside_returns = [r for r in returns if r < 0]
     if downside_returns:
-        downside_std = math.sqrt(sum(r ** 2 for r in downside_returns) / len(downside_returns))
-        sortino_ratio = (mean_return / downside_std * math.sqrt(252)) if downside_std > 0 else 0.0
+        downside_std = math.sqrt(
+            sum(r**2 for r in downside_returns) / len(downside_returns)
+        )
+        sortino_ratio = (
+            (mean_return / downside_std * math.sqrt(252)) if downside_std > 0 else 0.0
+        )
     else:
         sortino_ratio = 0.0
 

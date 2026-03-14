@@ -20,10 +20,14 @@ class ExplainabilityService:
     """Compute SHAP explanations for trained models."""
 
     TREE_MODELS = {
-        "RandomForestClassifier", "RandomForestRegressor",
-        "GradientBoostingClassifier", "GradientBoostingRegressor",
-        "DecisionTreeClassifier", "DecisionTreeRegressor",
-        "XGBClassifier", "XGBRegressor",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+        "GradientBoostingClassifier",
+        "GradientBoostingRegressor",
+        "DecisionTreeClassifier",
+        "DecisionTreeRegressor",
+        "XGBClassifier",
+        "XGBRegressor",
     }
     LINEAR_MODELS = {"LogisticRegression", "LinearRegression", "Ridge", "Lasso"}
     UNSUPPORTED_MODELS = {"SVC", "SVR"}
@@ -70,7 +74,9 @@ class ExplainabilityService:
 
         return sv
 
-    def _generate_background_data(self, metadata: dict, n_samples: int = 100) -> np.ndarray:
+    def _generate_background_data(
+        self, metadata: dict, n_samples: int = 100
+    ) -> np.ndarray:
         feature_columns = metadata.get("feature_columns", [])
         n_features = len(feature_columns)
         if n_features == 0:
@@ -78,8 +84,11 @@ class ExplainabilityService:
         rng = np.random.RandomState(42)
         return rng.randn(n_samples, n_features)
 
-    def compute_global_shap(self, artifact_id: Any, db: Any, max_samples: int = 100) -> dict[str, Any]:
+    def compute_global_shap(
+        self, artifact_id: Any, db: Any, max_samples: int = 100
+    ) -> dict[str, Any]:
         import uuid as uuid_mod
+
         if isinstance(artifact_id, str):
             artifact_id = uuid_mod.UUID(artifact_id)
 
@@ -126,19 +135,33 @@ class ExplainabilityService:
             explainer = shap.LinearExplainer(model, background)
             shap_values = explainer.shap_values(background)
         else:
-            return {"supported": False, "reason": f"No explainer for {model_type}", "model_type": model_type}
+            return {
+                "supported": False,
+                "reason": f"No explainer for {model_type}",
+                "model_type": model_type,
+            }
 
         sv = self._normalize_shap_values(shap_values)
 
         mean_abs_shap = np.mean(np.abs(sv), axis=0)
         feature_importance = [
             {"feature_name": name, "importance": float(imp)}
-            for name, imp in sorted(zip(feature_columns, mean_abs_shap, strict=False), key=lambda x: x[1], reverse=True)
+            for name, imp in sorted(
+                zip(feature_columns, mean_abs_shap, strict=False),
+                key=lambda x: x[1],
+                reverse=True,
+            )
         ]
 
-        base_value = float(explainer.expected_value) if isinstance(
-            explainer.expected_value, int | float | np.integer | np.floating
-        ) else float(explainer.expected_value[0]) if hasattr(explainer.expected_value, '__len__') else None
+        base_value = (
+            float(explainer.expected_value)
+            if isinstance(
+                explainer.expected_value, int | float | np.integer | np.floating
+            )
+            else float(explainer.expected_value[0])
+            if hasattr(explainer.expected_value, "__len__")
+            else None
+        )
 
         plot_path = self._get_plot_path(model_path)
         try:
@@ -164,12 +187,16 @@ class ExplainabilityService:
             "cached": False,
         }
 
-    def compute_prediction_shap(self, model: Any, scaler: Any, feature_values: dict[str, float], metadata: dict) -> dict[str, Any] | None:
+    def compute_prediction_shap(
+        self, model: Any, scaler: Any, feature_values: dict[str, float], metadata: dict
+    ) -> dict[str, Any] | None:
         if not self.is_supported(model):
             return None
 
         feature_columns = metadata.get("feature_columns", list(feature_values.keys()))
-        df = pd.DataFrame([{col: feature_values.get(col, 0.0) for col in feature_columns}])
+        df = pd.DataFrame(
+            [{col: feature_values.get(col, 0.0) for col in feature_columns}]
+        )
 
         if scaler is not None:
             df_scaled = pd.DataFrame(scaler.transform(df), columns=feature_columns)
@@ -195,17 +222,29 @@ class ExplainabilityService:
 
         prediction_shap = sv_arr[0] if sv_arr.ndim > 1 else sv_arr
 
-        base_value = float(explainer.expected_value) if isinstance(
-            explainer.expected_value, int | float | np.integer | np.floating
-        ) else float(explainer.expected_value[0]) if hasattr(explainer.expected_value, '__len__') else 0.0
+        base_value = (
+            float(explainer.expected_value)
+            if isinstance(
+                explainer.expected_value, int | float | np.integer | np.floating
+            )
+            else float(explainer.expected_value[0])
+            if hasattr(explainer.expected_value, "__len__")
+            else 0.0
+        )
 
         return {
-            "shap_values": {name: float(val) for name, val in zip(feature_columns, prediction_shap, strict=False)},
+            "shap_values": {
+                name: float(val)
+                for name, val in zip(feature_columns, prediction_shap, strict=False)
+            },
             "base_value": base_value,
         }
 
-    def _generate_summary_plot(self, shap_values: np.ndarray, feature_names: list[str], save_path: str) -> None:
+    def _generate_summary_plot(
+        self, shap_values: np.ndarray, feature_names: list[str], save_path: str
+    ) -> None:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 

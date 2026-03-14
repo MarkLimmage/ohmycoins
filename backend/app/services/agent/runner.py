@@ -232,14 +232,16 @@ class AgentRunner:
                     for file_path in artifact_dir.iterdir():
                         if file_path.is_file():
                             ext = file_path.suffix.lower()
-                            if ext in ('.joblib', '.pkl'):
+                            if ext in (".joblib", ".pkl"):
                                 artifact_type = "model"
-                            elif ext == '.json':
+                            elif ext == ".json":
                                 artifact_type = "data"
                             else:
                                 artifact_type = "other"
 
-                            existing = artifact_mgr.list_artifacts(session_id, db_session=db)
+                            existing = artifact_mgr.list_artifacts(
+                                session_id, db_session=db
+                            )
                             already_registered = any(
                                 a.file_path and Path(a.file_path).name == file_path.name
                                 for a in existing

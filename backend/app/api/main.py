@@ -41,7 +41,9 @@ api_router.include_router(
 )
 api_router.include_router(pnl.router, prefix="/floor/pnl", tags=["pnl"])
 api_router.include_router(trading.router, prefix="/floor/trading", tags=["trading"])
-api_router.include_router(backtests.router, prefix="/floor/backtests", tags=["backtests"])
+api_router.include_router(
+    backtests.router, prefix="/floor/backtests", tags=["backtests"]
+)
 api_router.include_router(floor.router, prefix="/floor", tags=["floor"])
 api_router.include_router(collectors.router, prefix="/collectors", tags=["collectors"])
 api_router.include_router(enrichment.router, prefix="/enrichment", tags=["enrichment"])

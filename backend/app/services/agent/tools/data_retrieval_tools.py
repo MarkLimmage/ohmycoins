@@ -496,7 +496,11 @@ async def fetch_training_data(
     except Exception as e:
         error_msg = str(e)
         if "does not exist" in error_msg:
-            return [{"error": "Feature Store views not yet created. Run alembic upgrade head and refresh views first."}]
+            return [
+                {
+                    "error": "Feature Store views not yet created. Run alembic upgrade head and refresh views first."
+                }
+            ]
         raise
 
     return [

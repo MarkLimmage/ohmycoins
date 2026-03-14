@@ -3,7 +3,7 @@ import json
 import random
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import jwt
 import redis.asyncio as aioredis
@@ -121,11 +121,12 @@ async def websocket_lab(
     Bi-directional WebSocket for 'The Lab' LangGraph agent.
     """
     await websocket.accept()
-    
-    from app.services.agent.lab_graph import app as lab_agent
-    from app.services.agent.lab_schema import LabState, StageID, NodeStatus
+
     from langchain_core.messages import HumanMessage
-    
+
+    from app.services.agent.lab_graph import app as lab_agent
+    from app.services.agent.lab_schema import LabState, NodeStatus, StageID
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -134,81 +135,88 @@ async def websocket_lab(
             try:
                 payload = json.loads(data)
                 user_input = payload.get("message", "")
-            except:
+            except (json.JSONDecodeError, TypeError):
                 user_input = data
-            
+
             # Initialize state if needed
-            initial_state = {
+            initial_state: LabState = {
                 "messages": [HumanMessage(content=user_input)],
                 "session_id": session_id,
-                "current_stage": StageID.BUSINESS_UNDERSTANDING, # Default for new runs
+                "current_stage": StageID.BUSINESS_UNDERSTANDING,  # Default for new runs
                 "status": NodeStatus.PENDING,
-                "retry_count": 0
+                "retry_count": 0,
+                # Required fields with defaults
+                "user_goal": "",
+                "dataset_name": None,
+                "features": [],
+                "data_acquisition_result": None,
+                "exploration_result": None,
+                "modeling_result": None,
+                "evaluation_result": None,
+                "error": None,
+                "human_approved": False,
             }
-            
+
             # Run the graph and stream events
             # We use stream_mode="updates" to get state changes from each node
-            async for event in lab_agent.astream(initial_state, config={"configurable": {"thread_id": session_id}}):
+            async for event in lab_agent.astream(
+                cast(Any, initial_state),
+                config={"configurable": {"thread_id": session_id}},
+            ):
                 # event is a dict of node_name -> state_update
                 for node_name, state_update in event.items():
                     # Check for messages to stream
                     if "messages" in state_update and state_update["messages"]:
                         last_msg = state_update["messages"][-1]
                         if hasattr(last_msg, "content"):
-                             await websocket.send_json({
-                                "event_type": "stream_chat",
-                                "stage": node_name, # Map node name to StageID
-                                "payload": {"text_delta": last_msg.content}
-                            })
+                            await websocket.send_json(
+                                {
+                                    "event_type": "stream_chat",
+                                    "stage": node_name,  # Map node name to StageID
+                                    "payload": {"text_delta": last_msg.content},
+                                }
+                            )
 
                     # Check for results to render
                     # Mapping node results to render_output events
                     result_keys = {
-                       "data_acquisition_result": StageID.DATA_ACQUISITION,
-                       "exploration_result": StageID.EXPLORATION,
-                       "modeling_result": StageID.MODELING,
-                       "evaluation_result": StageID.EVALUATION
+                        "data_acquisition_result": StageID.DATA_ACQUISITION,
+                        "exploration_result": StageID.EXPLORATION,
+                        "modeling_result": StageID.MODELING,
+                        "evaluation_result": StageID.EVALUATION,
                     }
-                    
+
                     for key, stage in result_keys.items():
                         if key in state_update and state_update[key]:
-                             await websocket.send_json({
-                                "event_type": "render_output",
-                                "stage": stage,
-                                "payload": state_update[key]
-                            })
-                    
+                            await websocket.send_json(
+                                {
+                                    "event_type": "render_output",
+                                    "stage": stage,
+                                    "payload": state_update[key],
+                                }
+                            )
+
                     # Send status update
-                    await websocket.send_json({
-                        "event_type": "status_update",
-                        "stage": node_name,
-                        "payload": {"status": "COMPLETE"} # mocking success
-                    })
-                    
+                    await websocket.send_json(
+                        {
+                            "event_type": "status_update",
+                            "stage": node_name,
+                            "payload": {"status": "COMPLETE"},  # mocking success
+                        }
+                    )
+
     except WebSocketDisconnect:
         # Handle disconnect
         pass
     except Exception as e:
         # Send error event
-        await websocket.send_json({
-            "event_type": "error",
-            "stage": "UNKNOWN", # Could track current stage
-            "payload": {
-                "message": str(e),
-                "code": "INTERNAL_ERROR"
+        await websocket.send_json(
+            {
+                "event_type": "error",
+                "stage": "UNKNOWN",  # Could track current stage
+                "payload": {"message": str(e), "code": "INTERNAL_ERROR"},
             }
-        })
-) -> None:
-    """
-    Real-time feed for Glass Ledger (TVL/Fees).
-    """
-    channel_id = "glass"
-    await manager.connect(websocket, channel_id)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, channel_id)
+        )
 
 
 @router.websocket("/human/live")

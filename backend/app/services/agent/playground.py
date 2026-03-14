@@ -22,7 +22,9 @@ class ModelPlaygroundService:
         """Load model, optional scaler, and metadata from disk."""
         artifact = self.artifact_manager.get_artifact(artifact_id, db)
         if not artifact or not artifact.file_path:
-            raise FileNotFoundError(f"Artifact {artifact_id} not found or has no file path")
+            raise FileNotFoundError(
+                f"Artifact {artifact_id} not found or has no file path"
+            )
 
         model_path = Path(artifact.file_path)
         if not model_path.exists():
@@ -44,12 +46,16 @@ class ModelPlaygroundService:
 
         return model, scaler, metadata
 
-    def predict(self, model: Any, scaler: Any, feature_values: dict[str, float], metadata: dict) -> dict:
+    def predict(
+        self, model: Any, scaler: Any, feature_values: dict[str, float], metadata: dict
+    ) -> dict:
         """Run prediction on a single sample."""
         feature_columns = metadata.get("feature_columns", list(feature_values.keys()))
 
         # Build DataFrame with correct column order
-        df = pd.DataFrame([{col: feature_values.get(col, 0.0) for col in feature_columns}])
+        df = pd.DataFrame(
+            [{col: feature_values.get(col, 0.0) for col in feature_columns}]
+        )
 
         # Apply scaler if present
         if scaler is not None:
@@ -59,7 +65,9 @@ class ModelPlaygroundService:
         prediction = model.predict(df)[0]
 
         result: dict[str, Any] = {
-            "prediction": float(prediction) if isinstance(prediction, int | float | np.integer | np.floating) else str(prediction),
+            "prediction": float(prediction)
+            if isinstance(prediction, int | float | np.integer | np.floating)
+            else str(prediction),
             "model_type": type(model).__name__,
             "task_type": metadata.get("task_type", "unknown"),
             "feature_columns_used": feature_columns,
@@ -70,7 +78,9 @@ class ModelPlaygroundService:
             try:
                 probas = model.predict_proba(df)[0]
                 classes = model.classes_
-                result["probabilities"] = {str(c): float(p) for c, p in zip(classes, probas, strict=False)}
+                result["probabilities"] = {
+                    str(c): float(p) for c, p in zip(classes, probas, strict=False)
+                }
                 result["prediction_label"] = str(prediction)
             except Exception:
                 pass
@@ -86,7 +96,9 @@ class ModelPlaygroundService:
         result = self.predict(model, scaler, feature_values, metadata)
 
         explainability = ExplainabilityService()
-        shap_result = explainability.compute_prediction_shap(model, scaler, feature_values, metadata)
+        shap_result = explainability.compute_prediction_shap(
+            model, scaler, feature_values, metadata
+        )
 
         if shap_result:
             result["shap_values"] = shap_result["shap_values"]

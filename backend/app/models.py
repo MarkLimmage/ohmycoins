@@ -1853,8 +1853,12 @@ class BacktestRunBase(SQLModel):
 
     algorithm_id: uuid.UUID = Field(foreign_key="algorithms.id", index=True)
     coin_type: str = Field(max_length=20)
-    start_date: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
-    end_date: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
+    start_date: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    end_date: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
     initial_capital: Decimal = Field(
         sa_column=Column(DECIMAL(precision=20, scale=2), nullable=False),
         default=Decimal("10000.00"),
@@ -1871,9 +1875,15 @@ class BacktestRun(BacktestRunBase, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    results_json: str | None = Field(default=None, description="JSON metrics from backtest")
-    equity_curve_json: str | None = Field(default=None, description="JSON equity curve data")
-    trade_log_json: str | None = Field(default=None, description="JSON list of simulated trades")
+    results_json: str | None = Field(
+        default=None, description="JSON metrics from backtest"
+    )
+    equity_curve_json: str | None = Field(
+        default=None, description="JSON equity curve data"
+    )
+    trade_log_json: str | None = Field(
+        default=None, description="JSON list of simulated trades"
+    )
     error_message: str | None = Field(default=None, max_length=2000)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),

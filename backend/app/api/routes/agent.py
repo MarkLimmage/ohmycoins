@@ -14,15 +14,15 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlmodel import select, delete
+from sqlmodel import delete, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
+    AgentArtifact,
     AgentArtifactPublic,
     AgentSession,
     AgentSessionCreate,
     AgentSessionMessage,
-    AgentArtifact,
     AgentSessionMessagePublic,
     AgentSessionPublic,
     AgentSessionsPublic,
@@ -199,18 +199,25 @@ async def delete_agent_session(
 
         # Manually delete related records to avoid SQLAlchemy cascade issues
         # This is safer than relying on ORM when relationship loading is unstable
-        db.exec(delete(AgentSessionMessage).where(AgentSessionMessage.session_id == session_id))
-        db.exec(delete(AgentArtifact).where(AgentArtifact.session_id == session_id))
-        
+        db.exec(  # type: ignore[call-overload]
+            delete(AgentSessionMessage).where(
+                AgentSessionMessage.session_id == session_id  # type: ignore[arg-type]
+            )
+        )
+        db.exec(delete(AgentArtifact).where(AgentArtifact.session_id == session_id))  # type: ignore[call-overload, arg-type]
+
         # Now delete the session itself
         db.delete(session)
         db.commit()
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         # Rollback in case of partial failure
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete session: {str(e)}"
+        )
 
     return {"message": "Session deleted successfully"}
 
@@ -247,12 +254,12 @@ async def get_session_messages(
         raise HTTPException(
             status_code=403, detail="Not authorized to access this session"
         )
-    
+
     # Use direct query to ensure ordering and avoid lazy loading issues
     statement = (
         select(AgentSessionMessage)
         .where(AgentSessionMessage.session_id == session_id)
-        .order_by(AgentSessionMessage.created_at)
+        .order_by(AgentSessionMessage.created_at)  # type: ignore[arg-type]
     )
     messages = db.exec(statement).all()
     return messages
@@ -944,7 +951,9 @@ async def predict_with_artifact(
 
     try:
         model, scaler, metadata = playground_service.load_model(artifact_id, db)
-        result = playground_service.predict(model, scaler, request_body.feature_values, metadata)
+        result = playground_service.predict(
+            model, scaler, request_body.feature_values, metadata
+        )
         if request_body.include_explanation:
             shap_result = explainability_service.compute_prediction_shap(
                 model, scaler, request_body.feature_values, metadata

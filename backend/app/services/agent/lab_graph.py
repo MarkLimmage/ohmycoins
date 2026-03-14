@@ -1,18 +1,16 @@
-from typing import Annotated, TypedDict
-
-from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
 
+from app.services.agent.lab_schema import LabState, StageID
 from app.services.agent.nodes.lab_nodes import (
     node_business_understanding,
     node_data_acquisition,
-    node_preparation,
+    node_deployment,
+    node_evaluation,
     node_exploration,
     node_modeling,
-    node_evaluation,
-    node_deployment
+    node_preparation,
 )
-from app.services.agent.lab_schema import LabState, StageID
 
 # Define the graph
 workflow = StateGraph(LabState)

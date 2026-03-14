@@ -17,11 +17,11 @@ async def main():
     registry = CollectorRegistry()
     collectors = registry.list_strategies()
     
-    print(f"Found {len(collectors)} collectors:")
+    logging.info(f"Found {len(collectors)} collectors:")
     for name, metadata in collectors.items():
         # metadata is the class type
         instance = metadata() 
-        print(f"- {name}: {instance.description}")
+        logging.info(f"- {name}: {instance.description}")
         
     expected = [
         "news_coindesk",
@@ -38,10 +38,10 @@ async def main():
     missing = [name for name in expected if name not in collectors]
     
     if missing:
-        print(f"\nMISSING COLLECTORS: {missing}")
+        logging.error(f"MISSING COLLECTORS: {missing}")
         exit(1)
     else:
-        print("\nAll expected collectors are registered!")
+        logging.info("All expected collectors are registered!")
 
 if __name__ == "__main__":
     asyncio.run(main())

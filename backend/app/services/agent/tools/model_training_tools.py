@@ -49,7 +49,9 @@ def train_classification_model(
     test_size: float = 0.2,
     random_state: int = 42,
     scale_features: bool = True,
-    validation_strategy: Literal["random", "time_series", "expanding_window"] = "random",
+    validation_strategy: Literal[
+        "random", "time_series", "expanding_window"
+    ] = "random",
 ) -> dict[str, Any]:
     """
     Train a classification model on cryptocurrency data.
@@ -264,7 +266,9 @@ def train_regression_model(
     test_size: float = 0.2,
     random_state: int = 42,
     scale_features: bool = True,
-    validation_strategy: Literal["random", "time_series", "expanding_window"] = "random",
+    validation_strategy: Literal[
+        "random", "time_series", "expanding_window"
+    ] = "random",
 ) -> dict[str, Any]:
     """
     Train a regression model on cryptocurrency data.
