@@ -4,6 +4,7 @@ from app.api.routes import (
     admin,
     agent,
     alerts,
+    algorithms,
     backtests,
     collectors,
     credentials,
@@ -28,6 +29,7 @@ api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(algorithms.router, prefix="/algorithms", tags=["algorithms"])
 api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
 api_router.include_router(risk.router, prefix="/risk", tags=["risk"])
 api_router.include_router(trade_audit.router, prefix="/audit", tags=["audit"])
