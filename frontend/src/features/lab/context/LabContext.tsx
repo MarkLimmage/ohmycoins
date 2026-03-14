@@ -4,7 +4,7 @@ import { useLabWebSocket } from '../hooks/useLabWebSocket';
 // Define the Cell structure for the Grid
 export interface LabCell {
   id: string;
-  type: 'code' | 'markdown' | 'plotly' | 'output' | 'error' | 'thought' | 'tool' | 'result' | 'blueprint' | 'metric';
+  type: 'code' | 'markdown' | 'plotly' | 'output' | 'error' | 'thought' | 'tool' | 'result' | 'blueprint' | 'metric' | 'tearsheet';
   content: string; // text, code, or JSON string for plotly
   metadata?: any;
   status: 'queued' | 'running' | 'completed' | 'failed';
@@ -129,7 +129,12 @@ export function LabProvider({ children, sessionId }: { children: ReactNode; sess
        else if (eventType === 'output') cellType = 'output';
        else if (eventType === 'blueprint') cellType = 'blueprint';
        else if (eventType === 'metric') cellType = 'metric';
-       else if (eventType === 'render_output') cellType = 'output'; // API Contract
+       else if (eventType === 'render_output' || eventType === 'tearsheet') {
+            const mData = msg.metadata || rawMsg.payload;
+            if (mData?.format === 'plotly' || msg.metadata?.format === 'plotly') cellType = 'plotly';
+            else if (mData?.metrics && mData?.mlflow_run_id) cellType = 'tearsheet';
+            else cellType = 'output';
+       }
        else if (eventType === 'stream_chat') cellType = 'markdown'; // API Contract
        
        // Priority to metadata format overrides

@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Box, Code, Text, VStack, Badge, HStack } from '@chakra-ui/react';
 import { LabCell } from '../context/LabContext';
+import { Tearsheet } from './Tearsheet';
 
 // Use factory to avoid large bundle size if possible, or just default import if lazy loading is not set up
 const Plot = createPlotlyComponent(Plotly);
@@ -17,6 +18,15 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
   const { type, content, metadata, status, timestamp } = cell;
 
   const renderContent = () => {
+    if (type === 'tearsheet') {
+        // Metadata contains the structured payload
+        const tearsheetData = metadata;
+        if (tearsheetData && tearsheetData.metrics) {
+            return <Tearsheet data={tearsheetData} />;
+        }
+        return <Text color="red.500">Invalid Tearsheet Data</Text>;
+    }
+
     if (type === 'plotly') {
       try {
         const plotData = typeof content === 'string' ? JSON.parse(content) : content;
@@ -82,6 +92,7 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
           case 'blueprint': return 'cyan';
           case 'metric': return 'teal';
           case 'error': return 'red';
+          case 'tearsheet': return 'pink';
           default: return 'gray';
       }
   }

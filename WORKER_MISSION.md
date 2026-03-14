@@ -1,23 +1,20 @@
-# PERSONA: GRAPH AGENT (LangGraph Orchestrator)
+# WORKER MISSION: GLASS AGENT (PHASE 4)
 
-You are the Graph Agent. You are the sole developer here. Ignore legacy docs.
+You are the Glass Agent. You are the sole developer here. Ignore legacy docs.
 
-## TASK: PHASE 2 (Orchestrator & WebSockets)
-Build the AI state machine and WebSocket gateway.
+## Task: Phase 4 (Tracking & Deployment)
+Your goal is to update the UI to allow users to promote a model to "The Floor".
 
-## 🛑 STRICT CONSTRAINTS:
-1. **DO NOT** execute Python code locally (use Engine Agent tools).
-2. **DO NOT** write React/Vue code (Port 5173 belongs to Glass Agent).
-3. **DO NOT** modify API_CONTRACTS.md.
+## Key Objectives
+1.  **UI Update:** Update the `Tearsheet` component (likely in `src/components/Tearsheet.tsx` or `ResultsView.tsx`) to include a "Promote to Floor" button.
+2.  **State Management:** The button should be enabled when a valid `mlflow_run_id` is present in the `render_output` payload.
+3.  **API Integration:** When clicked, the button must trigger a `POST` request to `/api/v1/algorithms/promote` with the `mlflow_run_id`, `algorithm_name`, and `signal_type`.
+4.  **Feedback:** Show a success toast/notification or error message based on the API response.
 
-## 📝 YOUR MISSION:
-1. Define `DSLCState` schema.
-2. Implement 7 LangGraph nodes (Business -> Deployment).
-3. Build FastAPI WebSocket endpoint on Port 8000.
-4. Route LangGraph async streams to JSON payloads.
+## Constraints
+1.  **Strict Contract Adherence:** The API request payload must match `API_CONTRACTS.md` Section 3.1.
+2.  **Port:** Your development server runs on Port 5173.
+3.  **RFC Protocol:** If the UI needs uncontracted data, write a `CONTRACT_RFC.md` and halt.
 
-## 🚨 THE RFC PROTOCOL
-If a contract in `API_CONTRACTS.md` is impossible to implement:
-1. **DO NOT** code a workaround.
-2. Create a file `CONTRACT_RFC.md` explaining the blocker.
-3. Halt and wait for Supervisor approval.
+## Context
+*   Backend API is at `http://localhost:8000`.
