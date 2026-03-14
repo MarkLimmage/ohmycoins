@@ -1,4 +1,4 @@
-Here is the **API_CONTRACTS.md**. This document is the strict "source of truth" for data boundaries. By locking these JSON schemas in place, the Frontend (Vue) and Backend (FastAPI) agents can work in complete isolation without fear of integration failures.
+Here is the **API_CONTRACTS.md**. This document is the strict "source of truth" for data boundaries. By locking these JSON schemas in place, the Frontend (React) and Backend (FastAPI) agents can work in complete isolation without fear of integration failures.
 
 ---
 
@@ -23,7 +23,7 @@ All conversational and state-syncing data flows through a bi-directional WebSock
 
 ### 1.2 Server-to-Client Messages (Backend ➔ Frontend)
 
-Every message sent from the FastAPI backend to the Vue frontend must strictly adhere to the following wrapper schema:
+Every message sent from the FastAPI backend to the React frontend must strictly adhere to the following wrapper schema:
 
 ```json
 {
@@ -51,7 +51,7 @@ Used by the LangGraph agent to stream LLM tokens to the UI.
 
 #### B. `status_update`
 
-Used to trigger color/status changes on the Vue Flow header graph.
+Used to trigger color/status changes on the React Flow header graph.
 
 ```json
 {

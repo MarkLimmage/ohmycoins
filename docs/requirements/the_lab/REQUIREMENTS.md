@@ -70,7 +70,7 @@ The dev team must expose the following internal APIs to the LangGraph agent:
 
 ---
 
-## 4. 🖥️ Frontend UX & Communication Protocol (Vue.js + FastAPI)
+## 4. 🖥️ Frontend UX & Communication Protocol (React + FastAPI)
 
 ### 4.1 Low-Code Overlays & Code Abstraction
 
@@ -79,12 +79,12 @@ The dev team must expose the following internal APIs to the LangGraph agent:
 
 ### 4.2 Standardized Insight Rendering (Result-First UI)
 
-* **Structured Visuals:** **If** the agent executes code that generates a chart, the backend **shall** return a Plotly-compatible JSON object or Base64 image string, which the Vue component **shall** render natively.
+* **Structured Visuals:** **If** the agent executes code that generates a chart, the backend **shall** return a Plotly-compatible JSON object or Base64 image string, which the React component **shall** render natively.
 * **The "Tear Sheet":** In the `EVALUATION` stage, the UI **shall** render a standardized metric card (The Tear Sheet) displaying the model's out-of-sample performance (e.g., Accuracy, Precision, assumed P&L).
 
 ### 4.3 Visual State Graph
 
-* **Status Map:** A linear graph node display (e.g., using Vue Flow) **shall** persist at the top of the workspace.
+* **Status Map:** A linear graph node display (e.g., using React Flow) **shall** persist at the top of the workspace.
 * **Real-time Sync:** The backend **shall** push WebSocket events (`status_update`) to instantly color-code nodes (Green = Healthy, Amber = Stale, Blue = In Progress).
 
 ---

@@ -53,12 +53,12 @@ The team must build from the core execution engine outward to the user interface
 * **2.6 Self-Healing Logic:** Implement the `Remediation` node and conditional edges for resource optimization retries.
 ---
 
-## 🖥️ Phase 3: The Interactive Grid (Vue.js Frontend)
+## 🖥️ Phase 3: The Interactive Grid (React Frontend)
 
 *Build the user interface that translates the complex backend state into a cohesive notebook experience.*
 
-* **3.1 The WebSocket Client & State Store:** Implement the Vue composable/store to manage the WebSocket connection and maintain the localized `DSLCState`.
-* **3.2 The Vue Flow Header:** Integrate Vue Flow at the top of the interface. Bind node colors/status directly to the `status_update` events from the WebSocket.
+* **3.1 The WebSocket Client & State Store:** Implement the React hook/store to manage the WebSocket connection and maintain the localized `DSLCState`.
+* **3.2 The React Flow Header:** Integrate React Flow at the top of the interface. Bind node colors/status directly to the `status_update` events from the WebSocket.
 * **3.3 The `LabStageRow` Component:** Build the reusable row component containing the Chat dialogue, the collapsible Code accordion, and the Output panel.
 * **3.4 Visual Rendering Engine:** Implement the logic in the Output panel to parse and natively render Plotly JSON objects and Base64 images without relying on raw console text.
 * **Dependencies:** Blocked by Phase 2. Blocks Phase 4.
@@ -82,7 +82,7 @@ The team must build from the core execution engine outward to the user interface
 *Implement the strict constraints and low-code overlays that make the platform safe and user-friendly.*
 
 * **5.1 Air-Gap & Limits Enforcement:** Enforce the 300-second timeout and 2GB RAM limits on the Dagger containers. Ensure internet access is disabled for the `Preparation`, `Exploration`, and `Modeling` sandbox runs.
-* **5.2 Hyperparameter UI Overlays:** Implement the logic that detects a `hyperparameters` dictionary in the agent's Blueprint payload and renders HTML range sliders in the Vue frontend. Wire these sliders to send re-evaluation requests via WebSocket.
+* **5.2 Hyperparameter UI Overlays:** Implement the logic that detects a `hyperparameters` dictionary in the agent's Blueprint payload and renders HTML range sliders in the React frontend. Wire these sliders to send re-evaluation requests via WebSocket.
 * **5.3 Graceful Degradation:** Ensure WebSocket disconnects trigger a clear UI warning and implement auto-reconnect logic that fetches the latest graph state upon reconnection.
 * **Dependencies:** Blocked by Phase 4.
 

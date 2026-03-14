@@ -663,3 +663,19 @@ Enhance the Collector Dashboard to be production-ready.
 **Status**: Ready for merge. All requirements from design doc met.
 **Issues**: None - all mypy errors fixed, tests passing, code reviewed for quality constraints.
 
+## [2026-03-14] - Sprint 2.49 Supervisor Fixes
+
+**Intent**: Resolve backend crashes and missing schema for Lab 2.0 Graph Agent.
+
+**Status**: IN_PROGRESS
+
+**Actions Taken**:
+- **Resolved Dependency Crash**: Detected 'shap' module missing in backend container. Rebuilt container (docker compose up -d --build backend).
+- **Schema Alignment**: Identified missing 'mv_ohlcv_1m' materialized view required by Graph Agent.
+- **Migration Created**: Added 'c2a4b6c8d0e2_add_mv_ohlcv_1m_view.py' to backend/alembic/versions.
+- **Local DB Updated**: Applied migration to local 'app' database. Verified view existence.
+- **Production Status**: Production DB ('omc') is currently outdated (missing view). Requires deployment of new migration.
+
+**Next Steps**:
+- Verify Graph Agent execution with real execution tool.
+- Merge UI.
