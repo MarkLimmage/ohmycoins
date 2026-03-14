@@ -1,0 +1,104 @@
+import os
+import mlflow # type: ignore
+import pandas as pd
+from typing import Dict, Any, List, Optional
+from app.services.agent.execution import SandboxExecutor
+from app.services.agent.pipeline import PipelineManager
+
+async def run_code_in_dagger(
+    session_id: str,
+    code: str,
+    mv_name: str,
+    run_name: str = "dagger_execution"
+) -> Dict[str, Any]:
+    """
+    Executes code in Dagger sandbox with MLflow tracking.
+    Enforces Phase 5: Hardening (Timeout, Limits via Executor) and Phase 4: MLflow Logging.
+    
+    Args:
+        session_id: Unique session identifier
+        code: Python script content
+        mv_name: Materialized View to use as data source
+        run_name: Name for MLflow run
+        
+    Returns:
+        Dict with stdout, stderr, artifact_paths, status
+    """
+    
+    # Configure MLflow
+    mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_server:5000")
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
+    
+    # 1. Data Pipeline
+    pipeline = PipelineManager(session_id)
+    data_path = ""
+    
+    # Start MLflow run context
+    # We wrap everything in a run to capture data failures too
+    with mlflow.start_run(run_name=run_name) as run:
+        mlflow.log_param("session_id", session_id)
+        mlflow.log_param("mv_name", mv_name)
+        
+        try:
+            # Export data
+            data_path = pipeline.export_mv_to_parquet(mv_name)
+            
+            # Check for insufficient data (Critical Objective 2)
+            if not os.path.exists(data_path) or os.path.getsize(data_path) == 0:
+                raise ValueError("Insufficient Data: Parquet file is empty or missing")
+                
+            # thorough check
+            try:
+                df = pd.read_parquet(data_path)
+                if df.empty:
+                    raise ValueError("Insufficient Data: DataFrame is empty")
+                mlflow.log_metric("input_rows", len(df))
+            except Exception as e:
+                raise ValueError(f"Insufficient Data: Failed to read parquet: {e}")
+
+        except Exception as e:
+            # Critical Failure - Log and Return
+            mlflow.set_tag("status", "FAILED_DATA_PIPELINE")
+            mlflow.log_text(str(e), "error.txt")
+            return {
+                "status": "error", 
+                "message": f"Data Pipeline Failed: {str(e)}",
+                "stdout": "",
+                "stderr": str(e)
+            }
+
+        # 2. Execution (Phase 1 & 5)
+        # SandboxExecutor uses DaggerExecutor which enforces 300s timeout (Phase 5.1)
+        executor = SandboxExecutor()
+        output_dir = os.path.join(pipeline.session_dir, "artifacts")
+        
+        try:
+            result = await executor.execute_code(code, data_path, output_dir)
+            
+            # Log execution logs
+            mlflow.log_text(result.get("stdout", ""), "stdout.txt")
+            mlflow.log_text(result.get("stderr", ""), "stderr.txt")
+            
+            if result.get("status") == "success":
+                mlflow.set_tag("status", "SUCCESS")
+                # Log generated artifacts (Phase 1.3)
+                artifact_paths = result.get("artifact_paths", [])
+                for artifact in artifact_paths:
+                    if os.path.exists(artifact):
+                        mlflow.log_artifact(artifact)
+                
+                return result
+            else:
+                mlflow.set_tag("status", "FAILED_EXECUTION")
+                mlflow.log_text(result.get("message", ""), "error.txt")
+                return result
+                
+        except Exception as e:
+             mlflow.set_tag("status", "FAILED_SYSTEM_ERROR")
+             mlflow.log_text(str(e), "system_error.txt")
+             return {
+                "status": "error",
+                "message": f"System Error: {str(e)}",
+                "stdout": "",
+                "stderr": str(e)
+            }

@@ -1,47 +1,46 @@
 import sys
-from typing import Any
+import os
+from typing import Any, Dict, List
+import glob
 
-import dagger
-
+from app.services.dagger_wrapper import DaggerExecutor
 
 class SandboxExecutor:
-    """Executes Python code inside a Dagger container."""
+    """Executes Python code inside a Dagger container using DaggerExecutor."""
+
+    def __init__(self):
+        self.dagger_executor = DaggerExecutor()
 
     async def execute_code(
-        self, code: str, data_path: str | None = None
-    ) -> dict[str, Any]:
+        self, 
+        code: str, 
+        data_path: str,
+        output_dir: str = "/tmp/omc_artifacts"
+    ) -> Dict[str, Any]:
         """
-        Run code in sandbox.
-        Returns: {stdout, stderr, artifacts}
+        Run code in sandbox via DaggerExecutor.
+        Returns: {stdout, stderr, artifact_paths, status}
         """
-        async with dagger.Connection(dagger.Config(log_output=sys.stderr)) as client:
-            # Load base image
-            container = client.container().from_("omc-agent-base:latest")
+        
+        result = await self.dagger_executor.execute_script(
+            script_content=code,
+            data_path=data_path,
+            output_dir=output_dir
+        )
+        
+        # List generated artifacts
+        artifacts = []
+        if result.get("status") == "success":
+            # List files in output_dir
+            for root, dirs, files in os.walk(output_dir):
+                for file in files:
+                    artifacts.append(os.path.join(root, file))
+        
+        return {
+            "stdout": result.get("stdout", ""),
+            "stderr": result.get("stderr", ""),
+            "artifact_paths": artifacts, # Changed from 'artifacts' list of dicts to list of paths
+            "status": result.get("status", "error"),
+            "message": result.get("message", "")
+        }
 
-            # Mount data if provided
-            if data_path:
-                container = container.with_mounted_file(
-                    "/workspace/data.parquet", client.host().file(data_path)
-                )
-
-            # Run code
-            # We wrap the user code in a script
-            script_content = f"""
-import pandas as pd
-if os.path.exists('/workspace/data.parquet'):
-    df = pd.read_parquet('/workspace/data.parquet')
-{code}
-            """
-
-            container = container.with_new_file(
-                "/workspace/script.py", contents=script_content
-            ).with_exec(["python3", "/workspace/script.py"])
-
-            # Capture output
-            stdout = await container.stdout()
-            stderr = await container.stderr()
-
-            # Artifact extraction (mock for now, real implementation would export files)
-            artifacts: list[dict[str, Any]] = []
-
-            return {"stdout": stdout, "stderr": stderr, "artifacts": artifacts}

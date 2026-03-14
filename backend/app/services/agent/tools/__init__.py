@@ -46,6 +46,9 @@ from .reporting_tools import (
 from .signal_query import (
     query_market_signals,
 )
+from .dagger_tool import (
+    run_code_in_dagger,
+)
 
 __all__ = [
     # Data Retrieval Tools
@@ -79,4 +82,6 @@ __all__ = [
     "create_visualizations",
     # Signal Query Tools
     "query_market_signals",
+    # Execution Tools
+    "run_code_in_dagger",
 ]

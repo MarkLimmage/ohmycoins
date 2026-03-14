@@ -13,6 +13,7 @@ interface UseLabWebSocketReturn {
   isConnected: boolean
   isDone: boolean
   sessionStatus: string | null
+  sendMessage: (message: any) => void
 }
 
 export const useLabWebSocket = ({
@@ -25,6 +26,14 @@ export const useLabWebSocket = ({
   const [sessionStatus, setSessionStatus] = useState<string | null>(null)
   const ws = useRef<WebSocket | null>(null)
   const messageIds = useRef(new Set<string>())
+
+  const sendMessage = useCallback((message: any) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify(message));
+    } else {
+      console.warn("WebSocket is not connected");
+    }
+  }, []); // Added sendMessage
 
   const connect = useCallback(async () => {
     if (!sessionId || !enabled) return
@@ -117,5 +126,5 @@ export const useLabWebSocket = ({
     }
   }, [connect])
 
-  return { messages, isConnected, isDone, sessionStatus }
+  return { messages, isConnected, isDone, sessionStatus, sendMessage }
 }

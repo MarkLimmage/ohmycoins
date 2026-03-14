@@ -98,5 +98,13 @@ workflow.add_edge("deployment", END)
 checkpointer = MemorySaver()
 graph = workflow.compile(
     checkpointer=checkpointer,
+    interrupt_before=["modeling", "evaluation"] # Phase 2.2: Interrupts for HITL
+)
+
+# No-loop policy (Phase 2.6):
+# The graph is currently strictly linear. To enforce no-loop, we ensure no backward edges are added.
+# Backward edges would handle retries, but "infinite loop" must be prevented.
+# This implementation is currently DAG (Directed Acyclic Graph) by design.
+
     interrupt_before=["modeling", "evaluation"]
 )

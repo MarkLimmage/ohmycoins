@@ -81,13 +81,14 @@ function labReducer(state: LabState, action: Action): LabState {
 const LabContext = createContext<{
   state: LabState;
   dispatch: React.Dispatch<Action>;
+  sendMessage: (message: any) => void;
 } | undefined>(undefined);
 
 export function LabProvider({ children, sessionId }: { children: ReactNode; sessionId: string | null }) {
   const [state, dispatch] = useReducer(labReducer, initialState);
   
   // Use the existing hook to get messages
-  const { messages, isConnected, isDone, sessionStatus } = useLabWebSocket({
+  const { messages, isConnected, isDone, sessionStatus, sendMessage } = useLabWebSocket({
     sessionId,
     enabled: !!sessionId
   });
@@ -188,7 +189,7 @@ export function LabProvider({ children, sessionId }: { children: ReactNode; sess
 
 
   return (
-    <LabContext.Provider value={{ state, dispatch }}>
+    <LabContext.Provider value={{ state, dispatch, sendMessage }}>
       {children}
     </LabContext.Provider>
   );
