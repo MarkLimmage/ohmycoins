@@ -10,7 +10,6 @@ import {
 import { useEffect, useState } from "react"
 import { FiPlus } from "react-icons/fi"
 import { OpenAPI } from "@/client"
-import AgentTerminal from "@/components/Lab/AgentTerminal"
 import { type Artifact, ArtifactViewer } from "./components/ArtifactViewer"
 import { BlueprintCard, type BlueprintData } from "./components/BlueprintCard"
 import { ModelPlaygroundPanel } from "./components/ModelPlaygroundPanel"
@@ -30,7 +29,8 @@ import {
 } from "./hooks"
 import { getWebSocketBaseUrl } from "@/utils/env"
 
-import { useLabWebSocket } from "./hooks/useLabWebSocket"
+import { LabProvider } from "./context/LabContext"
+import { LabSessionView } from "./LabSessionView"
 
 export function LabDashboard() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
@@ -38,8 +38,6 @@ export function LabDashboard() {
   )
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [resolvedToken, setResolvedToken] = useState<string | undefined>()
-  const [blueprintData, setBlueprintData] = useState<BlueprintData | null>(null)
-  const [trainingMetrics, setTrainingMetrics] = useState<TrainingMetric[]>([])
   const [approvedBlueprints, setApprovedBlueprints] = useState<Set<string>>(
     new Set(),
   )
@@ -80,39 +78,12 @@ export function LabDashboard() {
       } else {
         setResolvedToken(rawToken)
       }
+
     }
     resolveToken()
   }, [])
 
-  const { messages } = useLabWebSocket({
-    sessionId: selectedSessionId,
-    enabled: !!selectedSessionId,
-  })
-
-  // Process messages to extract blueprint, metrics, and artifacts
-  useEffect(() => {
-    messages.forEach((msg) => {
-      if (msg.type === "blueprint" && msg.metadata) {
-        try {
-          const blueprint = JSON.parse(msg.content) as BlueprintData
-          setBlueprintData(blueprint)
-        } catch (err) {
-          console.error("Failed to parse blueprint:", err)
-        }
-      } else if (msg.type === "metric" && msg.metadata) {
-        try {
-          const metric = JSON.parse(msg.content) as TrainingMetric
-          setTrainingMetrics((prev) => {
-            // Update or add metric
-            const updated = prev.filter((m) => m.name !== metric.name)
-            return [...updated, metric]
-          })
-        } catch (err) {
-          console.error("Failed to parse metric:", err)
-        }
-      }
-    })
-  }, [messages])
+  /* Logic moved to LabContext */
 
   const selectedSession = sessionsData?.data?.find(
     (s) => s.id === selectedSessionId,
@@ -180,54 +151,20 @@ export function LabDashboard() {
         {/* Right panel: Terminal and outputs */}
         <Box flex={1} minH="500px">
           {selectedSessionId ? (
-            <VStack align="stretch" gap={4}>
-              <AgentTerminal
-                sessionId={selectedSessionId}
-                streamUrl={streamUrl}
-                allowInteraction={isActive}
-                onCancel={isActive ? handleCancel : undefined}
+            <LabProvider sessionId={selectedSessionId}>
+              <LabSessionView 
+                onPromote={(artifact) => {
+                  setPromoteArtifactState(artifact)
+                  setPromoteModalOpen(true)
+                }}
+                onTest={setPlaygroundArtifact}
+                playgroundArtifact={playgroundArtifact}
+                setPlaygroundArtifact={setPlaygroundArtifact}
+                approvedBlueprints={approvedBlueprints}
+                setApprovedBlueprints={setApprovedBlueprints}
+                artifacts={artifacts}
               />
-
-              {/* Blueprint Card */}
-              {blueprintData && (
-                <BlueprintCard
-                  data={blueprintData}
-                  onApprove={() => {
-                    setApprovedBlueprints((prev) => {
-                      const next = new Set(prev)
-                      next.add(blueprintData.target)
-                      return next
-                    })
-                  }}
-                  isApproved={approvedBlueprints.has(blueprintData.target)}
-                />
-              )}
-
-              {/* Training Progress */}
-              {trainingMetrics.length > 0 && (
-                <TrainingProgressChart metrics={trainingMetrics} />
-              )}
-
-              {/* Artifacts */}
-              {artifacts.length > 0 && (
-                <ArtifactViewer
-                  artifacts={artifacts}
-                  onPromote={(artifact) => {
-                    setPromoteArtifactState(artifact)
-                    setPromoteModalOpen(true)
-                  }}
-                  onTest={setPlaygroundArtifact}
-                />
-              )}
-
-              {/* Model Playground */}
-              {playgroundArtifact?.id && (
-                <ModelPlaygroundPanel
-                  artifactId={playgroundArtifact.id}
-                  onClose={() => setPlaygroundArtifact(null)}
-                />
-              )}
-            </VStack>
+            </LabProvider>
           ) : (
             <Flex
               h="full"
