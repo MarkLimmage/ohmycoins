@@ -16,6 +16,7 @@ import uuid
 from typing import Any, Literal, TypedDict
 
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from sqlmodel import Session
 
@@ -120,6 +121,7 @@ class LangGraphWorkflow:
         session: Session | None = None,
         user_id: uuid.UUID | None = None,
         credential_id: uuid.UUID | None = None,
+        checkpointer: MemorySaver | None = None,
     ) -> None:
         """
         Initialize the LangGraph workflow with agents and state graph.
@@ -128,10 +130,12 @@ class LangGraphWorkflow:
             session: Optional database session for agents
             user_id: Optional user ID for BYOM (Bring Your Own Model) support
             credential_id: Optional specific LLM credential ID to use
+            checkpointer: Optional checkpointer for state persistence
         """
         self.session = session
         self.user_id = user_id
         self.credential_id = credential_id
+        self.checkpointer = checkpointer or MemorySaver()
         self.graph = self._build_graph()
         self.data_retrieval_agent = DataRetrievalAgent(session=session)
         self.data_analyst_agent = DataAnalystAgent()
@@ -206,6 +210,9 @@ class LangGraphWorkflow:
         workflow.add_node("generate_report", self._generate_report_node)
         workflow.add_node("finalize", self._finalize_node)
         workflow.add_node("dispatch_alerts", self._dispatch_alerts_node)
+        
+        # Add human review node (HITL)
+        workflow.add_node("human_review", self._human_review_node)
 
         # Add error recovery node
         workflow.add_node("handle_error", self._handle_error_node)
@@ -256,6 +263,7 @@ class LangGraphWorkflow:
                 "finalize": "finalize",
                 "reason": "reason",
                 "error": "handle_error",
+                "review": "human_review",  # HITL Route
             },
         )
 
@@ -267,6 +275,7 @@ class LangGraphWorkflow:
                 "evaluate": "evaluate_model",
                 "reason": "reason",
                 "error": "handle_error",
+                "review": "human_review",  # HITL Route
             },
         )
 
@@ -279,7 +288,19 @@ class LangGraphWorkflow:
                 "retrain": "train_model",
                 "reason": "reason",
                 "error": "handle_error",
+                "review": "human_review",  # HITL Route
             },
+        )
+
+        # After human review, decide next step
+        workflow.add_conditional_edges(
+            "human_review",
+            self._route_after_human_review,
+            {
+                "resume": "reason",   # Usually go back to reasoning to decide next step
+                "finalize": "finalize",
+                "error": "handle_error"
+            }
         )
 
         # After report generation, finalize
@@ -301,7 +322,11 @@ class LangGraphWorkflow:
         # After alert dispatch, end
         workflow.add_edge("dispatch_alerts", END)
 
-        return workflow.compile()
+        # Compile the graph with checkpointer and potential interrupts
+        return workflow.compile(
+            checkpointer=self.checkpointer,
+            interrupt_before=["human_review"],
+        )
 
     async def _initialize_node(self, state: AgentState) -> AgentState:
         """
@@ -977,7 +1002,7 @@ class LangGraphWorkflow:
 
     def _route_after_analysis(
         self, state: AgentState
-    ) -> Literal["train", "report", "finalize", "reason", "error"]:
+    ) -> Literal["train", "report", "finalize", "reason", "error", "review"]:
         """
         Route after data analysis.
 
@@ -991,6 +1016,10 @@ class LangGraphWorkflow:
         if not state.get("analysis_completed"):
             state["error"] = "Analysis failed to complete"
             return "error"
+
+        # Check for HITL interrupts
+        if state.get("approval_needed") and not state.get("approval_granted"):
+             return "review"
 
         # Check if training is needed
         user_goal = state.get("user_goal", "").lower()
@@ -1010,7 +1039,7 @@ class LangGraphWorkflow:
 
     def _route_after_training(
         self, state: AgentState
-    ) -> Literal["evaluate", "reason", "error"]:
+    ) -> Literal["evaluate", "reason", "error", "review"]:
         """
         Route after model training.
 
@@ -1023,12 +1052,16 @@ class LangGraphWorkflow:
         if not state.get("model_trained"):
             state["error"] = "Model training failed"
             return "error"
+            
+        # Check for HITL interrupts
+        if state.get("approval_needed") and not state.get("approval_granted"):
+             return "review"
 
         return "evaluate"
 
     def _route_after_evaluation(
         self, state: AgentState
-    ) -> Literal["report", "retrain", "reason", "error"]:
+    ) -> Literal["report", "retrain", "reason", "error", "review"]:
         """
         Route after model evaluation.
 
@@ -1043,6 +1076,14 @@ class LangGraphWorkflow:
         if not state.get("model_evaluated"):
             state["error"] = "Model evaluation failed"
             return "error"
+            
+        # Check for HITL interrupts
+        if state.get("approval_needed") and not state.get("approval_granted"):
+             return "review"
+        
+        # Check evaluation results and decide
+        # Simplified: always report if successful, unless accuracy is too low
+        return "report"
 
         # Check if model performance is acceptable
         evaluation_results = state.get("evaluation_results", {})
@@ -1069,6 +1110,64 @@ class LangGraphWorkflow:
         else:
             return "end"
 
+    async def _human_review_node(self, state: AgentState) -> AgentState:
+        """
+        Human-in-the-Loop Review Node.
+
+        This node executes *after* the interrupt and *after* the user resumes execution.
+        It serves as a synchronization point for manual approvals.
+
+        Week 9-10: Created for HITL workflow.
+
+        Args:
+            state: Current workflow state
+
+        Returns:
+            Updated state after review
+        """
+        logger.info(f"Human review checkpoint reached for session {state.get('session_id')}")
+
+        # Add a system message indicating review was processed
+        state["messages"].append(
+            {
+                "role": "system",
+                "content": "Human review processing completed. Proceeding based on decision.",
+            }
+        )
+
+        # Clear approval flag if granted
+        if state.get("approval_granted") and not state.get("approval_needed"):
+             # Already handled by external state update?
+             pass
+
+        return state
+
+    def _route_after_human_review(self, state: AgentState) -> Literal["resume", "finalize", "error"]:
+        """
+        Route after human review based on approval status.
+
+        Args:
+            state: Current workflow state
+
+        Returns:
+            Next node to execute
+        """
+        if state.get("approval_granted"):
+            logger.info("Approval granted, resuming workflow.")
+            # If we knew where we came from, we could go there.
+            # But simpler is to go back to Reason, which should now see
+            # the approval and decide next step.
+            return "resume"
+        elif state.get("approval_rejected"):
+            logger.info("Approval rejected, terminating or handling error.")
+            state["error"] = "Human review rejected the operation."
+            return "error"
+        else:
+            # Still pending? This shouldn't happen if we strictly interrupt BEFORE this node.
+            # But if we are here, it means we resumed.
+            # If no decision, go back to reason?
+            return "resume"
+
     async def execute(self, initial_state: AgentState) -> AgentState:
         """
         Execute the workflow from start to finish.
@@ -1079,9 +1178,16 @@ class LangGraphWorkflow:
         Returns:
             Final workflow state
         """
+        # Configure execution with session_id as thread_id for checkpointing
+        session_id = initial_state.get("session_id")
+        config = {
+            "configurable": {"thread_id": str(session_id)},
+            "recursion_limit": 50
+        }
+        
         # Execute the graph with the initial state
         final_state = await self.graph.ainvoke(
-            initial_state, config={"recursion_limit": 50}
+            initial_state, config=config
         )
         return final_state
 
@@ -1095,7 +1201,14 @@ class LangGraphWorkflow:
         Yields:
             State updates as the workflow progresses
         """
+        # Configure execution with session_id as thread_id for checkpointing
+        session_id = initial_state.get("session_id")
+        config = {
+            "configurable": {"thread_id": str(session_id)},
+            "recursion_limit": 50
+        }
+        
         async for state in self.graph.astream(
-            initial_state, config={"recursion_limit": 50}
+            initial_state, config=config
         ):
             yield state

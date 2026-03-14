@@ -11,15 +11,16 @@ import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import redis.asyncio as aioredis
-from sqlmodel import Session as DBSession
+from sqlmodel import Session as DBSession, select, func
 
 from app.core.config import settings
 from app.core.db import engine
-from app.models import AgentSessionStatus
+from app.models import AgentSessionStatus, AgentSessionMessage
 
 from .artifacts import ArtifactManager
 from .orchestrator import AgentOrchestrator
@@ -30,6 +31,24 @@ logger = logging.getLogger(__name__)
 
 def _channel_for(session_id: uuid.UUID) -> str:
     return f"agent:session:{session_id}:stream"
+
+
+def _get_stage_from_step(step_name: str) -> str:
+    """Map workflow step to API StageID."""
+    mapping = {
+        "initialization": "BUSINESS_UNDERSTANDING",
+        "reason": "BUSINESS_UNDERSTANDING",
+        "retrieve_data": "DATA_ACQUISITION",
+        "validate_data": "PREPARATION",
+        "analyze_data": "EXPLORATION",
+        "train_model": "MODELING",
+        "evaluate_model": "EVALUATION",
+        "generate_report": "DEPLOYMENT",
+        "finalize": "DEPLOYMENT",
+        "dispatch_alerts": "DEPLOYMENT",
+        "handle_error": "EVALUATION",
+    }
+    return mapping.get(step_name, "BUSINESS_UNDERSTANDING")
 
 
 class AgentRunner:
@@ -49,19 +68,35 @@ class AgentRunner:
                 decode_responses=True,
             )
         return self._redis
+ze sequence_id from existing message count
+                count_stmt = (
+                    select(func.count())
+                    .select_from(AgentSessionMessage)
+                    .where(AgentSessionMessage.session_id == session_id)
+                )
+                sequence_id = db.exec(count_stmt).one() or 0
 
-    def start_session(self, session_id: uuid.UUID) -> None:
-        """Launch a background task for the given session."""
-        if session_id in self._tasks and not self._tasks[session_id].done():
-            logger.warning("Session %s is already running", session_id)
-            return
+                # Initialise the session via orchestrator (sets RUNNING, adds system msg)
+                await self.orchestrator.start_session(db, session_id)
 
-        task = asyncio.create_task(self._run(session_id))
-        self._tasks[session_id] = task
-        task.add_done_callback(lambda t: self._on_done(session_id, t))
+                # Increment sequence_id for the start message
+                sequence_id += 1
 
-    async def _run(self, session_id: uuid.UUID) -> None:
-        """Execute the agent workflow in its own DB session, publishing events."""
+                await self._publish(
+                    redis,
+                    channel,
+                    {
+                        "event_type": "status_update",
+                        "stage": "BUSINESS_UNDERSTANDING",
+                        "sequence_id": sequence_id,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "payload": {
+                            "status": AgentSessionStatus.RUNNING,
+                            "message": "Session started",
+                        },
+                    },
+                )
+                        """Execute the agent workflow in its own DB session, publishing events."""
         redis = await self._get_redis()
         channel = _channel_for(session_id)
 
@@ -119,17 +154,21 @@ class AgentRunner:
                 }
 
                 async for state_update in workflow.stream_execute(initial_state):
+                    # Increment sequence_id for each state update
+                    sequence_id += 1
+                    
                     # Each state_update is a dict keyed by node name
                     for node_name, node_state in state_update.items():
                         content = ""
-                        msg_type = "output"
+                        event_type = "status_update"  # default
                         agent_name = node_name
                         metadata_json = None
+                        stage = _get_stage_from_step(node_name)
 
                         if isinstance(node_state, dict):
-                            # Sprint 2.45: Check for structured event types first
+                            # Determine event_type and content
                             if node_state.get("trained_models"):
-                                msg_type = "metric"
+                                event_type = "render_output"
                                 trained = node_state.get("trained_models", {})
                                 content = json.dumps(
                                     {
@@ -143,7 +182,7 @@ class AgentRunner:
                                     default=str,
                                 )
                             elif node_state.get("evaluation_results"):
-                                msg_type = "metric"
+                                event_type = "render_output"
                                 eval_results = node_state.get("evaluation_results", {})
                                 content = json.dumps(
                                     {
@@ -159,7 +198,7 @@ class AgentRunner:
                             elif node_state.get("awaiting_choice") and node_state.get(
                                 "choices_available"
                             ):
-                                msg_type = "blueprint"
+                                event_type = "render_output"  # Blueprint/Choice
                                 content = json.dumps(
                                     {
                                         "choices": node_state.get(
@@ -169,7 +208,7 @@ class AgentRunner:
                                     default=str,
                                 )
                             elif node_state.get("result"):
-                                msg_type = "output"
+                                event_type = "render_output"
                                 content = node_state["result"]
                             else:
                                 # Original content extraction logic
@@ -186,16 +225,16 @@ class AgentRunner:
                                     )
                                 )
                                 if node_state.get("error"):
-                                    msg_type = "result"
+                                    event_type = "error"
                                     metadata_json = content
                                 elif node_state.get("current_step"):
-                                    msg_type = "thought"
+                                    event_type = "status_update"
                                     metadata_json = content
                                     content = f"Step: {node_state['current_step']}"
                         else:
                             content = str(node_state)
 
-                        # Persist message to DB
+                        # Persist message to DB (unchanged logic)
                         await self.session_manager.add_message(
                             db,
                             session_id,
@@ -213,15 +252,25 @@ class AgentRunner:
                             except Exception:
                                 pub_metadata = {"raw": metadata_json}
 
+                        # Construct payload per API Contract
+                        payload = {
+                            "content": content,
+                            "agent_name": agent_name,
+                            "metadata": pub_metadata,
+                        }
+                        
+                        if isinstance(node_state, dict) and node_state.get("error"):
+                             payload["error"] = node_state.get("error")
+
                         await self._publish(
                             redis,
                             channel,
                             {
-                                "type": msg_type,
-                                "content": content,
-                                "agent_name": agent_name,
-                                "timestamp": None,  # will be set by consumer
-                                "metadata": pub_metadata,
+                                "event_type": event_type,
+                                "stage": stage,
+                                "sequence_id": sequence_id,
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "payload": payload,
                             },
                         )
 
