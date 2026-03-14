@@ -27,7 +27,7 @@ export const Tearsheet = ({ data }: TearsheetProps) => {
 
     return (
         <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4} bg="gray.50" _dark={{ bg: "gray.800" }}>
-            <VStack align="stretch" spacing={4}>
+            <VStack align="stretch" gap={4}>
                 <HStack justify="space-between">
                     <Heading size="md" display="flex" alignItems="center" gap={2}>
                         <FiActivity /> Performance Tearsheet
@@ -53,11 +53,11 @@ export const Tearsheet = ({ data }: TearsheetProps) => {
 
                 <HStack justify="flex-end" pt={2}>
                     <Button 
-                        colorScheme="blue" 
-                        leftIcon={<FiTrendingUp />}
+                        colorPalette="blue" 
                         onClick={() => setIsPromoteOpen(true)}
-                        isDisabled={!mlflow_run_id}
+                        disabled={!mlflow_run_id}
                     >
+                        <FiTrendingUp style={{ marginRight: '8px' }} />
                         Promote to Floor
                     </Button>
                 </HStack>
