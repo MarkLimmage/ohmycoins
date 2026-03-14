@@ -22,7 +22,11 @@ def upgrade():
     # for the Lab pipeline, even if the resolution is strictly 5-min.
     # However, to be safe and future-proof for high-frequency collectors, we define it as:
     
+    # Clean up any potential conflicts (view, table, or materialized view)
     op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_ohlcv_1m CASCADE")
+    op.execute("DROP VIEW IF EXISTS mv_ohlcv_1m CASCADE")
+    op.execute("DROP TABLE IF EXISTS mv_ohlcv_1m CASCADE")
+
     op.execute("""
         CREATE MATERIALIZED VIEW mv_ohlcv_1m AS
         SELECT
