@@ -29,7 +29,8 @@ RUN pip install --no-cache-dir \
     matplotlib \
     ta-lib \
     shap \
-    pyarrow
+    pyarrow \
+    mlflow
 
 # Create workspace directory
 WORKDIR /workspace

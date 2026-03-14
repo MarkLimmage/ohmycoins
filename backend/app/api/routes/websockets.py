@@ -1,8 +1,9 @@
 import asyncio
+import itertools
 import json
 import random
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Any, cast
 
 import jwt
@@ -128,6 +129,8 @@ async def websocket_lab(
     from app.services.agent.lab_graph import app as graph
     from app.services.agent.lab_schema import LabState, NodeStatus, StageID
 
+    seq_counter = itertools.count(1)
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -183,6 +186,8 @@ async def websocket_lab(
                                 {
                                     "event_type": "stream_chat",
                                     "stage": current_stage,
+                                    "sequence_id": next(seq_counter),
+                                    "timestamp": datetime.now(timezone.utc).isoformat(),
                                     "payload": {"text_delta": content},
                                 }
                             )
@@ -202,6 +207,8 @@ async def websocket_lab(
                 {
                     "event_type": "error",
                     "stage": "UNKNOWN",
+                    "sequence_id": next(seq_counter),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "payload": {"message": str(e), "code": "500"},
                 }
             )

@@ -118,6 +118,14 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
 
     # Redis configuration for agent state management (Phase 3)
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+
+    # MLflow Configuration (Phases 4-5)
+    # Default to service name 'mlflow' which should be resolvable in docker network
+    # For local dev without docker, override with http://localhost:5000
+    MLFLOW_TRACKING_URI: str = "http://mlflow:5000"
+
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
