@@ -20,7 +20,7 @@ class DaggerExecutor:
     async def execute_script(
         self,
         script_content: str,
-        data_path: str,
+        data_path: Optional[str],
         output_dir: str,
         mlflow_tracking_uri: str = "http://mlflow_server:5000"
     ) -> Dict[str, Any]:
@@ -78,7 +78,7 @@ class DaggerExecutor:
     async def _run_dagger(
         self,
         script_content: str,
-        data_path: str,
+        data_path: Optional[str],
         output_dir: str,
         mlflow_tracking_uri: str,
         script_filename: str,
@@ -103,12 +103,14 @@ class DaggerExecutor:
             
             # 2. Mount input files
             # script_content -> /workspace/algo_script.py
-            # data_path (host) -> /workspace/training_data.parquet
+            # data_path (host) -> /workspace/training_data.parquet (if provided)
             container = (
                 container
                 .with_new_file(f"/workspace/{script_filename}", contents=script_content)
-                .with_file(f"/workspace/{data_filename}", client.host().file(data_path))
             )
+
+            if data_path:
+                container = container.with_file(f"/workspace/{data_filename}", client.host().file(data_path))
             
             # 3. Execute the script
             # We expect the script to read 'training_data.parquet' and output files to /workspace/out

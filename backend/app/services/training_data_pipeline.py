@@ -1,6 +1,6 @@
 import os
 import tempfile
-import pandas as pd
+import pandas as pd # type: ignore
 from sqlalchemy import text
 from app.core.db import engine
 
