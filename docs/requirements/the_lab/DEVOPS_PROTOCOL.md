@@ -36,7 +36,7 @@ Parallel local development inevitably leads to port collisions and database lock
 Under no circumstances shall a worker agent alter these port assignments dynamically.
 
 * **Port `8000`:** Reserved exclusively for the Graph Agent (FastAPI Orchestrator).
-* **Port `8001`:** Reserved exclusively for the Supervisor's Mock WebSocket Server.
+* **Port `8002`:** Reserved exclusively for the Supervisor's Mock WebSocket Server.
 * **Port `5173`:** Reserved exclusively for the Glass Agent (Vue Vite Server).
 * **Port `5000`:** Reserved exclusively for the local MLflow Tracking Server.
 
@@ -51,7 +51,7 @@ To prevent the Engine Agent from locking Postgres tables while the Graph Agent i
 Before assigning tasks to the worker agents, the Supervisor **must** complete the following setup sequence:
 
 1. **Verify Contracts:** Ensure `API_CONTRACTS.md` is finalized and saved in the root directory.
-2. **Generate Mock Server:** The Supervisor shall write a `mock_ws_server.py` script running on Port `8001` that broadcasts the exact JSON schemas defined in the Contracts.
+2. **Generate Mock Server:** The Supervisor shall write a `mock_ws_server.py` script running on Port `8002` that broadcasts the exact JSON schemas defined in the Contracts.
 3. **Initialize Worktrees:** Execute the Git CLI commands to spawn the isolated directories.
 4. **Seed Environments:** Copy the `API_CONTRACTS.md` into the root of each spawned worktree.
 
@@ -81,7 +81,7 @@ When spinning up a worker, the Supervisor shall use the following prompt structu
 
 **For the Glass Agent:**
 
-> "You are the Frontend UI Agent. Your isolated workspace is `../omc-lab-ui`. Your task is Phase 3 from the Roadmap. Build the Vue component grid. Connect your WebSocket client to `ws://localhost:8001`. *If the UI requires data not present in `API_CONTRACTS.md`, submit a `CONTRACT_RFC.md` file and halt execution.*"
+> "You are the Frontend UI Agent. Your isolated workspace is `../omc-lab-ui`. Your task is Phase 3 from the Roadmap. Build the Vue component grid. Connect your WebSocket client to `ws://localhost:8002`. *If the UI requires data not present in `API_CONTRACTS.md`, submit a `CONTRACT_RFC.md` file and halt execution.*"
 
 ---
 

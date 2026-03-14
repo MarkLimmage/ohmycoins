@@ -21,7 +21,7 @@ You manage development in isolated directories. The stack is React (Frontend), D
 Enforce these assignments strictly to prevent local collisions:
 
 * **Port 8000:** Graph Agent (FastAPI WebSocket Router)
-* **Port 8001:** Your Mock WebSocket Server
+* **Port 8002:** Your Mock WebSocket Server
 * **Port 5173:** Glass Agent (React Vite Server)
 * **Port 5000:** MLflow Tracking Server
 
@@ -55,7 +55,7 @@ done
 
 * **Engine:** "You are the Engine Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 1 (Dagger sandbox & MV-to-Parquet pipeline). DO NOT write FastAPI or React code. Strictly follow API_CONTRACTS.md. If a contract is impossible, write a CONTRACT_RFC.md and halt."
 * **Graph:** "You are the Graph Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 2 (LangGraph state machine & FastAPI WS gateway on Port 8000). Mock Dagger tools. Strictly follow API_CONTRACTS.md. If a contract is impossible, write a CONTRACT_RFC.md and halt."
-* **Glass:** "You are the Glass Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 3 (React Flow & UI component grid). Connect WebSockets to ws://localhost:8001. Assume data matches API_CONTRACTS.md. If UI needs uncontracted data, write a CONTRACT_RFC.md and halt."
+* **Glass:** "You are the Glass Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 3 (React Flow & UI component grid). Connect WebSockets to ws://localhost:8002. Assume data matches API_CONTRACTS.md. If UI needs uncontracted data, write a CONTRACT_RFC.md and halt."
 
 **Step E:** Launch the Fleet.
 code ../omc-lab-engine && code ../omc-lab-graph && code ../omc-lab-ui
@@ -70,9 +70,29 @@ If a worker encounters an impossible constraint, they will generate a CONTRACT_R
 
 ### 5. Integration Sequence & The Failure Protocol
 
-When workers report completion, you must merge in this exact order: 1) Engine into Graph, 2) Graph into Main, 3) Glass into Main.
+When workers report completion, you must execute the merge sequence carefully. Do not string commands together with `&&`. Execute and verify step-by-step.
 
-After a merge, you must run the relevant test and linting scripts (e.g., scripts/lint.sh).
+**Phase A: Pre-Merge Validation**
+Before merging, navigate to each worktree (../omc-lab-engine, ../omc-lab-graph, ../omc-lab-ui) and run `git status`.
+
+* If the working tree is dirty (uncommitted files), **DO NOT COMMIT FOR THEM**.
+* Halt the sequence and instruct the user: "The [Worker Name] left uncommitted changes. Please wake the worker to finalize and commit its code."
+
+**Phase B: The Merge Sequence & Conflict Resolution**
+Merge strictly in this order: 1) Engine into Graph, 2) Graph into Main, 3) Glass into Main.
+
+* **Scaffolding Conflicts:** You will inevitably encounter merge conflicts on `WORKER_MISSION.md`, `CLAUDE.md`, or the API documentation files because they differ across branches.
+* **Resolution:** When this happens, do not panic. Simply resolve them by keeping the current branch's version: run `git checkout --ours WORKER_MISSION.md` (and any other conflicting scaffolding docs), then `git add .`, and `git commit --no-edit` to complete the merge.
+
+**Phase C: 🚨 THE INTEGRATION FAILURE PROTOCOL 🚨**
+After a successful Git merge, you must run the relevant test and linting scripts (e.g., scripts/lint.sh). If the code itself throws a broken build, failed tests, or linter/typing errors (Ruff/MyPy), you must execute this protocol. **DO NOT FIX THE CODE.**
+
+1. **Abort:** Revert the codebase to the pre-merge state (`git reset --hard HEAD~1`).
+2. **Capture the Error:** Copy the exact terminal output (the stack trace or linter failure).
+3. **Draft the Error Report:** Generate a file named INTEGRATION_FAILURE.md in the failing worker's directory using the exact template provided in Section 6.
+4. **Delegate:** Stop execution and instruct the user to boot up the specific Worker Agent to resolve the issues detailed in the report.
+
+
 
 **🚨 THE INTEGRATION FAILURE PROTOCOL 🚨**
 If a merge results in a broken build, failed tests, or linter/typing errors (Ruff/MyPy), you must execute this protocol. **DO NOT FIX THE CODE.**

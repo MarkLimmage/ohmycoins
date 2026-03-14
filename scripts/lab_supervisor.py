@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # --- CONFIGURATION ---
-PORT = 8001
+PORT = 8002
 HOST = "0.0.0.0"
 
 logging.basicConfig(level=logging.INFO)

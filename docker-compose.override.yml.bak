@@ -26,17 +26,3 @@ services:
   prestart:
     environment:
       - POSTGRES_PORT=5432
-  supervisor-mock:
-    image: ${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}
-    container_name: supervisor-mock
-    working_dir: /app
-    volumes:
-      - ./scripts:/app/scripts:ro
-    ports:
-      - "8002:8001"
-    command: python scripts/lab_supervisor.py
-    environment:
-      - PYTHONPATH=/app
-    restart: unless-stopped
-    networks:
-      - default
