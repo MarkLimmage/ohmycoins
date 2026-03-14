@@ -78,8 +78,10 @@ class ModelTrainingAgent(BaseAgent):
             scale_features = training_params.get("scale_features", True)
 
             # Train the model
+            session_id = state.get("session_id", "unknown_session")
             if task_type == "classification":
-                model_result = train_classification_model(
+                model_result = await train_classification_model(
+                    session_id=session_id,
                     training_data=training_data,
                     target_column=target_column,
                     feature_columns=feature_columns,
@@ -89,7 +91,8 @@ class ModelTrainingAgent(BaseAgent):
                     scale_features=scale_features,
                 )
             else:  # regression
-                model_result = train_regression_model(
+                model_result = await train_regression_model(
+                    session_id=session_id,
                     training_data=training_data,
                     target_column=target_column,
                     feature_columns=feature_columns,

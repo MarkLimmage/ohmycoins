@@ -1,30 +1,77 @@
 import os
-import tempfile
-
+import time
+import mlflow
 import pandas as pd  # type: ignore
 from sqlalchemy import text
 
+from app.core.config import settings
 from app.core.db import engine
 
 
-def export_training_data_to_parquet() -> str:
+# Cache configuration
+CACHE_DIR = "/tmp/omc_cache"
+CACHE_FILE = os.path.join(CACHE_DIR, "training_data.parquet")
+CACHE_EXPIRY = 3600  # 1 hour
+
+
+def export_training_data_to_parquet(force_refresh: bool = False, mlflow_run_id: str | None = None) -> str:
     """
-    Queries mv_training_set_v1 and saves the result to a parquet file in a temp directory.
-    Returns the absolute path to the parquet file.
+    Queries mv_training_set_v1 and saves the result to a parquet file.
+    Implements caching mechanism.
+    Tracks generation in MLflow if run_id provided.
+
+    Args:
+        force_refresh: If True, ignore cache and regenerate.
+        mlflow_run_id: Optional MLflow run ID to log the dataset to.
+
+    Returns:
+        The absolute path to the parquet file.
     """
-    query = text("SELECT * FROM mv_training_set_v1")
+    # 1. Setup Cache Directory
+    if not os.path.exists(CACHE_DIR):
+        os.makedirs(CACHE_DIR)
 
-    # Use Pandas to execute the query and fetch data
-    # We use a connection from the engine
-    with engine.connect() as conn:
-        df = pd.read_sql(query, conn)
+    cache_valid = False
+    if os.path.exists(CACHE_FILE) and not force_refresh:
+        # Check staleness
+        mod_time = os.path.getmtime(CACHE_FILE)
+        if time.time() - mod_time < CACHE_EXPIRY:
+            cache_valid = True
 
-    # Create a temporary directory
-    temp_dir = tempfile.mkdtemp(prefix="omc_training_data_")
-    file_path = os.path.join(temp_dir, "training_data.parquet")
+    if cache_valid:
+        # Keep it simple for logs
+        print(f"Using cached training data from {CACHE_FILE}")
+    else:
+        print("Regenerating training data...")
+        # Query the database
+        # Use a more robust query that handles potential NULLs or type issues if needed
+        query = text("SELECT * FROM mv_training_set_v1")
 
-    # Save to parquet
-    # Ensure pyarrow or fastparquet is installed (added to pyproject.toml)
-    df.to_parquet(file_path, index=False)
+        with engine.connect() as conn:
+            df = pd.read_sql(query, conn)
 
-    return file_path
+        # Save to parquet
+        # Ensure pyarrow or fastparquet is installed (added to pyproject.toml)
+        df.to_parquet(CACHE_FILE, index=False)
+        print(f"Saved training data to {CACHE_FILE}")
+
+    # 2. Log to MLflow if requested
+    if mlflow_run_id:
+        try:
+            # Check if run_id is valid active run or just an ID
+            # We assume it's a valid ID passed from a context manager
+            client = mlflow.MlflowClient(tracking_uri=settings.MLFLOW_TRACKING_URI)
+            
+            # Log the artifact
+            client.log_artifact(mlflow_run_id, CACHE_FILE, artifact_path="data")
+
+            # Log params about the dataset
+            file_stats = os.stat(CACHE_FILE)
+            client.log_param(mlflow_run_id, "training_data_size_bytes", str(file_stats.st_size))
+            client.log_param(mlflow_run_id, "training_data_path", CACHE_FILE)
+
+        except Exception as e:
+            print(f"Warning: Failed to log to MLflow: {e}")
+
+    return os.path.abspath(CACHE_FILE)
+

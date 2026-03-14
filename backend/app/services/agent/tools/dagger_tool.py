@@ -4,12 +4,17 @@ from typing import Any
 import mlflow
 import pandas as pd  # type: ignore
 
+from app.core.config import settings
 from app.services.agent.execution import SandboxExecutor
 from app.services.agent.pipeline import PipelineManager
 
 
 async def run_code_in_dagger(
-    session_id: str, code: str, mv_name: str, run_name: str = "dagger_execution"
+    session_id: str,
+    code: str,
+    mv_name: str | None = None,
+    data_path: str | None = None,
+    run_name: str = "dagger_execution",
 ) -> dict[str, Any]:
     """
     Executes code in Dagger sandbox with MLflow tracking.
@@ -18,7 +23,8 @@ async def run_code_in_dagger(
     Args:
         session_id: Unique session identifier
         code: Python script content
-        mv_name: Materialized View to use as data source
+        mv_name: Optional Materialized View to use as data source
+        data_path: Optional direct path to parquet file (overrides mv_name if both provided)
         run_name: Name for MLflow run
 
     Returns:
@@ -26,40 +32,48 @@ async def run_code_in_dagger(
     """
 
     # Configure MLflow
-    mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_server:5000")
-    mlflow.set_tracking_uri(mlflow_tracking_uri)
+    mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 
     # 1. Data Pipeline
     pipeline = PipelineManager(session_id)
-    data_path = ""
+    final_data_path = None
 
     # Start MLflow run context
     # We wrap everything in a run to capture data failures too
     with mlflow.start_run(run_name=run_name):
         mlflow.log_param("session_id", session_id)
-        mlflow.log_param("mv_name", mv_name)
+        if mv_name:
+            mlflow.log_param("mv_name", mv_name)
 
         try:
-            # Export data
-            data_path = pipeline.export_mv_to_parquet(mv_name)
+            # Determine data source
+            if data_path:
+                final_data_path = data_path
+            elif mv_name:
+                final_data_path = pipeline.export_mv_to_parquet(mv_name)
 
-            # Check for insufficient data (Critical Objective 2)
-            if not os.path.exists(data_path) or os.path.getsize(data_path) == 0:
-                raise ValueError("Insufficient Data: Parquet file is empty or missing")
+            # Check for insufficient data if a path was resolved
+            if final_data_path:
+                if not os.path.exists(final_data_path) or os.path.getsize(final_data_path) == 0:
+                    raise ValueError("Insufficient Data: Parquet file is empty or missing")
 
-            # thorough check
-            try:
-                df = pd.read_parquet(data_path)
-                if df.empty:
-                    raise ValueError("Insufficient Data: DataFrame is empty")
-                mlflow.log_metric("input_rows", len(df))
-            except Exception as e:
-                raise ValueError(f"Insufficient Data: Failed to read parquet: {e}")
+                # thorough check
+                try:
+                    df = pd.read_parquet(final_data_path)
+                    if df.empty:
+                        raise ValueError("Insufficient Data: DataFrame is empty")
+                    mlflow.log_metric("input_rows", len(df))
+                except Exception as e:
+                    raise ValueError(f"Insufficient Data: Failed to read parquet: {e}")
 
         except Exception as e:
             # Critical Failure - Log and Return
             mlflow.set_tag("status", "FAILED_DATA_PIPELINE")
-            mlflow.log_text(str(e), "error.txt")
+            try:
+                 mlflow.log_text(str(e), "error.txt")
+            except Exception:
+                 pass # failed to log
+                 
             return {
                 "status": "error",
                 "message": f"Data Pipeline Failed: {str(e)}",
@@ -73,7 +87,7 @@ async def run_code_in_dagger(
         output_dir = os.path.join(pipeline.session_dir, "artifacts")
 
         try:
-            result = await executor.execute_code(code, data_path, output_dir)
+            result = await executor.execute_code(code, final_data_path, output_dir)
 
             # Log execution logs
             mlflow.log_text(result.get("stdout", ""), "stdout.txt")

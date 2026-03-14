@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 from typing import Any
 
 import dagger
@@ -86,18 +87,98 @@ class DaggerExecutor:
     ) -> dict[str, Any]:
         # Initialize Dagger client
         # Config log_output to stderr allows seeing Dagger internal logs in host stderr
-        # Removed explicit log_output to avoid potential type issues with TextIOWrapper vs TextIO
-        async with dagger.Connection(dagger.Config()) as client:
+        async with dagger.Connection(dagger.Config(log_output=sys.stderr)) as client:
             # 1. Build the container from the Dockerfile in root
             # This ensures we use the correct environment with TA-Lib, shap, etc.
             # We assume the script is running with CWD at project root for correct context
-            project_root = os.getcwd()  # Assumption: CWD is project root
+            project_root = os.getcwd()
 
             # Use docker_build from directory context
-            container = (
-                client.host()
-                .directory(project_root)
-                .docker_build(dockerfile=self.dockerfile_path)
+            # We must load the whole project context to access the Dockerfile
+            source = client.host().directory(project_root)
+            container = source.docker_build(dockerfile=self.dockerfile_path)
+
+            # 2. Add files
+            # Add script
+            container = container.with_new_file(f"/workspace/{script_filename}", script_content)
+            
+            # Add data if provided
+            if data_path and os.path.exists(data_path):
+                # Ensure data_path is absolute for client.host().file()
+                abs_data_path = os.path.abspath(data_path)
+                # Dagger requires files to be within the context or explicit host() access
+                data_file = client.host().file(abs_data_path)
+                container = container.with_mounted_file(f"/workspace/{data_filename}", data_file)
+
+            # 3. Environment Variables
+            container = container.with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
+            
+            # 4. Execute Script
+            # We want to capture stdout/stderr
+            container = container.with_exec(["python", f"/workspace/{script_filename}"])
+            
+            # 5. Export Artifacts
+            # The script should write artifacts to /workspace/out
+            # We export the whole directory to the host output_dir
+            out_dir_obj = container.directory("/workspace/out")
+            await out_dir_obj.export(output_dir)
+
+            # 6. Get Output
+            stdout = await container.stdout()
+            stderr = await container.stderr()
+
+            return {
+                "status": "success",
+                "stdout": stdout,
+                "stderr": stderr,
+                "output_dir": output_dir,
+            }
+
+
+            # 2. Add files
+            # Add script
+            container = container.with_new_file(f"/workspace/{script_filename}", script_content)
+            
+            # Add data if provided
+            if data_path and os.path.exists(data_path):
+                # We need to mount the file from the host into the container
+                # Note: client.host().file() requires absolute path or relative to CWD if checked carefully
+                # Ideally data_path is absolute.
+                data_file = client.host().file(data_path)
+                container = container.with_file(f"/workspace/{data_filename}", data_file)
+
+            # 3. Apply MLflow config
+            # Set environment variable for MLflow
+            container = container.with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
+            
+            # 4. Execute script
+            # Run python script and capture stdout/stderr
+            try:
+                executed = container.with_exec(["python3", script_filename])
+                
+                # Force execution and get output
+                stdout = await executed.stdout()
+                stderr = await executed.stderr()
+                
+                # 5. Export artifacts
+                # Only if successful
+                await executed.directory("/workspace/out").export(output_dir)
+
+                return {
+                    "status": "success",
+                    "message": "Script executed successfully.",
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "output_dir": output_dir,
+                }
+            except dagger.ExecError as e:
+                return {
+                    "status": "error",
+                    "message": "Script execution failed.",
+                    "stdout": e.stdout,
+                    "stderr": e.stderr,
+                    "output_dir": output_dir,
+                }
                 .with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
                 .with_workdir("/workspace")
             )

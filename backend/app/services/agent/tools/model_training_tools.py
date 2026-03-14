@@ -1,14 +1,20 @@
 # mypy: ignore-errors
 """
-Model Training Tools - Week 5-6 Implementation
+Model Training Tools - Week 5-6 Implementation (Updated Phase 5)
 
 Tools for ModelTrainingAgent to train machine learning models on cryptocurrency data.
+Phase 5: Rerouted to Dagger sandbox execution.
 """
-
+import json
+import logging
+import os
+import tempfile
 from typing import Any, Literal
 
-import numpy as np
+import joblib
 import pandas as pd
+import numpy as np
+
 from sklearn.ensemble import (
     GradientBoostingClassifier,
     GradientBoostingRegressor,
@@ -32,8 +38,244 @@ from sklearn.svm import SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from xgboost import XGBClassifier, XGBRegressor
 
+from app.core.config import settings
+from app.services.dagger_wrapper import DaggerExecutor
 
-def train_classification_model(
+logger = logging.getLogger(__name__)
+
+
+async def _execute_training_in_dagger(
+    task_type: Literal["classification", "regression"],
+    session_id: str,
+    training_data: pd.DataFrame,
+    target_column: str,
+    feature_columns: list[str] | None,
+    model_type: str,
+    hyperparameters: dict[str, Any] | None,
+    test_size: float,
+    random_state: int,
+    scale_features: bool,
+    validation_strategy: str,
+) -> dict[str, Any]:
+    """
+    Internal helper to execute training via Dagger.
+    """
+    # 1. Save provided dataframe to Parquet
+    # We use a temp file because the dataframe might have been modified in memory by the Agent
+    with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as tmp:
+         training_data.to_parquet(tmp.name, index=False)
+         data_path = tmp.name
+
+    if feature_columns is None:
+        feature_columns = [col for col in training_data.columns if col != target_column]
+
+    # 2. Construct the Training Script
+    # We used json.dumps to safely serialize parameters into the script
+    script_content = f"""
+import json
+import os
+import joblib
+import mlflow
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import TimeSeriesSplit, train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
+    mean_absolute_error, mean_squared_error, r2_score
+)
+from sklearn.ensemble import (
+    GradientBoostingClassifier, GradientBoostingRegressor,
+    RandomForestClassifier, RandomForestRegressor
+)
+from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.svm import SVC, SVR
+from xgboost import XGBClassifier, XGBRegressor
+
+# Parameters
+TARGET_COLUMN = "{target_column}"
+FEATURE_COLUMNS = {json.dumps(feature_columns)}
+MODEL_TYPE = "{model_type}"
+HYPERPARAMETERS = {json.dumps(hyperparameters or {})}
+TEST_SIZE = {test_size}
+RANDOM_STATE = {random_state}
+SCALE_FEATURES = {scale_features}
+VALIDATION_STRATEGY = "{validation_strategy}"
+TASK_TYPE = "{task_type}"
+
+def train():
+    print("Loading data...")
+    # The file is mounted at /workspace/training_data.parquet by DaggerExecutor
+    df = pd.read_parquet("/workspace/training_data.parquet")
+    
+    # Ensure columns exist
+    missing_cols = [c for c in FEATURE_COLUMNS if c not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing feature columns: {{missing_cols}}")
+    if TARGET_COLUMN not in df.columns:
+        raise ValueError(f"Missing target column: {{TARGET_COLUMN}}")
+
+    X = df[FEATURE_COLUMNS].copy()
+    y = df[TARGET_COLUMN].copy()
+    
+    # Handle missing values - simple imputation
+    X = X.fillna(0) 
+
+    # Split Data
+    if VALIDATION_STRATEGY in ["time_series", "expanding_window"]:
+        tscv = TimeSeriesSplit(n_splits=5)
+        splits = list(tscv.split(X))
+        train_idx, test_idx = splits[-1]
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    else:
+        if TASK_TYPE == "classification":
+            stratify = y
+        else:
+            stratify = None
+            
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=stratify
+        )
+
+    # Scale
+    scaler = None
+    if SCALE_FEATURES:
+        scaler = StandardScaler()
+        X_train = pd.DataFrame(scaler.fit_transform(X_train), columns=FEATURE_COLUMNS)
+        X_test = pd.DataFrame(scaler.transform(X_test), columns=FEATURE_COLUMNS)
+
+    # Instantiate Model
+    model = None
+    if MODEL_TYPE == "random_forest":
+        cls = RandomForestClassifier if TASK_TYPE == "classification" else RandomForestRegressor
+        model = cls(random_state=RANDOM_STATE, **HYPERPARAMETERS)
+    elif MODEL_TYPE == "xgboost":
+        cls = XGBClassifier if TASK_TYPE == "classification" else XGBRegressor
+        model = cls(random_state=RANDOM_STATE, **HYPERPARAMETERS)
+    elif MODEL_TYPE == "gradient_boosting":
+        cls = GradientBoostingClassifier if TASK_TYPE == "classification" else GradientBoostingRegressor
+        model = cls(random_state=RANDOM_STATE, **HYPERPARAMETERS)
+    elif MODEL_TYPE == "decision_tree":
+        cls = DecisionTreeClassifier if TASK_TYPE == "classification" else DecisionTreeRegressor
+        model = cls(random_state=RANDOM_STATE, **HYPERPARAMETERS)
+    elif MODEL_TYPE == "svm":
+        cls = SVC if TASK_TYPE == "classification" else SVR
+        kwargs = {{"probability": True}} if TASK_TYPE == "classification" else {{}}
+        model = cls(random_state=RANDOM_STATE, **kwargs, **HYPERPARAMETERS)
+    elif MODEL_TYPE == "logistic_regression":
+        model = LogisticRegression(random_state=RANDOM_STATE, **HYPERPARAMETERS)
+    elif MODEL_TYPE == "linear_regression":
+        model = LinearRegression(**HYPERPARAMETERS)
+    elif MODEL_TYPE == "ridge":
+        model = Ridge(**HYPERPARAMETERS)
+    elif MODEL_TYPE == "lasso":
+        model = Lasso(**HYPERPARAMETERS)
+    else:
+        raise ValueError(f"Unknown model type: {{MODEL_TYPE}}")
+
+    print(f"Training {{MODEL_TYPE}} for {{TASK_TYPE}}...")
+    model.fit(X_train, y_train)
+
+    # Predict
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+
+    # Metrics
+    metrics = {{"train": {{}}, "test": {{}}}}
+    
+    if TASK_TYPE == "classification":
+        metrics["train"]["accuracy"] = accuracy_score(y_train, y_pred_train)
+        metrics["test"]["accuracy"] = accuracy_score(y_test, y_pred_test)
+        
+        # Calculate F1, Precision, Recall with zero_division=0 to avoid warnings
+        metrics["test"]["f1"] = f1_score(y_test, y_pred_test, average="weighted", zero_division=0)
+        metrics["train"]["f1"] = f1_score(y_train, y_pred_train, average="weighted", zero_division=0)
+        
+        metrics["test"]["precision"] = precision_score(y_test, y_pred_test, average="weighted", zero_division=0)
+        metrics["train"]["precision"] = precision_score(y_train, y_pred_train, average="weighted", zero_division=0)
+        
+        metrics["test"]["recall"] = recall_score(y_test, y_pred_test, average="weighted", zero_division=0)
+        metrics["train"]["recall"] = recall_score(y_train, y_pred_train, average="weighted", zero_division=0)
+
+    else:
+        metrics["train"]["rmse"] = np.sqrt(mean_squared_error(y_train, y_pred_train))
+        metrics["test"]["rmse"] = np.sqrt(mean_squared_error(y_test, y_pred_test))
+        metrics["test"]["r2"] = r2_score(y_test, y_pred_test)
+        metrics["train"]["r2"] = r2_score(y_train, y_pred_train)
+        metrics["test"]["mae"] = mean_absolute_error(y_test, y_pred_test)
+        metrics["train"]["mae"] = mean_absolute_error(y_train, y_pred_train)
+
+    # Save Artifacts
+    if not os.path.exists("/workspace/out"):
+        os.makedirs("/workspace/out")
+        
+    joblib.dump(model, "/workspace/out/model.joblib")
+    if scaler:
+        joblib.dump(scaler, "/workspace/out/scaler.joblib")
+    
+    with open("/workspace/out/metrics.json", "w") as f:
+        json.dump(metrics, f)
+        
+    print("Training complete.")
+
+if __name__ == "__main__":
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", ""))
+    # Optional: Start MLflow run inside container
+    train()
+"""
+
+    # 3. Request Dagger Execution
+    # We pass data_filename="training_data.parquet" to match script expectation
+    with tempfile.TemporaryDirectory() as temp_dir:
+        executor = DaggerExecutor()
+        result = await executor.execute_script(
+            script_content=script_content,
+            data_path=data_path,
+            output_dir=temp_dir,
+            mlflow_tracking_uri=settings.MLFLOW_TRACKING_URI,
+        )
+
+        # Clean up temp data file
+        if os.path.exists(data_path):
+            os.remove(data_path)
+
+        if result.get("status") == "error":
+            logger.error(f"Dagger execution failed: {result.get('stderr')}")
+            # Fallback or raise? We raise to let Agent handle it.
+            raise RuntimeError(f"Model training failed in Dagger execution: {result.get('stderr')}")
+
+        # 4. Load Artifacts back into memory
+        model_path = os.path.join(temp_dir, "model.joblib")
+        scaler_path = os.path.join(temp_dir, "scaler.joblib")
+        metrics_path = os.path.join(temp_dir, "metrics.json")
+
+        if not os.path.exists(model_path):
+            raise FileNotFoundError("Model artifact not found after Dagger execution.")
+
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+        
+        with open(metrics_path, "r") as f:
+            metrics = json.load(f)
+
+        return {
+            "model": model,
+            "scaler": scaler,
+            "feature_columns": feature_columns,
+            "metrics": metrics,
+            "model_type": model_type,
+            "hyperparameters": hyperparameters,
+            "validation_strategy": validation_strategy,
+            # Placeholder sizes since we didn't return them from script (could add to metrics)
+            "train_size": 0, 
+            "test_size": 0
+        }
+
+
+async def train_classification_model(
+    session_id: str,
     training_data: pd.DataFrame,
     target_column: str,
     feature_columns: list[str] | None = None,
@@ -54,201 +296,25 @@ def train_classification_model(
     ] = "random",
 ) -> dict[str, Any]:
     """
-    Train a classification model on cryptocurrency data.
-
-    Args:
-        training_data: DataFrame containing features and target
-        target_column: Name of the target column to predict
-        feature_columns: List of feature column names. If None, uses all except target
-        model_type: Type of classification model to train
-        hyperparameters: Optional dictionary of model hyperparameters
-        test_size: Fraction of data to use for testing (0.0-1.0)
-        random_state: Random seed for reproducibility
-        scale_features: Whether to scale features using StandardScaler
-        validation_strategy: Strategy for data splitting ("random", "time_series", or "expanding_window")
-
-    Returns:
-        Dictionary containing:
-        - model: Trained model object
-        - scaler: StandardScaler object if scale_features=True, else None
-        - feature_columns: List of feature columns used
-        - metrics: Dictionary of performance metrics
-        - train_size: Number of training samples
-        - test_size: Number of test samples
+    Train a classification model using Dagger sandbox.
     """
-    # Prepare features and target
-    if feature_columns is None:
-        feature_columns = [col for col in training_data.columns if col != target_column]
-
-    X = training_data[feature_columns].copy()
-    y = training_data[target_column].copy()
-
-    # Handle missing values
-    X = X.fillna(X.mean())
-
-    # Split data based on validation strategy
-    if validation_strategy in ("time_series", "expanding_window"):
-        tscv = TimeSeriesSplit(n_splits=5)
-        splits = list(tscv.split(X))
-        train_idx, test_idx = splits[-1]  # Use last fold for final evaluation
-        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-    else:
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state, stratify=y
-        )
-
-    # Scale features if requested
-    scaler = None
-    if scale_features:
-        scaler = StandardScaler()
-        X_train = pd.DataFrame(
-            scaler.fit_transform(X_train), columns=feature_columns, index=X_train.index
-        )
-        X_test = pd.DataFrame(
-            scaler.transform(X_test), columns=feature_columns, index=X_test.index
-        )
-
-    # Initialize model with hyperparameters
-    hyperparams = hyperparameters or {}
-
-    if model_type == "random_forest":
-        model = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=hyperparams.get("n_estimators", 100),
-            max_depth=hyperparams.get("max_depth", None),
-            min_samples_split=hyperparams.get("min_samples_split", 2),
-            min_samples_leaf=hyperparams.get("min_samples_leaf", 1),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k
-                not in [
-                    "n_estimators",
-                    "max_depth",
-                    "min_samples_split",
-                    "min_samples_leaf",
-                ]
-            },
-        )
-    elif model_type == "logistic_regression":
-        model = LogisticRegression(
-            random_state=random_state,
-            max_iter=hyperparams.get("max_iter", 1000),
-            C=hyperparams.get("C", 1.0),
-            **{k: v for k, v in hyperparams.items() if k not in ["max_iter", "C"]},
-        )
-    elif model_type == "decision_tree":
-        model = DecisionTreeClassifier(
-            random_state=random_state,
-            max_depth=hyperparams.get("max_depth", None),
-            min_samples_split=hyperparams.get("min_samples_split", 2),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k not in ["max_depth", "min_samples_split"]
-            },
-        )
-    elif model_type == "gradient_boosting":
-        model = GradientBoostingClassifier(
-            random_state=random_state,
-            n_estimators=hyperparams.get("n_estimators", 100),
-            learning_rate=hyperparams.get("learning_rate", 0.1),
-            max_depth=hyperparams.get("max_depth", 3),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k not in ["n_estimators", "learning_rate", "max_depth"]
-            },
-        )
-    elif model_type == "svm":
-        model = SVC(
-            random_state=random_state,
-            C=hyperparams.get("C", 1.0),
-            kernel=hyperparams.get("kernel", "rbf"),
-            probability=True,
-            **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]},
-        )
-    elif model_type == "xgboost":
-        model = XGBClassifier(
-            random_state=random_state,
-            n_estimators=hyperparams.get("n_estimators", 100),
-            learning_rate=hyperparams.get("learning_rate", 0.1),
-            max_depth=hyperparams.get("max_depth", 3),
-            use_label_encoder=False,
-            eval_metric="logloss",
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k not in ["n_estimators", "learning_rate", "max_depth"]
-            },
-        )
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
-
-    # Train model
-    model.fit(X_train, y_train)
-
-    # Make predictions
-    y_pred_train = model.predict(X_train)
-    y_pred_test = model.predict(X_test)
-
-    # Get probability predictions for ROC-AUC (if binary classification)
-    try:
-        y_pred_proba_test = model.predict_proba(X_test)[:, 1]
-        roc_auc = roc_auc_score(y_test, y_pred_proba_test)
-    except (AttributeError, IndexError):
-        roc_auc = None
-
-    # Calculate metrics
-    metrics = {
-        "train": {
-            "accuracy": float(accuracy_score(y_train, y_pred_train)),
-            "precision": float(
-                precision_score(
-                    y_train, y_pred_train, average="weighted", zero_division=0
-                )
-            ),
-            "recall": float(
-                recall_score(y_train, y_pred_train, average="weighted", zero_division=0)
-            ),
-            "f1": float(
-                f1_score(y_train, y_pred_train, average="weighted", zero_division=0)
-            ),
-        },
-        "test": {
-            "accuracy": float(accuracy_score(y_test, y_pred_test)),
-            "precision": float(
-                precision_score(
-                    y_test, y_pred_test, average="weighted", zero_division=0
-                )
-            ),
-            "recall": float(
-                recall_score(y_test, y_pred_test, average="weighted", zero_division=0)
-            ),
-            "f1": float(
-                f1_score(y_test, y_pred_test, average="weighted", zero_division=0)
-            ),
-        },
-    }
-
-    if roc_auc is not None:
-        metrics["test"]["roc_auc"] = float(roc_auc)
-
-    return {
-        "model": model,
-        "scaler": scaler,
-        "feature_columns": feature_columns,
-        "metrics": metrics,
-        "train_size": len(X_train),
-        "test_size": len(X_test),
-        "model_type": model_type,
-        "hyperparameters": hyperparams,
-        "validation_strategy": validation_strategy,
-    }
+    return await _execute_training_in_dagger(
+        task_type="classification",
+        session_id=session_id,
+        training_data=training_data,
+        target_column=target_column,
+        feature_columns=feature_columns,
+        model_type=model_type,
+        hyperparameters=hyperparameters,
+        test_size=test_size,
+        random_state=random_state,
+        scale_features=scale_features,
+        validation_strategy=validation_strategy,
+    )
 
 
-def train_regression_model(
+async def train_regression_model(
+    session_id: str,
     training_data: pd.DataFrame,
     target_column: str,
     feature_columns: list[str] | None = None,
@@ -271,176 +337,21 @@ def train_regression_model(
     ] = "random",
 ) -> dict[str, Any]:
     """
-    Train a regression model on cryptocurrency data.
-
-    Args:
-        training_data: DataFrame containing features and target
-        target_column: Name of the target column to predict
-        feature_columns: List of feature column names. If None, uses all except target
-        model_type: Type of regression model to train
-        hyperparameters: Optional dictionary of model hyperparameters
-        test_size: Fraction of data to use for testing (0.0-1.0)
-        random_state: Random seed for reproducibility
-        scale_features: Whether to scale features using StandardScaler
-        validation_strategy: Strategy for data splitting ("random", "time_series", or "expanding_window")
-
-    Returns:
-        Dictionary containing:
-        - model: Trained model object
-        - scaler: StandardScaler object if scale_features=True, else None
-        - feature_columns: List of feature columns used
-        - metrics: Dictionary of performance metrics
-        - train_size: Number of training samples
-        - test_size: Number of test samples
+    Train a regression model using Dagger sandbox.
     """
-    # Prepare features and target
-    if feature_columns is None:
-        feature_columns = [col for col in training_data.columns if col != target_column]
-
-    X = training_data[feature_columns].copy()
-    y = training_data[target_column].copy()
-
-    # Handle missing values
-    X = X.fillna(X.mean())
-    y = y.fillna(y.mean())
-
-    # Split data based on validation strategy
-    if validation_strategy in ("time_series", "expanding_window"):
-        tscv = TimeSeriesSplit(n_splits=5)
-        splits = list(tscv.split(X))
-        train_idx, test_idx = splits[-1]  # Use last fold for final evaluation
-        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
-    else:
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state
-        )
-
-    # Scale features if requested
-    scaler = None
-    if scale_features:
-        scaler = StandardScaler()
-        X_train = pd.DataFrame(
-            scaler.fit_transform(X_train), columns=feature_columns, index=X_train.index
-        )
-        X_test = pd.DataFrame(
-            scaler.transform(X_test), columns=feature_columns, index=X_test.index
-        )
-
-    # Initialize model with hyperparameters
-    hyperparams = hyperparameters or {}
-
-    if model_type == "random_forest":
-        model = RandomForestRegressor(
-            random_state=random_state,
-            n_estimators=hyperparams.get("n_estimators", 100),
-            max_depth=hyperparams.get("max_depth", None),
-            min_samples_split=hyperparams.get("min_samples_split", 2),
-            min_samples_leaf=hyperparams.get("min_samples_leaf", 1),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k
-                not in [
-                    "n_estimators",
-                    "max_depth",
-                    "min_samples_split",
-                    "min_samples_leaf",
-                ]
-            },
-        )
-    elif model_type == "linear_regression":
-        model = LinearRegression(**hyperparams)
-    elif model_type == "ridge":
-        model = Ridge(
-            random_state=random_state,
-            alpha=hyperparams.get("alpha", 1.0),
-            **{k: v for k, v in hyperparams.items() if k != "alpha"},
-        )
-    elif model_type == "lasso":
-        model = Lasso(
-            random_state=random_state,
-            alpha=hyperparams.get("alpha", 1.0),
-            **{k: v for k, v in hyperparams.items() if k != "alpha"},
-        )
-    elif model_type == "decision_tree":
-        model = DecisionTreeRegressor(
-            random_state=random_state,
-            max_depth=hyperparams.get("max_depth", None),
-            min_samples_split=hyperparams.get("min_samples_split", 2),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k not in ["max_depth", "min_samples_split"]
-            },
-        )
-    elif model_type == "gradient_boosting":
-        model = GradientBoostingRegressor(
-            random_state=random_state,
-            n_estimators=hyperparams.get("n_estimators", 100),
-            learning_rate=hyperparams.get("learning_rate", 0.1),
-            max_depth=hyperparams.get("max_depth", 3),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k not in ["n_estimators", "learning_rate", "max_depth"]
-            },
-        )
-    elif model_type == "svr":
-        model = SVR(
-            C=hyperparams.get("C", 1.0),
-            kernel=hyperparams.get("kernel", "rbf"),
-            **{k: v for k, v in hyperparams.items() if k not in ["C", "kernel"]},
-        )
-    elif model_type == "xgboost":
-        model = XGBRegressor(
-            random_state=random_state,
-            n_estimators=hyperparams.get("n_estimators", 100),
-            learning_rate=hyperparams.get("learning_rate", 0.1),
-            max_depth=hyperparams.get("max_depth", 3),
-            **{
-                k: v
-                for k, v in hyperparams.items()
-                if k not in ["n_estimators", "learning_rate", "max_depth"]
-            },
-        )
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
-
-    # Train model
-    model.fit(X_train, y_train)
-
-    # Make predictions
-    y_pred_train = model.predict(X_train)
-    y_pred_test = model.predict(X_test)
-
-    # Calculate metrics
-    metrics = {
-        "train": {
-            "mse": float(mean_squared_error(y_train, y_pred_train)),
-            "rmse": float(np.sqrt(mean_squared_error(y_train, y_pred_train))),
-            "mae": float(mean_absolute_error(y_train, y_pred_train)),
-            "r2": float(r2_score(y_train, y_pred_train)),
-        },
-        "test": {
-            "mse": float(mean_squared_error(y_test, y_pred_test)),
-            "rmse": float(np.sqrt(mean_squared_error(y_test, y_pred_test))),
-            "mae": float(mean_absolute_error(y_test, y_pred_test)),
-            "r2": float(r2_score(y_test, y_pred_test)),
-        },
-    }
-
-    return {
-        "model": model,
-        "scaler": scaler,
-        "feature_columns": feature_columns,
-        "metrics": metrics,
-        "train_size": len(X_train),
-        "test_size": len(X_test),
-        "model_type": model_type,
-        "hyperparameters": hyperparams,
-        "validation_strategy": validation_strategy,
-    }
+    return await _execute_training_in_dagger(
+        task_type="regression",
+        session_id=session_id,
+        training_data=training_data,
+        target_column=target_column,
+        feature_columns=feature_columns,
+        model_type=model_type,
+        hyperparameters=hyperparameters,
+        test_size=test_size,
+        random_state=random_state,
+        scale_features=scale_features,
+        validation_strategy=validation_strategy,
+    )
 
 
 def cross_validate_model(
@@ -460,6 +371,8 @@ def cross_validate_model(
 ) -> dict[str, Any]:
     """
     Perform cross-validation on a model to estimate performance.
+    
+    NOTE: Currently runs locally. Future consideration: move to Dagger.
 
     Args:
         training_data: DataFrame containing features and target
