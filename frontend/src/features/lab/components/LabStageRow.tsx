@@ -4,19 +4,10 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Box, Code, Text, VStack, Badge, HStack } from '@chakra-ui/react';
-// import { LabCell } from '../context/LabContext'; // Circular dependency if I import from LabContext directly inside features/lab? No, it's fine.
+import { LabCell } from '../context/LabContext';
 
 // Use factory to avoid large bundle size if possible, or just default import if lazy loading is not set up
 const Plot = createPlotlyComponent(Plotly);
-
-interface LabCell {
-    id: string;
-    type: 'code' | 'markdown' | 'plotly' | 'output' | 'error' | 'thought' | 'tool' | 'result';
-    content: string; 
-    metadata?: any;
-    status: 'queued' | 'running' | 'completed' | 'failed';
-    timestamp?: string;
-  }
 
 interface LabStageRowProps {
   cell: LabCell;
@@ -53,7 +44,7 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
       );
     }
 
-    if (type === 'code' || type === 'tool') {
+    if (type === 'code' || type === 'tool' || type === 'blueprint') {
       return (
         <Code display="block" whiteSpace="pre" p={2} borderRadius="md" w="100%" overflowX="auto">
           {content}
@@ -61,8 +52,8 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
       );
     }
 
-    if (type === 'output' || type === 'result') {
-        const isError = metadata?.error || status === 'failed';
+    if (type === 'output' || type === 'result' || type === 'error') {
+        const isError = type === 'error' || metadata?.error || status === 'failed';
         return (
             <Code 
                 display="block" 
@@ -88,6 +79,9 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
           case 'tool': return 'purple';
           case 'result': return metadata?.error ? 'red' : 'green';
           case 'plotly': return 'orange';
+          case 'blueprint': return 'cyan';
+          case 'metric': return 'teal';
+          case 'error': return 'red';
           default: return 'gray';
       }
   }
@@ -104,7 +98,7 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
         borderLeft="4px solid"
         borderLeftColor={`${getBadgeColor()}.400`}
     >
-      <VStack align="stretch" spacing={2}>
+      <VStack align="stretch" gap={2}>
         <HStack justify="space-between">
             <Badge colorScheme={getBadgeColor()}>{type.toUpperCase()}</Badge>
             {timestamp && <Text fontSize="xs" color="gray.500">{new Date(timestamp).toLocaleTimeString()}</Text>}

@@ -23,7 +23,7 @@ export const LabGrid = () => {
   }
 
   return (
-    <VStack align="stretch" spacing={4} pb={20} w="100%">
+    <VStack align="stretch" gap={4} pb={20} w="100%">
       {cells.map((cell) => (
         <LabStageRow key={cell.id} cell={cell} />
       ))}
