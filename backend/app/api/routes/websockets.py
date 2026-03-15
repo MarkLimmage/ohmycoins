@@ -392,7 +392,7 @@ async def websocket_agent_stream(
         stage = "BUSINESS_UNDERSTANDING"
 
         # Construct legacy payload
-        payload = {
+        payload: dict[str, Any] = {
             "content": msg.content,
             "agent_name": msg.agent_name,
         }

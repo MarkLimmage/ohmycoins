@@ -3,7 +3,7 @@ Tests for agent session API routes — non-blocking creation and credential pass
 """
 
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -31,6 +31,7 @@ class TestCreateSession:
     ) -> None:
         """Session creation should return immediately without blocking."""
         mock_runner = MagicMock()
+        mock_runner.start_session = AsyncMock()
         mock_get_runner.return_value = mock_runner
 
         response = client.post(
@@ -61,6 +62,7 @@ class TestCreateSession:
     ) -> None:
         """Session creation should work without llm_credential_id."""
         mock_runner = MagicMock()
+        mock_runner.start_session = AsyncMock()
         mock_get_runner.return_value = mock_runner
 
         response = client.post(
@@ -105,6 +107,7 @@ class TestListSessions:
     ) -> None:
         """Listing sessions should return user's sessions."""
         mock_runner = MagicMock()
+        mock_runner.start_session = AsyncMock()
         mock_get_runner.return_value = mock_runner
 
         # Create a session first

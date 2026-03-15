@@ -21,6 +21,7 @@ from langgraph.graph import END, StateGraph
 from sqlmodel import Session
 
 from app.core.config import settings
+from app.enrichment.statistical_health import detect_anomalies, validate_price_continuity
 from app.services.agent.agents.data_analyst import DataAnalystAgent
 from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
@@ -396,6 +397,9 @@ class LangGraphWorkflow:
         """
         state["current_step"] = "reasoning"
 
+        # Increment iteration for 10-iteration cap
+        state["iteration"] = state.get("iteration", 0) + 1
+
         # Build context for reasoning
         context_parts = [f"User Goal: {state.get('user_goal', 'Unknown')}"]
 
@@ -569,6 +573,39 @@ class LangGraphWorkflow:
 
             # Check data size (for price data, main requirement)
             price_data = retrieved_data.get("price_data", [])
+            # Extract closing prices for analysis if available
+            prices = []
+            if price_data:
+                # Handle both dicts with 'close' key and potentially other formats
+                if isinstance(price_data[0], dict) and "close" in price_data[0]:
+                    prices = [float(p["close"]) for p in price_data if p.get("close")]
+                elif isinstance(price_data[0], (int, float)):
+                    prices = price_data
+            
+            # --- PHASE 5: Statistical Health Checks ---
+            # Run variance/Z-score analysis on price data
+            if prices and len(prices) > 2:
+                # 1. Anomaly Detection (Z-Score)
+                anomaly_stats = detect_anomalies(prices, z_threshold=3.0)
+                quality_checks["anomaly_stats"] = anomaly_stats
+                
+                if anomaly_stats["has_anomalies"]:
+                    quality_checks["status_message"] = f"Warning: {anomaly_stats['anomaly_count']} price anomalies detected (max Z-score: {anomaly_stats['max_z_score']:.2f})"
+                    # Flag anomalies for downstream processing
+                    state["anomaly_detected"] = True
+                    state["anomaly_summary"] = f"Detected {anomaly_stats['anomaly_count']} price anomalies (max Z={anomaly_stats['max_z_score']:.1f})"
+                
+                # 2. Variance Check
+                variance = anomaly_stats.get("variance", 0.0)
+                quality_checks["price_variance"] = variance
+                
+                # 3. Continuity Check (Flash Crashes)
+                continuity = validate_price_continuity(prices, max_drop_pct=0.3)  # 30% drop check
+                quality_checks["continuity_issues"] = continuity.get("issue_count", 0)
+                
+                if not continuity["valid"]:
+                    quality_checks["continuity_warning"] = "Significant price gaps detected"
+
             quality_checks["price_records"] = len(price_data)
             quality_checks["sufficient_records"] = (
                 len(price_data) >= 30
@@ -576,7 +613,11 @@ class LangGraphWorkflow:
 
             # Overall quality assessment
             if quality_checks["completeness"] and quality_checks["sufficient_records"]:
-                quality_checks["overall"] = "good"
+                # Downgrade if anomalies found
+                if quality_checks.get("anomaly_stats", {}).get("has_anomalies", False):
+                    quality_checks["overall"] = "good_with_warnings"
+                else:
+                    quality_checks["overall"] = "good"
             elif quality_checks["completeness"] or quality_checks["sufficient_records"]:
                 quality_checks["overall"] = "fair"
             else:
@@ -588,6 +629,12 @@ class LangGraphWorkflow:
 
         # Log validation results
         logger.info(f"Data validation: {quality_checks['overall']}")
+
+        # Handle retry logic for no_data scenario (LangGraph state updates must happen in nodes)
+        if quality_checks.get("overall") == "no_data":
+            current_retry = state.get("retry_count", 0)
+            logger.warning(f"No data retrieved, incrementing retry count from {current_retry}")
+            state["retry_count"] = current_retry + 1
 
         state["messages"].append(
             {
@@ -922,6 +969,12 @@ class LangGraphWorkflow:
         Returns:
             Next node to execute
         """
+        # Check iteration cap
+        if state.get("iteration", 0) >= settings.AGENT_MAX_ITERATIONS:
+            state["error"] = f"Workflow halted: Max iterations ({settings.AGENT_MAX_ITERATIONS}) reached."
+            logger.warning(state["error"])
+            return "finalize"
+
         # Check for errors
         if state.get("error"):
             return "error"

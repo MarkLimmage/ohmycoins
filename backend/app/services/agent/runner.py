@@ -68,7 +68,42 @@ class AgentRunner:
                 decode_responses=True,
             )
         return self._redis
-ze sequence_id from existing message count
+    async def start_session(self, session_id: uuid.UUID) -> None:
+        """Start a new agent session in the background."""
+        logger.info(f"Starting session {session_id}")
+        task = asyncio.create_task(self.run_session(session_id))
+        self._tasks[session_id] = task
+        
+        def _cleanup(t: asyncio.Task) -> None:
+            self._tasks.pop(session_id, None)
+            if not t.cancelled() and t.exception():
+                logger.error(f"Task for session {session_id} failed", exc_info=t.exception())
+
+        task.add_done_callback(_cleanup)
+
+    async def shutdown(self) -> None:
+        """Shutdown all active sessions."""
+        logger.info("Shutting down AgentRunner")
+        for task in self._tasks.values():
+            task.cancel()
+        
+        if self._tasks:
+            await asyncio.gather(*self._tasks.values(), return_exceptions=True)
+            self._tasks.clear()
+        
+        if self._redis:
+            await self._redis.close()
+            self._redis = None
+        logger.info("AgentRunner shutdown complete")
+
+    async def run_session(self, session_id: uuid.UUID) -> None:
+        """Execute the agent workflow in its own DB session, publishing events."""
+        redis = await self._get_redis()
+        channel = _channel_for(session_id)
+
+        with DBSession(engine) as db:
+            try:
+                # Initialize sequence_id from existing message count
                 count_stmt = (
                     select(func.count())
                     .select_from(AgentSessionMessage)
@@ -94,24 +129,6 @@ ze sequence_id from existing message count
                             "status": AgentSessionStatus.RUNNING,
                             "message": "Session started",
                         },
-                    },
-                )
-                        """Execute the agent workflow in its own DB session, publishing events."""
-        redis = await self._get_redis()
-        channel = _channel_for(session_id)
-
-        with DBSession(engine) as db:
-            try:
-                # Initialise the session via orchestrator (sets RUNNING, adds system msg)
-                await self.orchestrator.start_session(db, session_id)
-
-                await self._publish(
-                    redis,
-                    channel,
-                    {
-                        "type": "status",
-                        "content": "Session started",
-                        "status": AgentSessionStatus.RUNNING,
                     },
                 )
 

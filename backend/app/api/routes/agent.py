@@ -84,7 +84,7 @@ async def create_agent_session(
 
     # Launch background execution via AgentRunner (non-blocking)
     runner = get_runner()
-    runner.start_session(session.id)
+    await runner.start_session(session.id)
 
     return session
 
