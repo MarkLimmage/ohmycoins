@@ -1378,6 +1378,8 @@ class LangGraphWorkflow:
         Yields:
             State updates as the workflow progresses
         """
+        from langgraph.types import Command
+
         # Configure execution with session_id as thread_id for checkpointing
         if initial_state:
             session_id = initial_state.get("session_id")
@@ -1390,7 +1392,11 @@ class LangGraphWorkflow:
             "recursion_limit": 50
         }
 
+        # If no initial_state, we're resuming from an interrupt.
+        # Use Command(resume=True) to continue from the checkpoint.
+        input_data = initial_state if initial_state else Command(resume=True)
+
         async for state in self.graph.astream(
-            initial_state, config=config
+            input_data, config=config
         ):
             yield state
