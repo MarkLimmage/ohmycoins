@@ -174,6 +174,9 @@ class AgentRunner:
 
                     # Each state_update is a dict keyed by node name
                     for node_name, node_state in state_update.items():
+                        # Skip LangGraph internal keys (e.g. __interrupt__)
+                        if not isinstance(node_state, dict):
+                            continue
                         pending_events = node_state.get("pending_events", [])
 
                         # Process Explicit Events (New Agent System)
