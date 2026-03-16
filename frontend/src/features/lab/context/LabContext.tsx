@@ -1,204 +1,213 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+// Workstream E: Lab Context Refactor (Scientific Grid)
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useCallback } from 'react';
 import { useLabWebSocket } from '../hooks/useLabWebSocket';
-
-// Define the Cell structure for the Grid
-export interface LabCell {
-  id: string;
-  type: 'code' | 'markdown' | 'plotly' | 'output' | 'error' | 'thought' | 'tool' | 'result' | 'blueprint' | 'metric' | 'tearsheet';
-  content: string; // text, code, or JSON string for plotly
-  metadata?: any;
-  status: 'queued' | 'running' | 'completed' | 'failed';
-  timestamp?: string;
-  executionTime?: number;
-}
-
-interface LabState {
-  cells: LabCell[];
-  sessionId: string | null;
-  isConnected: boolean;
-  isDone: boolean;
-  sessionStatus: string | null;
-  blueprint: any | null;
-  metrics: any[];
-  stages: Record<string, string>;
-}
+import { useRehydration } from '../hooks/useRehydration';
+import { LabState, LabEvent, LabCell } from '../types';
 
 type Action =
   | { type: 'SET_SESSION'; payload: string | null }
-  | { type: 'ADD_CELL'; payload: LabCell }
-  | { type: 'UPDATE_CELL'; payload: { id: string; updates: Partial<LabCell> } }
-  | { type: 'CLEAR_CELLS' }
-  | { type: 'SET_CONNECTION_STATUS'; payload: { isConnected: boolean; isDone: boolean; sessionStatus: string | null } }
-  | { type: 'SET_BLUEPRINT'; payload: any }
-  | { type: 'ADD_METRIC'; payload: any }
-  | { type: 'UPDATE_STAGE_STATUS'; payload: { stageId: string; status: string } };
+  | { type: 'REHYDRATE'; payload: { ledger: LabEvent[]; lastSequenceId: number } }
+  | { type: 'PROCESS_EVENT'; payload: LabEvent }
+  | { type: 'SET_CONNECTION_STATUS'; payload: { isConnected: boolean } }
+  | { type: 'SET_DONE'; payload: boolean }
+  | { type: 'CLEAR_ACTION' };
 
 const initialState: LabState = {
-  cells: [],
   sessionId: null,
+  stages: {
+    'BUSINESS_UNDERSTANDING': [],
+    'DATA_ACQUISITION': [],
+    'PREPARATION': [],
+    'EXPLORATION': [],
+    'MODELING': [],
+    'EVALUATION': [],
+    'DEPLOYMENT': [],
+  },
+  activeStages: new Set(),
+  lastSequenceId: 0,
   isConnected: false,
   isDone: false,
-  sessionStatus: null,
-  blueprint: null,
+  pendingAction: null,
   metrics: [],
-  stages: {},
+  blueprint: null,
 };
 
 function labReducer(state: LabState, action: Action): LabState {
   switch (action.type) {
     case 'SET_SESSION':
-      return { ...state, sessionId: action.payload, cells: [], blueprint: null, metrics: [], stages: {} };
-    case 'ADD_CELL':
-      // Deduplicate by ID
-      if (state.cells.find(c => c.id === action.payload.id)) return state;
-      return { ...state, cells: [...state.cells, action.payload] };
-    case 'UPDATE_CELL':
-      return {
-        ...state,
-        cells: state.cells.map((cell) =>
-          cell.id === action.payload.id ? { ...cell, ...action.payload.updates } : cell
-        ),
+      return { 
+        ...initialState, 
+        sessionId: action.payload 
       };
-    case 'CLEAR_CELLS':
-      return { ...state, cells: [], blueprint: null, metrics: [], stages: {} };
+
     case 'SET_CONNECTION_STATUS':
-      return { ...state, ...action.payload };
-    case 'SET_BLUEPRINT':
-      return { ...state, blueprint: action.payload };
-    case 'ADD_METRIC':
-         // Deduplicate by name if metric has name
-         // payload is expected to have 'name' property as per previous implementation
-         const newMetric = action.payload;
-         const otherMetrics = state.metrics.filter(m => m.name !== newMetric.name);
-         return { ...state, metrics: [...otherMetrics, newMetric] };
-    case 'UPDATE_STAGE_STATUS':
-         return { ...state, stages: { ...state.stages, [action.payload.stageId]: action.payload.status } };
+      return { ...state, isConnected: action.payload.isConnected };
+
+    case 'SET_DONE':
+      return { ...state, isDone: action.payload };
+
+    case 'CLEAR_ACTION':
+        return { ...state, pendingAction: null };
+
+    case 'REHYDRATE': {
+      // E4: Rehydration logic
+      // Sort ledger by sequence_id
+      const sortedLedger = [...action.payload.ledger].sort((a, b) => a.sequence_id - b.sequence_id);
+      
+      // Replay events to build state
+      let newState = { ...state, lastSequenceId: action.payload.lastSequenceId };
+      
+      for (const event of sortedLedger) {
+        newState = processEvent(newState, event);
+      }
+      return newState;
+    }
+
+    case 'PROCESS_EVENT': {
+      const event = action.payload;
+
+      // E2: Sequence-ID Ordering - Discard out-of-order events
+      if (event.sequence_id <= state.lastSequenceId) {
+        console.warn(`Discarding out-of-order event ${event.sequence_id} (current: ${state.lastSequenceId})`);
+        return state;
+      }
+
+      return processEvent(state, event);
+    }
+
     default:
       return state;
   }
+}
+
+function processEvent(state: LabState, event: LabEvent): LabState {
+  const { event_type, stage, payload, sequence_id, timestamp } = event;
+  
+  const newState = { 
+      ...state, 
+      lastSequenceId: Math.max(state.lastSequenceId, sequence_id) 
+  };
+
+  // Update active stages
+  if (stage && !newState.activeStages.has(stage)) {
+       const newActive = new Set(newState.activeStages);
+       newActive.add(stage);
+       newState.activeStages = newActive;
+  }
+
+  // Handle Action Requests
+   if (event_type === 'action_request') {
+      return {
+        ...newState,
+        pendingAction: {
+          action_id: payload.action_id,
+          description: payload.description,
+          options: payload.options
+        }
+      };
+   }
+
+   // Handle Status Updates 
+   if (event_type === 'status_update') {
+      if (payload.status === 'COMPLETE' || payload.status === 'completed') {
+          // If needed, mark stage complete
+      }
+      return newState;
+   }
+
+   // For render_output and fallback for others: Map to Cells
+  const targetStage = stage || 'BUSINESS_UNDERSTANDING';
+  const currentStageCells = newState.stages[targetStage] || [];
+  
+  // Check duplicate by sequence_id
+  if (currentStageCells.some(c => c.id === String(sequence_id))) {
+      return newState;
+  }
+
+  const newCell: LabCell = {
+    id: String(sequence_id),
+    stage: targetStage,
+    type: payload.mime_type || 'text/markdown',
+    content: payload.content || '',
+    timestamp,
+    metadata: payload.metadata
+  };
+
+  // Side-effect: Populate legacy state for dependent components
+  if (newCell.type === 'application/json+blueprint') {
+      try {
+        newState.blueprint = newCell.content; 
+      } catch (e) {
+          console.error("Failed to parse blueprint content:", e);
+      }
+  }
+
+  return {
+    ...newState,
+    stages: {
+      ...newState.stages,
+      [targetStage]: [...currentStageCells, newCell]
+    }
+  };
 }
 
 const LabContext = createContext<{
   state: LabState;
   dispatch: React.Dispatch<Action>;
   sendMessage: (message: any) => void;
+  isLoading: boolean;
 } | undefined>(undefined);
 
 export function LabProvider({ children, sessionId }: { children: ReactNode; sessionId: string | null }) {
   const [state, dispatch] = useReducer(labReducer, initialState);
-  
-  // Use the existing hook to get messages
-  const { messages, isConnected, isDone, sessionStatus, sendMessage } = useLabWebSocket({
+  const { rehydrate, isRehydrating } = useRehydration();
+
+  // Handle WebSocket events
+  const onEvent = useCallback((event: LabEvent) => {
+    dispatch({ type: 'PROCESS_EVENT', payload: event });
+  }, []);
+
+  const { isConnected, sendMessage } = useLabWebSocket({
     sessionId,
-    enabled: !!sessionId
+    enabled: !!sessionId,
+    onEvent
   });
 
+  // Sync connection status
+  useEffect(() => {
+    dispatch({ type: 'SET_CONNECTION_STATUS', payload: { isConnected } });
+  }, [isConnected]);
+
+  // Handle Session Change
   useEffect(() => {
     dispatch({ type: 'SET_SESSION', payload: sessionId });
-  }, [sessionId]);
-
-  useEffect(() => {
-    dispatch({ type: 'SET_CONNECTION_STATUS', payload: { isConnected, isDone, sessionStatus } });
-  }, [isConnected, isDone, sessionStatus]);
-
-  // Process messages into cells
-  useEffect(() => {
-    messages.forEach(msg => {
-       // Support both AgentMessage (legacy) and API Contract (event_type)
-       const rawMsg = msg as any;
-       const eventType = rawMsg.event_type || msg.type;
-       
-       // API Contract: status_update
-       if (eventType === 'status_update' && rawMsg.stage) {
-            // Assume payload has status, or use event itself as trigger
-            // Payload might look like { status: "ACTIVE" } or just be the event
-            const status = rawMsg.payload?.status || rawMsg.payload || 'ACTIVE';
-            dispatch({ 
-                type: 'UPDATE_STAGE_STATUS', 
-                payload: { stageId: rawMsg.stage, status: typeof status === 'string' ? status : 'ACTIVE' } 
-            });
-            // Don't create a cell for status updates unless we want to log them
-            return;
-       }
-
-       let cellType: LabCell['type'] = 'output';
-       
-       // Map defines to LabCell types
-       if (eventType === 'thought') cellType = 'markdown'; 
-       else if (eventType === 'tool') cellType = 'code';
-       else if (eventType === 'result') cellType = 'output';
-       else if (eventType === 'output') cellType = 'output';
-       else if (eventType === 'blueprint') cellType = 'blueprint';
-       else if (eventType === 'metric') cellType = 'metric';
-       else if (eventType === 'render_output' || eventType === 'tearsheet') {
-            const mData = msg.metadata || rawMsg.payload;
-            if (mData?.format === 'plotly' || msg.metadata?.format === 'plotly') cellType = 'plotly';
-            else if (mData?.metrics && mData?.mlflow_run_id) cellType = 'tearsheet';
-            else cellType = 'output';
-       }
-       else if (eventType === 'stream_chat') cellType = 'markdown'; // API Contract
-       
-       // Priority to metadata format overrides
-       if (msg.metadata?.format === 'plotly') cellType = 'plotly';
-       else if (msg.metadata?.format === 'markdown') cellType = 'markdown';
-       
-       // Content extraction
-       let content = msg.content;
-       if (eventType === 'stream_chat') {
-           content = rawMsg.payload?.text_delta || "";
-           // TODO: Handle streaming append if needed. For now assume full message or separate chunks.
-       }
-       
-       const cell: LabCell = {
-           id: msg.id || `${Date.now()}-${Math.random()}`,
-           type: cellType,
-           content: content || JSON.stringify(rawMsg.payload) || "",
-           metadata: msg.metadata || rawMsg.payload,
-           status: msg.metadata?.error ? 'failed' : 'completed',
-           timestamp: msg.timestamp
-       };
-       
-       dispatch({ type: 'ADD_CELL', payload: cell });
-
-       if ((eventType === 'blueprint' || eventType === 'render_output') && (msg.metadata || rawMsg.payload)) {
-            // Check if payload is blueprint
-            const potentialBlueprint = msg.metadata || rawMsg.payload;
-            // Very naive check
-            if (potentialBlueprint && potentialBlueprint.target && potentialBlueprint.spec) {
-                 dispatch({ type: 'SET_BLUEPRINT', payload: potentialBlueprint });
-            }
-            // Or if content is JSON blueprint
-            try {
-                if (content && content.startsWith('{')) {
-                    const bp = JSON.parse(content);
-                    if (bp.target) dispatch({ type: 'SET_BLUEPRINT', payload: bp });
-                }
-            } catch (e) {}
-       }
-
-       if (eventType === 'metric' && (msg.metadata || rawMsg.payload)) {
-            try {
-                const metric = typeof content === 'string' ? JSON.parse(content) : (msg.metadata || rawMsg.payload);
-                dispatch({ type: 'ADD_METRIC', payload: metric });
-            } catch (err) {
-                 console.error("Failed to parse metric:", err);
-            }
-       }
-    });
-  }, [messages]);
-
+    if (sessionId) {
+      // E4: Rehydration on mount
+      rehydrate(sessionId).then(data => {
+        if (data) {
+          dispatch({ 
+            type: 'REHYDRATE', 
+            payload: { 
+              ledger: data.event_ledger, 
+              lastSequenceId: data.last_sequence_id 
+            } 
+          });
+        }
+      });
+    }
+  }, [sessionId, rehydrate]);
 
   return (
-    <LabContext.Provider value={{ state, dispatch, sendMessage }}>
+    <LabContext.Provider value={{ state, dispatch, sendMessage, isLoading: isRehydrating }}>
       {children}
     </LabContext.Provider>
   );
 }
 
 export const useLabContext = () => {
-  const context = useContext(LabContext);
-  if (!context) {
-    throw new Error('useLabContext must be used within a LabProvider');
-  }
-  return context;
+    const context = useContext(LabContext);
+    if (context === undefined) {
+      throw new Error('useLabContext must be used within a LabProvider');
+    }
+    return context;
 };

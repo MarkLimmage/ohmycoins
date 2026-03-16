@@ -733,3 +733,12 @@ Enhance the Collector Dashboard to be production-ready.
 **Next Steps**:
 - Verify Graph Agent execution with real execution tool.
 - Merge UI.
+
+**Workstream E — Scientific Grid Refactor (Frontend/Lab)**:
+- **Lab 2.0 UI**: Implemented Scientific Grid layout (stages as rows) replacing chat interface.
+- **State Management**: Upgraded `LabContext` for strict stage-based state separation (`Record<LabStage, LabCell[]>`).
+- **Integration Fixes**:
+  - Resolved TypeScript errors in `LabHeader.tsx` (implicit any indexing).
+  - Cleaned up unused variables in context and components (passing `tsc --noEmit`).
+  - Fixed `CollectorCard.test.tsx` regression (migrated checks from `responsive-container` to `safe-chart`).
+- **Verification**: Validated green build in `frontend-dev` container (Unit tests passed).

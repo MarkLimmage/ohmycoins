@@ -1,123 +1,69 @@
-import React from 'react';
-import Plotly from 'plotly.js-dist-min';
-import createPlotlyComponent from 'react-plotly.js/factory';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Box, Code, Text, VStack, Badge, HStack } from '@chakra-ui/react';
-import { LabCell } from '../context/LabContext';
-import { Tearsheet } from './Tearsheet';
+import React, { useEffect, useState } from 'react';
+import { Box, VStack, Heading, SimpleGrid, Icon, HStack } from '@chakra-ui/react';
+import { LabStage, LabCell } from '../types';
+import { CellRenderer } from './CellRenderer';
+import { FiCheckCircle, FiCircle, FiLoader } from 'react-icons/fi';
 
-// Use factory to avoid large bundle size if possible, or just default import if lazy loading is not set up
-const Plot = createPlotlyComponent(Plotly);
-
-interface LabStageRowProps {
-  cell: LabCell;
+export interface LabStageRowProps {
+  stage: LabStage;
+  cells: LabCell[];
+  isActive: boolean;
+  label: string;
 }
 
-export const LabStageRow: React.FC<LabStageRowProps> = ({ cell }) => {
-  const { type, content, metadata, status, timestamp } = cell;
-
-  const renderContent = () => {
-    if (type === 'tearsheet') {
-        // Metadata contains the structured payload
-        const tearsheetData = metadata;
-        if (tearsheetData && tearsheetData.metrics) {
-            return <Tearsheet data={tearsheetData} />;
-        }
-        return <Text color="red.500">Invalid Tearsheet Data</Text>;
+export const LabStageRow: React.FC<LabStageRowProps> = ({ cells, isActive, label }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  useEffect(() => {
+    if (isActive || cells.length > 0) {
+        setIsOpen(true);
     }
+  }, [isActive, cells.length]);
 
-    if (type === 'plotly') {
-      try {
-        const plotData = typeof content === 'string' ? JSON.parse(content) : content;
-        return (
-          <Box w="100%" h="400px">
-            <Plot
-              data={plotData.data}
-              layout={{ ...plotData.layout, autosize: true }}
-              config={{ responsive: true }}
-              style={{ width: '100%', height: '100%' }}
-              useResizeHandler={true}
-            />
-          </Box>
-        );
-      } catch (e: any) {
-        return <Text color="red.500">Error parsing Plotly JSON: {e.message}</Text>;
-      }
-    }
-
-    if (type === 'markdown' || type === 'thought') {
+  if (!isOpen && !isActive && cells.length === 0) {
       return (
-        <Box className="markdown-body" fontSize="sm">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-        </Box>
-      );
-    }
-
-    if (type === 'code' || type === 'tool' || type === 'blueprint') {
-      return (
-        <Code display="block" whiteSpace="pre" p={2} borderRadius="md" w="100%" overflowX="auto">
-          {content}
-        </Code>
-      );
-    }
-
-    if (type === 'output' || type === 'result' || type === 'error') {
-        const isError = type === 'error' || metadata?.error || status === 'failed';
-        return (
-            <Code 
-                display="block" 
-                whiteSpace="pre-wrap" 
-                p={2} 
-                borderRadius="md" 
-                w="100%" 
-                color={isError ? "red.500" : "inherit"}
-                bg={isError ? "red.50" : "gray.50"}
-                _dark={{ bg: isError ? "red.900" : "gray.800" }}
-            >
-                {content}
-            </Code>
-        )
-    }
-
-    return <Text>{content}</Text>;
-  };
-
-  const getBadgeColor = () => {
-      switch (type) {
-          case 'thought': return 'blue';
-          case 'tool': return 'purple';
-          case 'result': return metadata?.error ? 'red' : 'green';
-          case 'plotly': return 'orange';
-          case 'blueprint': return 'cyan';
-          case 'metric': return 'teal';
-          case 'error': return 'red';
-          case 'tearsheet': return 'pink';
-          default: return 'gray';
-      }
+          <HStack p={2} opacity={0.4} _hover={{ opacity: 1, cursor: 'pointer' }} onClick={() => setIsOpen(true)}>
+             <Icon as={FiCircle} color="gray.300" />
+             <Heading size="xs" color="gray.500">{label}</Heading>
+          </HStack>
+      )
   }
 
   return (
     <Box 
-        borderWidth="1px" 
-        borderRadius="lg" 
         p={4} 
-        m={2} 
-        bg="white" 
-        _dark={{ bg: 'gray.800' }} 
-        shadow="sm"
-        borderLeft="4px solid"
-        borderLeftColor={`${getBadgeColor()}.400`}
+        borderLeftWidth="4px" 
+        borderColor={isActive ? 'blue.500' : (cells.length > 0 ? 'green.500' : 'gray.200')} 
+        bg={isActive ? 'blue.50' : 'transparent'}
+        _dark={{ bg: isActive ? 'blue.900' : 'transparent' }}
+        transition="all 0.3s"
+        borderRadius="md"
+        mb={4}
     >
-      <VStack align="stretch" gap={2}>
-        <HStack justify="space-between">
-            <Badge colorScheme={getBadgeColor()}>{type.toUpperCase()}</Badge>
-            {timestamp && <Text fontSize="xs" color="gray.500">{new Date(timestamp).toLocaleTimeString()}</Text>}
+      <VStack align="start" gap={4} w="100%">
+        <HStack gap={2} pb={2} borderBottomWidth={cells.length > 0 ? "1px" : "0px"} w="100%">
+            {isActive ? (
+                <Icon as={FiLoader} animation="spin 2s linear infinite" color="blue.500" />
+            ) : (
+                <Icon as={cells.length > 0 ? FiCheckCircle : FiCircle} color={cells.length > 0 ? 'green.500' : 'gray.400'} />
+            )}
+            <Heading size="sm" color={isActive ? 'blue.600' : 'gray.700'} _dark={{ color: 'gray.200' }}>
+              {label}
+            </Heading>
         </HStack>
-        <Box>
-            {renderContent()}
-        </Box>
+
+        <SimpleGrid columns={1} gap={4} w="100%">
+          {cells.map((cell) => (
+            <CellRenderer key={cell.id} cell={cell} />
+          ))}
+        </SimpleGrid>
       </VStack>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </Box>
   );
 };

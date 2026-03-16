@@ -3,6 +3,7 @@ import ReactFlow, { Background, Node, Edge, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Box } from '@chakra-ui/react';
 import { useLabContext } from '../context/LabContext';
+import { LabStage } from '../types';
 
 const initialNodes: Node[] = [
   { id: 'BUSINESS_UNDERSTANDING', position: { x: 0, y: 50 }, data: { label: 'Business Understanding' }, type: 'input', sourcePosition: Position.Right, targetPosition: Position.Left },
@@ -25,11 +26,19 @@ const initialEdges: Edge[] = [
 
 export const LabHeader = () => {
   const { state } = useLabContext();
-  const { stages } = state;
+  const { stages, activeStages } = state;
 
   const nodes = useMemo(() => {
     return initialNodes.map((node) => {
-      const status = stages ? stages[node.id] : undefined;
+      const stageId = node.id as LabStage;
+      // Determine status from state
+      let status = 'PENDING';
+      const isActive = activeStages.has(stageId);
+      const hasCells = stages[stageId] && stages[stageId].length > 0;
+
+      if (isActive) status = 'ACTIVE';
+      else if (hasCells) status = 'COMPLETE';
+
       let style: React.CSSProperties = { width: 150, fontSize: '10px' };
       
       if (status === 'COMPLETE') style = { ...style, background: '#68D391', color: 'black' }; // Green
@@ -42,7 +51,7 @@ export const LabHeader = () => {
         style: { ...node.style, ...style },
       };
     });
-  }, [stages]);
+  }, [stages, activeStages]);
 
   return (
     <Box h="150px" w="100%" borderBottom="1px solid" borderColor="gray.200">
