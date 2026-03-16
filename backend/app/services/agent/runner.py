@@ -211,7 +211,7 @@ class AgentRunner:
                                     role="assistant",
                                     content=content_str,
                                     agent_name=node_name,
-                                    metadata=metadata,
+                                    metadata=json.dumps(metadata) if isinstance(metadata, dict) else metadata,
                                 )
 
                         # Fallback for Legacy Nodes (initialization, reason)
@@ -272,7 +272,7 @@ class AgentRunner:
                                 role="assistant",
                                 content="Action Required",
                                 agent_name=node_name,
-                                metadata=action_event,
+                                metadata=json.dumps(action_event),
                             )
 
                 # Register any artifacts written to disk during the workflow
