@@ -1,27 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Button, HStack, Text, VStack, Heading, Icon } from '@chakra-ui/react';
 import { FiAlertCircle, FiCheck, FiX, FiEdit } from 'react-icons/fi';
 import { ActionRequest } from '../types';
 import { useLabContext } from '../context/LabContext';
+import { AgentService } from '../../../client';
 
 interface ActionRequestBannerProps {
   request: ActionRequest;
 }
 
 export const ActionRequestBanner: React.FC<ActionRequestBannerProps> = ({ request }) => {
-  const { sendMessage, dispatch } = useLabContext();
+  const { state, dispatch } = useLabContext();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAction = (option: string) => {
-    sendMessage({
-      event_type: 'action_response',
-      payload: {
-        action_id: request.action_id,
-        response: option
-      }
-    });
-
-    // Optimistically clear the pending action
-    dispatch({ type: 'CLEAR_ACTION' });
+  const handleAction = async (option: string) => {
+    if (!state.sessionId) return;
+    setIsSubmitting(true);
+    try {
+      await AgentService.approveRequest({
+        sessionId: state.sessionId,
+        requestBody: {
+          approved: option === 'APPROVE',
+          reason: option === 'APPROVE' ? undefined : option,
+        },
+      });
+      dispatch({ type: 'CLEAR_ACTION' });
+    } catch (error) {
+      console.error('Failed to submit approval:', error);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -45,21 +52,21 @@ export const ActionRequestBanner: React.FC<ActionRequestBannerProps> = ({ reques
         
         <HStack gap={4} pt={2}>
           {request.options.includes('APPROVE') && (
-            <Button colorScheme="green" onClick={() => handleAction('APPROVE')}>
+            <Button colorScheme="green" onClick={() => handleAction('APPROVE')} loading={isSubmitting}>
                <Icon as={FiCheck} mr={2} />
                Approve
             </Button>
           )}
           
           {request.options.includes('REJECT') && (
-            <Button colorScheme="red" variant="outline" onClick={() => handleAction('REJECT')}>
+            <Button colorScheme="red" variant="outline" onClick={() => handleAction('REJECT')} loading={isSubmitting}>
                <Icon as={FiX} mr={2} />
                Reject
             </Button>
           )}
 
           {request.options.includes('EDIT_BLUEPRINT') && (
-            <Button colorScheme="blue" variant="outline" onClick={() => handleAction('EDIT_BLUEPRINT')}>
+            <Button colorScheme="blue" variant="outline" onClick={() => handleAction('EDIT_BLUEPRINT')} loading={isSubmitting}>
                <Icon as={FiEdit} mr={2} />
                Edit Blueprint
             </Button>
