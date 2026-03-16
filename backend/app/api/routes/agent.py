@@ -6,8 +6,10 @@ Week 9-10 additions: Human-in-the-Loop endpoints (clarifications, choices, appro
 Week 11-12 additions: Artifact management endpoints (download, delete)
 """
 
+import json
 import os
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -25,6 +27,7 @@ from app.models import (
     AgentSessionMessage,
     AgentSessionMessagePublic,
     AgentSessionPublic,
+    AgentSessionStatus,
     AgentSessionsPublic,
     Algorithm,
     StrategyPromotion,
@@ -57,6 +60,16 @@ orchestrator = AgentOrchestrator(session_manager)
 artifact_manager = ArtifactManager()
 playground_service = ModelPlaygroundService()
 explainability_service = ExplainabilityService()
+
+
+class RehydrationResponse(BaseModel):
+    session_id: uuid.UUID
+    last_sequence_id: int
+    event_ledger: list[AgentSessionMessagePublic]
+
+
+class ResumeRequest(BaseModel):
+    action: str | None = None
 
 
 @router.post("/sessions", response_model=AgentSessionPublic, status_code=201)
@@ -222,6 +235,72 @@ async def delete_agent_session(
     return {"message": "Session deleted successfully"}
 
 
+@router.get("/sessions/{session_id}/rehydrate", response_model=RehydrationResponse)
+async def rehydrate_session(
+    *,
+    session_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Rehydrate a session state (Phase 5).
+
+    Returns:
+        Session rehydration details
+    """
+    messages = await get_session_messages(session_id=session_id, db=db, current_user=current_user)
+    last_seq = len(messages)
+    
+    return RehydrationResponse(
+        session_id=session_id,
+        last_sequence_id=last_seq,
+        event_ledger=messages
+    )
+
+
+@router.post("/sessions/{session_id}/resume", response_model=dict[str, str])
+async def resume_agent_session(
+    *,
+    session_id: uuid.UUID,
+    request: ResumeRequest,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Resume a paused agent session (HITL).
+
+    Args:
+        session_id: ID of the session
+        request: Action to perform (approve/reject)
+        db: Database session
+        current_user: Currently authenticated user
+
+    Returns:
+        Resume confirmation
+    """
+    session = await session_manager.get_session(db, session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this session"
+        )
+    
+    # Update creation time/status via Orchestrator
+    try:
+        await orchestrator.resume_session(db, session_id, action=request.action)
+        
+        # Trigger runner execution
+        runner = get_runner()
+        await runner.start_session(session_id)
+        
+        return {"message": "Session resumed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to resume session: {str(e)}")
+
+
 @router.get(
     "/sessions/{session_id}/messages", response_model=list[AgentSessionMessagePublic]
 )
@@ -340,6 +419,124 @@ async def cancel_agent_session(
     return {"message": "Session cancelled successfully"}
 
 
+@router.get("/sessions/{session_id}/rehydrate")
+async def rehydrate_session(
+    *,
+    session_id: uuid.UUID,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Rehydrate a session state for the frontend.
+    Returns the event ledger for reconstruction.
+    """
+    session = await session_manager.get_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this session"
+        )
+
+    # Fetch messages
+    messages = db.exec(
+        select(AgentSessionMessage)
+        .where(AgentSessionMessage.session_id == session_id)
+        .order_by(AgentSessionMessage.created_at)
+    ).all()
+
+    # Define stage mapping (duplicated from runner.py for stability)
+    STAGE_MAPPING = {
+        "initialization": "BUSINESS_UNDERSTANDING",
+        "reason": "BUSINESS_UNDERSTANDING",
+        "retrieve_data": "DATA_ACQUISITION",
+        "validate_data": "PREPARATION",
+        "analyze_data": "EXPLORATION",
+        "train_model": "MODELING",
+        "evaluate_model": "EVALUATION",
+        "generate_report": "DEPLOYMENT",
+        "finalize": "DEPLOYMENT",
+        "dispatch_alerts": "DEPLOYMENT",
+        "handle_error": "EVALUATION",
+    }
+    
+    event_ledger = []
+    
+    for i, msg in enumerate(messages, start=1):
+        # Infer stage
+        stage = STAGE_MAPPING.get(msg.agent_name, "BUSINESS_UNDERSTANDING")
+        
+        # Infer event type
+        event_type = "status_update"
+        payload = {"content": msg.content, "agent_name": msg.agent_name}
+        
+        # Parse metadata safely
+        metadata = {}
+        if msg.metadata_json:
+            try:
+                metadata = json.loads(msg.metadata_json)
+            except Exception:
+                metadata = {"raw": msg.metadata_json}
+        
+        payload["metadata"] = metadata
+        
+        # Heuristics for event_type
+        if "error" in (msg.agent_name or "").lower():
+            event_type = "error"
+        elif isinstance(metadata, dict) and (metadata.get("metric_type") or metadata.get("choices")):
+             event_type = "render_output"
+        
+        # Append to ledger
+        event_ledger.append({
+            "event_type": event_type,
+            "stage": stage,
+            "sequence_id": i,
+            "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+            "payload": payload
+        })
+
+    # Last Sequence ID
+    last_seq_id = len(event_ledger)
+
+    # Check for pending action if status is AWAITING_APPROVAL
+    if session.status == AgentSessionStatus.AWAITING_APPROVAL:
+        state = orchestrator.get_session_state(session_id)
+        
+        pending_approvals = state.get("pending_approvals", []) if state else []
+        action_payload = {}
+        
+        if pending_approvals:
+            # Use data from pending approval
+            approval = pending_approvals[0]
+            action_payload = {
+                "action_id": "approve_gate",
+                "description": approval.get("description", "Approval required"),
+                "options": ["APPROVE", "REJECT"]
+            }
+        else:
+            # Fallback
+            action_payload = {
+                 "action_id": "resume_workflow",
+                 "description": "Workflow paused. Approval required to continue.",
+                 "options": ["APPROVE", "REJECT"]
+            }
+            
+        last_seq_id += 1
+        event_ledger.append({
+            "event_type": "action_request",
+            "stage": STAGE_MAPPING.get(state.get("current_step") if state else "", "BUSINESS_UNDERSTANDING"),
+            "sequence_id": last_seq_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "payload": action_payload
+        })
+
+    return {
+        "session_id": session_id,
+        "last_sequence_id": last_seq_id,
+        "event_ledger": event_ledger
+    }
+
+
 # ============================================================================
 # Human-in-the-Loop (HiTL) Endpoints - Week 9-10
 # ============================================================================
@@ -445,6 +642,7 @@ async def provide_clarifications(
     # Update state and resume workflow
     orchestrator.update_session_state(session_id, updated_state)
     await orchestrator.resume_session(db, session_id)
+    await get_runner().start_session(session_id)
 
     return {
         "message": "Clarifications received, workflow resumed",
@@ -522,6 +720,7 @@ async def select_choice(
     # Update state and resume workflow
     orchestrator.update_session_state(session_id, updated_state)
     await orchestrator.resume_session(db, session_id)
+    await get_runner().start_session(session_id)
 
     return {
         "message": "Choice selected, workflow resumed",
@@ -613,6 +812,7 @@ async def approve_request(
 
     if decision.approved:
         await orchestrator.resume_session(db, session_id)
+        await get_runner().start_session(session_id)
 
     return {
         "message": message,
@@ -693,6 +893,7 @@ async def apply_override(
     # Update state and resume workflow
     orchestrator.update_session_state(session_id, updated_state)
     await orchestrator.resume_session(db, session_id)
+    await get_runner().start_session(session_id)
 
     return {
         "message": "Override applied, workflow adjusted",

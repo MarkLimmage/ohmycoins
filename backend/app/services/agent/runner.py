@@ -112,10 +112,15 @@ class AgentRunner:
                 sequence_id = db.exec(count_stmt).one() or 0
 
                 # Initialise the session via orchestrator (sets RUNNING, adds system msg)
-                await self.orchestrator.start_session(db, session_id)
-
-                # Increment sequence_id for the start message
-                sequence_id += 1
+                # Only call start_session if this is a fresh run (sequence_id=0)
+                if sequence_id == 0:
+                    await self.orchestrator.start_session(db, session_id)
+                    # Increment sequence_id for the start message
+                    sequence_id += 1
+                else:
+                    # Effectively "Touch" session to be RUNNING if not already
+                    # (handled by resume_session, but harmless)
+                    pass
 
                 await self._publish(
                     redis,
@@ -127,7 +132,7 @@ class AgentRunner:
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "payload": {
                             "status": AgentSessionStatus.RUNNING,
-                            "message": "Session started",
+                            "message": "Session started" if sequence_id <= 1 else "Session resumed",
                         },
                     },
                 )
@@ -140,39 +145,47 @@ class AgentRunner:
                 from .langgraph_workflow import AgentState, LangGraphWorkflow
 
                 # Initialize workflow with database session and user context
+                # Pass the checkpointer from orchestrator to ensure persistence within the process
                 workflow = LangGraphWorkflow(
                     session=db,
                     user_id=session.user_id,
                     credential_id=session.llm_credential_id,
+                    checkpointer=self.orchestrator.checkpointer,
                 )
-                initial_state: AgentState = {
-                    "session_id": str(session_id),
-                    "sequence_id": sequence_id,
-                    "user_goal": session.user_goal,
-                    "status": AgentSessionStatus.RUNNING,
-                    "current_step": "initialization",
-                    "iteration": 0,
-                    "messages": [],
-                    "data_retrieved": {},
-                    "analysis_results": {},
-                    "models_trained": [],
-                    "evaluation_results": {},
-                    "report": None,
-                    "error": None,
-                    "max_iterations": 10,
-                    "awaiting_clarification": False,
-                    "clarifications_needed": [],
-                    "awaiting_choice": False,
-                    "choices_available": [],
-                    "recommendation": None,
-                    "approval_needed": False,
-                    "pending_approvals": [],
-                    "approval_mode": "manual",
-                    "overrides_applied": [],
-                    "pending_events": [],
-                }
 
-                async for state_update in workflow.stream_execute(initial_state):
+                initial_state = None
+                if sequence_id <= 1:
+                    initial_state: AgentState = {
+                        "session_id": str(session_id),
+                        "sequence_id": sequence_id,
+                        "user_goal": session.user_goal,
+                        "status": AgentSessionStatus.RUNNING,
+                        "current_step": "initialization",
+                        "iteration": 0,
+                        "messages": [],
+                        "data_retrieved": {},
+                        "analysis_results": {},
+                        "models_trained": [],
+                        "evaluation_results": {},
+                        "report": None,
+                        "error": None,
+                        "max_iterations": 10,
+                        "awaiting_clarification": False,
+                        "clarifications_needed": [],
+                        "awaiting_choice": False,
+                        "choices_available": [],
+                        "recommendation": None,
+                        "approval_needed": False,
+                        "pending_approvals": [],
+                        "approval_mode": "manual",
+                        "overrides_applied": [],
+                        "pending_events": [],
+                    }
+
+                async for state_update in workflow.stream_execute(initial_state, session_id=str(session_id)):
+                    # Increment sequence_id for each state update
+                    sequence_id += 1
+
                     # Each state_update is a dict keyed by node name
                     for node_name, node_state in state_update.items():
                         pending_events = node_state.get("pending_events", [])
@@ -307,23 +320,86 @@ class AgentRunner:
                                     db_session=db,
                                 )
 
-                # Mark completed
-                await self.session_manager.update_session_status(
-                    db,
-                    session_id,
-                    AgentSessionStatus.COMPLETED,
-                    result_summary="Session completed successfully",
-                )
-                await self._publish(
-                    redis,
-                    channel,
-                    {
-                        "type": "status",
-                        "content": "Session completed",
-                        "status": AgentSessionStatus.COMPLETED,
-                        "done": True,
-                    },
-                )
+                # Check for interrupts after stream ends
+                config = {"configurable": {"thread_id": str(session_id)}}
+                state_snapshot = await workflow.graph.aget_state(config)
+
+                if state_snapshot.next:
+                    # Handle Interrupt
+                    next_node = state_snapshot.next[0]
+                    # Log interrupt
+                    logger.info(f"Session {session_id} interrupted at {next_node}")
+
+                    # Determine action details
+                    action_id = f"approve_{next_node}"
+                    description = f"Workflow paused before step: {next_node}. Please review and approve to continue."
+                    options = ["APPROVE", "REJECT"]
+
+                    if next_node == "train_model":
+                        description = "Model training is ready. Please review data analysis and feature selection."
+                    elif next_node == "finalize":
+                        description = "Workflow complete. Please review reports and model artifacts before finalization."
+
+                    # Emit action_request
+                    sequence_id += 1
+                    await self._publish(
+                        redis,
+                        channel,
+                        {
+                            "event_type": "action_request",
+                            "stage": _get_stage_from_step(next_node),
+                            "sequence_id": sequence_id,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "payload": {
+                                "action_id": action_id,
+                                "description": description,
+                                "options": options,
+                            },
+                        },
+                    )
+
+                    # Emit status_update with AWAITING_APPROVAL
+                    sequence_id += 1
+                    await self._publish(
+                        redis,
+                        channel,
+                        {
+                            "event_type": "status_update",
+                            "stage": _get_stage_from_step(next_node),
+                            "sequence_id": sequence_id,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "payload": {
+                                "status": AgentSessionStatus.AWAITING_APPROVAL,
+                                "message": f"Waiting for approval to proceed to {next_node}",
+                            },
+                        },
+                    )
+                    
+                    # Update DB status
+                    await self.session_manager.update_session_status(
+                        db,
+                        session_id,
+                        AgentSessionStatus.AWAITING_APPROVAL,
+                        result_summary=f"Waiting for approval at {next_node}",
+                    )
+                else:
+                    # Mark completed
+                    await self.session_manager.update_session_status(
+                        db,
+                        session_id,
+                        AgentSessionStatus.COMPLETED,
+                        result_summary="Session completed successfully",
+                    )
+                    await self._publish(
+                        redis,
+                        channel,
+                        {
+                            "type": "status",
+                            "content": "Session completed",
+                            "status": AgentSessionStatus.COMPLETED,
+                            "done": True,
+                        },
+                    )
 
             except asyncio.CancelledError:
                 await self.session_manager.update_session_status(

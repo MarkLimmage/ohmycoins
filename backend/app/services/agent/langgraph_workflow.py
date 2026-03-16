@@ -121,6 +121,12 @@ class LangGraphWorkflow:
     Week 3-4: Enhanced with DataAnalystAgent for comprehensive data analysis.
     Week 5-6: Enhanced with ModelTrainingAgent and ModelEvaluatorAgent for ML pipeline.
     Week 11: Enhanced with ReportingAgent for report generation.
+    Phase 5: Added MemorySaver checkpointing and interrupt gates for HITL.
+
+    WARNING: This workflow uses MemorySaver (in-memory) for checkpointing by default.
+    State is NOT persisted across process restarts. If the backend server restarts,
+    all suspended workflows will lose their state and cannot be resumed.
+    For production, migrate to PostgresSaver (Phase 6).
     """
 
     def __init__(
@@ -333,7 +339,7 @@ class LangGraphWorkflow:
         # Compile the graph with checkpointer and potential interrupts
         return workflow.compile(
             checkpointer=self.checkpointer,
-            interrupt_before=["human_review"],
+            interrupt_before=["train_model", "finalize"],
         )
 
     async def _initialize_node(self, state: AgentState) -> AgentState:
@@ -1305,18 +1311,24 @@ class LangGraphWorkflow:
             # If no decision, go back to reason?
             return "resume"
 
-    async def execute(self, initial_state: AgentState) -> AgentState:
+    async def execute(self, initial_state: AgentState | None = None, session_id: str | None = None) -> AgentState:
         """
         Execute the workflow from start to finish.
 
         Args:
-            initial_state: Initial workflow state
+            initial_state: Initial workflow state (optional if resuming)
+            session_id: Session ID (required if initial_state is None)
 
         Returns:
             Final workflow state
         """
         # Configure execution with session_id as thread_id for checkpointing
-        session_id = initial_state.get("session_id")
+        if initial_state:
+            session_id = initial_state.get("session_id")
+        
+        if not session_id:
+            raise ValueError("Session ID required")
+            
         config = {
             "configurable": {"thread_id": str(session_id)},
             "recursion_limit": 50
@@ -1328,18 +1340,24 @@ class LangGraphWorkflow:
         )
         return final_state
 
-    async def stream_execute(self, initial_state: AgentState):
+    async def stream_execute(self, initial_state: AgentState | None = None, session_id: str | None = None):
         """
         Execute the workflow with streaming for real-time updates.
 
         Args:
-            initial_state: Initial workflow state
+            initial_state: Initial workflow state (optional if resuming)
+            session_id: Session ID (required if initial_state is None)
 
         Yields:
             State updates as the workflow progresses
         """
         # Configure execution with session_id as thread_id for checkpointing
-        session_id = initial_state.get("session_id")
+        if initial_state:
+            session_id = initial_state.get("session_id")
+        
+        if not session_id:
+            raise ValueError("Session ID required")
+
         config = {
             "configurable": {"thread_id": str(session_id)},
             "recursion_limit": 50

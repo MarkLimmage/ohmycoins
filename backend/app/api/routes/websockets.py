@@ -116,104 +116,47 @@ async def websocket_glass_live(
 async def websocket_lab(
     websocket: WebSocket,
     session_id: str,
-    # _user: Annotated[User, Depends(get_websocket_user)], # authentication for later
+    after_seq: int = Query(0),
 ) -> None:
     """
     Bi-directional WebSocket for 'The Lab' LangGraph agent.
+    Streams events from Redis Pub/Sub.
     """
     await websocket.accept()
 
-    # Import the correct graph and schema
-    from langchain_core.messages import HumanMessage
-
-    from app.services.agent.lab_graph import app as graph
-    from app.services.agent.lab_schema import LabState, NodeStatus, StageID
-
-    seq_counter = itertools.count(1)
+    redis = await aioredis.from_url(
+        settings.REDIS_URL,
+        encoding="utf-8",
+        decode_responses=True,
+    )
+    pubsub = redis.pubsub()
+    channel = f"agent:session:{session_id}:stream"
+    await pubsub.subscribe(channel)
 
     try:
-        while True:
-            data = await websocket.receive_text()
-            # Expecting JSON with user message or command
-            try:
-                payload = json.loads(data)
-                user_msg_content = payload.get("message", "")
-            except (json.JSONDecodeError, TypeError):
-                user_msg_content = data
-
-            # Initialize state using LabState schema
-            initial_state: LabState = {
-                "session_id": session_id,
-                "current_stage": StageID.BUSINESS_UNDERSTANDING,
-                "messages": [HumanMessage(content=user_msg_content)],
-                "status": NodeStatus.PENDING,
-                "user_goal": user_msg_content,  # Initial goal is the user prompt
-                "dataset_name": None,
-                "features": [],
-                "data_acquisition_result": None,
-                "exploration_result": None,
-                "modeling_result": None,
-                "evaluation_result": None,
-                "error": None,
-                "retry_count": 0,
-                "human_approved": False,
-            }
-
-            # Run the graph and stream events
-            # Route LangGraph async streams to JSON payloads
-            # No casting needed if initial_state is typed correctly as LabState
-            async for event in graph.astream(
-                cast(Any, initial_state),
-                config={"configurable": {"thread_id": session_id}},
-                stream_mode="updates",
-            ):
-                # event is a dict of node_name -> state_update
-                for _node_name, state_update in event.items():
-                    current_stage = state_update.get("current_stage", "UNKNOWN")
-
-                    # 1. Status Update (Implicitly handled by node emissions, but fallback here)
-                    # Note: Our nodes now emit websockets directly, so this loop might be redundant
-                    # for status updates, unless we want to catch graph-level transitions.
-                    if "current_stage" in state_update:
-                        pass  # Nodes emit their own status updates now
-
-                    # 2. Chat Stream (Simulated for now as full message)
-                    if "messages" in state_update and state_update["messages"]:
-                        last_msg = state_update["messages"][-1]
-                        content = last_msg.content
-                        if content:
-                            await websocket.send_json(
-                                {
-                                    "event_type": "stream_chat",
-                                    "stage": current_stage,
-                                    "sequence_id": next(seq_counter),
-                                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                                    "payload": {"text_delta": content},
-                                }
-                            )
-
-                    # 3. Render Output (Artifacts)
-                    # Similarly, nodes emit render_output, so redundant here unless capturing
-                    # return values that were not emitted.
+        async for message in pubsub.listen():
+            if message["type"] == "message":
+                try:
+                    data = json.loads(message["data"])
+                    # Filter by sequence_id to avoid duplicates
+                    if data.get("sequence_id", 0) > after_seq:
+                        await websocket.send_json(data)
+                except json.JSONDecodeError:
                     pass
-
     except WebSocketDisconnect:
-        # manager.disconnect(websocket, channel_id) # Lab isn't using manager directly here yet
         pass
     except Exception as e:
-        # Send error event
+        # Try to send error frame
         try:
-            await websocket.send_json(
-                {
-                    "event_type": "error",
-                    "stage": "UNKNOWN",
-                    "sequence_id": next(seq_counter),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "payload": {"message": str(e), "code": "500"},
-                }
-            )
-        except Exception:
+             await websocket.send_json({
+                 "event_type": "error",
+                 "payload": {"message": str(e)}
+             })
+        except:
             pass
+    finally:
+        await pubsub.unsubscribe(channel)
+        await redis.close()
 
 
 @router.websocket("/human/live")
@@ -356,6 +299,7 @@ async def websocket_agent_stream(
     session_id: uuid.UUID,
     user: Annotated[User, Depends(get_websocket_user)],
     db: Annotated[Session, Depends(get_db)],
+    after_seq: int = 0,
 ) -> None:
     """
     Real-time streaming for agent session execution.
@@ -385,8 +329,17 @@ async def websocket_agent_stream(
         .where(AgentSessionMessage.session_id == session_id)
         .order_by(AgentSessionMessage.created_at)  # type: ignore[arg-type]
     )
+    
+    # Support for skipping already seen events
+    if after_seq > 0:
+        hist_statement = hist_statement.offset(after_seq)
+
     history = db.exec(hist_statement).all()
-    for i, msg in enumerate(history, start=1):
+    
+    # Calculate starting sequence ID (1-based)
+    start_seq = after_seq + 1
+    
+    for i, msg in enumerate(history, start=start_seq):
         # Infer type from content if possible, or default to status_update
         event_type = "status_update"
         stage = "BUSINESS_UNDERSTANDING"

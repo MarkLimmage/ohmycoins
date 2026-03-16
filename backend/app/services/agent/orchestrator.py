@@ -264,6 +264,59 @@ class AgentOrchestrator:
             "message": "Session cancelled successfully",
         }
 
+    async def resume_session(
+        self, db: Session, session_id: uuid.UUID, action: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Resume a paused agent session (HITL).
+
+        Phase 5: Updates state based on user action.
+
+        Args:
+            db: Database session
+            session_id: ID of the session to resume
+            action: Optional action (APPROVE, REJECT)
+
+        Returns:
+            Resume result
+        """
+        # Get session
+        session = await self.session_manager.get_session(db, session_id)
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+
+        # Create workflow instance to access the graph
+        workflow = LangGraphWorkflow(
+            session=db,
+            user_id=session.user_id,
+            credential_id=session.llm_credential_id,
+            checkpointer=self.checkpointer,
+        )
+        
+        # Update graph state if action provided
+        if action:
+            config = {"configurable": {"thread_id": str(session_id)}}
+            updates = {}
+            
+            if action.upper() == "APPROVE":
+                updates = {"approval_granted": True, "approval_needed": False}
+            elif action.upper() == "REJECT":
+                updates = {"approval_rejected": True, "approval_needed": False}
+            
+            if updates:
+                await workflow.graph.aupdate_state(config, updates)
+
+        # Update DB status
+        await self.session_manager.update_session_status(
+            db, session_id, AgentSessionStatus.RUNNING
+        )
+
+        return {
+            "session_id": str(session_id),
+            "status": AgentSessionStatus.RUNNING,
+            "message": "Session resumed",
+        }
+
     def get_session_state(
         self, db: Session | uuid.UUID, session_id: uuid.UUID = None
     ) -> dict[str, Any] | None:
