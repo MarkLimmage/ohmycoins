@@ -13,8 +13,11 @@ Week 7-8 enhancement: Added ReAct loop with reasoning, conditional routing, and 
 
 import logging
 import uuid
+from datetime import datetime
+from decimal import Decimal
 from typing import Any, Literal, TypedDict
 
+import numpy as np
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -34,6 +37,27 @@ from app.services.agent.llm_factory import LLMFactory
 from app.services.alerting import AlertService
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_state(obj: Any) -> Any:
+    """Recursively convert numpy/Decimal types to native Python for msgpack serialization."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_state(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_state(v) for v in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_state(v) for v in obj)
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return obj
 
 
 class AgentState(TypedDict):
@@ -583,7 +607,7 @@ class LangGraphWorkflow:
                 }
             )
 
-            return updated_state
+            return _sanitize_state(updated_state)
         except Exception as e:
             logger.error(f"Error in data retrieval: {str(e)}")
             state["error"] = f"Data retrieval failed: {str(e)}"
@@ -726,7 +750,7 @@ class LangGraphWorkflow:
             }
         )
 
-        return state
+        return _sanitize_state(state)
 
     async def _analyze_data_node(self, state: AgentState) -> AgentState:
         """
@@ -758,7 +782,7 @@ class LangGraphWorkflow:
                 }
             )
 
-            return updated_state
+            return _sanitize_state(updated_state)
         except Exception as e:
             logger.error(f"Error in data analysis: {str(e)}")
             state["error"] = f"Data analysis failed: {str(e)}"
@@ -794,7 +818,7 @@ class LangGraphWorkflow:
                     }
                 )
 
-            return updated_state
+            return _sanitize_state(updated_state)
         except Exception as e:
             logger.error(f"Error in model training: {str(e)}")
             state["error"] = f"Model training failed: {str(e)}"
@@ -831,7 +855,7 @@ class LangGraphWorkflow:
                     }
                 )
 
-            return updated_state
+            return _sanitize_state(updated_state)
         except Exception as e:
             logger.error(f"Error in model evaluation: {str(e)}")
             state["error"] = f"Model evaluation failed: {str(e)}"
