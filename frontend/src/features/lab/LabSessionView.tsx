@@ -48,7 +48,7 @@ export const LabSessionView: React.FC<LabSessionViewProps> = ({
       <Box flex={1} overflowY="auto" px={4} pb={4}>
         <LabGrid />
 
-        {/* Blueprint Card */}
+        {/* Blueprint Card - Handled by LabGrid Cells now 
         {blueprint && (
           <BlueprintCard
             data={blueprint}
@@ -62,13 +62,15 @@ export const LabSessionView: React.FC<LabSessionViewProps> = ({
             isApproved={approvedBlueprints.has(blueprint.target)}
           />
         )}
+        */}
 
-        {/* Training Progress */}
+        {/* Training Progress - Handled by LabGrid Cells (Tearsheets/Plotly)
         {metrics && metrics.length > 0 && (
           <TrainingProgressChart metrics={metrics} />
         )}
+        */}
 
-        {/* Artifacts */}
+        {/* Artifacts - Might still be useful as a summary list, keeping for now or commenting out if redundand
         {artifacts && artifacts.length > 0 && (
           <ArtifactViewer
             artifacts={artifacts}
@@ -76,6 +78,7 @@ export const LabSessionView: React.FC<LabSessionViewProps> = ({
             onTest={onTest}
           />
         )}
+        */}
 
         {/* Model Playground */}
         {playgroundArtifact?.id && (
