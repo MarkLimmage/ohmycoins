@@ -36,8 +36,9 @@ export const LabGrid = () => {
   // Or better, we visualize all stages.
   
   const hasContent = Object.values(stages).some(cells => cells.length > 0);
+  const hasActivity = hasContent || !!pendingAction || state.activeStages.size > 0;
 
-  if (!hasContent && isLoading) {
+  if (!hasActivity && isLoading) {
       return (
         <Center p={10}>
             <Spinner mr={3} />
@@ -46,7 +47,7 @@ export const LabGrid = () => {
       )
   }
 
-  if (!hasContent && !isConnected && !isDone) {
+  if (!hasActivity && !isConnected && !isDone) {
       return (
         <Center p={10}>
              {/* Show spinner if we expect connection, otherwise just empty state */}
@@ -56,7 +57,7 @@ export const LabGrid = () => {
       )
   }
 
-  if (!hasContent && isDone) {
+  if (!hasActivity && isDone) {
       return (
         <Center p={10}>
           <Text color="gray.500">Session Finished with no content.</Text>
