@@ -1,9 +1,19 @@
 # Phase 5 Integration Plan: Agent Service Hardening
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Status:** Pre-Implementation  
 **Prerequisite:** Phases 0–4 complete per `ROADMAP_STRATEGY.md`  
 **Reference Audit:** `backend/app/services/agent/ARCHITECTURE.md`
+
+## 🔄 DIFF: v1.1 → v1.2
+
+* [ ] **Workstream A+:** `BaseEvent` now includes `sequence_id` (int) and `timestamp` (ISO-8601). New `ActionRequestEvent` Pydantic model added to `lab_schema.py`.
+* [ ] **Workstream B+:** Added `GET /api/v1/lab/agent/sessions/{id}/rehydrate` REST endpoint. WebSocket gains `?after_seq` query parameter to skip history replay. MemorySaver limitation documented.
+* [ ] **Workstream D+:** Global 10-iteration cap replaced with per-stage 3-cycle circuit breaker using `stage_iteration_counts: dict[str, int]`.
+* [ ] **Workstream E (NEW):** Frontend remediation — 7 sub-items covering Causal Grid, sequence-ID ordering, rehydration hook, mime-type dispatcher, HITL rendering, Model Discarded UI, Cached Parquet badge.
+* [ ] **Dependency Graph:** Updated — E depends on A+B completion.
+* [ ] **Risk Register:** Added MemorySaver data loss, rehydration race condition, frontend state management complexity.
+* [ ] **Testing Strategy:** Added 4 Integration Gate tests.
 
 ---
 
@@ -44,14 +54,15 @@ However, no agent is required to use them. Each specialised agent (`DataAnalystA
 
 **File:** `backend/app/services/agent/agents/base.py`
 
-Add a method that forces all agent output to comply with the `API_CONTRACTS.md` §1.2 envelope:
+Add a method that forces all agent output to comply with the `API_CONTRACTS.md` §1 envelope:
 
 ```python
 class BaseAgent:
     def emit_event(self, event_type: str, stage: str, payload: dict) -> dict:
         """Wrap agent output in the standard event envelope.
 
-        Forces compliance with API_CONTRACTS.md §1.2 and lab_schema.py event models.
+        Forces compliance with API_CONTRACTS.md §1 and lab_schema.py event models.
+        Note: sequence_id and timestamp are assigned by the runner, not by the agent.
         """
         return {
             "event_type": event_type,
@@ -104,12 +115,61 @@ state["pending_events"] = []
 
 ### 2.3 Acceptance Criteria
 
-- [ ] Every `render_output` event reaching the frontend matches the `API_CONTRACTS.md` §1.2C schema exactly.
+- [ ] Every `render_output` event reaching the frontend matches the `API_CONTRACTS.md` §2.1 schema exactly.
 - [ ] The `mock_ws_server.py` (DevOps Protocol §3) can be replaced by recording actual backend output — schemas must be identical.
 - [ ] Blueprint cards render as structured UI components, not raw JSON text.
 - [ ] Tearsheet cards render with metric visualisations.
+- [ ] **[A+]** Every event envelope includes `sequence_id` (int, monotonic per session) and `timestamp` (ISO-8601 UTC).
+- [ ] **[A+]** `ActionRequestEvent` is a valid Pydantic model in `lab_schema.py` with `action_id`, `description`, and `options` fields.
 
-### 2.4 Files Modified
+### 2.4 [A+] `BaseEvent` v1.2 Upgrade & `ActionRequestEvent`
+
+#### 2.4.1 Update `BaseEvent` in `lab_schema.py`
+
+**File:** `backend/app/services/agent/lab_schema.py`
+
+The `BaseEvent` Pydantic model must include `sequence_id` and `timestamp` per `API_CONTRACTS.md` §1:
+
+```python
+from datetime import datetime
+
+class BaseEvent(BaseModel):
+    event_type: str
+    stage: str
+    sequence_id: int = 0        # Assigned by the runner, not by the agent
+    timestamp: datetime = None   # Assigned by the runner at publish time
+    payload: dict
+```
+
+#### 2.4.2 Add `ActionRequestEvent` model
+
+**File:** `backend/app/services/agent/lab_schema.py`
+
+```python
+class ActionRequestPayload(BaseModel):
+    action_id: str
+    description: str
+    options: list[str]
+
+class ActionRequestEvent(BaseEvent):
+    event_type: str = "action_request"
+```
+
+#### 2.4.3 Runner assigns `sequence_id` and `timestamp`
+
+**File:** `backend/app/services/agent/runner.py`
+
+The runner maintains a per-session counter. Before publishing any event to Redis or persisting to the database:
+
+```python
+from datetime import datetime, timezone
+
+self._seq_counter += 1
+event["sequence_id"] = self._seq_counter
+event["timestamp"] = datetime.now(timezone.utc).isoformat()
+```
+
+### 2.5 Files Modified
 
 | File | Nature of Change |
 |------|-----------------|
@@ -120,7 +180,8 @@ state["pending_events"] = []
 | `backend/app/services/agent/agents/model_evaluator.py` | Call `emit_event()` for tearsheet output |
 | `backend/app/services/agent/agents/reporting.py` | Call `emit_event()` for markdown report output |
 | `backend/app/services/agent/langgraph_workflow.py` | Add `pending_events` to `AgentState` |
-| `backend/app/services/agent/runner.py` | Drain `pending_events` instead of ad-hoc classification |
+| `backend/app/services/agent/runner.py` | Drain `pending_events` instead of ad-hoc classification; assign `sequence_id` and `timestamp` |
+| `backend/app/services/agent/lab_schema.py` | **[A+]** Add `sequence_id` and `timestamp` to `BaseEvent`; add `ActionRequestEvent` model |
 
 ---
 
@@ -179,12 +240,23 @@ The interrupt points map to the requirements:
 When the graph yields an interrupt, the runner must:
 
 1. Persist the thread state via `SessionManager.save_session_state()`.
-2. Publish a `status_update` event with `status: "AWAITING_APPROVAL"`.
-3. Exit the execution loop (do not mark session as completed).
+2. Publish an `action_request` event (per `API_CONTRACTS.md` §2.3) with the interrupt details.
+3. Publish a `status_update` event with `status: "AWAITING_APPROVAL"`.
+4. Exit the execution loop (do not mark session as completed).
 
 ```python
 # Inside _run(), after streaming a graph step:
 if state.get("__interrupt__"):
+    # Emit action_request with structured options
+    await self._publish(redis, channel, {
+        "event_type": "action_request",
+        "stage": state.get("current_step", "UNKNOWN"),
+        "payload": {
+            "action_id": f"approve_{state.get('current_step', 'unknown').lower()}",
+            "description": "User approval required to proceed.",
+            "options": ["APPROVE", "REJECT", "EDIT_BLUEPRINT"],
+        },
+    })
     await self._publish(redis, channel, {
         "event_type": "status_update",
         "stage": state.get("current_step", "UNKNOWN"),
@@ -244,18 +316,75 @@ def _route_after_validation(self, state):
 ### 3.4 Acceptance Criteria
 
 - [ ] The workflow pauses before `train_model` and `finalize` nodes, emitting `AWAITING_APPROVAL` status.
-- [ ] The frontend receives the `approve_gate` action (`API_CONTRACTS.md` §1.3C) and the backend resumes from the correct checkpoint.
+- [ ] The frontend receives the `action_request` event (`API_CONTRACTS.md` §2.3) with structured `action_id`/`description`/`options`, and the backend resumes from the correct checkpoint on approval.
 - [ ] Insufficient data (< 50 records after retry) terminates the session with a descriptive error rather than looping.
 - [ ] Session state survives a WebSocket disconnect — reconnecting resumes from the last checkpoint.
+- [ ] **[B+]** `GET /api/v1/lab/agent/sessions/{id}/rehydrate` returns the full `event_ledger` with canonical `sequence_id` values conforming to `API_CONTRACTS.md` §3.
+- [ ] **[B+]** WebSocket with `?after_seq=N` skips history replay and only streams live events with `sequence_id > N`.
 
-### 3.5 Files Modified
+### 3.5 [B+] Rehydration Endpoint & WebSocket `after_seq`
+
+#### 3.5.1 Add `GET /rehydrate` endpoint
+
+**File:** `backend/app/api/routes/agent.py`
+
+Add a REST endpoint that returns the full event ledger for a session:
+
+```python
+@router.get("/sessions/{session_id}/rehydrate")
+async def rehydrate_session(session_id: uuid.UUID, db: SessionDep):
+    messages = db.exec(
+        select(AgentSessionMessage)
+        .where(AgentSessionMessage.session_id == session_id)
+        .order_by(AgentSessionMessage.sequence_id.asc())
+    ).all()
+    return {
+        "session_id": str(session_id),
+        "last_sequence_id": messages[-1].sequence_id if messages else 0,
+        "event_ledger": [msg.to_event_dict() for msg in messages],
+    }
+```
+
+The response schema matches `API_CONTRACTS.md` §3 exactly.
+
+#### 3.5.2 Add `after_seq` parameter to WebSocket
+
+**File:** `backend/app/api/routes/websockets.py`
+
+Modify `websocket_agent_stream` to accept an optional `after_seq` query parameter. If provided, skip the `AgentSessionMessage` history replay loop (lines 373-385). Only subscribe to Redis for live events with `sequence_id > after_seq`:
+
+```python
+@router.websocket("/ws/agent/{session_id}/stream")
+async def websocket_agent_stream(
+    websocket: WebSocket,
+    session_id: str,
+    after_seq: int | None = Query(default=None),
+):
+    ...
+    if after_seq is None:
+        # Full replay for clients that did not rehydrate via REST
+        for idx, msg in enumerate(history, start=1):
+            await websocket.send_json({...})
+    # else: skip replay — client already has state from /rehydrate
+    
+    # Subscribe to Redis for live events only
+    ...
+```
+
+This is backward-compatible — existing clients that don't pass `after_seq` still get the full replay.
+
+> **⚠️ MemorySaver Limitation:** `MemorySaver` is in-memory only. Checkpoints do not survive process restarts. Sessions paused at HITL gates will require re-execution if the server restarts. This is acceptable for Phase 5.5. Phase 6 migrates to `PostgresSaver`. Interim guidance: users should not leave sessions paused overnight.
+
+### 3.6 Files Modified
 
 | File | Nature of Change |
 |------|-----------------|
 | `backend/app/services/agent/langgraph_workflow.py` | Add `MemorySaver` checkpointer, `interrupt_before`, data-insufficiency route |
-| `backend/app/services/agent/runner.py` | Handle interrupt state, publish `AWAITING_APPROVAL`, exit loop cleanly |
+| `backend/app/services/agent/runner.py` | Handle interrupt state, publish `action_request` + `AWAITING_APPROVAL`, exit loop cleanly |
 | `backend/app/services/agent/orchestrator.py` | Wire `resume_session()` to use `thread_id` with checkpointer |
 | `backend/app/services/agent/lab_graph.py` | Add deprecation docstring |
+| `backend/app/api/routes/agent.py` | **[B+]** Add `GET /sessions/{id}/rehydrate` endpoint |
+| `backend/app/api/routes/websockets.py` | **[B+]** Add `after_seq` query parameter; skip history replay when provided |
 
 ---
 
@@ -591,28 +720,38 @@ In `_determine_next_action`:
 
 ```python
 def _determine_next_action(self, state):
-    # Track iteration to prevent infinite reasoning loops
-    iteration = state.get("iteration", 0)
-    if iteration > 10:
+    # Per-stage 3-cycle circuit breaker (REQUIREMENTS v1.2 §1.2)
+    current_stage = state.get("current_step", "UNKNOWN")
+    counts = state.get("stage_iteration_counts", {})
+    stage_count = counts.get(current_stage, 0)
+    if stage_count >= 3:
+        # 4th attempt — trigger HITL interrupt or terminal error
+        state["error"] = (
+            f"CIRCUIT_BREAKER: Stage '{current_stage}' exceeded 3 reasoning iterations. "
+            f"Triggering Human-in-the-Loop interrupt."
+        )
         return "finalize"
     ...
 ```
 
-#### 5.2.2 Add `retrieval_attempts` counter to `AgentState`
+#### 5.2.2 Add `stage_iteration_counts` to `AgentState`
 
 **File:** `backend/app/services/agent/langgraph_workflow.py`
 
 ```python
 class AgentState(TypedDict, total=False):
     # ... existing fields ...
-    retrieval_attempts: int  # Track data retrieval retry count
+    stage_iteration_counts: dict[str, int]  # Per-stage reasoning cycle counter
 ```
 
-Increment in `_retrieve_data_node`:
+Increment in each node method:
 
 ```python
-async def _retrieve_data_node(self, state):
-    state["retrieval_attempts"] = state.get("retrieval_attempts", 0) + 1
+async def _some_node(self, state):
+    stage = state.get("current_step", "UNKNOWN")
+    counts = state.get("stage_iteration_counts", {})
+    counts[stage] = counts.get(stage, 0) + 1
+    state["stage_iteration_counts"] = counts
     ...
 ```
 
@@ -713,7 +852,7 @@ class AgentState(TypedDict, total=False):
 ### 5.3 Acceptance Criteria
 
 - [ ] A session targeting a coin with no data terminates with a descriptive error within 2 retrieval attempts.
-- [ ] The reasoning loop is capped at 10 iterations maximum.
+- [ ] No DSLC stage exceeds 3 reasoning iterations — the circuit breaker triggers on the 4th attempt.
 - [ ] Terminal errors surface as `error` events to the frontend, not silent hangs.
 - [ ] **[D+]** Flatline data (zero variance in price) triggers a `TERMINAL_DATA_ERROR` and routes directly to `finalize` — no retry, no training.
 - [ ] **[D+]** Data where >90% of values are >3σ outliers triggers a `TERMINAL_DATA_ERROR`.
@@ -724,11 +863,168 @@ class AgentState(TypedDict, total=False):
 
 | File | Nature of Change |
 |------|------------------|
-| `backend/app/services/agent/langgraph_workflow.py` | Add `retrieval_attempts` and `data_health_errors` to state; loop guards in routing functions; statistical health checks in `_validate_data_node`; terminal route for health failures |
+| `backend/app/services/agent/langgraph_workflow.py` | Add `stage_iteration_counts` and `data_health_errors` to state; per-stage circuit breaker in routing functions; statistical health checks in `_validate_data_node`; terminal route for health failures |
 
 ---
 
-## 6. Implementation Sequence
+## 6. Workstream E — Frontend Remediation (NEW in v1.2)
+
+### 6.1 Diagnosis
+
+The current React frontend was built during Phase 3 against the v1.0 spec. It implements a "Flat Chat" model with type-based rendering. The v1.2 requirements demand a "Scientific Grid" with causal event ordering, mime-type dispatch, and rehydration support.
+
+| # | Gap | Current State | v1.2 Requirement |
+|---|-----|---------------|-------------------|
+| E1 | Flat cell list | `LabContext.tsx` stores `LabCell[]` | Stage-grouped `Map<StageID, LabCell[]>` |
+| E2 | No sequence ordering | `useLabWebSocket.ts` deduplicates by random `msgId` | Sort by `sequence_id`, discard out-of-order |
+| E3 | No rehydration | State resets on mount | REST-first rehydration via `/rehydrate` |
+| E4 | Type-based rendering | `LabStageRow.tsx` switches on `cell.type` | Mime-type dispatcher per `API_CONTRACTS.md` §2.1 |
+| E5 | No HITL rendering | Blueprint approval is a separate card | Inline Approve/Reject/Edit on `action_request` |
+| E6 | No discarded model UI | Promote always enabled | Disable Promote when `lifecycle: discarded` |
+| E7 | No cache badge | No visual feedback | "Using Cached Data" badge on cache hit |
+
+### 6.2 Changes Required
+
+#### 6.2.1 [E1] Causal Grid Refactor
+
+**Files:** `frontend/src/features/lab/context/LabContext.tsx`, `frontend/src/features/lab/components/LabGrid.tsx`
+
+Replace the flat `LabCell[]` state with a stage-grouped structure:
+
+```typescript
+type LabState = {
+  cells: Map<StageID, LabCell[]>;
+  activeStages: Set<StageID>;
+  lastSequenceId: number;
+};
+```
+
+The reducer must route incoming events to the correct stage group based on `event.stage`. Stages with no events remain hidden.
+
+#### 6.2.2 [E2] Sequence-ID Ordering
+
+**File:** `frontend/src/features/lab/hooks/useLabWebSocket.ts`
+
+Replace `msgId` deduplication with `sequence_id` ordering:
+
+```typescript
+const onMessage = (event: MessageEvent) => {
+  const msg = JSON.parse(event.data);
+  if (msg.sequence_id <= lastSequenceId.current) return; // Discard out-of-order
+  lastSequenceId.current = msg.sequence_id;
+  dispatch({ type: msg.event_type, payload: msg });
+};
+```
+
+#### 6.2.3 [E3] Rehydration Hook
+
+**Files:** `frontend/src/features/lab/hooks/useRehydration.ts` (new), `frontend/src/features/lab/hooks/useLabWebSocket.ts`
+
+```typescript
+export function useRehydration(sessionId: string) {
+  return useQuery({
+    queryKey: ["lab", "rehydrate", sessionId],
+    queryFn: () => fetch(`/api/v1/lab/agent/sessions/${sessionId}/rehydrate`).then(r => r.json()),
+    staleTime: Infinity,
+  });
+}
+```
+
+**Ordering constraint:** `useRehydration()` **must** complete before `useLabWebSocket()` opens the connection. Enforced by:
+
+```typescript
+const { data: rehydration, isSuccess } = useRehydration(sessionId);
+useLabWebSocket(sessionId, {
+  enabled: isSuccess,
+  afterSeq: rehydration?.last_sequence_id ?? 0,
+});
+```
+
+#### 6.2.4 [E4] Mime-Type Dispatcher
+
+**File:** `frontend/src/features/lab/components/LabStageRow.tsx`
+
+Replace type-based rendering (`cell.type === "result"`) with mime-type dispatch:
+
+```typescript
+function renderOutput(cell: LabCell) {
+  switch (cell.payload.mime_type) {
+    case "text/markdown": return <MarkdownRenderer content={cell.payload.content} />;
+    case "application/vnd.plotly.v1+json": return <PlotlyChart data={cell.payload.content} />;
+    case "application/json+blueprint": return <BlueprintCard data={cell.payload.content} />;
+    case "application/json+tearsheet": return <Tearsheet data={cell.payload.content} />;
+    case "image/png": return <img src={`data:image/png;base64,${cell.payload.content}`} />;
+    default: return <pre>{JSON.stringify(cell.payload, null, 2)}</pre>;
+  }
+}
+```
+
+#### 6.2.5 [E5] HITL `action_request` Rendering
+
+**File:** `frontend/src/features/lab/components/LabStageRow.tsx`
+
+When `event_type === "action_request"` or `status === "AWAITING_APPROVAL"`, render high-contrast action buttons:
+
+```typescript
+if (cell.event_type === "action_request") {
+  return (
+    <HStack spacing={4} p={4} bg="orange.50" borderRadius="md">
+      <Text fontWeight="bold">{cell.payload.description}</Text>
+      {cell.payload.options.map(opt => (
+        <Button key={opt} colorScheme={opt === "APPROVE" ? "green" : "red"}
+          onClick={() => submitApproval(sessionId, opt)}>
+          {opt}
+        </Button>
+      ))}
+    </HStack>
+  );
+}
+```
+
+The approval response is sent via `POST /api/v1/lab/agent/sessions/{id}/approvals`.
+
+#### 6.2.6 [E6] Model Discarded UI
+
+**File:** `frontend/src/features/lab/components/Tearsheet.tsx`
+
+When the tearsheet payload contains `lifecycle: "discarded"`:
+
+* Disable the "Promote to Floor" button.
+* Render a warning badge: "⚠️ Model discarded: performance below minimum thresholds."
+
+#### 6.2.7 [E7] Cached Parquet Badge
+
+**File:** `frontend/src/features/lab/components/LabStageRow.tsx`
+
+When a `status_update` event for `DATA_ACQUISITION` indicates a Parquet cache hit (via a flag in the payload), display a "Using Cached Data" badge.
+
+### 6.3 Acceptance Criteria
+
+- [ ] Each DSLC stage renders as a separate, isolated section in the Grid.
+- [ ] Messages within a stage are sorted by `sequence_id` — no out-of-order rendering.
+- [ ] Closing and reopening the browser reconstructs the full Grid state from the `/rehydrate` endpoint.
+- [ ] The WebSocket does not replay history when the client provides `?after_seq`.
+- [ ] Blueprint, Tearsheet, Plotly, and Markdown outputs are rendered by their specific React components — not as raw text.
+- [ ] `action_request` events render inline Approve/Reject/Edit buttons within the active stage cell.
+- [ ] The Promote button is disabled when `lifecycle: discarded`.
+- [ ] Cache hits display a "Using Cached Data" badge.
+
+### 6.4 Files Modified
+
+| File | Nature of Change |
+|------|------------------|
+| `frontend/src/features/lab/context/LabContext.tsx` | Replace flat `LabCell[]` with `Map<StageID, LabCell[]>`; add `lastSequenceId` |
+| `frontend/src/features/lab/components/LabGrid.tsx` | Iterate stage groups instead of flat list |
+| `frontend/src/features/lab/hooks/useLabWebSocket.ts` | Replace `msgId` dedup with `sequence_id` ordering; accept `afterSeq` parameter |
+| `frontend/src/features/lab/hooks/useRehydration.ts` | **NEW** — REST rehydration hook |
+| `frontend/src/features/lab/components/LabStageRow.tsx` | Mime-type dispatcher; `action_request` rendering; cached Parquet badge |
+| `frontend/src/features/lab/components/Tearsheet.tsx` | Discarded model warning; disable Promote |
+
+---
+
+## 7. Implementation Sequence
+
+## 7. Implementation Sequence
 
 These workstreams have the following dependency graph (including hardening upgrades):
 
@@ -746,6 +1042,10 @@ These workstreams have the following dependency graph (including hardening upgra
             │ checkpointer must work for C's resume-after-approval flow
        ┌────▼─────┐
        │   C/C+   │  (Dagger Training + Caching/Lifecycle — depends on B/B+)
+       └────┬─────┘
+            │ compliant events + rehydration endpoint must exist for frontend
+       ┌────▼─────┐
+       │    E     │  (Frontend Remediation — depends on A/A+ and B/B+)
        └──────────┘
 ```
 
@@ -754,9 +1054,10 @@ These workstreams have the following dependency graph (including hardening upgra
 | Step | Workstream | Estimated Scope | Rationale |
 |------|-----------|-----------------|-----------|
 | 1 | **D/D+** (Error Routing + Data Health) | 1 file, ~80 lines | Quick win. Eliminates infinite loops and poisoned-data training immediately. No dependencies. |
-| 2 | **A/A+** (Messaging + Event Sequencing) | 9 files, ~130 lines | Foundation for all downstream event publishing. Sequencing required for B+ rehydration. |
-| 3 | **B/B+** (HiTL Breakpoints + Rehydration) | 5 files, ~120 lines | Requires `pending_events` + `sequence_id` from A/A+. Rehydration requires checkpointer. |
+| 2 | **A/A+** (Messaging + Event Sequencing) | 10 files, ~150 lines | Foundation for all downstream event publishing. Sequencing required for B+ rehydration and E ordering. |
+| 3 | **B/B+** (HiTL Breakpoints + Rehydration) | 7 files, ~150 lines | Requires `pending_events` + `sequence_id` from A/A+. Rehydration endpoint required for E3. |
 | 4 | **C/C+** (Dagger Training + Caching/Lifecycle) | 5 files, ~200 lines | Requires interrupt gates from B/B+. Lifecycle tagging requires `mlflow_run_id` flow. |
+| 5 | **E** (Frontend Remediation) | 6 files, ~250 lines | Requires compliant events from A/A+ and rehydration endpoint from B/B+. |
 
 ### Testing Strategy
 
@@ -783,48 +1084,69 @@ Each workstream must include tests before proceeding to the next:
 | **C+** | Integration test | `ModelEvaluatorAgent` tags MLflow run as `lifecycle: discarded` when accuracy < 0.5 |
 | **C+** | Unit test | `_route_after_evaluation` returns `"finalize"` when `model_discarded` is True |
 
----
+### Integration Gate Tests (v1.2)
 
-## 7. Consolidated File Change Matrix
+These end-to-end acceptance tests validate cross-workstream integration:
 
-| File | A | A+ | B | B+ | C | C+ | D | D+ | Total |
-|------|---|----|----|----|----|----|----|----|---------|
-| `agents/base.py` | ✓ | ✓ | | | | | | | 2 |
-| `agents/data_retrieval.py` | ✓ | | | | | | | | 1 |
-| `agents/data_analyst.py` | ✓ | | | | | | | | 1 |
-| `agents/model_training.py` | ✓ | | | | ✓ | | | | 2 |
-| `agents/model_evaluator.py` | ✓ | | | | | ✓ | | | 2 |
-| `agents/reporting.py` | ✓ | | | | | | | | 1 |
-| `langgraph_workflow.py` | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | 6 |
-| `runner.py` | ✓ | ✓ | ✓ | | | | | | 3 |
-| `orchestrator.py` | | | ✓ | ✓ | | | | | 2 |
-| `lab_graph.py` | | | ✓ | | | | | | 1 |
-| `lab_schema.py` | | ✓ | | | | | | | 1 |
-| `pipeline.py` | | | | | | ✓ | | | 1 |
-| `core/config.py` | | | | | ✓ | | | | 1 |
-| `api/routes/websockets.py` | | | | ✓ | | | | | 1 |
+| Test Name | Workstreams | What to Verify |
+|-----------|-------------|----------------|
+| **The Refresh Test** | B+ + E3 | Close browser mid-session. Reopen. Call `/rehydrate`. Grid reconstructs completely. WebSocket with `?after_seq` does not replay duplicates. |
+| **The Flatline Data Test** | D+ + A | Submit a session targeting a dead coin. `TERMINAL_DATA_ERROR` error event arrives with zero-variance details. Session terminates cleanly. |
+| **The Circuit Breaker Test** | D+ | Force a stage to loop 4 times. Verify `CIRCUIT_BREAKER` error is emitted and workflow routes to `finalize`. |
+| **The Mime Compliance Test** | A + E4 | Record all WebSocket messages for a full session. Assert every `render_output` has a valid `mime_type` from the whitelist. Assert every event has `sequence_id` and `timestamp`. |
+| **The HITL Round-Trip Test** | B + E5 | Trigger an `interrupt_before` gate. Verify `action_request` event arrives. Submit approval via POST. Verify graph resumes from checkpoint. |
 
 ---
 
-## 8. Risk Register
+## 8. Consolidated File Change Matrix
+
+| File | A | A+ | B | B+ | C | C+ | D | D+ | E | Total |
+|------|---|----|----|----|----|----|----|----|---|---------|
+| `agents/base.py` | ✓ | ✓ | | | | | | | | 2 |
+| `agents/data_retrieval.py` | ✓ | | | | | | | | | 1 |
+| `agents/data_analyst.py` | ✓ | | | | | | | | | 1 |
+| `agents/model_training.py` | ✓ | | | | ✓ | | | | | 2 |
+| `agents/model_evaluator.py` | ✓ | | | | | ✓ | | | | 2 |
+| `agents/reporting.py` | ✓ | | | | | | | | | 1 |
+| `langgraph_workflow.py` | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | 6 |
+| `runner.py` | ✓ | ✓ | ✓ | | | | | | | 3 |
+| `orchestrator.py` | | | ✓ | ✓ | | | | | | 2 |
+| `lab_graph.py` | | | ✓ | | | | | | | 1 |
+| `lab_schema.py` | | ✓ | | | | | | | | 1 |
+| `pipeline.py` | | | | | | ✓ | | | | 1 |
+| `core/config.py` | | | | | ✓ | | | | | 1 |
+| `api/routes/agent.py` | | | | ✓ | | | | | | 1 |
+| `api/routes/websockets.py` | | | | ✓ | | | | | | 1 |
+| `lab/context/LabContext.tsx` | | | | | | | | | ✓ | 1 |
+| `lab/components/LabGrid.tsx` | | | | | | | | | ✓ | 1 |
+| `lab/hooks/useLabWebSocket.ts` | | | | | | | | | ✓ | 1 |
+| `lab/hooks/useRehydration.ts` | | | | | | | | | ✓ | 1 |
+| `lab/components/LabStageRow.tsx` | | | | | | | | | ✓ | 1 |
+| `lab/components/Tearsheet.tsx` | | | | | | | | | ✓ | 1 |
+
+---
+
+## 9. Risk Register
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| `MemorySaver` is in-memory only — server restart loses all checkpoints | High | Medium | Acceptable for Phase 5. Phase 6 should migrate to `SqliteSaver` or `PostgresSaver` for persistence across restarts. |
+| `MemorySaver` is in-memory only — server restart loses all checkpoints | High | Medium | Acceptable for Phase 5.5. Phase 6 migrates to `PostgresSaver` for persistence across restarts. Interim: document that users should not leave sessions paused overnight. |
 | `run_code_in_dagger` requires a running Docker daemon — CI environments may not have Docker | Medium | High | The `TRAINING_BACKEND=local` flag (§4.2.3) provides a no-Docker fallback for CI and tests. |
 | Adding `pending_events` to `AgentState` changes the state shape — existing serialised sessions in Redis will lack this key | Medium | Low | Use `.get("pending_events", [])` everywhere. Existing sessions drain cleanly. |
 | Script generation in `_generate_training_script()` is fragile — edge cases in feature names or hyperparameter types could produce invalid Python | Medium | Medium | Validate generated scripts with `ast.parse()` before passing to Dagger. Add integration tests with representative datasets. |
 | **[A+]** `sequence_id` overflow for very long-running sessions | Low | Low | Python integers are unbounded. No practical risk. |
 | **[B+]** Rehydration replays stale `render_output` if the graph has advanced past the cached stage since the last checkpoint save | Medium | Medium | Only replay stages whose `NodeStatus` is `COMPLETE` in the checkpointed state. Verify `current_stage` before replaying. |
+| **[B+]** Rehydration + WebSocket duplicate messages if `?after_seq` not passed | Medium | Medium | Frontend enforces REST-first, WebSocket-live sequence. `useRehydration()` must complete before `useLabWebSocket()` connects. Client-side `sequence_id` guard discards duplicates as safety net. |
 | **[C+]** Parquet row-count cache produces false positives if MV is refreshed with same number of rows but different content | Low | Medium | The `invalidate_cache()` method provides an explicit override. MV refresh scripts should call it. For audit safety, log cache-hit decisions so they can be traced. |
 | **[C+]** MLflow `lifecycle: discarded` tag can be manually removed by users | Low | Low | The Promote API (§5.2 of `IMPLEMENTATION_BRIEF.md`) must independently check model metrics before allowing promotion — the tag is a convenience filter, not a security gate. |
 | **[D+]** Z-score outlier detection assumes normally distributed data, which price data rarely is | Medium | Low | The 90% threshold is intentionally extreme — it catches data corruption, not legitimate fat tails. For more nuanced checks, a future iteration could use IQR-based detection (already available in `clean_data` from analysis tools). |
+| **[E]** Frontend state management complexity increases significantly with stage-grouped `Map` and sequence ordering | Medium | Medium | Implement incrementally: E1 (structure) → E2 (ordering) → E3 (rehydration) → E4-E7 (rendering). Each sub-item is independently testable. |
 
 ---
 
-## 9. Relationship to Phase 5 Roadmap Items
+## 10. Relationship to Phase 5 Roadmap Items
 
-Once Workstreams A–D (and their hardening upgrades) are complete, the original Phase 5 items from `ROADMAP_STRATEGY.md` can proceed:
+Once Workstreams A–E (and their hardening upgrades) are complete, the original Phase 5 items from `ROADMAP_STRATEGY.md` can proceed:
 
 | Phase 5 Item | Dependency on This Plan |
 |-------------|------------------------|

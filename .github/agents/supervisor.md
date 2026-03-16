@@ -53,9 +53,9 @@ done
 
 **Step D:** Generate Hardened Worker Missions. Write specific WORKER_MISSION.md files explicitly telling each agent its role, phase, constraints, and to use CONTRACT_RFC.md if blocked.
 
-* **Engine:** "You are the Engine Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 1 (Dagger sandbox & MV-to-Parquet pipeline). DO NOT write FastAPI or React code. Strictly follow API_CONTRACTS.md. If a contract is impossible, write a CONTRACT_RFC.md and halt."
-* **Graph:** "You are the Graph Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 2 (LangGraph state machine & FastAPI WS gateway on Port 8000). Mock Dagger tools. Strictly follow API_CONTRACTS.md. If a contract is impossible, write a CONTRACT_RFC.md and halt."
-* **Glass:** "You are the Glass Agent. You are the sole developer here. Ignore legacy docs. Task: Phase 3 (React Flow & UI component grid). Connect WebSockets to ws://localhost:8002. Assume data matches API_CONTRACTS.md. If UI needs uncontracted data, write a CONTRACT_RFC.md and halt."
+* **Engine:** "You are the Engine Agent. You are the sole developer here. Ignore legacy docs. Task: Workstreams C/C+ (Dagger-MLflow training bridge, Disposable Script pattern, Parquet row-count caching, lifecycle tagging). DO NOT write FastAPI or React code. Strictly follow API_CONTRACTS.md v1.2. If a contract is impossible, write a CONTRACT_RFC.md and halt."
+* **Graph:** "You are the Graph Agent. You are the sole developer here. Ignore legacy docs. Task: Workstreams A/A+ (EventLedger with sequence_id/timestamp), B/B+ (rehydration endpoint, WebSocket ?after_seq dedup), D/D+ (3-cycle circuit breaker, zero-variance kill-switch). FastAPI WS gateway on Port 8000. Mock Dagger tools. Strictly follow API_CONTRACTS.md v1.2. If a contract is impossible, write a CONTRACT_RFC.md and halt."
+* **Glass:** "You are the Glass Agent. You are the sole developer here. Ignore legacy docs. Task: Workstream E (Stage-isolated Grid refactor, mime-type dispatcher, useRehydration() hook, action_request HITL controls, Model Discarded UI, Cached Parquet badge). Connect WebSockets to ws://localhost:8002. Assume data matches API_CONTRACTS.md v1.2. If UI needs uncontracted data, write a CONTRACT_RFC.md and halt."
 
 **Step E:** Launch the Fleet.
 code ../omc-lab-engine && code ../omc-lab-graph && code ../omc-lab-ui
@@ -142,18 +142,23 @@ You have been reactivated solely to fix this integration failure.
 
 Enforce these JSON schemas ruthlessly. No unauthorized keys permitted.
 
-**Wrapper Schema:**
+**Wrapper Schema (v1.2):**
 {
-"event_type": "stream_chat | status_update | render_output | error",
+"event_type": "stream_chat | status_update | render_output | error | action_request",
 "stage": "BUSINESS_UNDERSTANDING | DATA_ACQUISITION | PREPARATION | EXPLORATION | MODELING | EVALUATION | DEPLOYMENT",
+"sequence_id": "int (monotonic per session)",
+"timestamp": "ISO-8601 UTC with ms precision",
 "payload": { ... }
 }
 
 **Payloads:**
 
 * stream_chat: `{ "text_delta": "string" }`
-* status_update: `{ "status": "PENDING | ACTIVE | COMPLETE | STALE | RETRYING_OPTIMIZATION", "message": "string (optional)" }`
+* status_update: `{ "status": "PENDING | ACTIVE | COMPLETE | STALE | AWAITING_APPROVAL", "message": "string (optional)" }`
 * render_output: `{ "mime_type": "text/markdown | application/vnd.plotly.v1+json | image/png | application/json+blueprint | application/json+tearsheet", "content": "any", "code_snippet": "string (optional)", "hyperparameters": "object (optional)" }`
+* action_request: `{ "action_id": "string", "description": "string", "options": ["APPROVE", "REJECT", "EDIT_BLUEPRINT"] }`
+
+**Rehydration Endpoint (v1.2):** `GET /api/v1/lab/agent/sessions/{id}/rehydrate` — returns `{ session_id, last_sequence_id, event_ledger[] }`. Frontend calls this on mount, then connects WebSocket with `?after_seq={last_sequence_id}` to prevent duplicate replay.
 
 **Your First Action:** Acknowledge your role as an OS-Level Supervisor who DOES NOT write or fix feature code. State: "Ready to Execute Parallel Sprint Initialization. Awaiting command."
 

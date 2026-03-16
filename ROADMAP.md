@@ -135,17 +135,30 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 
 ### 🚀 Phase 5.5: The Lab 2.0 Architecture (Strategic Pivot)
 
-**Objective**: Re-platform "The Lab" into a fully isolated, secure, and stateful development environment using Dagger and LangGraph.
+**Objective**: Harden "The Lab" from its Phase 3 "Flat Chat" prototype into the "Scientific Grid" architecture — a fully isolated, secure, and stateful research environment using Dagger, LangGraph, and an EventLedger-based messaging system.
 
-**Key Deliverables (See [ROADMAP_STRATEGY.md](docs/requirements/the_lab/ROADMAP_STRATEGY.md))**:
-- 🔄 **Dagger Execution Sandbox**: Phase 1 - Secure, containerized code execution with hard resource limits.
-- 🔄 **LangGraph Orchestrator**: Phase 2 - Stateful AI workflow management with "Human-in-the-Loop" approval gates.
-- 🔄 **React Flow & WebSocket Grid**: Phase 3 - Real-time, node-based visualization of the data science lifecycle.
-- 🔄 **MLflow Integration**: Phase 4 - Full experiment tracking and artifact lineage.
+**Architecture (v1.2)**: All specifications at v1.2 — see [ROADMAP_STRATEGY.md](docs/requirements/the_lab/ROADMAP_STRATEGY.md) for phases and [PHASE_5_INTEGRATION_PLAN.md](docs/requirements/the_lab/PHASE_5_INTEGRATION_PLAN.md) for workstream details.
 
-**Planned Capabilities**:
-- **Collector Performance & Freshness** (Sprint 2.49)
-- **MLflow Integration**: When experiment scale justifies it (Phase 5+)
+**Completed Foundations (Phases 0–4)**:
+- ✅ **Dagger Execution Sandbox**: Secure, containerized code execution with `omc-agent-base:latest`.
+- ✅ **LangGraph Orchestrator**: `LangGraphWorkflow` state machine with MemorySaver checkpointing.
+- ✅ **React Flow & WebSocket Grid**: Real-time node-based DSLC visualization.
+- ✅ **MLflow Integration**: Full experiment tracking and artifact lineage.
+
+**In Progress — Phase 5.5 "The Hardening Bridge" (Workstreams A–E)**:
+- 🔄 **Workstream A+: Event Sequencing** — Refactor `chat_history` into immutable `EventLedger` with `sequence_id`/`timestamp`. Add `action_request` event type.
+- 🔄 **Workstream B+: State Rehydration** — `GET /api/v1/lab/agent/sessions/{id}/rehydrate` endpoint. WebSocket `?after_seq` dedup parameter.
+- 🔄 **Workstream C+: Dagger-MLflow Bridge** — Disposable Script pattern, `lifecycle: valid/discarded` tagging, Parquet row-count caching.
+- 🔄 **Workstream D+: Statistical Health Gates** — Zero-variance kill-switch, 3-cycle per-stage circuit breaker.
+- 🔄 **Workstream E: Frontend Remediation** — Stage-isolated Grid, mime-type dispatcher, HITL controls, `useRehydration()` hook.
+- **Dependency Order**: D → A → B → C → E
+
+**Phase 6 — Production Readiness (Planned)**:
+- 📋 **PostgresSaver Migration**: Replace MemorySaver with `langgraph-checkpoint-postgres` for persistent HITL sessions.
+- 📋 **Graph Consolidation**: Delete deprecated `lab_graph.py`, merge into `LangGraphWorkflow`.
+- 📋 **Air-Gap & Hardening**: Original Phase 5 items (5.1–5.3) unblocked by Phase 5.5.
+
+**Integration Gate Tests**: The Refresh Test, Flatline Data Test, Circuit Breaker Test, Mime Compliance Test, HITL Round-Trip Test.
 
 ---
 
@@ -426,6 +439,6 @@ The project uses **Prompt-Engineered Orchestration** to coordinate AI agents:
 
 **End of Strategic Roadmap**
 
-**Next Review**: After Sprint 2.48 completion
+**Next Review**: After Sprint 2.49 completion
 **Maintained by**: The Architect
-**Last Major Update**: Sprint 2.48 (Explainable AI + Feature Store)
+**Last Major Update**: Sprint 2.49 (Lab 2.0 v1.2 Architecture Alignment)

@@ -1,4 +1,82 @@
-# 🔬 Requirements Specification: "The Lab" (Algo Development Module)
+# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.2)
+
+## 🔄 DIFF: Outstanding Hardening Work 
+
+The following items are the delta between the current "Flat Chat" implementation and the required "Scientific Grid" architecture:
+
+* [ ] **A+: Event Ledger Implementation:** Refactor `chat_history` into an immutable `EventLedger` using `sequence_id`.
+* [ ] **B+: Rehydration Logic:** Implement `get_rehydration_state` to allow the React UI to reconstruct the grid after a browser refresh.
+* [ ] **C+: Dagger-MLflow Bridge:** Redirect `ModelTrainingAgent` to generate standalone scripts for the sandbox and tag runs in MLflow.
+* [ ] **D+: Statistical Health Gates:** Inject variance/Z-score validation into `_validate_data_node` to kill "flatline" research loops.
+* [ ] **D+: Iteration Circuit Breaker:** Implement a 3-cycle cap per stage to prevent infinite reasoning loops.
+
+---
+
+## 1. 🧠 Scientific Orchestration (The Science Loop)
+
+The Lab operates as an **Autonomous Research Loop**. The orchestrator manages a sequence of experiments, where each step must produce a verifiable "Scientific Record."
+
+### 1.1 The `EventLedger` (Causal State)
+
+The system **shall** maintain an immutable ledger for every session. A state object is only valid if it can be reconstructed from this ledger:
+
+* `sequence_id`: A monotonic integer incremented for every system action.
+* `stage`: The DSLC stage (e.g., `MODELING`).
+* `event_type`: `stream_chat`, `status_update`, `render_output`, `error`, `action_request`.
+* `payload`: The structured JSON data (Mime-Type compliant).
+
+### 1.2 Research Integrity Gates
+
+* **The "Zero Variance" Kill-Switch:** The system **shall** terminate the workflow immediately if `_validate_data_node` detects zero variance in target/features or >90% outliers.
+* **The Iteration Cap:** No DSLC stage **shall** exceed 3 reasoning iterations. On the 4th attempt, the system **must** trigger a `Human_in_the_Loop` interrupt or a `TERMINAL_ERROR`.
+* **State Rehydration:** Upon session initialization or reconnection, the backend **shall** replay the `EventLedger` to the frontend to ensure the Grid UI reflects the exact historical causality of the research.
+
+---
+
+## 2. 🛡️ The Execution Sandbox (Dagger + MLflow)
+
+The sandbox is the "Lab Bench." It must be isolated, tracked, and optimized for high-volume iteration.
+
+### 2.1 The "Disposable Script" Pattern
+
+* **Script Generation:** The Agent **shall** generate a standalone Python script for training. This script is a disposable artifact, not part of the core codebase.
+* **MLflow Lineage:** Every Dagger run **must** be accompanied by an MLflow `run_id`.
+* **Lifecycle Tagging:** Models with Accuracy < 0.5 or F1 < 0.3 **shall** be tagged `lifecycle: discarded` in MLflow to prevent registry pollution.
+* **Promotion Eligibility:** Models with Accuracy >= 0.5 AND F1 >= 0.3 **shall** be tagged `lifecycle: valid` upon passing the evaluation gate. Only models with `lifecycle: valid` are eligible for promotion to The Floor.
+
+### 2.2 Performance Optimization (Parquet Caching)
+
+* **Cold-Start Mitigation:** The `PipelineManager` **shall** implement row-count caching. If the Materialized View row-count is unchanged, Dagger **must** reuse the existing Parquet file from `/tmp/`.
+
+---
+
+## 3. 🖥️ Frontend UX: The Scientific Grid
+
+The UI is a **Dashboard of Evidence**, not a chat window.
+
+### 3.1 The Grid Layout
+
+* **Cell Isolation:** Each DSLC stage **shall** occupy a discrete "Cell" in the UI.
+* **State-Driven Visibility:** A cell only becomes visible or "Active" when a `status_update` with the corresponding `stage` is received.
+* **Mime-Type Dispatcher:** The UI **shall** use the `mime_type` in the event payload to decide whether to render a Markdown log, a Plotly chart, or a Blueprint card.
+
+### 3.2 Human-in-the-Loop (HITL) Controls
+
+* **Interrupt Rendering:** When the backend emits `status: AWAITING_APPROVAL`, the UI **must** render high-contrast "Approve/Reject" buttons within the active stage cell.
+
+---
+
+## 4. 🌉 Deployment (The Lab-to-Floor Bridge)
+
+* **Promotion Contract:** A model is only eligible for "The Floor" if it exists in the MLflow Registry with a `lifecycle: valid` tag.
+* **Signal Isolation:** The Bridge **shall** only pass the model's `weights` and `feature_map`. No execution logic (sizing/orders) is permitted to leave the Lab.
+
+
+
+
+
+# For REFERENCE ONLY - OLD REQUIREMENTS VERSION
+## 🔬 Requirements Specification: "The Lab" (Algo Development Module)
 
 **Version:** 1.1 (Updated Post-Review)
 **Context:** This module provides an interactive, agent-assisted Data Science Life Cycle (DSLC) environment. It sits between the Data Collectors (Materialized Views) and the Live Trading Platform ("The Floor").

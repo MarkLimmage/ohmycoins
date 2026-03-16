@@ -1,3 +1,121 @@
+The user stories have been updated to **Version 1.2**. The primary focus is shifting the UX from a "Chat Log" to a **"Causal Grid"** where every action is an immutable event in a scientific sequence.
+
+---
+
+# 📖 User Stories: "The Lab" (v1.2)
+
+## 🔄 DIFF: User Experience & Resilience Hardening
+
+* **Event-Driven Grid:** Replaced "Rows" with "Causal Cells" driven by `sequence_id`.
+* **State Rehydration:** Added stories for browser-refresh recovery.
+* **Research Guardrails:** Added stories for automated data-health rejection.
+* **Artifact Lifecycle:** Integrated MLflow "Discarded" logic into the user's evaluation flow.
+
+---
+
+## Epic 1: Workspace & State Management (The Causal Grid)
+
+### 1.1 The Visual Graph & Sync
+
+**As an** Algo Architect,
+**I want** the visual stage graph to persist across browser refreshes,
+**So that** I don't lose context of my research progress if my connection drops.
+
+* **AC 1:** Upon page load, the UI calls the `/rehydrate` endpoint and reconstructs the stage colors (Green/Amber/Blue) based on the `EventLedger`.
+
+### 1.2 The Causal Stage Cell
+
+**As an** Algo Architect,
+**I want** each DSLC stage to be a self-contained "Cell" that populates in order,
+**So that** I can see the provenance of my model from data to deployment in a structured grid.
+
+* **AC 1:** Stage cells are hidden until the first `status_update` for that stage is received.
+* **AC 2:** Messages and outputs within a cell are sorted by `sequence_id` to ensure correct causal ordering.
+
+---
+
+## Epic 2: Business Understanding (The Blueprint)
+
+### 2.1 Natural Language Initiation
+
+(Unchanged: Translating "vibe" to ML specs.)
+
+### 2.2 The Solid Blueprint Gate
+
+**As an** Algo Architect,
+**I want** the agent to stop and wait for my approval after generating the Blueprint,
+**So that** I can catch feature-engineering errors before any code is executed in the sandbox.
+
+* **AC 1:** The workflow triggers an `AWAITING_APPROVAL` status after the Blueprint is rendered.
+* **AC 2:** The "Proceed" button in the UI sends an approval response via `POST /api/v1/lab/agent/sessions/{id}/approvals` to resume the graph.
+
+---
+
+## Epic 3: Data Acquisition & Safety
+
+### 3.1 The "Poisoned Data" Rejection
+
+**As an** Algo Architect,
+**I want** the Lab to automatically abort if the retrieved data is statistically "dead" (e.g., zero variance or extreme outliers),
+**So that** I don't waste time and compute training on corrupted signals.
+
+* **AC 1:** If the Safety Bridge detects a "Flatline" price feed, the UI renders a high-visibility `TERMINAL_DATA_ERROR` in the cell and kills the run.
+
+---
+
+## Epic 4: Modeling & Sandboxing
+
+### 4.1 "Cold-Start" Performance
+
+**As an** Algo Architect,
+**I want** repeated training runs on the same dataset to start instantly,
+**So that** I can iterate on hyperparameters without waiting for the data export process every time.
+
+* **AC 1:** The UI displays a "Using Cached Parquet" badge if the row-count matches the previous run, indicating an optimized start.
+
+### 4.2 Hyperparameter UI Overlays
+
+(Updated) **As an** Algo Architect,
+**I want** my UI slider adjustments to be reflected as a new event in the `EventLedger`,
+**So that** I have a permanent record of every manual tweak I made during the session.
+
+---
+
+## Epic 5: Evaluation & Registry Lifecycle
+
+### 5.1 The Tear Sheet & MLflow Link
+
+**As an** Algo Architect,
+**I want** the Tear Sheet to show me the specific `mlflow_run_id`,
+**So that** I can verify the model lineage in the experiment tracker.
+
+### 5.2 Automated Model Discarding
+
+**As an** Algo Architect,
+**I want** the system to automatically tag models as "Discarded" if they fail my performance threshold (e.g., Accuracy < 50%),
+**So that** my production Model Registry doesn't get cluttered with "junk" experiments.
+
+* **AC 1:** If evaluation fails the gate, the UI renders a "Model Discarded" warning and disables the "Promote to Floor" button.
+
+---
+
+## Epic 6: Deployment (The Bridge)
+
+### 6.1 Lineage-Locked Promotion
+
+**As an** Algo Architect,
+**I want** the "Promote to Floor" action to be immutable,
+**So that** I know exactly which Lab session and which dataset produced the model currently trading live.
+
+* **AC 1:** Promoting a model creates a permanent link in the `Algorithm` table between the MLflow Artifact and the Lab `session_id`.
+
+---
+
+
+
+
+# ** REFERECE ONLY BELOW THIS - OLD USER - STORIES ** 
+
 # 📖 User Stories: "The Lab" (Algo Development Module)
 
 **Version:** 1.0

@@ -1,6 +1,6 @@
 # ⚙️ DevOps Protocol: Parallel Agentic Orchestration
 
-**Version:** 1.1 (Updated: RFC Protocol Integration)
+**Version:** 1.2 (Updated: v1.2 Spec Alignment)
 **Classification:** EYES ONLY (Supervisor Agent)
 **Context:** This protocol dictates the Git Worktree topology, resource allocation, and worker-delegation strategy required to build "The Lab" in parallel without integration conflicts or context degradation.
 
@@ -12,16 +12,16 @@ To enable simultaneous execution without git stash/checkout conflicts, the Super
 
 | Worker Persona | Branch Name | Target Directory | Responsibility |
 | --- | --- | --- | --- |
-| **Engine Agent** | `feature/dagger-engine` | `../omc-lab-engine` | Dagger sandbox, MV extraction, validation scripts. |
-| **Graph Agent** | `feature/langgraph-orchestrator` | `../omc-lab-graph` | LangGraph state machine, FastAPI WebSocket router. |
-| **Glass Agent** | `feature/vue-frontend` | `../omc-lab-ui` | Vue Flow, Multi-modal UI, REST API calls. |
+| **Engine Agent** | `feature/dagger-engine` | `../omc-lab-engine` | Dagger sandbox, MV extraction, Parquet caching, validation scripts. |
+| **Graph Agent** | `feature/langgraph-orchestrator` | `../omc-lab-graph` | LangGraph state machine (`LangGraphWorkflow`), EventLedger, FastAPI WebSocket + rehydration routes. |
+| **Glass Agent** | `feature/react-frontend` | `../omc-lab-ui` | React + Chakra UI Scientific Grid, React Flow, rehydration hook, mime-type dispatcher. |
 
 **Command Specification:**
 
 ```bash
 git worktree add ../omc-lab-engine feature/dagger-engine
 git worktree add ../omc-lab-graph feature/langgraph-orchestrator
-git worktree add ../omc-lab-ui feature/vue-frontend
+git worktree add ../omc-lab-ui feature/react-frontend
 
 ```
 
@@ -37,7 +37,7 @@ Under no circumstances shall a worker agent alter these port assignments dynamic
 
 * **Port `8000`:** Reserved exclusively for the Graph Agent (FastAPI Orchestrator).
 * **Port `8002`:** Reserved exclusively for the Supervisor's Mock WebSocket Server.
-* **Port `5173`:** Reserved exclusively for the Glass Agent (Vue Vite Server).
+* **Port `5173`:** Reserved exclusively for the Glass Agent (React Vite Server).
 * **Port `5000`:** Reserved exclusively for the local MLflow Tracking Server.
 
 ### 2.2 Database Isolation
@@ -50,10 +50,10 @@ To prevent the Engine Agent from locking Postgres tables while the Graph Agent i
 
 Before assigning tasks to the worker agents, the Supervisor **must** complete the following setup sequence:
 
-1. **Verify Contracts:** Ensure `API_CONTRACTS.md` is finalized and saved in the root directory.
-2. **Generate Mock Server:** The Supervisor shall write a `mock_ws_server.py` script running on Port `8002` that broadcasts the exact JSON schemas defined in the Contracts.
+1. **Verify Contracts:** Ensure `API_CONTRACTS.md` v1.2 is finalized and saved in the root directory. The v1.2 envelope (with `sequence_id`, `timestamp`, and `action_request`) is the canonical schema.
+2. **Generate Mock Server:** The Supervisor shall write a `mock_ws_server.py` script running on Port `8002` that broadcasts the exact v1.2 JSON schemas defined in the Contracts — including monotonic `sequence_id` and ISO-8601 `timestamp` on every message.
 3. **Initialize Worktrees:** Execute the Git CLI commands to spawn the isolated directories.
-4. **Seed Environments:** Copy the `API_CONTRACTS.md` into the root of each spawned worktree.
+4. **Seed Environments:** Copy the `API_CONTRACTS.md` v1.2 into the root of each spawned worktree.
 
 ---
 
@@ -73,15 +73,15 @@ When spinning up a worker, the Supervisor shall use the following prompt structu
 
 **For the Engine Agent:**
 
-> "You are the Backend Engine Agent. Your isolated workspace is `../omc-lab-engine`. Your task is Phase 1 from the Roadmap. Build the Dagger execution sandbox and the MV-to-Parquet pipeline. Do not write any FastAPI routing or Vue.js code. Refer to `API_CONTRACTS.md` for tool schemas. *If a contract is technically impossible to implement, do not write unauthorized payloads. Instead, submit a `CONTRACT_RFC.md` file and halt execution.*"
+> "You are the Backend Engine Agent. Your isolated workspace is `../omc-lab-engine`. Your tasks are Workstreams C/C+ from `PHASE_5_INTEGRATION_PLAN.md` v1.2. Build the Dagger execution sandbox using the 'Disposable Script' pattern, implement Parquet caching in `PipelineManager`, and wire MLflow lifecycle tagging. Do not write any FastAPI routing or React code. Refer to `API_CONTRACTS.md` v1.2 for event schemas. *If a contract is technically impossible to implement, do not write unauthorized payloads. Instead, submit a `CONTRACT_RFC.md` file and halt execution.*"
 
 **For the Graph Agent:**
 
-> "You are the LangGraph Orchestrator Agent. Your isolated workspace is `../omc-lab-graph`. Your task is Phase 2 from the Roadmap. Build the AI state machine and WebSocket gateway on Port 8000. Adhere strictly to the JSON schemas in `API_CONTRACTS.md`. *If LangGraph mechanics require a deviation from the schema, do not guess. Submit a `CONTRACT_RFC.md` file and halt execution.*"
+> "You are the LangGraph Orchestrator Agent. Your isolated workspace is `../omc-lab-graph`. Your tasks are Workstreams A/A+, B/B+, and D/D+ from `PHASE_5_INTEGRATION_PLAN.md` v1.2. Build the EventLedger messaging layer with `sequence_id`/`timestamp`, implement HiTL breakpoints with `MemorySaver` checkpointer, add the `GET /rehydrate` endpoint, add `?after_seq` to the WebSocket, and implement the per-stage 3-cycle circuit breaker. Adhere strictly to the v1.2 JSON schemas in `API_CONTRACTS.md`. *If LangGraph mechanics require a deviation from the schema, do not guess. Submit a `CONTRACT_RFC.md` file and halt execution.*"
 
 **For the Glass Agent:**
 
-> "You are the Frontend UI Agent. Your isolated workspace is `../omc-lab-ui`. Your task is Phase 3 from the Roadmap. Build the Vue component grid. Connect your WebSocket client to `ws://localhost:8002`. *If the UI requires data not present in `API_CONTRACTS.md`, submit a `CONTRACT_RFC.md` file and halt execution.*"
+> "You are the Frontend UI Agent. Your isolated workspace is `../omc-lab-ui`. Your task is Workstream E from `PHASE_5_INTEGRATION_PLAN.md` v1.2. Build the React + Chakra UI Scientific Grid with stage-isolated cells, `sequence_id` ordering, mime-type dispatcher, `useRehydration` hook (REST-first, WebSocket-live), HITL `action_request` rendering, Model Discarded UI, and Cached Parquet badge. Connect your WebSocket client to the mock server on Port `8002` for development. *If the UI requires data not present in `API_CONTRACTS.md` v1.2, submit a `CONTRACT_RFC.md` file and halt execution.*"
 
 ---
 

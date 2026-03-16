@@ -1,3 +1,134 @@
+To align with **Workstream A+ (Event Sequencing)** and **Workstream B+ (State Rehydration)**, the `API_CONTRACTS.md` must be updated to move from an ephemeral chat-style interaction to a **Causal Ledger System**.
+
+The primary shift here is that every message is now a "Fact" in a sequence, allowing the Lab to be perfectly reconstructed after a crash or refresh.
+
+---
+
+# 📜 API_CONTRACTS.md: The Lab 2.0 (v1.2)
+
+## 🔄 DIFF: Messaging & Rehydration Upgrades
+
+The following changes are mandatory for all Phase 5 integration work:
+
+* [ ] **Enveloped Headers:** Added `sequence_id` (int) and `timestamp` (ISO-8601) to the base message wrapper.
+* [ ] **Deterministic Ordering:** The `sequence_id` must be monotonic per `session_id`.
+* [ ] **Rehydration Endpoint:** Added `GET /api/v1/lab/agent/sessions/{id}/rehydrate` for browser-refresh recovery.
+* [ ] **Mime-Type Lockdown:** Restricted `render_output` to a specific whitelist of 5 types.
+* [ ] **HITL Action Schema:** Added `action_request` payload for approval gates.
+
+---
+
+## 1. 📬 The Message Wrapper (The Envelope)
+
+Every message sent over the WebSocket (`/ws/agent/{session_id}/stream`) **must** follow this structure. Out-of-order messages arriving at the frontend with a lower `sequence_id` than the current state **shall** be discarded.
+
+```json
+{
+  "event_type": "stream_chat | status_update | render_output | error | action_request",
+  "stage": "BUSINESS_UNDERSTANDING | DATA_ACQUISITION | PREPARATION | EXPLORATION | MODELING | EVALUATION | DEPLOYMENT",
+  "sequence_id": 142,
+  "timestamp": "2026-03-16T17:14:29.123Z", 
+  "payload": { ... }
+}
+
+```
+
+> **Law of Timestamps:** All timestamps must use ISO-8601 with millisecond precision in UTC (`Z`). This is non-negotiable for Karpathy-style event auditing.
+
+---
+
+## 2. 💎 Event Payloads
+
+### 2.1 `render_output` (The Grid Driver)
+
+Used to populate the stage-specific cells in the Scientific Grid.
+
+| Mime-Type | Description | Payload Structure |
+| --- | --- | --- |
+| `text/markdown` | Logs/Reports | `{ "content": "## Analysis..." }` |
+| `application/vnd.plotly.v1+json` | Interactive Charts | `{ "content": { "data": [...], "layout": {...} } }` |
+| `application/json+blueprint` | Model Specs | `{ "content": { "target": "str", "features": [] } }` |
+| `application/json+tearsheet` | Performance Metrics | `{ "content": { "accuracy": 0.85, "mlflow_run": "uuid" } }` |
+| `image/png` | Static Plots | `{ "content": "base64_string..." }` |
+
+### 2.2 `status_update` (The Node Driver)
+
+Used to update the React Flow graph and the Grid's active cell status.
+
+```json
+{
+  "status": "PENDING | ACTIVE | COMPLETE | STALE | AWAITING_APPROVAL",
+  "message": "Model training initialized in Dagger sandbox."
+}
+
+```
+
+### 2.3 `action_request` (The HITL Gate)
+
+Used when the Graph hits an `interrupt_before` breakpoint.
+
+```json
+{
+  "action_id": "approve_modeling_v1",
+  "description": "Please review the feature set and hyperparameter blueprint.",
+  "options": ["APPROVE", "REJECT", "EDIT_BLUEPRINT"]
+}
+
+```
+
+---
+
+## 3. 🔄 Rehydration Contract
+
+To support browser refreshes without losing the Lab state, the frontend **shall** call the rehydration endpoint upon component mounting.
+
+**Endpoint:** `GET /api/v1/lab/agent/sessions/{session_id}/rehydrate`
+
+**Response Schema:**
+
+```json
+{
+  "session_id": "uuid",
+  "last_sequence_id": 142,
+  "event_ledger": [
+    { "sequence_id": 1, "event_type": "status_update", "stage": "BUSINESS_UNDERSTANDING", ... },
+    { "sequence_id": 2, "event_type": "render_output", "stage": "BUSINESS_UNDERSTANDING", ... },
+    ...
+  ]
+}
+
+```
+
+*The frontend shall iterate through the `event_ledger` in ascending order of `sequence_id` to rebuild the Grid UI.*
+
+---
+
+## 4. 🛑 Error & Guardrail Contract
+
+If the Safety Bridge (D+ ) triggers a kill-switch:
+
+```json
+{
+  "event_type": "error",
+  "stage": "DATA_ACQUISITION",
+  "payload": {
+    "code": "TERMINAL_DATA_ERROR",
+    "message": "Zero variance detected in price signal. Aborting research loop.",
+    "details": { "variance": 0.0, "null_count": 0 }
+  }
+}
+
+```
+
+---
+
+**First Action for the MSG Agent:** Acknowledge this updated contract. Your first implementation task is to update the `BaseEvent` Pydantic model in `lab_schema.py` to match Section 1.
+
+**Would you like me to generate the "Validation Script" for the Supervisor to use when checking if the worker's payloads are compliant with these 1.2 Mime-Types?**
+
+
+# REFERENCE ONLY - OLD API_CONTRACTS.md content
+
 Here is the **API_CONTRACTS.md**. This document is the strict "source of truth" for data boundaries. By locking these JSON schemas in place, the Frontend (React) and Backend (FastAPI) agents can work in complete isolation without fear of integration failures.
 
 ---
@@ -29,8 +160,6 @@ Every message sent from the FastAPI backend to the React frontend must strictly 
 {
   "event_type": "stream_chat | status_update | render_output | error",
   "stage": "<StageID>",
-  "sequence_id": <int>,
-  "timestamp": "<ISO-8601 UTC>",
   "payload": { ... } 
 }
 
