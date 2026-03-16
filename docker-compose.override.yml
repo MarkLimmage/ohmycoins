@@ -33,7 +33,7 @@ services:
     volumes:
       - ./scripts:/app/scripts:ro
     ports:
-      - "8002:8001"
+      - "8003:8001"
     command: python scripts/lab_supervisor.py
     environment:
       - PYTHONPATH=/app

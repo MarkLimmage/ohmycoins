@@ -1025,6 +1025,8 @@ class AgentSessionStatus(str):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    AWAITING_APPROVAL = "awaiting_approval"
+    AWAITING_APPROVAL = "awaiting_approval"
 
 
 class AgentSessionBase(SQLModel):
