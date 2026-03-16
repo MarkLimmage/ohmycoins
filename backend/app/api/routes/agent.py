@@ -490,7 +490,7 @@ async def rehydrate_session(
 
     # Check for pending action if status is AWAITING_APPROVAL
     if session.status == AgentSessionStatus.AWAITING_APPROVAL:
-        state = orchestrator.get_session_state(session_id)
+        state = await session_manager.get_session_state(session_id)
 
         pending_approvals = state.get("pending_approvals", []) if state else []
         action_payload = {}
