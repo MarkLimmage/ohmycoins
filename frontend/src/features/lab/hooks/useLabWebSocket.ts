@@ -118,34 +118,3 @@ export const useLabWebSocket = ({
 
   return { isConnected, isDone, sessionStatus, sendMessage };
 };
-
-        setIsConnected(false)
-      }
-
-      ws.current = socket
-    } catch (err) {
-      console.error("Agent WS connection error:", err)
-    }
-  }, [sessionId, enabled])
-
-  useEffect(() => {
-    // Reset state on session change
-    setMessages([])
-    setIsDone(false)
-    setSessionStatus(null)
-    messageIds.current.clear()
-
-    connect().catch((err) => {
-      console.error("Connection error:", err)
-    })
-
-    return () => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        ws.current.close()
-      }
-      ws.current = null
-    }
-  }, [connect])
-
-  return { messages, isConnected, isDone, sessionStatus, sendMessage }
-}

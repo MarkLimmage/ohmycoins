@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, VStack, Heading, SimpleGrid, Icon, SlideFade, Collapse, HStack } from '@chakra-ui/react';
+import { Box, VStack, Heading, SimpleGrid, Icon, HStack } from '@chakra-ui/react';
 import { LabStage, LabCell } from '../types';
 import { CellRenderer } from './CellRenderer';
 import { FiCheckCircle, FiCircle, FiLoader } from 'react-icons/fi';
@@ -11,7 +11,7 @@ export interface LabStageRowProps {
   label: string;
 }
 
-export const LabStageRow: React.FC<LabStageRowProps> = ({ stage, cells, isActive, label }) => {
+export const LabStageRow: React.FC<LabStageRowProps> = ({ cells, isActive, label }) => {
   const [isOpen, setIsOpen] = useState(false);
   
   useEffect(() => {
@@ -40,8 +40,8 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ stage, cells, isActive
         borderRadius="md"
         mb={4}
     >
-      <VStack align="start" spacing={4} w="100%">
-        <HStack spacing={2} pb={2} borderBottomWidth={cells.length > 0 ? "1px" : "0px"} w="100%">
+      <VStack align="start" gap={4} w="100%">
+        <HStack gap={2} pb={2} borderBottomWidth={cells.length > 0 ? "1px" : "0px"} w="100%">
             {isActive ? (
                 <Icon as={FiLoader} animation="spin 2s linear infinite" color="blue.500" />
             ) : (
@@ -52,7 +52,7 @@ export const LabStageRow: React.FC<LabStageRowProps> = ({ stage, cells, isActive
             </Heading>
         </HStack>
 
-        <SimpleGrid columns={1} spacing={4} w="100%">
+        <SimpleGrid columns={1} gap={4} w="100%">
           {cells.map((cell) => (
             <CellRenderer key={cell.id} cell={cell} />
           ))}

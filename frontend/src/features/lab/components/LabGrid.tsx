@@ -1,5 +1,4 @@
-import React, { useMemo } from 'react';
-import { VStack, Center, Spinner, Text, Box } from '@chakra-ui/react';
+import { VStack, Center, Spinner, Text } from '@chakra-ui/react';
 import { useLabContext } from '../context/LabContext';
 import { LabStageRow } from './LabStageRow';
 import { ActionRequestBanner } from './ActionRequestBanner';
@@ -66,7 +65,7 @@ export const LabGrid = () => {
   }
 
   return (
-    <VStack align="stretch" spacing={6} pb={20} w="100%">
+    <VStack align="stretch" gap={6} pb={20} w="100%">
       
       {/* Action Request Banner at top if urgent, or interleaved? 
           Usually modal or top banner. Top of grid is good. */}

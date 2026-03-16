@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useCallback } from 'react';
 import { useLabWebSocket } from '../hooks/useLabWebSocket';
 import { useRehydration } from '../hooks/useRehydration';
-import { LabState, LabEvent, LabCell, LabStage, ActionRequest } from '../types';
+import { LabState, LabEvent, LabCell } from '../types';
 
 type Action =
   | { type: 'SET_SESSION'; payload: string | null }

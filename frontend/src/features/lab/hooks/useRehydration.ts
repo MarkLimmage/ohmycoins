@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { LabEvent, LabStage, LabCell, LabEventPayload } from '../types';
+import { LabEvent } from '../types';
 
 interface RehydrationResponse {
   session_id: string;

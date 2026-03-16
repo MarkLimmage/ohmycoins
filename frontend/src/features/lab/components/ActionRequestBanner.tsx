@@ -35,7 +35,7 @@ export const ActionRequestBanner: React.FC<ActionRequestBannerProps> = ({ reques
       my={4}
       _dark={{ bg: 'orange.900' }}
     >
-      <VStack align="start" spacing={4}>
+      <VStack align="start" gap={4}>
         <HStack>
           <Icon as={FiAlertCircle} color="orange.500" boxSize={6} />
           <Heading size="md" color="orange.700" _dark={{ color: 'white' }}>Action Required</Heading>
@@ -43,22 +43,25 @@ export const ActionRequestBanner: React.FC<ActionRequestBannerProps> = ({ reques
         
         <Text fontSize="lg" fontWeight="medium">{request.description}</Text>
         
-        <HStack spacing={4} pt={2}>
+        <HStack gap={4} pt={2}>
           {request.options.includes('APPROVE') && (
-            <Button leftIcon={<FiCheck />} colorScheme="green" onClick={() => handleAction('APPROVE')}>
-              Approve
+            <Button colorScheme="green" onClick={() => handleAction('APPROVE')}>
+               <Icon as={FiCheck} mr={2} />
+               Approve
             </Button>
           )}
           
           {request.options.includes('REJECT') && (
-            <Button leftIcon={<FiX />} colorScheme="red" variant="outline" onClick={() => handleAction('REJECT')}>
-              Reject
+            <Button colorScheme="red" variant="outline" onClick={() => handleAction('REJECT')}>
+               <Icon as={FiX} mr={2} />
+               Reject
             </Button>
           )}
 
           {request.options.includes('EDIT_BLUEPRINT') && (
-            <Button leftIcon={<FiEdit />} colorScheme="blue" variant="outline" onClick={() => handleAction('EDIT_BLUEPRINT')}>
-              Edit Blueprint
+            <Button colorScheme="blue" variant="outline" onClick={() => handleAction('EDIT_BLUEPRINT')}>
+               <Icon as={FiEdit} mr={2} />
+               Edit Blueprint
             </Button>
           )}
         </HStack>
