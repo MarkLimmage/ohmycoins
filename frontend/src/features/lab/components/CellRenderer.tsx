@@ -1,7 +1,9 @@
 import React from 'react';
 import { Box, Code, Image, Text, Badge, VStack } from '@chakra-ui/react';
-// @ts-ignore
-import Plot from 'react-plotly.js';
+import createPlotlyComponent from 'react-plotly.js/factory';
+import Plotly from 'plotly.js-dist-min';
+
+const Plot = createPlotlyComponent(Plotly);
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { LabCell } from '../types';
