@@ -582,7 +582,7 @@ async def get_clarifications(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get state from session
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state or not state.get("awaiting_clarification"):
         return {
@@ -619,7 +619,7 @@ async def provide_clarifications(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get current state
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state or not state.get("awaiting_clarification"):
         raise HTTPException(
@@ -630,7 +630,7 @@ async def provide_clarifications(
     updated_state = handle_clarification_response(state, clarifications.responses)
 
     # Update state and resume workflow
-    orchestrator.update_session_state(session_id, updated_state)
+    await session_manager.save_session_state(session_id, updated_state)
     await orchestrator.resume_session(db, session_id)
     await get_runner().start_session(session_id)
 
@@ -662,7 +662,7 @@ async def get_choices(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get state from session
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state or not state.get("awaiting_choice"):
         return {
@@ -699,7 +699,7 @@ async def select_choice(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get current state
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state or not state.get("awaiting_choice"):
         raise HTTPException(status_code=400, detail="Session is not awaiting choice")
@@ -708,7 +708,7 @@ async def select_choice(
     updated_state = handle_choice_selection(state, selection.selected_model)
 
     # Update state and resume workflow
-    orchestrator.update_session_state(session_id, updated_state)
+    await session_manager.save_session_state(session_id, updated_state)
     await orchestrator.resume_session(db, session_id)
     await get_runner().start_session(session_id)
 
@@ -740,7 +740,7 @@ async def get_pending_approvals(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get state from session
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state or not state.get("approval_needed"):
         return {
@@ -777,7 +777,7 @@ async def approve_request(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get current state
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state or not state.get("approval_needed"):
         raise HTTPException(status_code=400, detail="Session is not awaiting approval")
@@ -798,7 +798,7 @@ async def approve_request(
         message = "Approval rejected, workflow stopped"
 
     # Update state
-    orchestrator.update_session_state(session_id, updated_state)
+    await session_manager.save_session_state(session_id, updated_state)
 
     if decision.approved:
         await orchestrator.resume_session(db, session_id)
@@ -832,7 +832,7 @@ async def get_override_points_endpoint(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get state from session
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state:
         return {"override_points": {}}
@@ -867,7 +867,7 @@ async def apply_override(
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Get current state
-    state = orchestrator.get_session_state(session_id)
+    state = await session_manager.get_session_state(session_id)
 
     if not state:
         raise HTTPException(status_code=400, detail="Session state not found")
@@ -881,7 +881,7 @@ async def apply_override(
         raise HTTPException(status_code=400, detail=f"Invalid override: {str(e)}")
 
     # Update state and resume workflow
-    orchestrator.update_session_state(session_id, updated_state)
+    await session_manager.save_session_state(session_id, updated_state)
     await orchestrator.resume_session(db, session_id)
     await get_runner().start_session(session_id)
 
