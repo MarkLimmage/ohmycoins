@@ -17,7 +17,6 @@ from app.models import (
 )
 from app.services.collectors.config import setup_collectors
 from app.services.collectors.metrics import get_metrics_tracker
-from app.services.collectors.orchestrator import get_orchestrator
 from app.services.collectors.quality_monitor import get_quality_monitor
 
 

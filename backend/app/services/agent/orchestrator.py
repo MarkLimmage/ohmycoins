@@ -292,17 +292,17 @@ class AgentOrchestrator:
             credential_id=session.llm_credential_id,
             checkpointer=self.checkpointer,
         )
-        
+
         # Update graph state if action provided
         if action:
             config = {"configurable": {"thread_id": str(session_id)}}
             updates = {}
-            
+
             if action.upper() == "APPROVE":
                 updates = {"approval_granted": True, "approval_needed": False}
             elif action.upper() == "REJECT":
                 updates = {"approval_rejected": True, "approval_needed": False}
-            
+
             if updates:
                 await workflow.graph.aupdate_state(config, updates)
 
@@ -399,54 +399,6 @@ class AgentOrchestrator:
         loop.run_until_complete(
             self.session_manager.save_session_state(session_id, state)
         )
-
-    async def resume_session(
-        self, db: Session, session_id: uuid.UUID
-    ) -> dict[str, Any]:
-        """
-        Resume a paused session after user interaction.
-
-        This is called after clarifications, choices, or approvals are provided.
-
-        Args:
-            db: Database session
-            session_id: ID of the session to resume
-
-        Returns:
-            Resume result
-        """
-        # Get current state
-        state = await self.session_manager.get_session_state(session_id)
-
-        if not state:
-            raise ValueError(f"Session {session_id} state not found")
-
-        # Update status to running if it was paused
-        if state.get("status") != AgentSessionStatus.RUNNING:
-            state["status"] = AgentSessionStatus.RUNNING
-            await self.session_manager.save_session_state(session_id, state)
-
-            await self.session_manager.update_session_status(
-                db, session_id, AgentSessionStatus.RUNNING
-            )
-
-        # Add message about resumption
-        await self.session_manager.add_message(
-            db,
-            session_id,
-            role="system",
-            content=f"Workflow resumed from {state.get('current_step', 'unknown')} step",
-        )
-
-        # The workflow will continue from its current state
-        # In a full implementation, this would trigger the next workflow step
-
-        return {
-            "session_id": str(session_id),
-            "status": AgentSessionStatus.RUNNING,
-            "message": "Session resumed successfully",
-            "current_step": state.get("current_step"),
-        }
 
     async def run_workflow(self, db: Session, session_id: uuid.UUID) -> dict[str, Any]:
         """

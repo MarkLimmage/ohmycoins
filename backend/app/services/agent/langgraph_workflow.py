@@ -21,7 +21,10 @@ from langgraph.graph import END, StateGraph
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.enrichment.statistical_health import detect_anomalies, validate_price_continuity
+from app.enrichment.statistical_health import (
+    detect_anomalies,
+    validate_price_continuity,
+)
 from app.services.agent.agents.data_analyst import DataAnalystAgent
 from app.services.agent.agents.data_retrieval import DataRetrievalAgent
 from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
@@ -223,7 +226,7 @@ class LangGraphWorkflow:
         workflow.add_node("generate_report", self._generate_report_node)
         workflow.add_node("finalize", self._finalize_node)
         workflow.add_node("dispatch_alerts", self._dispatch_alerts_node)
-        
+
         # Add human review node (HITL)
         workflow.add_node("human_review", self._human_review_node)
 
@@ -519,14 +522,14 @@ class LangGraphWorkflow:
     def _check_circuit_breaker(self, state: AgentState, stage_name: str) -> bool:
         """
         Check if the circuit breaker should trigger for the given stage.
-        
+
         Increments the iteration count for the stage. If count >= 4, triggers
         a terminal error or HITL intervention.
-        
+
         Args:
             state: Current workflow state
             stage_name: Name of the stage to check (e.g., 'data_retrieval')
-            
+
         Returns:
             True if circuit breaker triggered (stop execution), False otherwise.
         """
@@ -534,7 +537,7 @@ class LangGraphWorkflow:
         current_count = counts.get(stage_name, 0) + 1
         counts[stage_name] = current_count
         state["stage_iteration_counts"] = counts
-        
+
         if current_count >= 4:
             logger.error(f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)")
             state["terminal_error"] = {
@@ -636,26 +639,26 @@ class LangGraphWorkflow:
                 # Handle both dicts with 'close' key and potentially other formats
                 if isinstance(price_data[0], dict) and "close" in price_data[0]:
                     prices = [float(p["close"]) for p in price_data if p.get("close")]
-                elif isinstance(price_data[0], (int, float)):
+                elif isinstance(price_data[0], int | float):
                     prices = price_data
-            
+
             # --- PHASE 5: Statistical Health Checks ---
             # Run variance/Z-score analysis on price data
             if prices and len(prices) > 2:
                 # 1. Anomaly Detection (Z-Score)
                 anomaly_stats = detect_anomalies(prices, z_threshold=3.0)
                 quality_checks["anomaly_stats"] = anomaly_stats
-                
+
                 if anomaly_stats["has_anomalies"]:
                     quality_checks["status_message"] = f"Warning: {anomaly_stats['anomaly_count']} price anomalies detected (max Z-score: {anomaly_stats['max_z_score']:.2f})"
                     # Flag anomalies for downstream processing
                     state["anomaly_detected"] = True
                     state["anomaly_summary"] = f"Detected {anomaly_stats['anomaly_count']} price anomalies (max Z={anomaly_stats['max_z_score']:.1f})"
-                
+
                 # 2. Variance Check & Zero-Variance Kill-Switch
                 variance = anomaly_stats.get("variance", 0.0)
                 quality_checks["price_variance"] = variance
-                
+
                 # Kill-Switch: Zero Variance
                 if variance == 0.0:
                     error_msg = "Zero variance detected in price signal. Aborting research loop."
@@ -673,12 +676,12 @@ class LangGraphWorkflow:
                 # 3. Continuity Check (Flash Crashes)
                 continuity = validate_price_continuity(prices, max_drop_pct=0.3)  # 30% drop check
                 quality_checks["continuity_issues"] = continuity.get("issue_count", 0)
-                
+
                 if not continuity["valid"]:
                     quality_checks["continuity_warning"] = "Significant price gaps detected"
 
             quality_checks["price_records"] = len(price_data)
-            
+
             # Data Insufficiency Logic
             # If retrieved data < 50 rows after 1 retry, route to finalize with completed_with_errors
             retry_count = state.get("retry_count", 0)
@@ -1103,7 +1106,7 @@ class LangGraphWorkflow:
         # Check for Terminal Error (Kill-Switch) or Circuit Breaker
         if overall_quality == "terminal_error" or state.get("terminal_error"):
             return "error"
-            
+
         # Check for Insufficient Data (Workstream D+)
         if overall_quality == "insufficient_data":
             state["status"] = "completed_with_errors"
@@ -1195,7 +1198,7 @@ class LangGraphWorkflow:
         if not state.get("model_trained"):
             state["error"] = "Model training failed"
             return "error"
-            
+
         # Check for HITL interrupts
         if state.get("approval_needed") and not state.get("approval_granted"):
              return "review"
@@ -1219,11 +1222,11 @@ class LangGraphWorkflow:
         if not state.get("model_evaluated"):
             state["error"] = "Model evaluation failed"
             return "error"
-            
+
         # Check for HITL interrupts
         if state.get("approval_needed") and not state.get("approval_granted"):
              return "review"
-        
+
         # Check evaluation results and decide
         # Simplified: always report if successful, unless accuracy is too low
         return "report"
@@ -1325,15 +1328,15 @@ class LangGraphWorkflow:
         # Configure execution with session_id as thread_id for checkpointing
         if initial_state:
             session_id = initial_state.get("session_id")
-        
+
         if not session_id:
             raise ValueError("Session ID required")
-            
+
         config = {
             "configurable": {"thread_id": str(session_id)},
             "recursion_limit": 50
         }
-        
+
         # Execute the graph with the initial state
         final_state = await self.graph.ainvoke(
             initial_state, config=config
@@ -1354,7 +1357,7 @@ class LangGraphWorkflow:
         # Configure execution with session_id as thread_id for checkpointing
         if initial_state:
             session_id = initial_state.get("session_id")
-        
+
         if not session_id:
             raise ValueError("Session ID required")
 
@@ -1362,7 +1365,7 @@ class LangGraphWorkflow:
             "configurable": {"thread_id": str(session_id)},
             "recursion_limit": 50
         }
-        
+
         async for state in self.graph.astream(
             initial_state, config=config
         ):

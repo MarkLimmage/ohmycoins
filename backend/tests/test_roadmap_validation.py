@@ -45,7 +45,9 @@ class TestPhase1Validation:
     def test_collector_has_retry_logic(self):
         """Verify collector has retry configuration"""
         # Check defaults in new strategy
-        from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
+        from app.collectors.strategies.exchange_coinspot import (
+            CoinspotExchangeCollector,
+        )
         schema = CoinspotExchangeCollector().get_config_schema()
         assert schema["properties"]["max_retries"]["default"] == 3
         assert schema["properties"]["retry_delay"]["default"] == 5

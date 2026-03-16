@@ -12,7 +12,6 @@ from sqlmodel import Session
 
 from app.main import app
 from app.models import AlertLog, AlertRule, User
-from tests.utils.utils import get_superuser_token_headers
 
 
 @pytest.fixture
@@ -154,7 +153,6 @@ def test_delete_alert_rule_admin(
     assert response.status_code == 200
 
     # Verify rule is deleted (need to refresh session to see DB changes)
-    from sqlalchemy import inspect
     db.expunge_all()  # Clear session cache
     deleted_rule = db.get(AlertRule, rule.id)
     assert deleted_rule is None

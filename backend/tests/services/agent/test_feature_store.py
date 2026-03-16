@@ -47,7 +47,11 @@ class TestRefreshViews:
         refresh_feature_store_views(mock_session)  # Should not raise
 
     def test_refresh_all_views_count(self) -> None:
-        from app.enrichment.views import refresh_all_views, ENRICHMENT_VIEWS, FEATURE_STORE_VIEWS
+        from app.enrichment.views import (
+            ENRICHMENT_VIEWS,
+            FEATURE_STORE_VIEWS,
+            refresh_all_views,
+        )
         mock_session = MagicMock()
         refresh_all_views(mock_session)
         expected = len(ENRICHMENT_VIEWS) + len(FEATURE_STORE_VIEWS)

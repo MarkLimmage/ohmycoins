@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 import joblib
-import pytest
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 

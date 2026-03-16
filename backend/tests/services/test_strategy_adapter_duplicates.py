@@ -1,12 +1,12 @@
 """Tests for StrategyAdapterCollector duplicate handling with savepoints."""
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.services.collectors.strategy_adapter import StrategyAdapterCollector
 from app.models import NewsItem
+from app.services.collectors.strategy_adapter import StrategyAdapterCollector
 
 
 def _make_strategy() -> MagicMock:

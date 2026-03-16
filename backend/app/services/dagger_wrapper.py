@@ -85,25 +85,25 @@ class DaggerExecutor:
         script_filename: str,
         data_filename: str,
     ) -> dict[str, Any]:
-        
+
         # Initialize Dagger client
         # Config log_output to stderr allows seeing Dagger internal logs in host stderr
         async with dagger.Connection(dagger.Config(log_output=sys.stderr)) as client:
-            
+
             # Phase 5.1: Build container from agent.Dockerfile to ensure consistent environment
             # We must load the project root context to access the Dockerfile
             project_root = os.getcwd()
             # If running inside docker container, project_root should map to where Dockerfile is.
             # Assuming standard layout where Dockerfile is at /app/agent.Dockerfile or /app/backend/agent.Dockerfile?
             # The class defaults to "agent.Dockerfile" which implies it's in CWD.
-            
+
             source = client.host().directory(project_root)
             container = source.docker_build(dockerfile=self.dockerfile_path)
 
             # 2. Add files
             # Add script content directly
             container = container.with_new_file(f"/workspace/{script_filename}", script_content)
-            
+
             # Add data if provided
             if data_path and os.path.exists(data_path):
                 # Ensure data_path is absolute for client.host().file()
@@ -113,21 +113,21 @@ class DaggerExecutor:
 
             # 3. Environment Variables
             container = container.with_env_variable("MLFLOW_TRACKING_URI", mlflow_tracking_uri)
-            
+
             # 4. Execute Script Logic
             # We define the artifacts directory first
             out_dir_container_path = "/workspace/out"
 
             # Execute python script
             # We expect the script to read input and write to /workspace/out
-            # Capture stdout/stderr 
+            # Capture stdout/stderr
             try:
                 executed = container.with_exec(
                     ["python", f"/workspace/{script_filename}"],
-                    # Phase 5.1: "Ensure internet access is disabled" - 
+                    # Phase 5.1: "Ensure internet access is disabled" -
                     # Use without_env_variable proxy settings if needed, or rely on container networking.
                 )
-                
+
                 # Await execution to completion and capture output
                 stdout = await executed.stdout()
                 stderr = await executed.stderr()

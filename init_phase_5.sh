@@ -57,6 +57,23 @@ Implement Statistical Health Gates and the per-stage circuit breaker.
 - Do NOT write FastAPI routes, React code, or WebSocket logic.
 - Follow `API_CONTRACTS.md` v1.2 error schema (§4).
 - If a contract is impossible, write `CONTRACT_RFC.md` and halt.
+
+## Testing Protocol
+**NEVER test on the host machine. Always test inside Docker containers.**
+See `WORKER_TESTING_PROTOCOL.md` for full details.
+```bash
+# Start containers
+docker compose up -d backend db redis
+
+# Run ruff lint
+docker compose exec backend python -m ruff check app/
+
+# Run ruff format check
+docker compose exec backend python -m ruff format app/ --check
+
+# Run pytest
+docker compose exec backend python -m pytest tests/ -v
+```
 EOF
 
 # Stream A/A+: The Messaging Bridge (depends on D)
@@ -93,6 +110,23 @@ Refactor the messaging layer from flat dicts to the typed EventLedger system.
 - Do NOT write FastAPI routes, React code, or Dagger logic.
 - Every event must match `API_CONTRACTS.md` v1.2 §1 envelope exactly.
 - If a contract is impossible, write `CONTRACT_RFC.md` and halt.
+
+## Testing Protocol
+**NEVER test on the host machine. Always test inside Docker containers.**
+See `WORKER_TESTING_PROTOCOL.md` for full details.
+```bash
+# Start containers
+docker compose up -d backend db redis
+
+# Run ruff lint
+docker compose exec backend python -m ruff check app/
+
+# Run ruff format check
+docker compose exec backend python -m ruff format app/ --check
+
+# Run pytest
+docker compose exec backend python -m pytest tests/ -v
+```
 EOF
 
 # Stream B/B+: The Resilience Bridge (depends on A)
@@ -126,6 +160,23 @@ Implement MemorySaver checkpointing, HITL interrupt gates, and state rehydration
 - Do NOT write React code, Dagger logic, or agent tool implementations.
 - Follow `API_CONTRACTS.md` v1.2 §2.3 (action_request) and §3 (rehydration) exactly.
 - If a contract is impossible, write `CONTRACT_RFC.md` and halt.
+
+## Testing Protocol
+**NEVER test on the host machine. Always test inside Docker containers.**
+See `WORKER_TESTING_PROTOCOL.md` for full details.
+```bash
+# Start containers
+docker compose up -d backend db redis
+
+# Run ruff lint
+docker compose exec backend python -m ruff check app/
+
+# Run ruff format check
+docker compose exec backend python -m ruff format app/ --check
+
+# Run pytest
+docker compose exec backend python -m pytest tests/ -v
+```
 EOF
 
 # Stream C/C+: The Production Bridge (depends on A)
@@ -155,6 +206,23 @@ Route model training through Dagger sandbox with MLflow lifecycle tagging and Pa
 - Do NOT write FastAPI routes, React code, or WebSocket logic.
 - Follow `API_CONTRACTS.md` v1.2 for event schemas when emitting training events.
 - If a contract is impossible, write `CONTRACT_RFC.md` and halt.
+
+## Testing Protocol
+**NEVER test on the host machine. Always test inside Docker containers.**
+See `WORKER_TESTING_PROTOCOL.md` for full details.
+```bash
+# Start containers
+docker compose up -d backend db redis
+
+# Run ruff lint
+docker compose exec backend python -m ruff check app/
+
+# Run ruff format check
+docker compose exec backend python -m ruff format app/ --check
+
+# Run pytest
+docker compose exec backend python -m pytest tests/ -v
+```
 EOF
 
 # Stream E: The Glass Bridge (depends on A + B)
@@ -187,6 +255,20 @@ Refactor the React frontend from "Flat Chat" to the "Scientific Grid" architectu
 - Assume all backend data matches `API_CONTRACTS.md` v1.2 exactly.
 - Use React + Chakra UI. No other UI frameworks.
 - If UI needs data not in `API_CONTRACTS.md` v1.2, write `CONTRACT_RFC.md` and halt.
+
+## Testing Protocol
+**NEVER test on the host machine. Always test inside Docker containers.**
+See `WORKER_TESTING_PROTOCOL.md` for full details.
+```bash
+# Install deps and type-check
+docker compose run --rm frontend-dev npx tsc --noEmit
+
+# Or build production image (catches all TS errors)
+docker compose build frontend
+
+# Run unit tests
+docker compose run --rm frontend-dev npm run test:unit
+```
 EOF
 
 echo "🔗 PHASE III: CONTEXT SEEDING"
@@ -196,6 +278,7 @@ for dir in ../omc-bridge-safe ../omc-bridge-msg ../omc-bridge-hitl ../omc-bridge
     [ -f API_CONTRACTS.md ] && cp API_CONTRACTS.md "$dir/"
     [ -f REQUIREMENTS.md ] && cp REQUIREMENTS.md "$dir/"
     [ -f ROADMAP_STRATEGY.md ] && cp ROADMAP_STRATEGY.md "$dir/"
+    [ -f WORKER_TESTING_PROTOCOL.md ] && cp WORKER_TESTING_PROTOCOL.md "$dir/"
 
     echo "DEPRECATED. READ WORKER_MISSION.md" > "$dir/CLAUDE.md"
     echo "DEPRECATED. READ WORKER_MISSION.md" > "$dir/CURRENT_SPRINT.md"

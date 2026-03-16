@@ -27,8 +27,8 @@ from app.models import (
     AgentSessionMessage,
     AgentSessionMessagePublic,
     AgentSessionPublic,
-    AgentSessionStatus,
     AgentSessionsPublic,
+    AgentSessionStatus,
     Algorithm,
     StrategyPromotion,
 )
@@ -235,29 +235,6 @@ async def delete_agent_session(
     return {"message": "Session deleted successfully"}
 
 
-@router.get("/sessions/{session_id}/rehydrate", response_model=RehydrationResponse)
-async def rehydrate_session(
-    *,
-    session_id: uuid.UUID,
-    db: SessionDep,
-    current_user: CurrentUser,
-) -> Any:
-    """
-    Rehydrate a session state (Phase 5).
-
-    Returns:
-        Session rehydration details
-    """
-    messages = await get_session_messages(session_id=session_id, db=db, current_user=current_user)
-    last_seq = len(messages)
-    
-    return RehydrationResponse(
-        session_id=session_id,
-        last_sequence_id=last_seq,
-        event_ledger=messages
-    )
-
-
 @router.post("/sessions/{session_id}/resume", response_model=dict[str, str])
 async def resume_agent_session(
     *,
@@ -287,15 +264,15 @@ async def resume_agent_session(
         raise HTTPException(
             status_code=403, detail="Not authorized to access this session"
         )
-    
+
     # Update creation time/status via Orchestrator
     try:
         await orchestrator.resume_session(db, session_id, action=request.action)
-        
+
         # Trigger runner execution
         runner = get_runner()
         await runner.start_session(session_id)
-        
+
         return {"message": "Session resumed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to resume session: {str(e)}")
@@ -459,17 +436,17 @@ async def rehydrate_session(
         "dispatch_alerts": "DEPLOYMENT",
         "handle_error": "EVALUATION",
     }
-    
+
     event_ledger = []
-    
+
     for i, msg in enumerate(messages, start=1):
         # Infer stage
         stage = STAGE_MAPPING.get(msg.agent_name, "BUSINESS_UNDERSTANDING")
-        
+
         # Infer event type
         event_type = "status_update"
         payload = {"content": msg.content, "agent_name": msg.agent_name}
-        
+
         # Parse metadata safely
         metadata = {}
         if msg.metadata_json:
@@ -477,15 +454,15 @@ async def rehydrate_session(
                 metadata = json.loads(msg.metadata_json)
             except Exception:
                 metadata = {"raw": msg.metadata_json}
-        
+
         payload["metadata"] = metadata
-        
+
         # Heuristics for event_type
         if "error" in (msg.agent_name or "").lower():
             event_type = "error"
         elif isinstance(metadata, dict) and (metadata.get("metric_type") or metadata.get("choices")):
              event_type = "render_output"
-        
+
         # Append to ledger
         event_ledger.append({
             "event_type": event_type,
@@ -501,10 +478,10 @@ async def rehydrate_session(
     # Check for pending action if status is AWAITING_APPROVAL
     if session.status == AgentSessionStatus.AWAITING_APPROVAL:
         state = orchestrator.get_session_state(session_id)
-        
+
         pending_approvals = state.get("pending_approvals", []) if state else []
         action_payload = {}
-        
+
         if pending_approvals:
             # Use data from pending approval
             approval = pending_approvals[0]
@@ -520,7 +497,7 @@ async def rehydrate_session(
                  "description": "Workflow paused. Approval required to continue.",
                  "options": ["APPROVE", "REJECT"]
             }
-            
+
         last_seq_id += 1
         event_ledger.append({
             "event_type": "action_request",

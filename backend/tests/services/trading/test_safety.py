@@ -18,7 +18,7 @@ import pytest
 import pytest_asyncio
 from sqlmodel import Session
 
-from app.models import Order, Position, RiskRule, User
+from app.models import Order, Position, User
 from app.services.trading.safety import (
     SafetyViolation,
     TradingSafetyManager,

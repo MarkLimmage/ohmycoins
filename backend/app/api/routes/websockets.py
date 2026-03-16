@@ -1,10 +1,9 @@
 import asyncio
-import itertools
 import json
 import random
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 
 import jwt
 import redis.asyncio as aioredis
@@ -152,7 +151,7 @@ async def websocket_lab(
                  "event_type": "error",
                  "payload": {"message": str(e)}
              })
-        except:
+        except Exception:
             pass
     finally:
         await pubsub.unsubscribe(channel)
@@ -329,16 +328,16 @@ async def websocket_agent_stream(
         .where(AgentSessionMessage.session_id == session_id)
         .order_by(AgentSessionMessage.created_at)  # type: ignore[arg-type]
     )
-    
+
     # Support for skipping already seen events
     if after_seq > 0:
         hist_statement = hist_statement.offset(after_seq)
 
     history = db.exec(hist_statement).all()
-    
+
     # Calculate starting sequence ID (1-based)
     start_seq = after_seq + 1
-    
+
     for i, msg in enumerate(history, start=start_seq):
         # Infer type from content if possible, or default to status_update
         event_type = "status_update"

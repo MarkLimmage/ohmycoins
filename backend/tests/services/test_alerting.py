@@ -5,13 +5,13 @@ Covers alert processing, dispatch logic, cooldown checks, and logging.
 """
 
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlmodel import Session, select
 
 from app.models import AlertLog, AlertRule
-from app.services.alerting import AlertResult, AlertService
+from app.services.alerting import AlertService
 
 
 @pytest.fixture

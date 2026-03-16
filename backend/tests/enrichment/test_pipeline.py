@@ -1,6 +1,5 @@
 """Tests for the EnrichmentPipeline."""
 
-from unittest.mock import MagicMock
 
 import pytest
 from sqlmodel import Session

@@ -2,7 +2,6 @@
 Tests for AgentRunner — background session execution with Redis pub/sub.
 """
 
-import asyncio
 import uuid
 from unittest.mock import MagicMock, patch
 

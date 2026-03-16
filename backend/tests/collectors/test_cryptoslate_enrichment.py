@@ -1,10 +1,14 @@
 """Tests for CryptoSlate collector keyword enrichment."""
 
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from app.collectors.strategies.keyword_taxonomy import KeywordEntry
+from app.collectors.strategies.keyword_taxonomy import (
+    aggregate_sentiment as _aggregate_sentiment,
+)
 from app.collectors.strategies.news_cryptoslate import CryptoSlateCollector
-from app.collectors.strategies.keyword_taxonomy import KeywordEntry, aggregate_sentiment as _aggregate_sentiment
 from app.models import NewsItem, NewsKeywordMatch
 
 # Sample RSS XML with keyword-rich content

@@ -1,8 +1,10 @@
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+
 from app.services.collectors.base import BaseCollector
-from sqlmodel import Session
+
 
 class MockCollector(BaseCollector):
     async def collect(self):
@@ -37,11 +39,11 @@ async def test_collect_retry_success(mock_collector):
 @pytest.mark.asyncio
 async def test_collect_retry_failure(mock_collector):
     mock_collector.collect = AsyncMock(side_effect=Exception("API Error"))
-    
+
     # We patch sleep to speed up tests
     with patch("tenacity.nap.time.sleep"):
         with pytest.raises(Exception, match="API Error"):
             await mock_collector._collect_with_retry()
-            
+
     assert mock_collector.collect.call_count == 3  # stop_after_attempt(3)
 

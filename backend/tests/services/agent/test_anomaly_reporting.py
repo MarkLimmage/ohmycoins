@@ -4,9 +4,6 @@ Tests for Anomaly Detection Integration in ReportingAgent — Sprint 2.36
 Tests for the reporting agent's anomaly detection sections and alert bridge.
 """
 
-from datetime import datetime
-from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 

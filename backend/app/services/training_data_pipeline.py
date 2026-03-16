@@ -1,5 +1,7 @@
+import logging
 import os
 import time
+
 import mlflow
 import pandas as pd  # type: ignore
 from sqlalchemy import text
@@ -7,6 +9,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.db import engine
 
+logger = logging.getLogger(__name__)
 
 # Cache configuration
 CACHE_DIR = "/tmp/omc_cache"
@@ -40,9 +43,9 @@ def export_training_data_to_parquet(force_refresh: bool = False, mlflow_run_id: 
 
     if cache_valid:
         # Keep it simple for logs
-        print(f"Using cached training data from {CACHE_FILE}")
+        logger.info("Using cached training data from %s", CACHE_FILE)
     else:
-        print("Regenerating training data...")
+        logger.info("Regenerating training data...")
         # Query the database
         # Use a more robust query that handles potential NULLs or type issues if needed
         query = text("SELECT * FROM mv_training_set_v1")
@@ -53,7 +56,7 @@ def export_training_data_to_parquet(force_refresh: bool = False, mlflow_run_id: 
         # Save to parquet
         # Ensure pyarrow or fastparquet is installed (added to pyproject.toml)
         df.to_parquet(CACHE_FILE, index=False)
-        print(f"Saved training data to {CACHE_FILE}")
+        logger.info("Saved training data to %s", CACHE_FILE)
 
     # 2. Log to MLflow if requested
     if mlflow_run_id:
@@ -61,7 +64,7 @@ def export_training_data_to_parquet(force_refresh: bool = False, mlflow_run_id: 
             # Check if run_id is valid active run or just an ID
             # We assume it's a valid ID passed from a context manager
             client = mlflow.MlflowClient(tracking_uri=settings.MLFLOW_TRACKING_URI)
-            
+
             # Log the artifact
             client.log_artifact(mlflow_run_id, CACHE_FILE, artifact_path="data")
 
@@ -71,7 +74,7 @@ def export_training_data_to_parquet(force_refresh: bool = False, mlflow_run_id: 
             client.log_param(mlflow_run_id, "training_data_path", CACHE_FILE)
 
         except Exception as e:
-            print(f"Warning: Failed to log to MLflow: {e}")
+            logger.warning("Failed to log to MLflow: %s", e)
 
     return os.path.abspath(CACHE_FILE)
 

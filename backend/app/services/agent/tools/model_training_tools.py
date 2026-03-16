@@ -12,36 +12,21 @@ import tempfile
 from typing import Any, Literal
 
 import joblib
-import pandas as pd
+import mlflow
 import numpy as np
-
+import pandas as pd
 from sklearn.ensemble import (
-    GradientBoostingClassifier,
-    GradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
 )
-from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    mean_absolute_error,
-    mean_squared_error,
-    precision_score,
-    r2_score,
-    recall_score,
-    roc_auc_score,
-)
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score, train_test_split
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, SVR
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from xgboost import XGBClassifier, XGBRegressor
 
 from app.core.config import settings
 from app.services.dagger_wrapper import DaggerExecutor
-from app.services.lab.pipeline_manager import PipelineManager
 from app.services.lab.mlflow_service import MLflowService
+from app.services.lab.pipeline_manager import PipelineManager
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +117,7 @@ def train():
     print("Loading data...")
     # The file is mounted at /workspace/training_data.parquet by DaggerExecutor
     df = pd.read_parquet("/workspace/training_data.parquet")
-    
+
     # Ensure columns exist
     missing_cols = [c for c in FEATURE_COLUMNS if c not in df.columns]
     if missing_cols:
@@ -142,9 +127,9 @@ def train():
 
     X = df[FEATURE_COLUMNS].copy()
     y = df[TARGET_COLUMN].copy()
-    
+
     # Handle missing values - simple imputation
-    X = X.fillna(0) 
+    X = X.fillna(0)
 
     # Split Data
     if VALIDATION_STRATEGY in ["time_series", "expanding_window"]:
@@ -158,7 +143,7 @@ def train():
             stratify = y
         else:
             stratify = None
-            
+
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=stratify
         )
@@ -208,18 +193,18 @@ def train():
 
     # Metrics
     metrics = {{"train": {{}}, "test": {{}}}}
-    
+
     if TASK_TYPE == "classification":
         metrics["train"]["accuracy"] = accuracy_score(y_train, y_pred_train)
         metrics["test"]["accuracy"] = accuracy_score(y_test, y_pred_test)
-        
+
         # Calculate F1, Precision, Recall with zero_division=0 to avoid warnings
         metrics["test"]["f1"] = f1_score(y_test, y_pred_test, average="weighted", zero_division=0)
         metrics["train"]["f1"] = f1_score(y_train, y_pred_train, average="weighted", zero_division=0)
-        
+
         metrics["test"]["precision"] = precision_score(y_test, y_pred_test, average="weighted", zero_division=0)
         metrics["train"]["precision"] = precision_score(y_train, y_pred_train, average="weighted", zero_division=0)
-        
+
         metrics["test"]["recall"] = recall_score(y_test, y_pred_test, average="weighted", zero_division=0)
         metrics["train"]["recall"] = recall_score(y_train, y_pred_train, average="weighted", zero_division=0)
 
@@ -234,14 +219,14 @@ def train():
     # Save Artifacts
     if not os.path.exists("/workspace/out"):
         os.makedirs("/workspace/out")
-        
+
     joblib.dump(model, "/workspace/out/model.joblib")
     if scaler:
         joblib.dump(scaler, "/workspace/out/scaler.joblib")
-    
+
     with open("/workspace/out/metrics.json", "w") as f:
         json.dump(metrics, f)
-        
+
     print("Training complete.")
 
 if __name__ == "__main__":
@@ -250,109 +235,108 @@ if __name__ == "__main__":
     train()
 """
 
+        # 3. Request Dagger Execution
+        # We pass data_filename="training_data.parquet" to match script expectation
 
-    # 3. Request Dagger Execution
-    # We pass data_filename="training_data.parquet" to match script expectation
-    
-    # MLflow Tracking Context
-    mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
-    
-    # Determine Run Name
-    run_name = f"{task_type}_{model_type}_{session_id[:8]}"
-    
-    # Use context manager for auto-termination of runs
-    with mlflow.start_run(run_name=run_name) as run:
-        # Log Parameters
-        mlflow.log_params({
-            "task_type": task_type,
-            "model_type": model_type,
-            "test_size": test_size,
-            "validation_strategy": validation_strategy,
-            "session_id": session_id,
-        })
-        if hyperparameters:
-            mlflow.log_params(hyperparameters)
-        if mv_name:
-             mlflow.log_param("mv_name", mv_name)
+        # MLflow Tracking Context
+        mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            executor = DaggerExecutor()
-            result = await executor.execute_script(
-                script_content=script_content,
-                data_path=data_path,
-                output_dir=temp_dir,
-                mlflow_tracking_uri=settings.MLFLOW_TRACKING_URI,
-            )
+        # Determine Run Name
+        run_name = f"{task_type}_{model_type}_{session_id[:8]}"
 
-            # Clean up temp data file ONLY if we created it (fallback mode)
-            if temp_file and os.path.exists(data_path):
-                os.remove(data_path)
-
-            if result.get("status") == "error":
-                logger.error(f"Dagger execution failed: {result.get('stderr')}")
-                mlflow.set_tag("status", "FAILED")
-                # Log execution log as artifact for debugging
-                with open(os.path.join(temp_dir, "dagger_error.log"), "w") as f:
-                    f.write(result.get("stderr", ""))
-                mlflow.log_artifact(os.path.join(temp_dir, "dagger_error.log"))
-                raise RuntimeError(f"Model training failed in Dagger execution: {result.get('stderr')}")
-
-            # 4. Load Artifacts & Metrics
-            model_path = os.path.join(temp_dir, "model.joblib")
-            scaler_path = os.path.join(temp_dir, "scaler.joblib")
-            metrics_path = os.path.join(temp_dir, "metrics.json")
-
-            if not os.path.exists(model_path):
-                mlflow.set_tag("status", "MISSING_ARTIFACTS")
-                raise FileNotFoundError("Model artifact not found after Dagger execution.")
-
-            model = joblib.load(model_path)
-            scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
-            
-            if os.path.exists(metrics_path):
-                with open(metrics_path, "r") as f:
-                    metrics = json.load(f)
-            else:
-                metrics = {}
-
-            # 5. Log Metrics & Tag Lifecycle (Phase 5 Requirement)
-            # Flatten metrics for MLflow logging
-            for split, split_metrics in metrics.items():
-                for name, value in split_metrics.items():
-                    mlflow.log_metric(f"{split}_{name}", value)
-
-            # Log key metrics at root level for Service check
-            if "test" in metrics:
-                if "accuracy" in metrics["test"]:
-                    mlflow.log_metric("accuracy", metrics["test"]["accuracy"])
-                if "f1" in metrics["test"]:
-                    mlflow.log_metric("f1_score", metrics["test"]["f1"])
-
-            # Use MLflowService to tag lifecycle based on rules
-            mlflow_service = MLflowService()
-            lifecycle_status = mlflow_service.tag_model_lifecycle(run.info.run_id)
-            
-            # Log artifacts to MLflow
-            mlflow.log_artifact(model_path, artifact_path="model")
-            if scaler and os.path.exists(scaler_path):
-                mlflow.log_artifact(scaler_path, artifact_path="scaler")
-            
-            return {
-                "model": model,
-                "scaler": scaler,
-                "feature_columns": feature_columns,
-                "metrics": metrics,
+        # Use context manager for auto-termination of runs
+        with mlflow.start_run(run_name=run_name) as run:
+            # Log Parameters
+            mlflow.log_params({
+                "task_type": task_type,
                 "model_type": model_type,
-                "hyperparameters": hyperparameters,
+                "test_size": test_size,
                 "validation_strategy": validation_strategy,
-                "run_id": run.info.run_id,
-                "lifecycle_status": lifecycle_status
-            }
-        except Exception as e:
-            # Ensure we don't leave zombie runs if not handled by context manager
-            # Context manager handles end_run, but we might want to log the exception
-            logger.error(f"Error in MLflow run: {e}")
-            raise e
+                "session_id": session_id,
+            })
+            if hyperparameters:
+                mlflow.log_params(hyperparameters)
+            if mv_name:
+                mlflow.log_param("mv_name", mv_name)
+
+            with tempfile.TemporaryDirectory() as temp_dir:
+                executor = DaggerExecutor()
+                result = await executor.execute_script(
+                    script_content=script_content,
+                    data_path=data_path,
+                    output_dir=temp_dir,
+                    mlflow_tracking_uri=settings.MLFLOW_TRACKING_URI,
+                )
+
+                # Clean up temp data file ONLY if we created it (fallback mode)
+                if temp_file and os.path.exists(data_path):
+                    os.remove(data_path)
+
+                if result.get("status") == "error":
+                    logger.error(f"Dagger execution failed: {result.get('stderr')}")
+                    mlflow.set_tag("status", "FAILED")
+                    # Log execution log as artifact for debugging
+                    with open(os.path.join(temp_dir, "dagger_error.log"), "w") as f:
+                        f.write(result.get("stderr", ""))
+                    mlflow.log_artifact(os.path.join(temp_dir, "dagger_error.log"))
+                    raise RuntimeError(f"Model training failed in Dagger execution: {result.get('stderr')}")
+
+                # 4. Load Artifacts & Metrics
+                model_path = os.path.join(temp_dir, "model.joblib")
+                scaler_path = os.path.join(temp_dir, "scaler.joblib")
+                metrics_path = os.path.join(temp_dir, "metrics.json")
+
+                if not os.path.exists(model_path):
+                    mlflow.set_tag("status", "MISSING_ARTIFACTS")
+                    raise FileNotFoundError("Model artifact not found after Dagger execution.")
+
+                model = joblib.load(model_path)
+                scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+
+                if os.path.exists(metrics_path):
+                    with open(metrics_path) as f:
+                        metrics = json.load(f)
+                else:
+                    metrics = {}
+
+                # 5. Log Metrics & Tag Lifecycle (Phase 5 Requirement)
+                # Flatten metrics for MLflow logging
+                for split, split_metrics in metrics.items():
+                    for name, value in split_metrics.items():
+                        mlflow.log_metric(f"{split}_{name}", value)
+
+                # Log key metrics at root level for Service check
+                if "test" in metrics:
+                    if "accuracy" in metrics["test"]:
+                        mlflow.log_metric("accuracy", metrics["test"]["accuracy"])
+                    if "f1" in metrics["test"]:
+                        mlflow.log_metric("f1_score", metrics["test"]["f1"])
+
+                # Use MLflowService to tag lifecycle based on rules
+                mlflow_service = MLflowService()
+                lifecycle_status = mlflow_service.tag_model_lifecycle(run.info.run_id)
+
+                # Log artifacts to MLflow
+                mlflow.log_artifact(model_path, artifact_path="model")
+                if scaler and os.path.exists(scaler_path):
+                    mlflow.log_artifact(scaler_path, artifact_path="scaler")
+
+                return {
+                    "model": model,
+                    "scaler": scaler,
+                    "feature_columns": feature_columns,
+                    "metrics": metrics,
+                    "model_type": model_type,
+                    "hyperparameters": hyperparameters,
+                    "validation_strategy": validation_strategy,
+                    "run_id": run.info.run_id,
+                    "lifecycle_status": lifecycle_status
+                }
+    except Exception as e:
+        # Ensure we don't leave zombie runs if not handled by context manager
+        # Context manager handles end_run, but we might want to log the exception
+        logger.error(f"Error in MLflow run: {e}")
+        raise e
 
 
 
@@ -459,7 +443,7 @@ def cross_validate_model(
 ) -> dict[str, Any]:
     """
     Perform cross-validation on a model to estimate performance.
-    
+
     NOTE: Currently runs locally. Future consideration: move to Dagger.
 
     Args:

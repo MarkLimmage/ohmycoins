@@ -16,11 +16,12 @@ from pathlib import Path
 from typing import Any
 
 import redis.asyncio as aioredis
-from sqlmodel import Session as DBSession, select, func
+from sqlmodel import Session as DBSession
+from sqlmodel import func, select
 
 from app.core.config import settings
 from app.core.db import engine
-from app.models import AgentSessionStatus, AgentSessionMessage
+from app.models import AgentSessionMessage, AgentSessionStatus
 
 from .artifacts import ArtifactManager
 from .orchestrator import AgentOrchestrator
@@ -73,28 +74,13 @@ class AgentRunner:
         logger.info(f"Starting session {session_id}")
         task = asyncio.create_task(self.run_session(session_id))
         self._tasks[session_id] = task
-        
+
         def _cleanup(t: asyncio.Task) -> None:
             self._tasks.pop(session_id, None)
             if not t.cancelled() and t.exception():
                 logger.error(f"Task for session {session_id} failed", exc_info=t.exception())
 
         task.add_done_callback(_cleanup)
-
-    async def shutdown(self) -> None:
-        """Shutdown all active sessions."""
-        logger.info("Shutting down AgentRunner")
-        for task in self._tasks.values():
-            task.cancel()
-        
-        if self._tasks:
-            await asyncio.gather(*self._tasks.values(), return_exceptions=True)
-            self._tasks.clear()
-        
-        if self._redis:
-            await self._redis.close()
-            self._redis = None
-        logger.info("AgentRunner shutdown complete")
 
     async def run_session(self, session_id: uuid.UUID) -> None:
         """Execute the agent workflow in its own DB session, publishing events."""
@@ -374,7 +360,7 @@ class AgentRunner:
                             },
                         },
                     )
-                    
+
                     # Update DB status
                     await self.session_manager.update_session_status(
                         db,

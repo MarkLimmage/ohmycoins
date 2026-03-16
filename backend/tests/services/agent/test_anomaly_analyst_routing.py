@@ -5,7 +5,6 @@ Tests for the analyst agent's anomaly detection and the routing changes.
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 
 import pytest
 

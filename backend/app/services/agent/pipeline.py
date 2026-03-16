@@ -6,7 +6,6 @@ from sqlmodel import Session, text
 
 from app.core.db import engine
 
-
 CACHE_DIR = "/tmp/omc_data_cache"
 CACHE_EXPIRY = 3600  # 1 hour
 

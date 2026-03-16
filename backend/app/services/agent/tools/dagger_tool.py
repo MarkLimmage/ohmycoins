@@ -73,7 +73,7 @@ async def run_code_in_dagger(
                  mlflow.log_text(str(e), "error.txt")
             except Exception:
                  pass # failed to log
-                 
+
             return {
                 "status": "error",
                 "message": f"Data Pipeline Failed: {str(e)}",

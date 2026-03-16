@@ -113,7 +113,7 @@ class ModelEvaluatorAgent(BaseAgent):
                         top_n=evaluation_params.get("top_n_features", 10),
                     )
                     evaluation_results["feature_importance"] = importance
-            
+
             # Emit evaluation results
             await self.emit_event(
                 state,

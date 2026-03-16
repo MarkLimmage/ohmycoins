@@ -36,7 +36,7 @@ class TestUserCredentialIsolation:
     def user_a(self, session: Session) -> User:
         """Create test user A"""
         user = User(
-            email="user_a@example.com",
+            email=f"user_a_{uuid4().hex[:8]}@example.com",
             hashed_password=get_password_hash("password123"),
             full_name="User A"
         )
@@ -49,7 +49,7 @@ class TestUserCredentialIsolation:
     def user_b(self, session: Session) -> User:
         """Create test user B"""
         user = User(
-            email="user_b@example.com",
+            email=f"user_b_{uuid4().hex[:8]}@example.com",
             hashed_password=get_password_hash("password123"),
             full_name="User B"
         )

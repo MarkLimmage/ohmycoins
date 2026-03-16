@@ -19,9 +19,9 @@ from app.models import (
     AgentArtifact,
     AgentSession,
     AgentSessionMessage,
-    Algorithm,
     AlertLog,
     AlertRule,
+    Algorithm,
     AuditLog,
     CatalystEvents,
     CoinspotCredentials,
@@ -42,6 +42,7 @@ from app.models import (
     User,
     UserLLMCredentials,
 )
+from app.services.trading.executor import OrderQueue
 
 # Import test fixtures for use across tests
 from app.utils.test_fixtures import (
@@ -49,7 +50,6 @@ from app.utils.test_fixtures import (
     create_test_price_data,
     create_test_user,
 )
-from app.services.trading.executor import OrderQueue
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
@@ -156,6 +156,7 @@ def session(db: Session) -> Generator[Session, None, None]:
 
 
 from app.api.deps import get_db
+
 
 @pytest.fixture(scope="function")
 def client(session: Session) -> Generator[TestClient, None, None]:

@@ -1,9 +1,11 @@
 """
 Unit tests for the CoinspotExchangeCollector strategy
 """
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from decimal import Decimal
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from app.collectors.strategies.exchange_coinspot import CoinspotExchangeCollector
 
 # Sample API response data
@@ -26,7 +28,7 @@ MOCK_HTML_RESPONSE = """
             <td>Bitcoin</td>
             <td data-value="45000.00">Buy: $45,000.00</td>
             <td data-value="45100.00">Sell: $45,100.00</td>
-        </tr> 
+        </tr>
         <tr data-coin="ETH">
             <td><img src="eth.png"/></td>
             <td>Ethereum</td>
@@ -45,15 +47,15 @@ MOCK_HTML_RESPONSE = """
 async def test_collect_public_api():
     collector = CoinspotExchangeCollector()
     config = {"use_web_scraping": False}
-    
+
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = MOCK_API_RESPONSE
         mock_get.return_value = mock_response
-        
+
         results = await collector.collect(config)
-        
+
         assert len(results) == 3
         # Check first item (BTC)
         btc = next(item for item in results if item.coin_type == "btc")
@@ -65,15 +67,15 @@ async def test_collect_public_api():
 async def test_collect_scraping():
     collector = CoinspotExchangeCollector()
     config = {"use_web_scraping": True}
-    
+
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.text = MOCK_HTML_RESPONSE
         mock_get.return_value = mock_response
-        
+
         results = await collector.collect(config)
-        
+
         assert len(results) == 2 # AUD skipped
         # Check BTC
         btc = next(item for item in results if item.coin_type == "btc")

@@ -31,13 +31,6 @@ class MimeType(str, Enum):
     JSON_TEARSHEET = "application/json+tearsheet"
 
 
-class RenderOutputPayload(TypedDict):
-    mime_type: str
-    content: Any
-    code_snippet: str | None
-    hyperparameters: dict[str, Any] | None
-
-
 class LabState(TypedDict):
     """
     State dictionary for the Phase 2 LangGraph workflow.

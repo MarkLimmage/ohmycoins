@@ -1,7 +1,6 @@
 # mypy: ignore-errors
 """Tests for ExplainabilityService."""
 
-import json
 import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch

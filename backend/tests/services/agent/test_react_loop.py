@@ -404,26 +404,26 @@ class TestStateManagement:
         """Test that reason node increments iteration count."""
         workflow = LangGraphWorkflow(session=mock_db_session)
         base_state["iteration"] = 0
-        
+
         # Mock determine_next_action to avoid issues
         workflow._determine_next_action = lambda x: "Analyzing data"
-        
+
         result = await workflow._reason_node(base_state)
-        
+
         assert result["iteration"] == 1
 
     @pytest.mark.asyncio
     async def test_iteration_cap_enforced(self, mock_db_session, base_state):
         """Test that iteration cap is enforced in reasoning loop."""
         workflow = LangGraphWorkflow(session=mock_db_session)
-        
+
         # Mock max iterations reached
         base_state["iteration"] = 10  # Assuming AGENT_MAX_ITERATIONS is 10
         base_state["error"] = None
-        
+
         # _route_after_reasoning checks iteration
         result = workflow._route_after_reasoning(base_state)
-        
+
         assert result == "finalize"
         assert base_state["error"] is not None
         assert "Max iterations" in base_state["error"]

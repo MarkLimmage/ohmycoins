@@ -3,10 +3,11 @@
 import uuid
 from datetime import datetime, timezone
 
+from sqlmodel import Session
+
+from app.core.db import engine
 from app.models import NewsEnrichment, NewsItem
 from app.services.agent.tools.signal_query import query_market_signals
-from app.core.db import engine
-from sqlmodel import Session
 
 
 def test_query_market_signals_returns_summary() -> None:
