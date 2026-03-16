@@ -110,7 +110,38 @@ function processEvent(state: LabState, event: LabEvent): LabState {
    // Handle Status Updates 
    if (event_type === 'status_update') {
       if (payload.status === 'COMPLETE' || payload.status === 'completed') {
-          // If needed, mark stage complete
+          // Stage complete — no cell needed
+          return newState;
+      }
+      if (payload.status === 'AWAITING_APPROVAL' || payload.status === 'awaiting_approval') {
+          // Approval state handled by action_request events
+          return newState;
+      }
+      // Show status messages as cells in the stage
+      if (payload.message) {
+          const targetStage = stage || 'BUSINESS_UNDERSTANDING';
+          const currentStageCells = newState.stages[targetStage] || [];
+          
+          if (currentStageCells.some(c => c.id === String(sequence_id))) {
+              return newState;
+          }
+
+          const statusCell: LabCell = {
+            id: String(sequence_id),
+            stage: targetStage,
+            type: 'text/markdown',
+            content: payload.message,
+            timestamp,
+            metadata: { status: payload.status }
+          };
+
+          return {
+            ...newState,
+            stages: {
+              ...newState.stages,
+              [targetStage]: [...currentStageCells, statusCell]
+            }
+          };
       }
       return newState;
    }

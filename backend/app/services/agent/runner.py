@@ -194,9 +194,8 @@ class AgentRunner:
                                 # Publish to Redis
                                 await self._publish(redis, channel, event)
 
-                                # Persist to DB
+                                # Persist full event to DB for reliable rehydration
                                 content_str = ""
-                                metadata = event.get("payload")
                                 if event["event_type"] == "render_output":
                                     content_str = (
                                         f"Render Output: {event['payload'].get('mime_type')}"
@@ -214,7 +213,7 @@ class AgentRunner:
                                     role="assistant",
                                     content=content_str,
                                     agent_name=node_name,
-                                    metadata=json.dumps(metadata) if isinstance(metadata, dict) else metadata,
+                                    metadata=json.dumps(event),
                                 )
 
                         # Fallback for Legacy Nodes (initialization, reason)
@@ -243,6 +242,7 @@ class AgentRunner:
                                 role="assistant",
                                 content=msg,
                                 agent_name=node_name,
+                                metadata=json.dumps(fallback_event),
                             )
                         # Handle HITL / Action Requests (Legacy Support)
                         if node_state.get("awaiting_choice") and node_state.get("choices_available"):
@@ -273,7 +273,7 @@ class AgentRunner:
                                 db,
                                 session_id,
                                 role="assistant",
-                                content="Action Required",
+                                content=f"Action Required: {action_event['payload'].get('description', '')}",
                                 agent_name=node_name,
                                 metadata=json.dumps(action_event),
                             )
@@ -329,47 +329,81 @@ class AgentRunner:
                     elif next_node == "finalize":
                         description = "Workflow complete. Please review reports and model artifacts before finalization."
 
+                    stage = _get_stage_from_step(next_node)
+
                     # Emit action_request
                     sequence_id += 1
-                    await self._publish(
-                        redis,
-                        channel,
-                        {
-                            "event_type": "action_request",
-                            "stage": _get_stage_from_step(next_node),
-                            "sequence_id": sequence_id,
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "payload": {
-                                "action_id": action_id,
-                                "description": description,
-                                "options": options,
-                            },
+                    action_event = {
+                        "event_type": "action_request",
+                        "stage": stage,
+                        "sequence_id": sequence_id,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "payload": {
+                            "action_id": action_id,
+                            "description": description,
+                            "options": options,
                         },
+                    }
+                    await self._publish(redis, channel, action_event)
+
+                    # Persist action_request to DB for rehydration
+                    await self.session_manager.add_message(
+                        db,
+                        session_id,
+                        role="assistant",
+                        content=f"Action Required: {description}",
+                        agent_name=next_node,
+                        metadata=json.dumps(action_event),
                     )
 
                     # Emit status_update with AWAITING_APPROVAL
                     sequence_id += 1
-                    await self._publish(
-                        redis,
-                        channel,
-                        {
-                            "event_type": "status_update",
-                            "stage": _get_stage_from_step(next_node),
-                            "sequence_id": sequence_id,
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "payload": {
-                                "status": AgentSessionStatus.AWAITING_APPROVAL,
-                                "message": f"Waiting for approval to proceed to {next_node}",
-                            },
+                    status_event = {
+                        "event_type": "status_update",
+                        "stage": stage,
+                        "sequence_id": sequence_id,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "payload": {
+                            "status": AgentSessionStatus.AWAITING_APPROVAL,
+                            "message": f"Waiting for approval to proceed to {next_node}",
                         },
+                    }
+                    await self._publish(redis, channel, status_event)
+
+                    # Persist status_update to DB
+                    await self.session_manager.add_message(
+                        db,
+                        session_id,
+                        role="assistant",
+                        content=f"AWAITING_APPROVAL: Waiting for approval to proceed to {next_node}",
+                        agent_name=next_node,
+                        metadata=json.dumps(status_event),
                     )
 
-                    # Update DB status
+                    # Update DB session status
                     await self.session_manager.update_session_status(
                         db,
                         session_id,
                         AgentSessionStatus.AWAITING_APPROVAL,
                         result_summary=f"Waiting for approval at {next_node}",
+                    )
+
+                    # Save approval state to Redis so approve endpoint can find it
+                    await self.session_manager.save_session_state(
+                        session_id,
+                        {
+                            "session_id": str(session_id),
+                            "user_goal": session.user_goal,
+                            "status": AgentSessionStatus.AWAITING_APPROVAL,
+                            "current_step": next_node,
+                            "iteration": 0,
+                            "approval_needed": True,
+                            "pending_approvals": [{
+                                "approval_type": action_id,
+                                "description": description,
+                                "options": options,
+                            }],
+                        },
                     )
                 else:
                     # Mark completed

@@ -440,10 +440,7 @@ async def rehydrate_session(
     event_ledger = []
 
     for i, msg in enumerate(messages, start=1):
-        # Infer stage
-        stage = STAGE_MAPPING.get(msg.agent_name, "BUSINESS_UNDERSTANDING")
-
-        # Parse metadata safely — this contains the original event payload
+        # Parse metadata safely — now stores the FULL event dict
         metadata = {}
         if msg.metadata_json:
             try:
@@ -451,74 +448,74 @@ async def rehydrate_session(
             except Exception:
                 metadata = {}
 
-        # Reconstruct contract-compliant payload from stored metadata
-        # Events saved via emit_event store the real payload in metadata_json
+        # If full event was stored in metadata_json (new format)
         if isinstance(metadata, dict) and metadata.get("event_type"):
-            # Full event was stored (e.g. action_request)
-            event_type = metadata.get("event_type", "status_update")
-            stage = metadata.get("stage", stage)
-            payload = metadata.get("payload", {"status": "ACTIVE", "message": msg.content or ""})
+            event_ledger.append({
+                "event_type": metadata["event_type"],
+                "stage": metadata.get("stage", "BUSINESS_UNDERSTANDING"),
+                "sequence_id": metadata.get("sequence_id", i),
+                "timestamp": metadata.get("timestamp", msg.created_at.isoformat() if msg.created_at else None),
+                "payload": metadata.get("payload", {"status": "ACTIVE", "message": msg.content or ""}),
+            })
         elif isinstance(metadata, dict) and metadata.get("status"):
-            # Payload-only was stored (status_update, render_output payloads)
-            event_type = "status_update"
-            payload = metadata
-            if metadata.get("mime_type"):
-                event_type = "render_output"
+            # Legacy: payload-only was stored
+            event_type = "render_output" if metadata.get("mime_type") else "status_update"
+            stage = STAGE_MAPPING.get(msg.agent_name, "BUSINESS_UNDERSTANDING")
+            event_ledger.append({
+                "event_type": event_type,
+                "stage": stage,
+                "sequence_id": i,
+                "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+                "payload": metadata,
+            })
         else:
-            # Fallback for legacy messages with no structured metadata
-            event_type = "status_update"
-            payload = {
-                "status": "ACTIVE",
-                "message": msg.content or "",
-            }
-
-        # Override event_type for error agents
-        if "error" in (msg.agent_name or "").lower():
-            event_type = "error"
-
-        # Append to ledger
-        event_ledger.append({
-            "event_type": event_type,
-            "stage": stage,
-            "sequence_id": i,
-            "timestamp": msg.created_at.isoformat() if msg.created_at else None,
-            "payload": payload
-        })
+            # Legacy fallback for messages with no structured metadata
+            stage = STAGE_MAPPING.get(msg.agent_name, "BUSINESS_UNDERSTANDING")
+            event_ledger.append({
+                "event_type": "status_update",
+                "stage": stage,
+                "sequence_id": i,
+                "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+                "payload": {
+                    "status": "ACTIVE",
+                    "message": msg.content or "",
+                },
+            })
 
     # Last Sequence ID
     last_seq_id = len(event_ledger)
 
-    # Check for pending action if status is AWAITING_APPROVAL
+    # For AWAITING_APPROVAL sessions, check if the last event is already an action_request
+    # (new format stores it in DB). Only synthesize one if missing (legacy sessions).
     if session.status == AgentSessionStatus.AWAITING_APPROVAL:
-        state = await session_manager.get_session_state(session_id)
+        has_action_request = any(e["event_type"] == "action_request" for e in event_ledger)
 
-        pending_approvals = state.get("pending_approvals", []) if state else []
-        action_payload = {}
+        if not has_action_request:
+            state = await session_manager.get_session_state(session_id)
 
-        if pending_approvals:
-            # Use data from pending approval
-            approval = pending_approvals[0]
-            action_payload = {
-                "action_id": "approve_gate",
-                "description": approval.get("description", "Approval required"),
-                "options": ["APPROVE", "REJECT"]
-            }
-        else:
-            # Fallback
-            action_payload = {
-                 "action_id": "resume_workflow",
-                 "description": "Workflow paused. Approval required to continue.",
-                 "options": ["APPROVE", "REJECT"]
-            }
+            pending_approvals = state.get("pending_approvals", []) if state else []
+            if pending_approvals:
+                approval = pending_approvals[0]
+                action_payload = {
+                    "action_id": approval.get("approval_type", "approve_gate"),
+                    "description": approval.get("description", "Approval required"),
+                    "options": approval.get("options", ["APPROVE", "REJECT"]),
+                }
+            else:
+                action_payload = {
+                    "action_id": "resume_workflow",
+                    "description": "Workflow paused. Approval required to continue.",
+                    "options": ["APPROVE", "REJECT"],
+                }
 
-        last_seq_id += 1
-        event_ledger.append({
-            "event_type": "action_request",
-            "stage": STAGE_MAPPING.get(state.get("current_step") if state else "", "BUSINESS_UNDERSTANDING"),
-            "sequence_id": last_seq_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "payload": action_payload
-        })
+            last_seq_id += 1
+            event_ledger.append({
+                "event_type": "action_request",
+                "stage": STAGE_MAPPING.get(state.get("current_step") if state else "", "BUSINESS_UNDERSTANDING"),
+                "sequence_id": last_seq_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "payload": action_payload,
+            })
 
     return {
         "session_id": session_id,
@@ -779,7 +776,34 @@ async def approve_request(
     # Get current state
     state = await session_manager.get_session_state(session_id)
 
-    if not state or not state.get("approval_needed"):
+    # Check approval eligibility: prefer Redis state, fallback to DB status
+    if state and state.get("approval_needed"):
+        pass  # State found in Redis with approval flag
+    elif session.status == AgentSessionStatus.AWAITING_APPROVAL:
+        # Redis state missing or stale, but DB confirms session awaits approval
+        # Construct minimal state to allow approval flow
+        if not state:
+            state = {
+                "session_id": str(session_id),
+                "user_goal": session.user_goal,
+                "status": AgentSessionStatus.AWAITING_APPROVAL,
+                "current_step": "finalize",
+                "approval_needed": True,
+                "pending_approvals": [{
+                    "approval_type": "approve_finalize",
+                    "description": "Workflow paused. Approval required to continue.",
+                    "options": ["APPROVE", "REJECT"],
+                }],
+            }
+        else:
+            state["approval_needed"] = True
+            if not state.get("pending_approvals"):
+                state["pending_approvals"] = [{
+                    "approval_type": "approve_finalize",
+                    "description": "Workflow paused. Approval required to continue.",
+                    "options": ["APPROVE", "REJECT"],
+                }]
+    else:
         raise HTTPException(status_code=400, detail="Session is not awaiting approval")
 
     # Get approval type from pending approvals

@@ -339,30 +339,43 @@ async def websocket_agent_stream(
     start_seq = after_seq + 1
 
     for i, msg in enumerate(history, start=start_seq):
-        # Infer type from content if possible, or default to status_update
-        event_type = "status_update"
-        stage = "BUSINESS_UNDERSTANDING"
-
-        # Construct legacy payload
-        payload: dict[str, Any] = {
-            "content": msg.content,
-            "agent_name": msg.agent_name,
-        }
+        # Try to use full event stored in metadata_json (new format)
+        full_event = None
         if msg.metadata_json:
             try:
-                payload["metadata"] = json.loads(msg.metadata_json)
+                parsed = json.loads(msg.metadata_json)
+                if isinstance(parsed, dict) and parsed.get("event_type"):
+                    full_event = parsed
             except Exception:
-                payload["metadata"] = {"raw": msg.metadata_json}
+                pass
 
-        await websocket.send_json(
-            {
-                "event_type": event_type,
-                "stage": stage,
-                "sequence_id": i,
-                "timestamp": msg.created_at.isoformat() if msg.created_at else None,
-                "payload": payload,
+        if full_event:
+            # Use stored event, but override sequence_id with replay position
+            await websocket.send_json(
+                {
+                    "event_type": full_event["event_type"],
+                    "stage": full_event.get("stage", "BUSINESS_UNDERSTANDING"),
+                    "sequence_id": i,
+                    "timestamp": full_event.get("timestamp", msg.created_at.isoformat() if msg.created_at else None),
+                    "payload": full_event.get("payload", {}),
+                }
+            )
+        else:
+            # Legacy fallback
+            payload: dict[str, Any] = {
+                "status": "ACTIVE",
+                "message": msg.content or "",
             }
-        )
+
+            await websocket.send_json(
+                {
+                    "event_type": "status_update",
+                    "stage": "BUSINESS_UNDERSTANDING",
+                    "sequence_id": i,
+                    "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+                    "payload": payload,
+                }
+            )
 
     # If session already finished, send done and close
     if session_obj.status in ("completed", "failed", "cancelled"):
