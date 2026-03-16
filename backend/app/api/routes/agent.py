@@ -443,25 +443,38 @@ async def rehydrate_session(
         # Infer stage
         stage = STAGE_MAPPING.get(msg.agent_name, "BUSINESS_UNDERSTANDING")
 
-        # Infer event type
-        event_type = "status_update"
-        payload = {"content": msg.content, "agent_name": msg.agent_name}
-
-        # Parse metadata safely
+        # Parse metadata safely — this contains the original event payload
         metadata = {}
         if msg.metadata_json:
             try:
                 metadata = json.loads(msg.metadata_json)
             except Exception:
-                metadata = {"raw": msg.metadata_json}
+                metadata = {}
 
-        payload["metadata"] = metadata
+        # Reconstruct contract-compliant payload from stored metadata
+        # Events saved via emit_event store the real payload in metadata_json
+        if isinstance(metadata, dict) and metadata.get("event_type"):
+            # Full event was stored (e.g. action_request)
+            event_type = metadata.get("event_type", "status_update")
+            stage = metadata.get("stage", stage)
+            payload = metadata.get("payload", {"status": "ACTIVE", "message": msg.content or ""})
+        elif isinstance(metadata, dict) and metadata.get("status"):
+            # Payload-only was stored (status_update, render_output payloads)
+            event_type = "status_update"
+            payload = metadata
+            if metadata.get("mime_type"):
+                event_type = "render_output"
+        else:
+            # Fallback for legacy messages with no structured metadata
+            event_type = "status_update"
+            payload = {
+                "status": "ACTIVE",
+                "message": msg.content or "",
+            }
 
-        # Heuristics for event_type
+        # Override event_type for error agents
         if "error" in (msg.agent_name or "").lower():
             event_type = "error"
-        elif isinstance(metadata, dict) and (metadata.get("metric_type") or metadata.get("choices")):
-             event_type = "render_output"
 
         # Append to ledger
         event_ledger.append({
