@@ -54,7 +54,17 @@ class ReportingAgent(BaseAgent):
         Returns:
             Updated state with generated reports and visualizations
         """
+        # Initialize pending events for this execution step
+        state["pending_events"] = []
+
         try:
+            await self.emit_event(
+                state,
+                "status_update",
+                "DEPLOYMENT",
+                {"status": "ACTIVE", "message": "Generating final report..."},
+            )
+
             # Get results from previous agents
             analysis_results = state.get("analysis_results")
             # Support both model_results (new) and trained_models (old) for backward compatibility
@@ -101,6 +111,17 @@ class ReportingAgent(BaseAgent):
                 analysis_results=analysis_results,
             )
 
+            # Emit summary event
+            await self.emit_event(
+                state,
+                "render_output",
+                "DEPLOYMENT",
+                {
+                    "mime_type": "text/markdown",
+                    "content": reporting_results["summary"],
+                },
+            )
+
             # Save summary to file
             summary_path = session_artifacts_dir / "summary.md"
             summary_path.write_text(reporting_results["summary"])
@@ -110,6 +131,17 @@ class ReportingAgent(BaseAgent):
                 reporting_results["comparison_report"] = create_comparison_report(
                     evaluation_results=evaluation_results,
                     model_results=model_results,
+                )
+
+                # Emit comparison report event
+                await self.emit_event(
+                    state,
+                    "render_output",
+                    "DEPLOYMENT",
+                    {
+                        "mime_type": "text/markdown",
+                        "content": reporting_results["comparison_report"],
+                    },
                 )
 
                 # Save comparison report to file

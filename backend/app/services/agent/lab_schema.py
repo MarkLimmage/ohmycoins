@@ -70,8 +70,12 @@ class LabState(TypedDict):
 
 # Event Schemas for WebSocket communication (Pydantic for validation)
 class BaseEvent(BaseModel):
-    event_type: Literal["stream_chat", "status_update", "render_output", "error"]
+    event_type: Literal[
+        "stream_chat", "status_update", "render_output", "error", "action_request"
+    ]
     stage: StageID
+    sequence_id: int
+    timestamp: str  # ISO-8601 UTC
     payload: Any
 
 
@@ -94,9 +98,28 @@ class StatusUpdateEvent(BaseEvent):
     payload: StatusUpdatePayload
 
 
+class RenderOutputPayload(TypedDict):
+    mime_type: str
+    content: Any
+    code_snippet: str | None
+    hyperparameters: dict[str, Any] | None
+
+
 class RenderOutputEvent(BaseEvent):
     event_type: Literal["render_output"] = "render_output"
     payload: RenderOutputPayload
+
+
+class ActionRequestPayload(BaseModel):
+    action_id: str
+    description: str
+    options: list[str]
+
+
+class ActionRequestEvent(BaseEvent):
+    event_type: Literal["action_request"] = "action_request"
+    payload: ActionRequestPayload
+
 
 
 class ErrorPayload(BaseModel):

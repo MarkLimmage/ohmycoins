@@ -106,6 +106,9 @@ class AgentState(TypedDict):
     # Workstream D+ additions - Safety Bridge
     stage_iteration_counts: dict[str, int]  # Track iterations per stage for circuit breaker
     terminal_error: dict[str, Any] | None  # Terminal error details if kill-switch triggers
+    # Phase 5 Messaging Infrastructure
+    sequence_id: int | None  # Monotonic sequence counter
+    pending_events: list[dict[str, Any]] | None  # Events to be emitted by the runner
 
 
 class LangGraphWorkflow:

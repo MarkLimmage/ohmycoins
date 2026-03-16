@@ -44,13 +44,29 @@ class ModelTrainingAgent(BaseAgent):
         Returns:
             Updated state with trained models
         """
+        # Initialize pending events for this execution step
+        state["pending_events"] = []
+
         try:
+            await self.emit_event(
+                state,
+                "status_update",
+                "MODELING",
+                {"status": "ACTIVE", "message": "Initializing model training..."},
+            )
+
             # Get analysis results from previous agent
             analysis_results = state.get("analysis_results", {})
 
             if not analysis_results:
                 state["error"] = "No analysis results available for model training"
                 state["model_trained"] = False
+                await self.emit_event(
+                    state,
+                    "error",
+                    "MODELING",
+                    {"error": "No analysis results available"},
+                )
                 return state
 
             user_goal = state.get("user_goal", "")
@@ -65,6 +81,12 @@ class ModelTrainingAgent(BaseAgent):
             if training_data is None or len(training_data) == 0:
                 state["error"] = "Insufficient data for model training"
                 state["model_trained"] = False
+                await self.emit_event(
+                    state,
+                    "error",
+                    "MODELING",
+                    {"error": "Insufficient data"},
+                )
                 return state
 
             # Get training configuration
@@ -76,6 +98,13 @@ class ModelTrainingAgent(BaseAgent):
             hyperparameters = training_params.get("hyperparameters", None)
             test_size = training_params.get("test_size", 0.2)
             scale_features = training_params.get("scale_features", True)
+
+            await self.emit_event(
+                state,
+                "status_update",
+                "MODELING",
+                {"status": "ACTIVE", "message": f"Training {model_type} ({task_type})..."},
+            )
 
             # Train the model
             session_id = state.get("session_id", "unknown_session")
@@ -131,6 +160,27 @@ class ModelTrainingAgent(BaseAgent):
             if cv_results:
                 state["trained_models"]["primary_model"]["cv_results"] = cv_results
 
+            # Emit training metrics
+            metrics_data = {
+                "metrics": model_result["metrics"],
+                "model_type": model_result["model_type"],
+                "task_type": task_type,
+                "cv_results": cv_results,
+            }
+
+            await self.emit_event(
+                state,
+                "render_output",
+                "MODELING",
+                {
+                    "mime_type": "application/json+tearsheet",
+                    "content": {
+                        "metric_type": "training_metrics",
+                        "data": metrics_data,
+                    },
+                },
+            )
+
             # Generate training summary
             state["training_summary"] = self._generate_training_summary(
                 model_result, cv_results, task_type
@@ -151,6 +201,7 @@ class ModelTrainingAgent(BaseAgent):
         except Exception as e:
             state["error"] = f"Model training failed: {str(e)}"
             state["model_trained"] = False
+            await self.emit_event(state, "error", "MODELING", {"error": str(e)})
             state["messages"].append(
                 {
                     "role": "agent",

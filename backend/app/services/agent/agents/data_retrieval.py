@@ -65,12 +65,28 @@ class DataRetrievalAgent(BaseAgent):
         Returns:
             Updated state with retrieved data
         """
+        # Initialize pending events for this execution step
+        state["pending_events"] = []
+
         if self.session is None:
             state["error"] = "Database session not configured"
             state["data_retrieved"] = False
+            await self.emit_event(
+                state,
+                "error",
+                "DATA_ACQUISITION",
+                {"error": "Database session not configured"},
+            )
             return state
 
         try:
+            await self.emit_event(
+                state,
+                "status_update",
+                "DATA_ACQUISITION",
+                {"status": "ACTIVE", "message": "Starting data retrieval..."},
+            )
+
             # Parse user goal to determine what data to fetch
             user_goal = state.get("user_goal", "")
             retrieval_params = state.get("retrieval_params", {})
@@ -89,6 +105,12 @@ class DataRetrievalAgent(BaseAgent):
             retrieved_data["available_coins"] = await get_available_coins(self.session)
 
             # Fetch data statistics
+            await self.emit_event(
+                state,
+                "status_update",
+                "DATA_ACQUISITION",
+                {"status": "ACTIVE", "message": f"Fetching statistics for {coin_type}..."},
+            )
             retrieved_data["data_statistics"] = await get_data_statistics(
                 self.session, coin_type=coin_type
             )
@@ -97,6 +119,12 @@ class DataRetrievalAgent(BaseAgent):
             if "price" in user_goal.lower() or retrieval_params.get(
                 "include_price", True
             ):
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "ACTIVE", "message": f"Fetching price data for {coin_type}..."},
+                )
                 retrieved_data["price_data"] = await fetch_price_data(
                     self.session,
                     coin_type=coin_type,
