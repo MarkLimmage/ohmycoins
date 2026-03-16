@@ -98,6 +98,22 @@ class BaseAgent:
             state["sequence_id"] = 0
 
         state["sequence_id"] += 1
+        
+        # 4. Append to pending_events queue
+        # The Runner will drain this queue and publish to Redis
+        if "pending_events" not in state or state["pending_events"] is None:
+            state["pending_events"] = []
+
+        event = {
+            "event_type": event_type,
+            "stage": stage,
+            "sequence_id": state["sequence_id"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "payload": payload,
+        }
+        
+        state["pending_events"].append(event)
+
         sequence_id = state["sequence_id"]
 
         # 4. Generate Timestamp (ISO-8601 UTC)

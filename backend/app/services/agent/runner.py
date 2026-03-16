@@ -147,6 +147,7 @@ class AgentRunner:
                 )
                 initial_state: AgentState = {
                     "session_id": str(session_id),
+                    "sequence_id": sequence_id,
                     "user_goal": session.user_goal,
                     "status": AgentSessionStatus.RUNNING,
                     "current_step": "initialization",
@@ -168,128 +169,112 @@ class AgentRunner:
                     "pending_approvals": [],
                     "approval_mode": "manual",
                     "overrides_applied": [],
+                    "pending_events": [],
                 }
 
                 async for state_update in workflow.stream_execute(initial_state):
-                    # Increment sequence_id for each state update
-                    sequence_id += 1
-                    
                     # Each state_update is a dict keyed by node name
                     for node_name, node_state in state_update.items():
-                        content = ""
-                        event_type = "status_update"  # default
-                        agent_name = node_name
-                        metadata_json = None
-                        stage = _get_stage_from_step(node_name)
+                        pending_events = node_state.get("pending_events", [])
 
-                        if isinstance(node_state, dict):
-                            # Determine event_type and content
-                            if node_state.get("trained_models"):
-                                event_type = "render_output"
-                                trained = node_state.get("trained_models", {})
-                                content = json.dumps(
-                                    {
-                                        "metric_type": "training_metrics",
-                                        "data": {
-                                            k: str(v)[:500]
-                                            for k, v in trained.items()
-                                            if v
-                                        },
-                                    },
-                                    default=str,
-                                )
-                            elif node_state.get("evaluation_results"):
-                                event_type = "render_output"
-                                eval_results = node_state.get("evaluation_results", {})
-                                content = json.dumps(
-                                    {
-                                        "metric_type": "evaluation_metrics",
-                                        "data": {
-                                            k: str(v)[:500]
-                                            for k, v in eval_results.items()
-                                            if v
-                                        },
-                                    },
-                                    default=str,
-                                )
-                            elif node_state.get("awaiting_choice") and node_state.get(
-                                "choices_available"
-                            ):
-                                event_type = "render_output"  # Blueprint/Choice
-                                content = json.dumps(
-                                    {
-                                        "choices": node_state.get(
-                                            "choices_available", []
-                                        ),
-                                    },
-                                    default=str,
-                                )
-                            elif node_state.get("result"):
-                                event_type = "render_output"
-                                content = node_state["result"]
-                            else:
-                                # Original content extraction logic
-                                content = (
-                                    node_state.get("report")
-                                    or node_state.get("error")
-                                    or json.dumps(
-                                        {
-                                            k: str(v)[:200]
-                                            for k, v in node_state.items()
-                                            if v
-                                        },
-                                        default=str,
+                        # Process Explicit Events (New Agent System)
+                        if pending_events:
+                            for event in pending_events:
+                                # Update sequence_id tracker
+                                event_seq = event.get("sequence_id")
+                                if event_seq is not None:
+                                    sequence_id = max(sequence_id, event_seq)
+                                else:
+                                    sequence_id += 1
+                                    event["sequence_id"] = sequence_id
+                                    event["timestamp"] = datetime.now(timezone.utc).isoformat()
+
+                                # Publish to Redis
+                                await self._publish(redis, channel, event)
+
+                                # Persist to DB
+                                content_str = ""
+                                metadata = event.get("payload")
+                                if event["event_type"] == "render_output":
+                                    content_str = (
+                                        f"Render Output: {event['payload'].get('mime_type')}"
                                     )
+                                elif event["event_type"] == "status_update":
+                                    msg = event["payload"].get("message", "")
+                                    status = event["payload"].get("status")
+                                    content_str = f"{status}: {msg}"
+                                else:
+                                    content_str = str(event.get("payload"))
+
+                                await self.session_manager.add_message(
+                                    db,
+                                    session_id,
+                                    role="assistant",
+                                    content=content_str,
+                                    agent_name=node_name,
+                                    metadata=metadata,
                                 )
-                                if node_state.get("error"):
-                                    event_type = "error"
-                                    metadata_json = content
-                                elif node_state.get("current_step"):
-                                    event_type = "status_update"
-                                    metadata_json = content
-                                    content = f"Step: {node_state['current_step']}"
-                        else:
-                            content = str(node_state)
 
-                        # Persist message to DB (unchanged logic)
-                        await self.session_manager.add_message(
-                            db,
-                            session_id,
-                            role="assistant",
-                            content=content,
-                            agent_name=agent_name,
-                            metadata=metadata_json,
-                        )
+                        # Fallback for Legacy Nodes (initialization, reason)
+                        elif node_state.get("current_step"):
+                            sequence_id += 1
+                            stage = _get_stage_from_step(
+                                node_state.get("current_step", "initialization")
+                            )
+                            msg = f"Step: {node_state.get('current_step')}"
 
-                        # Publish to Redis for live WS consumers
-                        pub_metadata = None
-                        if metadata_json:
-                            try:
-                                pub_metadata = json.loads(metadata_json)
-                            except Exception:
-                                pub_metadata = {"raw": metadata_json}
-
-                        # Construct payload per API Contract
-                        payload = {
-                            "content": content,
-                            "agent_name": agent_name,
-                            "metadata": pub_metadata,
-                        }
-                        
-                        if isinstance(node_state, dict) and node_state.get("error"):
-                             payload["error"] = node_state.get("error")
-
-                        await self._publish(
-                            redis,
-                            channel,
-                            {
-                                "event_type": event_type,
+                            fallback_event = {
+                                "event_type": "status_update",
                                 "stage": stage,
                                 "sequence_id": sequence_id,
                                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                                "payload": payload,
-                            },
-                        )
+                                "payload": {
+                                    "status": AgentSessionStatus.RUNNING,
+                                    "message": msg,
+                                },
+                            }
+
+                            await self._publish(redis, channel, fallback_event)
+                            await self.session_manager.add_message(
+                                db,
+                                session_id,
+                                role="assistant",
+                                content=msg,
+                                agent_name=node_name,
+                            )
+                        # Handle HITL / Action Requests (Legacy Support)
+                        if node_state.get("awaiting_choice") and node_state.get("choices_available"):
+                            sequence_id += 1
+                            stage = _get_stage_from_step(
+                                node_state.get("current_step", "initialization")
+                            )
+                            choices = node_state.get("choices_available", [])
+                            # Extract descriptions/labels based on assumed structure
+                            options = [str(c) for c in choices]
+
+                            action_event = {
+                                "event_type": "action_request",
+                                "stage": stage,
+                                "sequence_id": sequence_id,
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "payload": {
+                                    "action_id": "user_choice_required",
+                                    "description": node_state.get(
+                                        "choice_description", "User input required"
+                                    ),
+                                    "options": options,
+                                },
+                            }
+
+                            await self._publish(redis, channel, action_event)
+                            await self.session_manager.add_message(
+                                db,
+                                session_id,
+                                role="assistant",
+                                content="Action Required",
+                                agent_name=node_name,
+                                metadata=action_event,
+                            )
 
                 # Register any artifacts written to disk during the workflow
                 artifact_dir = Path(f"/data/agent_artifacts/{session_id}")

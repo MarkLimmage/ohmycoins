@@ -47,13 +47,26 @@ class DataAnalystAgent(BaseAgent):
         Returns:
             Updated state with analysis results
         """
+        # Initialize pending events for this execution step
+        state["pending_events"] = []
+
         try:
+            await self.emit_event(
+                state,
+                "status_update",
+                "EXPLORATION",
+                {"status": "ACTIVE", "message": "Analyzing data..."},
+            )
+
             # Get retrieved data from previous agent
             retrieved_data = state.get("retrieved_data", {})
 
             if not retrieved_data:
                 state["error"] = "No data available for analysis"
                 state["analysis_completed"] = False
+                await self.emit_event(
+                    state, "error", "EXPLORATION", {"error": "No data available"}
+                )
                 return state
 
             user_goal = state.get("user_goal", "")
@@ -67,6 +80,12 @@ class DataAnalystAgent(BaseAgent):
                 analysis_results["exploratory_analysis"] = {}
 
                 if "price_data" in retrieved_data and retrieved_data["price_data"]:
+                    await self.emit_event(
+                        state,
+                        "status_update",
+                        "EXPLORATION",
+                        {"status": "ACTIVE", "message": "Running EDA on price data..."},
+                    )
                     analysis_results["exploratory_analysis"]["price_eda"] = perform_eda(
                         retrieved_data["price_data"]
                     )

@@ -46,13 +46,29 @@ class ModelEvaluatorAgent(BaseAgent):
         Returns:
             Updated state with evaluation results
         """
+        # Initialize pending events for this execution step
+        state["pending_events"] = []
+
         try:
+            await self.emit_event(
+                state,
+                "status_update",
+                "EVALUATION",
+                {"status": "ACTIVE", "message": "Evaluating models..."},
+            )
+
             # Get trained models from previous agent
             trained_models = state.get("trained_models", {})
 
             if not trained_models:
                 state["error"] = "No trained models available for evaluation"
                 state["model_evaluated"] = False
+                await self.emit_event(
+                    state,
+                    "error",
+                    "EVALUATION",
+                    {"error": "No trained models available"},
+                )
                 return state
 
             state.get("user_goal", "")
@@ -97,6 +113,24 @@ class ModelEvaluatorAgent(BaseAgent):
                         top_n=evaluation_params.get("top_n_features", 10),
                     )
                     evaluation_results["feature_importance"] = importance
+            
+            # Emit evaluation results
+            await self.emit_event(
+                state,
+                "render_output",
+                "EVALUATION",
+                {
+                    "mime_type": "application/json+tearsheet",
+                    "content": {
+                        "metric_type": "evaluation_metrics",
+                        "data": evaluation_results,
+                    },
+                },
+            )
+
+            # Update state with evaluation results
+            state["evaluation_results"] = evaluation_results
+            state["model_evaluated"] = True
 
                 # Hyperparameter tuning if requested
                 if evaluation_params.get("tune_hyperparameters", False):

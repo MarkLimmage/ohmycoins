@@ -103,6 +103,9 @@ class AgentState(TypedDict):
     anomaly_summary: str | None  # Human-readable one-liner for messages
     alert_triggered: bool  # True if HIGH severity anomalies found
     alert_payload: dict[str, Any] | None  # Structured payload for alerting service
+    # Phase 5 Messaging Infrastructure
+    sequence_id: int | None  # Monotonic sequence counter
+    pending_events: list[dict[str, Any]] | None  # Events to be emitted by the runner
 
 
 class LangGraphWorkflow:
