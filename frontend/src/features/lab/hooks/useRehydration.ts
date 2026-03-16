@@ -1,10 +1,19 @@
 import { useState, useCallback } from 'react';
+import { OpenAPI } from '@/client';
 import { LabEvent } from '../types';
 
 interface RehydrationResponse {
   session_id: string;
   last_sequence_id: number;
   event_ledger: LabEvent[];
+}
+
+async function resolveToken(): Promise<string | undefined> {
+  const rawToken = OpenAPI.TOKEN;
+  if (typeof rawToken === 'function') {
+    return await (rawToken as () => Promise<string>)();
+  }
+  return rawToken;
 }
 
 export const useRehydration = () => {
@@ -15,7 +24,15 @@ export const useRehydration = () => {
     setIsRehydrating(true);
     setError(null);
     try {
-      const response = await fetch(`/api/v1/lab/agent/sessions/${sessionId}/rehydrate`);
+      const token = await resolveToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(
+        `/api/v1/lab/agent/sessions/${sessionId}/rehydrate`,
+        { headers }
+      );
       if (!response.ok) {
         throw new Error(`Rehydration failed: ${response.statusText}`);
       }

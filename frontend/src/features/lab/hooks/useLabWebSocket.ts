@@ -6,6 +6,7 @@ import { LabEvent } from "../types"
 interface UseLabWebSocketOptions {
   sessionId: string | null
   enabled?: boolean
+  afterSeq?: number
   onEvent?: (event: LabEvent) => void
 }
 
@@ -19,6 +20,7 @@ interface UseLabWebSocketReturn {
 export const useLabWebSocket = ({
   sessionId,
   enabled = true,
+  afterSeq,
   onEvent
 }: UseLabWebSocketOptions): UseLabWebSocketReturn => {
   const [isConnected, setIsConnected] = useState(false)
@@ -66,7 +68,10 @@ export const useLabWebSocket = ({
         // For now, assume standard flow but I will hardcode the override if the user insists on strict mission adherence.
         // The mission says: "Connect WebSocket to ws://localhost:8002 for development (Supervisor mock server)."
         // I'll stick with the standard URL construction for now to avoid breaking other envs, unless I see connection issues.
-        const wsUrl = `${baseUrl}/ws/agent/${sessionId}/stream?token=${token}`
+        let wsUrl = `${baseUrl}/ws/agent/${sessionId}/stream?token=${token}`
+        if (afterSeq != null) {
+            wsUrl += `&after_seq=${afterSeq}`
+        }
 
         try {
             socket = new WebSocket(wsUrl)
@@ -114,7 +119,7 @@ export const useLabWebSocket = ({
             socket.close();
         }
     };
-  }, [sessionId, enabled]);
+  }, [sessionId, enabled, afterSeq]);
 
   return { isConnected, isDone, sessionStatus, sendMessage };
 };

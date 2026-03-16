@@ -1,5 +1,5 @@
 // Workstream E: Lab Context Refactor (Scientific Grid)
-import React, { createContext, useContext, useReducer, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useLabWebSocket } from '../hooks/useLabWebSocket';
 import { useRehydration } from '../hooks/useRehydration';
 import { LabState, LabEvent, LabCell } from '../types';
@@ -161,15 +161,19 @@ const LabContext = createContext<{
 export function LabProvider({ children, sessionId }: { children: ReactNode; sessionId: string | null }) {
   const [state, dispatch] = useReducer(labReducer, initialState);
   const { rehydrate, isRehydrating } = useRehydration();
+  const [rehydrated, setRehydrated] = useState(false);
+  const [afterSeq, setAfterSeq] = useState<number | undefined>(undefined);
 
   // Handle WebSocket events
   const onEvent = useCallback((event: LabEvent) => {
     dispatch({ type: 'PROCESS_EVENT', payload: event });
   }, []);
 
+  // Connect WS only after rehydration completes (with after_seq to prevent duplicates)
   const { isConnected, sendMessage } = useLabWebSocket({
     sessionId,
-    enabled: !!sessionId,
+    enabled: !!sessionId && rehydrated,
+    afterSeq,
     onEvent
   });
 
@@ -178,11 +182,13 @@ export function LabProvider({ children, sessionId }: { children: ReactNode; sess
     dispatch({ type: 'SET_CONNECTION_STATUS', payload: { isConnected } });
   }, [isConnected]);
 
-  // Handle Session Change
+  // Handle Session Change: rehydrate first, then enable WS
   useEffect(() => {
     dispatch({ type: 'SET_SESSION', payload: sessionId });
+    setRehydrated(false);
+    setAfterSeq(undefined);
+
     if (sessionId) {
-      // E4: Rehydration on mount
       rehydrate(sessionId).then(data => {
         if (data) {
           dispatch({ 
@@ -192,7 +198,9 @@ export function LabProvider({ children, sessionId }: { children: ReactNode; sess
               lastSequenceId: data.last_sequence_id 
             } 
           });
+          setAfterSeq(data.last_sequence_id);
         }
+        setRehydrated(true);
       });
     }
   }, [sessionId, rehydrate]);
