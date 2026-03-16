@@ -6,7 +6,7 @@ import pandas as pd  # type: ignore
 
 from app.core.config import settings
 from app.services.agent.execution import SandboxExecutor
-from app.services.agent.pipeline import PipelineManager
+from app.services.lab.pipeline_manager import PipelineManager
 
 
 async def run_code_in_dagger(

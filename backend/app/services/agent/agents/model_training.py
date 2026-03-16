@@ -59,10 +59,13 @@ class ModelTrainingAgent(BaseAgent):
             # Determine task type from user goal
             task_type = self._determine_task_type(user_goal, training_params)
 
+            # Get MV Name if available (Phase 5: Parquet Caching)
+            mv_name = state.get("mv_name") or analysis_results.get("mv_name")
+
             # Prepare training data
             training_data = self._prepare_training_data(analysis_results, state)
 
-            if training_data is None or len(training_data) == 0:
+            if not mv_name and (training_data is None or len(training_data) == 0):
                 state["error"] = "Insufficient data for model training"
                 state["model_trained"] = False
                 return state
@@ -82,8 +85,9 @@ class ModelTrainingAgent(BaseAgent):
             if task_type == "classification":
                 model_result = await train_classification_model(
                     session_id=session_id,
-                    training_data=training_data,
                     target_column=target_column,
+                    training_data=training_data,
+                    mv_name=mv_name,
                     feature_columns=feature_columns,
                     model_type=model_type,
                     hyperparameters=hyperparameters,
@@ -93,8 +97,9 @@ class ModelTrainingAgent(BaseAgent):
             else:  # regression
                 model_result = await train_regression_model(
                     session_id=session_id,
-                    training_data=training_data,
                     target_column=target_column,
+                    training_data=training_data,
+                    mv_name=mv_name,
                     feature_columns=feature_columns,
                     model_type=model_type,
                     hyperparameters=hyperparameters,
