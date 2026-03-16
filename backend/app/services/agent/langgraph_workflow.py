@@ -103,6 +103,9 @@ class AgentState(TypedDict):
     anomaly_summary: str | None  # Human-readable one-liner for messages
     alert_triggered: bool  # True if HIGH severity anomalies found
     alert_payload: dict[str, Any] | None  # Structured payload for alerting service
+    # Workstream D+ additions - Safety Bridge
+    stage_iteration_counts: dict[str, int]  # Track iterations per stage for circuit breaker
+    terminal_error: dict[str, Any] | None  # Terminal error details if kill-switch triggers
 
 
 class LangGraphWorkflow:
@@ -251,6 +254,7 @@ class LangGraphWorkflow:
                 "retry": "retrieve_data",
                 "reason": "reason",
                 "error": "handle_error",
+                "finalize": "finalize",
             },
         )
 
@@ -367,6 +371,10 @@ class LangGraphWorkflow:
         state["anomaly_summary"] = None
         state["alert_triggered"] = False
         state["alert_payload"] = None
+
+        # Workstream D+ additions - Safety Bridge
+        state["stage_iteration_counts"] = {}
+        state["terminal_error"] = None
 
         state["messages"].append(
             {
@@ -499,11 +507,43 @@ class LangGraphWorkflow:
         else:
             return "All steps complete, will finalize results"
 
+    def _check_circuit_breaker(self, state: AgentState, stage_name: str) -> bool:
+        """
+        Check if the circuit breaker should trigger for the given stage.
+        
+        Increments the iteration count for the stage. If count >= 4, triggers
+        a terminal error or HITL intervention.
+        
+        Args:
+            state: Current workflow state
+            stage_name: Name of the stage to check (e.g., 'data_retrieval')
+            
+        Returns:
+            True if circuit breaker triggered (stop execution), False otherwise.
+        """
+        counts = state.get("stage_iteration_counts", {})
+        current_count = counts.get(stage_name, 0) + 1
+        counts[stage_name] = current_count
+        state["stage_iteration_counts"] = counts
+        
+        if current_count >= 4:
+            logger.error(f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)")
+            state["terminal_error"] = {
+                "code": "CIRCUIT_BREAKER_TRIPPED",
+                "message": f"Maximum retries (3) exceeded for stage '{stage_name}'. Workflow halted.",
+                "details": {"stage": stage_name, "iterations": current_count}
+            }
+            state["error"] = f"Circuit breaker tripped at {stage_name}"
+            # Route to END or Trigger HITL - For now, we set error which leads to handle_error or finalize
+            return True
+        return False
+
     async def _retrieve_data_node(self, state: AgentState) -> AgentState:
         """
         Execute data retrieval agent.
 
         Week 3-4: Enhanced to retrieve comprehensive data (price, sentiment, on-chain, catalysts).
+        Workstream D+: Added Circuit Breaker.
 
         Args:
             state: Current workflow state
@@ -511,6 +551,9 @@ class LangGraphWorkflow:
         Returns:
             Updated state with retrieved data
         """
+        if self._check_circuit_breaker(state, "data_retrieval"):
+            return state
+
         state["current_step"] = "data_retrieval"
 
         try:
@@ -540,6 +583,7 @@ class LangGraphWorkflow:
 
         Week 7-8: New node for data quality validation.
         Checks if retrieved data is sufficient and of good quality.
+        Workstream D+: Added Statistical Health Gates and Circuit Breaker.
 
         Args:
             state: Current workflow state
@@ -547,6 +591,10 @@ class LangGraphWorkflow:
         Returns:
             Updated state with quality check results
         """
+        # Circuit Breaker Check
+        if self._check_circuit_breaker(state, "data_validation"):
+            return state
+
         state["current_step"] = "data_validation"
 
         retrieved_data = state.get("retrieved_data", {})
@@ -595,10 +643,24 @@ class LangGraphWorkflow:
                     state["anomaly_detected"] = True
                     state["anomaly_summary"] = f"Detected {anomaly_stats['anomaly_count']} price anomalies (max Z={anomaly_stats['max_z_score']:.1f})"
                 
-                # 2. Variance Check
+                # 2. Variance Check & Zero-Variance Kill-Switch
                 variance = anomaly_stats.get("variance", 0.0)
                 quality_checks["price_variance"] = variance
                 
+                # Kill-Switch: Zero Variance
+                if variance == 0.0:
+                    error_msg = "Zero variance detected in price signal. Aborting research loop."
+                    logger.error(f"TERMINAL_DATA_ERROR: {error_msg}")
+                    state["terminal_error"] = {
+                        "code": "TERMINAL_DATA_ERROR",
+                        "message": error_msg,
+                        "details": {"variance": 0.0, "null_count": 0}
+                    }
+                    state["error"] = "TERMINAL_DATA_ERROR"
+                    quality_checks["overall"] = "terminal_error"
+                    state["quality_checks"] = quality_checks
+                    return state
+
                 # 3. Continuity Check (Flash Crashes)
                 continuity = validate_price_continuity(prices, max_drop_pct=0.3)  # 30% drop check
                 quality_checks["continuity_issues"] = continuity.get("issue_count", 0)
@@ -607,21 +669,30 @@ class LangGraphWorkflow:
                     quality_checks["continuity_warning"] = "Significant price gaps detected"
 
             quality_checks["price_records"] = len(price_data)
-            quality_checks["sufficient_records"] = (
-                len(price_data) >= 30
-            )  # At least 30 records
-
-            # Overall quality assessment
-            if quality_checks["completeness"] and quality_checks["sufficient_records"]:
-                # Downgrade if anomalies found
-                if quality_checks.get("anomaly_stats", {}).get("has_anomalies", False):
-                    quality_checks["overall"] = "good_with_warnings"
-                else:
-                    quality_checks["overall"] = "good"
-            elif quality_checks["completeness"] or quality_checks["sufficient_records"]:
-                quality_checks["overall"] = "fair"
+            
+            # Data Insufficiency Logic
+            # If retrieved data < 50 rows after 1 retry, route to finalize with completed_with_errors
+            retry_count = state.get("retry_count", 0)
+            if len(price_data) < 50 and retry_count >= 1:
+                logger.warning(f"Data insufficiency detected: {len(price_data)} rows after {retry_count} retries.")
+                quality_checks["overall"] = "insufficient_data"
             else:
-                quality_checks["overall"] = "poor"
+                quality_checks["sufficient_records"] = (
+                    len(price_data) >= 30
+                )  # At least 30 records
+
+                # Overall quality assessment
+                if quality_checks.get("overall") != "terminal_error": # Don't overwrite terminal
+                    if quality_checks["completeness"] and quality_checks["sufficient_records"]:
+                        # Downgrade if anomalies found
+                        if quality_checks.get("anomaly_stats", {}).get("has_anomalies", False):
+                            quality_checks["overall"] = "good_with_warnings"
+                        else:
+                            quality_checks["overall"] = "good"
+                    elif quality_checks["completeness"] or quality_checks["sufficient_records"]:
+                        quality_checks["overall"] = "fair"
+                    else:
+                        quality_checks["overall"] = "poor"
         else:
             quality_checks["overall"] = "no_data"
 
@@ -1007,7 +1078,7 @@ class LangGraphWorkflow:
 
     def _route_after_validation(
         self, state: AgentState
-    ) -> Literal["analyze", "retry", "reason", "error"]:
+    ) -> Literal["analyze", "retry", "reason", "error", "finalize"]:
         """
         Route after data validation.
 
@@ -1019,6 +1090,16 @@ class LangGraphWorkflow:
         """
         quality_checks = state.get("quality_checks", {})
         overall_quality = quality_checks.get("overall", "unknown")
+
+        # Check for Terminal Error (Kill-Switch) or Circuit Breaker
+        if overall_quality == "terminal_error" or state.get("terminal_error"):
+            return "error"
+            
+        # Check for Insufficient Data (Workstream D+)
+        if overall_quality == "insufficient_data":
+            state["status"] = "completed_with_errors"
+            logger.warning("Routing to finalize due to insufficient data.")
+            return "finalize"
 
         if overall_quality == "no_data":
             # No data retrieved, check retry count
@@ -1041,7 +1122,7 @@ class LangGraphWorkflow:
             # Poor quality, might need more data
             state["needs_more_data"] = True
             return "reason"  # Go back to reasoning to decide
-        elif overall_quality in ["fair", "good"]:
+        elif overall_quality in ["fair", "good", "good_with_warnings"]:
             # Data is acceptable, proceed to analysis
             return "analyze"
         else:
