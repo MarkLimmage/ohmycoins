@@ -132,21 +132,21 @@ class ModelEvaluatorAgent(BaseAgent):
             state["evaluation_results"] = evaluation_results
             state["model_evaluated"] = True
 
-                # Hyperparameter tuning if requested
-                if evaluation_params.get("tune_hyperparameters", False):
-                    training_data = self._prepare_training_data(state)
-                    if training_data is not None:
-                        tuning_result = tune_hyperparameters(
-                            training_data=training_data,
-                            target_column=target_column,
-                            feature_columns=primary_model["feature_columns"],
-                            model_type=self._get_tuning_model_type(
-                                primary_model["model_type"], task_type
-                            ),
-                            search_type=evaluation_params.get("search_type", "grid"),
-                            cv_folds=evaluation_params.get("cv_folds", 5),
-                        )
-                        evaluation_results["hyperparameter_tuning"] = tuning_result
+            # Hyperparameter tuning if requested
+            if evaluation_params.get("tune_hyperparameters", False):
+                training_data = self._prepare_training_data(state)
+                if training_data is not None:
+                    tuning_result = tune_hyperparameters(
+                        training_data=training_data,
+                        target_column=target_column,
+                        feature_columns=primary_model["feature_columns"],
+                        model_type=self._get_tuning_model_type(
+                            primary_model["model_type"], task_type
+                        ),
+                        search_type=evaluation_params.get("search_type", "grid"),
+                        cv_folds=evaluation_params.get("cv_folds", 5),
+                    )
+                    evaluation_results["hyperparameter_tuning"] = tuning_result
 
             # Compare multiple models if available
             if len(trained_models) > 1:
