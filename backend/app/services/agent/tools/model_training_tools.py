@@ -40,6 +40,8 @@ from xgboost import XGBClassifier, XGBRegressor
 
 from app.core.config import settings
 from app.services.dagger_wrapper import DaggerExecutor
+from app.services.lab.pipeline_manager import PipelineManager
+from app.services.lab.mlflow_service import MLflowService
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ logger = logging.getLogger(__name__)
 async def _execute_training_in_dagger(
     task_type: Literal["classification", "regression"],
     session_id: str,
-    training_data: pd.DataFrame,
+    training_data: pd.DataFrame | None,
     target_column: str,
     feature_columns: list[str] | None,
     model_type: str,
@@ -56,22 +58,44 @@ async def _execute_training_in_dagger(
     random_state: int,
     scale_features: bool,
     validation_strategy: str,
+    mv_name: str | None = None,
 ) -> dict[str, Any]:
     """
     Internal helper to execute training via Dagger.
+    Uses PipelineManager for caching and MLflowService for lifecycle tagging.
     """
-    # 1. Save provided dataframe to Parquet
-    # We use a temp file because the dataframe might have been modified in memory by the Agent
-    with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as tmp:
-         training_data.to_parquet(tmp.name, index=False)
-         data_path = tmp.name
+    # 1. Resolve Data Path (PipelineManager / Local Cache)
+    pipeline = PipelineManager(session_id)
+    data_path = None
+    temp_file = None
 
-    if feature_columns is None:
-        feature_columns = [col for col in training_data.columns if col != target_column]
+    try:
+        if mv_name:
+            # Use cached parquet from Lab pipeline
+            data_path = pipeline.export_mv_to_parquet(mv_name)
+        elif training_data is not None:
+            # Fallback for in-memory dataframe
+            temp_file = tempfile.NamedTemporaryFile(suffix=".parquet", delete=False)
+            training_data.to_parquet(temp_file.name, index=False)
+            temp_file.close() # Close handle so others can read
+            data_path = temp_file.name
+        else:
+            raise ValueError("No data provided (neither mv_name nor training_data)")
 
-    # 2. Construct the Training Script
-    # We used json.dumps to safely serialize parameters into the script
-    script_content = f"""
+        if feature_columns is None:
+            # Partial read to get columns if we don't have dataframe loaded
+            # Avoiding full read for efficiency
+            if training_data is not None:
+                cols = training_data.columns
+            else:
+                # Read parquet schema/columns
+                df_schema = pd.read_parquet(data_path, engine='pyarrow').columns
+                cols = df_schema
+            feature_columns = [col for col in cols if col != target_column]
+
+        # 2. Construct the Training Script
+        # We used json.dumps to safely serialize parameters into the script
+        script_content = f"""
 import json
 import os
 import joblib
@@ -226,58 +250,117 @@ if __name__ == "__main__":
     train()
 """
 
+
     # 3. Request Dagger Execution
     # We pass data_filename="training_data.parquet" to match script expectation
-    with tempfile.TemporaryDirectory() as temp_dir:
-        executor = DaggerExecutor()
-        result = await executor.execute_script(
-            script_content=script_content,
-            data_path=data_path,
-            output_dir=temp_dir,
-            mlflow_tracking_uri=settings.MLFLOW_TRACKING_URI,
-        )
-
-        # Clean up temp data file
-        if os.path.exists(data_path):
-            os.remove(data_path)
-
-        if result.get("status") == "error":
-            logger.error(f"Dagger execution failed: {result.get('stderr')}")
-            # Fallback or raise? We raise to let Agent handle it.
-            raise RuntimeError(f"Model training failed in Dagger execution: {result.get('stderr')}")
-
-        # 4. Load Artifacts back into memory
-        model_path = os.path.join(temp_dir, "model.joblib")
-        scaler_path = os.path.join(temp_dir, "scaler.joblib")
-        metrics_path = os.path.join(temp_dir, "metrics.json")
-
-        if not os.path.exists(model_path):
-            raise FileNotFoundError("Model artifact not found after Dagger execution.")
-
-        model = joblib.load(model_path)
-        scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
-        
-        with open(metrics_path, "r") as f:
-            metrics = json.load(f)
-
-        return {
-            "model": model,
-            "scaler": scaler,
-            "feature_columns": feature_columns,
-            "metrics": metrics,
+    
+    # MLflow Tracking Context
+    mlflow.set_tracking_uri(settings.MLFLOW_TRACKING_URI)
+    
+    # Determine Run Name
+    run_name = f"{task_type}_{model_type}_{session_id[:8]}"
+    
+    # Use context manager for auto-termination of runs
+    with mlflow.start_run(run_name=run_name) as run:
+        # Log Parameters
+        mlflow.log_params({
+            "task_type": task_type,
             "model_type": model_type,
-            "hyperparameters": hyperparameters,
+            "test_size": test_size,
             "validation_strategy": validation_strategy,
-            # Placeholder sizes since we didn't return them from script (could add to metrics)
-            "train_size": 0, 
-            "test_size": 0
-        }
+            "session_id": session_id,
+        })
+        if hyperparameters:
+            mlflow.log_params(hyperparameters)
+        if mv_name:
+             mlflow.log_param("mv_name", mv_name)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executor = DaggerExecutor()
+            result = await executor.execute_script(
+                script_content=script_content,
+                data_path=data_path,
+                output_dir=temp_dir,
+                mlflow_tracking_uri=settings.MLFLOW_TRACKING_URI,
+            )
+
+            # Clean up temp data file ONLY if we created it (fallback mode)
+            if temp_file and os.path.exists(data_path):
+                os.remove(data_path)
+
+            if result.get("status") == "error":
+                logger.error(f"Dagger execution failed: {result.get('stderr')}")
+                mlflow.set_tag("status", "FAILED")
+                # Log execution log as artifact for debugging
+                with open(os.path.join(temp_dir, "dagger_error.log"), "w") as f:
+                    f.write(result.get("stderr", ""))
+                mlflow.log_artifact(os.path.join(temp_dir, "dagger_error.log"))
+                raise RuntimeError(f"Model training failed in Dagger execution: {result.get('stderr')}")
+
+            # 4. Load Artifacts & Metrics
+            model_path = os.path.join(temp_dir, "model.joblib")
+            scaler_path = os.path.join(temp_dir, "scaler.joblib")
+            metrics_path = os.path.join(temp_dir, "metrics.json")
+
+            if not os.path.exists(model_path):
+                mlflow.set_tag("status", "MISSING_ARTIFACTS")
+                raise FileNotFoundError("Model artifact not found after Dagger execution.")
+
+            model = joblib.load(model_path)
+            scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+            
+            if os.path.exists(metrics_path):
+                with open(metrics_path, "r") as f:
+                    metrics = json.load(f)
+            else:
+                metrics = {}
+
+            # 5. Log Metrics & Tag Lifecycle (Phase 5 Requirement)
+            # Flatten metrics for MLflow logging
+            for split, split_metrics in metrics.items():
+                for name, value in split_metrics.items():
+                    mlflow.log_metric(f"{split}_{name}", value)
+
+            # Log key metrics at root level for Service check
+            if "test" in metrics:
+                if "accuracy" in metrics["test"]:
+                    mlflow.log_metric("accuracy", metrics["test"]["accuracy"])
+                if "f1" in metrics["test"]:
+                    mlflow.log_metric("f1_score", metrics["test"]["f1"])
+
+            # Use MLflowService to tag lifecycle based on rules
+            mlflow_service = MLflowService()
+            lifecycle_status = mlflow_service.tag_model_lifecycle(run.info.run_id)
+            
+            # Log artifacts to MLflow
+            mlflow.log_artifact(model_path, artifact_path="model")
+            if scaler and os.path.exists(scaler_path):
+                mlflow.log_artifact(scaler_path, artifact_path="scaler")
+            
+            return {
+                "model": model,
+                "scaler": scaler,
+                "feature_columns": feature_columns,
+                "metrics": metrics,
+                "model_type": model_type,
+                "hyperparameters": hyperparameters,
+                "validation_strategy": validation_strategy,
+                "run_id": run.info.run_id,
+                "lifecycle_status": lifecycle_status
+            }
+        except Exception as e:
+            # Ensure we don't leave zombie runs if not handled by context manager
+            # Context manager handles end_run, but we might want to log the exception
+            logger.error(f"Error in MLflow run: {e}")
+            raise e
+
 
 
 async def train_classification_model(
     session_id: str,
-    training_data: pd.DataFrame,
     target_column: str,
+    training_data: pd.DataFrame | None = None,
+    mv_name: str | None = None,
     feature_columns: list[str] | None = None,
     model_type: Literal[
         "random_forest",
@@ -297,11 +380,13 @@ async def train_classification_model(
 ) -> dict[str, Any]:
     """
     Train a classification model using Dagger sandbox.
+    Phase 5: Supports Parquet Row-Count Caching via mv_name.
     """
     return await _execute_training_in_dagger(
         task_type="classification",
         session_id=session_id,
         training_data=training_data,
+        mv_name=mv_name,
         target_column=target_column,
         feature_columns=feature_columns,
         model_type=model_type,
@@ -315,8 +400,9 @@ async def train_classification_model(
 
 async def train_regression_model(
     session_id: str,
-    training_data: pd.DataFrame,
     target_column: str,
+    training_data: pd.DataFrame | None = None,
+    mv_name: str | None = None,
     feature_columns: list[str] | None = None,
     model_type: Literal[
         "random_forest",
@@ -338,11 +424,13 @@ async def train_regression_model(
 ) -> dict[str, Any]:
     """
     Train a regression model using Dagger sandbox.
+    Phase 5: Supports Parquet Row-Count Caching via mv_name.
     """
     return await _execute_training_in_dagger(
         task_type="regression",
         session_id=session_id,
         training_data=training_data,
+        mv_name=mv_name,
         target_column=target_column,
         feature_columns=feature_columns,
         model_type=model_type,
