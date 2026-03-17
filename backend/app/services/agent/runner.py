@@ -84,7 +84,10 @@ class AgentRunner:
                 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
                 conn_str = _build_checkpoint_connstr()
-                self._checkpointer = AsyncPostgresSaver.from_conn_string(conn_str)
+                # from_conn_string returns an async context manager; we enter it
+                # and keep the reference alive for the lifetime of the runner.
+                self._checkpointer_cm = AsyncPostgresSaver.from_conn_string(conn_str)
+                self._checkpointer = await self._checkpointer_cm.__aenter__()
                 await self._checkpointer.setup()
                 logger.info("Initialized AsyncPostgresSaver checkpointer")
             except Exception:
@@ -202,10 +205,10 @@ class AgentRunner:
                         "pending_events": [],
                     }
 
-                # Track which events we've already processed to avoid duplicates.
+                # Track which sequence_ids we've already processed to avoid duplicates.
                 # LangGraph's astream yields full state per node; nodes that don't
                 # clear pending_events cause the runner to re-process old events.
-                processed_event_keys: set[tuple[int, str]] = set()
+                processed_seq_ids: set[int] = set()
 
                 async for state_update in workflow.stream_execute(initial_state, session_id=str(session_id)):
                     # Increment sequence_id for each state update
@@ -222,13 +225,10 @@ class AgentRunner:
                         if pending_events:
                             for event in pending_events:
                                 # Deduplicate: skip events we've already stored
-                                event_key = (
-                                    event.get("sequence_id", 0),
-                                    event.get("timestamp", ""),
-                                )
-                                if event_key in processed_event_keys:
+                                event_seq = event.get("sequence_id", 0)
+                                if event_seq in processed_seq_ids:
                                     continue
-                                processed_event_keys.add(event_key)
+                                processed_seq_ids.add(event_seq)
 
                                 # Update sequence_id tracker
                                 event_seq = event.get("sequence_id")
@@ -541,12 +541,13 @@ class AgentRunner:
             await self._redis.aclose()
             self._redis = None
         # Close persistent checkpointer connection pool
-        if self._checkpointer is not None and hasattr(self._checkpointer, "conn"):
+        if hasattr(self, "_checkpointer_cm") and self._checkpointer_cm is not None:
             try:
-                await self._checkpointer.conn.close()
+                await self._checkpointer_cm.__aexit__(None, None, None)
             except Exception:
                 pass
-            self._checkpointer = None
+            self._checkpointer_cm = None
+        self._checkpointer = None
 
     @staticmethod
     async def _publish(
