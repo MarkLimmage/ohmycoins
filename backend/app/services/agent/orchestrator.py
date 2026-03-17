@@ -28,15 +28,16 @@ class AgentOrchestrator:
     Weeks 7-8: Full ReAct loop implementation will be added.
     """
 
-    def __init__(self, session_manager: SessionManager) -> None:
+    def __init__(self, session_manager: SessionManager, checkpointer: Any | None = None) -> None:
         """
         Initialize the orchestrator with a session manager.
 
         Args:
             session_manager: Session manager for state persistence
+            checkpointer: LangGraph checkpointer for state persistence (default: MemorySaver)
         """
         self.session_manager = session_manager
-        self.checkpointer = MemorySaver()
+        self.checkpointer = checkpointer or MemorySaver()
         self.workflow = LangGraphWorkflow(
             session=None,
             checkpointer=self.checkpointer

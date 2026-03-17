@@ -27,6 +27,12 @@ from .artifacts import ArtifactManager
 from .orchestrator import AgentOrchestrator
 from .session_manager import SessionManager
 
+
+def _build_checkpoint_connstr() -> str:
+    """Build a psycopg-compatible connection string for the LangGraph checkpointer."""
+    s = settings
+    return f"postgresql://{s.POSTGRES_USER}:{s.POSTGRES_PASSWORD}@{s.POSTGRES_SERVER}:{s.POSTGRES_PORT}/{s.POSTGRES_DB}"
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,9 +63,10 @@ class AgentRunner:
 
     def __init__(self) -> None:
         self.session_manager = SessionManager()
-        self.orchestrator = AgentOrchestrator(self.session_manager)
         self._tasks: dict[uuid.UUID, asyncio.Task] = {}
         self._redis: aioredis.Redis | None = None
+        self._checkpointer: Any = None
+        self._orchestrator: AgentOrchestrator | None = None
 
     async def _get_redis(self) -> aioredis.Redis:
         if self._redis is None:
@@ -69,6 +76,32 @@ class AgentRunner:
                 decode_responses=True,
             )
         return self._redis
+
+    async def _get_checkpointer(self) -> Any:
+        """Lazily create and initialize a persistent PostgreSQL checkpointer."""
+        if self._checkpointer is None:
+            try:
+                from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+                conn_str = _build_checkpoint_connstr()
+                self._checkpointer = AsyncPostgresSaver.from_conn_string(conn_str)
+                await self._checkpointer.setup()
+                logger.info("Initialized AsyncPostgresSaver checkpointer")
+            except Exception:
+                logger.warning(
+                    "Failed to create PostgresSaver, falling back to MemorySaver",
+                    exc_info=True,
+                )
+                from langgraph.checkpoint.memory import MemorySaver
+                self._checkpointer = MemorySaver()
+        return self._checkpointer
+
+    @property
+    def orchestrator(self) -> AgentOrchestrator:
+        """Lazy-init orchestrator (sync property; checkpointer set later if needed)."""
+        if self._orchestrator is None:
+            self._orchestrator = AgentOrchestrator(self.session_manager)
+        return self._orchestrator
     async def start_session(self, session_id: uuid.UUID) -> None:
         """Start a new agent session in the background."""
         logger.info(f"Starting session {session_id}")
@@ -131,12 +164,13 @@ class AgentRunner:
                 from .langgraph_workflow import AgentState, LangGraphWorkflow
 
                 # Initialize workflow with database session and user context
-                # Pass the checkpointer from orchestrator to ensure persistence within the process
+                # Use persistent checkpointer for cross-container/restart resilience
+                checkpointer = await self._get_checkpointer()
                 workflow = LangGraphWorkflow(
                     session=db,
                     user_id=session.user_id,
                     credential_id=session.llm_credential_id,
-                    checkpointer=self.orchestrator.checkpointer,
+                    checkpointer=checkpointer,
                 )
 
                 initial_state = None
@@ -168,6 +202,11 @@ class AgentRunner:
                         "pending_events": [],
                     }
 
+                # Track which events we've already processed to avoid duplicates.
+                # LangGraph's astream yields full state per node; nodes that don't
+                # clear pending_events cause the runner to re-process old events.
+                processed_event_keys: set[tuple[int, str]] = set()
+
                 async for state_update in workflow.stream_execute(initial_state, session_id=str(session_id)):
                     # Increment sequence_id for each state update
                     sequence_id += 1
@@ -182,6 +221,15 @@ class AgentRunner:
                         # Process Explicit Events (New Agent System)
                         if pending_events:
                             for event in pending_events:
+                                # Deduplicate: skip events we've already stored
+                                event_key = (
+                                    event.get("sequence_id", 0),
+                                    event.get("timestamp", ""),
+                                )
+                                if event_key in processed_event_keys:
+                                    continue
+                                processed_event_keys.add(event_key)
+
                                 # Update sequence_id tracker
                                 event_seq = event.get("sequence_id")
                                 if event_seq is not None:
@@ -492,6 +540,13 @@ class AgentRunner:
         if self._redis:
             await self._redis.aclose()
             self._redis = None
+        # Close persistent checkpointer connection pool
+        if self._checkpointer is not None and hasattr(self._checkpointer, "conn"):
+            try:
+                await self._checkpointer.conn.close()
+            except Exception:
+                pass
+            self._checkpointer = None
 
     @staticmethod
     async def _publish(
