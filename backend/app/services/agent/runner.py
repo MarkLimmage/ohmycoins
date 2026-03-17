@@ -81,13 +81,14 @@ class AgentRunner:
         """Lazily create and initialize a persistent PostgreSQL checkpointer."""
         if self._checkpointer is None:
             try:
+                import psycopg
                 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
                 conn_str = _build_checkpoint_connstr()
-                # from_conn_string returns an async context manager; we enter it
-                # and keep the reference alive for the lifetime of the runner.
-                self._checkpointer_cm = AsyncPostgresSaver.from_conn_string(conn_str)
-                self._checkpointer = await self._checkpointer_cm.__aenter__()
+                conn = await psycopg.AsyncConnection.connect(
+                    conn_str, autocommit=True, prepare_threshold=0
+                )
+                self._checkpointer = AsyncPostgresSaver(conn)
                 await self._checkpointer.setup()
                 logger.info("Initialized AsyncPostgresSaver checkpointer")
             except Exception:
@@ -540,13 +541,12 @@ class AgentRunner:
         if self._redis:
             await self._redis.aclose()
             self._redis = None
-        # Close persistent checkpointer connection pool
-        if hasattr(self, "_checkpointer_cm") and self._checkpointer_cm is not None:
+        # Close persistent checkpointer connection
+        if self._checkpointer is not None and hasattr(self._checkpointer, "conn"):
             try:
-                await self._checkpointer_cm.__aexit__(None, None, None)
+                await self._checkpointer.conn.close()
             except Exception:
                 pass
-            self._checkpointer_cm = None
         self._checkpointer = None
 
     @staticmethod
