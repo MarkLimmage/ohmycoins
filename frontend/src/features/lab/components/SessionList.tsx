@@ -1,8 +1,8 @@
-import { Badge, Box, HStack, Text, VStack, IconButton } from "@chakra-ui/react"
-import { useColorModeValue } from "@/components/ui/color-mode"
+import { Badge, Box, HStack, IconButton, Text, VStack } from "@chakra-ui/react"
 import { formatDistanceToNow } from "date-fns"
 import { FiTrash2 } from "react-icons/fi"
 import type { AgentSessionPublic } from "@/client"
+import { useColorModeValue } from "@/components/ui/color-mode"
 
 interface SessionListProps {
   sessions: AgentSessionPublic[]
@@ -91,7 +91,13 @@ export function SessionList({
           >
             <VStack align="stretch" gap={1}>
               <HStack justify="space-between">
-                <Text fontSize="sm" fontWeight="medium" lineClamp={1} flex={1} color={primaryText}>
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  lineClamp={1}
+                  flex={1}
+                  color={primaryText}
+                >
                   {session.user_goal}
                 </Text>
                 <HStack gap={1}>
@@ -110,7 +116,11 @@ export function SessionList({
                     colorPalette="red"
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (window.confirm("Are you sure you want to delete this session?")) {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this session?",
+                        )
+                      ) {
                         onDelete(session.id)
                       }
                     }}

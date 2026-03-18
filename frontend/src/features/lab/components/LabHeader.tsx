@@ -1,91 +1,157 @@
-import React, { useMemo } from 'react';
-import ReactFlow, { Background, Node, Edge, Position } from 'reactflow';
-import 'reactflow/dist/style.css';
-import { Box } from '@chakra-ui/react';
-import { useLabContext } from '../context/LabContext';
-import { LabStage } from '../types';
+import type React from "react"
+import { useMemo } from "react"
+import ReactFlow, {
+  Background,
+  type Edge,
+  type Node,
+  Position,
+} from "reactflow"
+import "reactflow/dist/style.css"
+import { Box } from "@chakra-ui/react"
+import { useLabContext } from "../context/LabContext"
+import type { LabStage } from "../types"
 
 const initialNodes: Node[] = [
-  { id: 'BUSINESS_UNDERSTANDING', position: { x: 0, y: 50 }, data: { label: 'Business Understanding' }, type: 'input', sourcePosition: Position.Right, targetPosition: Position.Left },
-  { id: 'DATA_ACQUISITION', position: { x: 200, y: 50 }, data: { label: 'Data Acquisition' }, type: 'default', sourcePosition: Position.Right, targetPosition: Position.Left },
-  { id: 'PREPARATION', position: { x: 400, y: 50 }, data: { label: 'Preparation' }, type: 'default', sourcePosition: Position.Right, targetPosition: Position.Left },
-  { id: 'EXPLORATION', position: { x: 600, y: 50 }, data: { label: 'Exploration' }, type: 'default', sourcePosition: Position.Right, targetPosition: Position.Left },
-  { id: 'MODELING', position: { x: 800, y: 50 }, data: { label: 'Modeling' }, type: 'default', sourcePosition: Position.Right, targetPosition: Position.Left },
-  { id: 'EVALUATION', position: { x: 1000, y: 50 }, data: { label: 'Evaluation' }, type: 'default', sourcePosition: Position.Right, targetPosition: Position.Left },
-  { id: 'DEPLOYMENT', position: { x: 1200, y: 50 }, data: { label: 'Deployment' }, type: 'output', sourcePosition: Position.Right, targetPosition: Position.Left },
-];
+  {
+    id: "BUSINESS_UNDERSTANDING",
+    position: { x: 0, y: 50 },
+    data: { label: "Business Understanding" },
+    type: "input",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+  {
+    id: "DATA_ACQUISITION",
+    position: { x: 200, y: 50 },
+    data: { label: "Data Acquisition" },
+    type: "default",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+  {
+    id: "PREPARATION",
+    position: { x: 400, y: 50 },
+    data: { label: "Preparation" },
+    type: "default",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+  {
+    id: "EXPLORATION",
+    position: { x: 600, y: 50 },
+    data: { label: "Exploration" },
+    type: "default",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+  {
+    id: "MODELING",
+    position: { x: 800, y: 50 },
+    data: { label: "Modeling" },
+    type: "default",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+  {
+    id: "EVALUATION",
+    position: { x: 1000, y: 50 },
+    data: { label: "Evaluation" },
+    type: "default",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+  {
+    id: "DEPLOYMENT",
+    position: { x: 1200, y: 50 },
+    data: { label: "Deployment" },
+    type: "output",
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  },
+]
 
 const initialEdges: Edge[] = [
-  { id: 'e1-2', source: 'BUSINESS_UNDERSTANDING', target: 'DATA_ACQUISITION', animated: true },
-  { id: 'e2-3', source: 'DATA_ACQUISITION', target: 'PREPARATION', animated: true },
-  { id: 'e3-4', source: 'PREPARATION', target: 'EXPLORATION', animated: true },
-  { id: 'e4-5', source: 'EXPLORATION', target: 'MODELING', animated: true },
-  { id: 'e5-6', source: 'MODELING', target: 'EVALUATION', animated: true },
-  { id: 'e6-7', source: 'EVALUATION', target: 'DEPLOYMENT', animated: true },
-];
+  {
+    id: "e1-2",
+    source: "BUSINESS_UNDERSTANDING",
+    target: "DATA_ACQUISITION",
+    animated: true,
+  },
+  {
+    id: "e2-3",
+    source: "DATA_ACQUISITION",
+    target: "PREPARATION",
+    animated: true,
+  },
+  { id: "e3-4", source: "PREPARATION", target: "EXPLORATION", animated: true },
+  { id: "e4-5", source: "EXPLORATION", target: "MODELING", animated: true },
+  { id: "e5-6", source: "MODELING", target: "EVALUATION", animated: true },
+  { id: "e6-7", source: "EVALUATION", target: "DEPLOYMENT", animated: true },
+]
 
 export const LabHeader = () => {
-  const { state, dispatch } = useLabContext();
-  const { stageOutputs, activeStages, selectedStage, stages } = state;
+  const { state, dispatch } = useLabContext()
+  const { stageOutputs, activeStages, selectedStage, stages } = state
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
-      const stageId = node.id as LabStage;
-      dispatch({ type: 'SET_SELECTED_STAGE', payload: stageId });
-  };
+    const stageId = node.id as LabStage
+    dispatch({ type: "SET_SELECTED_STAGE", payload: stageId })
+  }
 
   const nodes = useMemo(() => {
     return initialNodes.map((node) => {
-      const stageId = node.id as LabStage;
-      
-      const isActive = activeStages.has(stageId);
-      const outputCount = (stageOutputs[stageId]?.length || 0) + (stages?.[stageId]?.length || 0);
-      const isSelected = selectedStage === stageId;
+      const stageId = node.id as LabStage
 
-      let style: React.CSSProperties = { 
-          width: 150, 
-          fontSize: '10px',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          padding: '8px',
-          background: 'white',
-          cursor: 'pointer'
-      };
-      
-      if (typeof node.style === 'object') {
-          style = { ...style, ...node.style };
+      const isActive = activeStages.has(stageId)
+      const outputCount =
+        (stageOutputs[stageId]?.length || 0) + (stages?.[stageId]?.length || 0)
+      const isSelected = selectedStage === stageId
+
+      let style: React.CSSProperties = {
+        width: 150,
+        fontSize: "10px",
+        border: "1px solid #ddd",
+        borderRadius: "4px",
+        padding: "8px",
+        background: "white",
+        cursor: "pointer",
+      }
+
+      if (typeof node.style === "object") {
+        style = { ...style, ...node.style }
       }
 
       // Selection Highlight
       if (isSelected) {
-          style.boxShadow = '0 0 0 2px #3182ce';
-          style.fontWeight = 'bold';
+        style.boxShadow = "0 0 0 2px #3182ce"
+        style.fontWeight = "bold"
       }
 
       // Status Colors
       if (isActive) {
-          style.background = '#FEFCBF'; // Yellow-100
-          style.borderColor = '#D69E2E'; // Yellow-600
+        style.background = "#FEFCBF" // Yellow-100
+        style.borderColor = "#D69E2E" // Yellow-600
       } else if (outputCount > 0) {
-          style.background = '#C6F6D5'; // Green-100
-          style.borderColor = '#38A169'; // Green-500
+        style.background = "#C6F6D5" // Green-100
+        style.borderColor = "#38A169" // Green-500
       } else {
-          style.background = '#EDF2F7'; // Gray-100
+        style.background = "#EDF2F7" // Gray-100
       }
 
       return {
         ...node,
         style,
-      };
-    });
-  }, [stageOutputs, activeStages, selectedStage, stages]);
+      }
+    })
+  }, [stageOutputs, activeStages, selectedStage, stages])
 
   return (
     <Box h="150px" w="100%" borderBottom="1px solid" borderColor="gray.200">
-      <ReactFlow 
-        nodes={nodes} 
-        edges={initialEdges} 
+      <ReactFlow
+        nodes={nodes}
+        edges={initialEdges}
         onNodeClick={onNodeClick}
-        fitView 
+        fitView
         attributionPosition="bottom-right"
         proOptions={{ hideAttribution: true }}
         panOnScroll={false}
@@ -98,5 +164,5 @@ export const LabHeader = () => {
         <Background color="#aaa" gap={16} size={1} />
       </ReactFlow>
     </Box>
-  );
-};
+  )
+}

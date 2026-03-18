@@ -1,49 +1,53 @@
-import React, { useState } from 'react';
-import { Box, Input, Button, HStack } from '@chakra-ui/react';
-import { useLabContext } from '../context/LabContext';
-import useCustomToast from '../../../hooks/useCustomToast';
+import { Box, Button, HStack, Input } from "@chakra-ui/react"
+import type React from "react"
+import { useState } from "react"
+import useCustomToast from "../../../hooks/useCustomToast"
+import { useLabContext } from "../context/LabContext"
 
 export const ChatInput = () => {
-  const { state, isLoading } = useLabContext();
-  const [message, setMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const { showErrorToast } = useCustomToast();
+  const { state, isLoading } = useLabContext()
+  const [message, setMessage] = useState("")
+  const [isSending, setIsSending] = useState(false)
+  const { showErrorToast } = useCustomToast()
 
   const handleSend = async () => {
-    if (!message.trim() || !state.sessionId) return;
+    if (!message.trim() || !state.sessionId) return
 
-    setIsSending(true);
+    setIsSending(true)
     try {
-      const response = await fetch(`/api/v1/lab/agent/sessions/${state.sessionId}/message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/v1/lab/agent/sessions/${state.sessionId}/message`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content: message }),
         },
-        body: JSON.stringify({ content: message }),
-      });
+      )
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        throw new Error("Failed to send message")
       }
-      
-      await response.json();
-      
-      setMessage('');
-    } catch (error) {
-      showErrorToast('Error sending message');
+
+      await response.json()
+
+      setMessage("")
+    } catch (_error) {
+      showErrorToast("Error sending message")
     } finally {
-      setIsSending(false);
+      setIsSending(false)
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
-  const isDisabled = !state.isConnected || state.isDone || isLoading;
+  const isDisabled = !state.isConnected || state.isDone || isLoading
 
   return (
     <Box p={4} borderTop="1px solid" borderColor="gray.200" bg="white">
@@ -56,8 +60,8 @@ export const ChatInput = () => {
           disabled={isDisabled}
           bg="gray.50"
         />
-        <Button 
-          colorScheme="blue" 
+        <Button
+          colorScheme="blue"
           onClick={handleSend}
           loading={isSending}
           disabled={isDisabled || !message.trim()}
@@ -66,5 +70,5 @@ export const ChatInput = () => {
         </Button>
       </HStack>
     </Box>
-  );
-};
+  )
+}

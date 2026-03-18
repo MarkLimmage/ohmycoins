@@ -1,5 +1,4 @@
 import { Box, Button, HStack, Icon, Text, VStack } from "@chakra-ui/react"
-import { useColorModeValue } from "@/components/ui/color-mode"
 import { format } from "date-fns"
 import { useState } from "react"
 import {
@@ -11,6 +10,7 @@ import {
   FiMessageSquare,
   FiTool,
 } from "react-icons/fi"
+import { useColorModeValue } from "@/components/ui/color-mode"
 import type { AgentMessage as AgentMessageType } from "./types"
 
 interface AgentMessageProps {
@@ -87,8 +87,14 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
   const messageStyle = getMessageStyle()
   const formattedTime = format(new Date(timestamp), "HH:mm:ss.SSS")
 
-  const hasDetails = metadata && Object.keys(metadata).length > 0 &&
-    Object.keys(metadata).some(k => !["tool_name", "execution_time", "error"].includes(k) || (k === "raw" && metadata.raw))
+  const hasDetails =
+    metadata &&
+    Object.keys(metadata).length > 0 &&
+    Object.keys(metadata).some(
+      (k) =>
+        !["tool_name", "execution_time", "error"].includes(k) ||
+        (k === "raw" && metadata.raw),
+    )
 
   const renderContent = () => {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
@@ -107,7 +113,7 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
         </Text>
       )
     }
-    
+
     const elements = []
     let i = 0
     while (i < parts.length) {
@@ -123,39 +129,40 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
             {...messageStyle}
           >
             {textPart}
-          </Text>
+          </Text>,
         )
       }
       i++
-      
+
       if (i < parts.length) {
         const language = parts[i]
         const code = parts[i + 1]
-        
+
         if (code !== undefined) {
-             elements.push(
-              <Box
-                key={`code-${i}`}
-                bg={codeBg}
-                p={2}
-                borderRadius="md"
-                my={1}
-                overflowX="auto"
-              >
-                {language && (
-                  <Text fontSize="xs" color={codeLangColor} mb={1} textTransform="lowercase">
-                    {language}
-                  </Text>
-                )}
+          elements.push(
+            <Box
+              key={`code-${i}`}
+              bg={codeBg}
+              p={2}
+              borderRadius="md"
+              my={1}
+              overflowX="auto"
+            >
+              {language && (
                 <Text
-                  fontFamily="monospace"
                   fontSize="xs"
-                  whiteSpace="pre"
+                  color={codeLangColor}
+                  mb={1}
+                  textTransform="lowercase"
                 >
-                  {code}
+                  {language}
                 </Text>
-              </Box>
-            )
+              )}
+              <Text fontFamily="monospace" fontSize="xs" whiteSpace="pre">
+                {code}
+              </Text>
+            </Box>,
+          )
         }
         i += 2
       }
@@ -200,7 +207,7 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
 
           <Box flex={1}>
             {renderContent()}
-            
+
             {hasDetails && isExpanded && (
               <Box
                 mt={2}
@@ -214,7 +221,15 @@ const AgentMessage = ({ message }: AgentMessageProps) => {
                 borderColor={borderColor}
                 overflowX="auto"
               >
-                <Text fontWeight="bold" mb={1} fontSize="10px" color="gray.500" textTransform="uppercase">Message Details</Text>
+                <Text
+                  fontWeight="bold"
+                  mb={1}
+                  fontSize="10px"
+                  color="gray.500"
+                  textTransform="uppercase"
+                >
+                  Message Details
+                </Text>
                 <Text whiteSpace="pre-wrap" wordBreak="break-word">
                   {JSON.stringify(metadata, null, 2)}
                 </Text>

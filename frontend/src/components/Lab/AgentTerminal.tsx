@@ -9,7 +9,6 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react"
-import { useColorModeValue } from "@/components/ui/color-mode"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   FiArrowDown,
@@ -19,6 +18,7 @@ import {
   FiX,
   FiXCircle,
 } from "react-icons/fi"
+import { useColorModeValue } from "@/components/ui/color-mode"
 import { useLabSessionMessages } from "@/features/lab/hooks"
 import useCustomToast from "@/hooks/useCustomToast"
 import AgentMessage from "./AgentMessage"
@@ -58,9 +58,18 @@ const AgentTerminal = ({
   const inputBg = useColorModeValue("white", "gray.700")
   const textColor = useColorModeValue("gray.700", "gray.200")
   const subTextColor = useColorModeValue("gray.500", "gray.400")
-  const scrollbarTrack = useColorModeValue("rgba(0, 0, 0, 0.05)", "rgba(0, 0, 0, 0.2)")
-  const scrollbarThumb = useColorModeValue("rgba(0, 0, 0, 0.2)", "rgba(255, 255, 255, 0.2)")
-  const scrollbarThumbHover = useColorModeValue("rgba(0, 0, 0, 0.3)", "rgba(255, 255, 255, 0.3)")
+  const scrollbarTrack = useColorModeValue(
+    "rgba(0, 0, 0, 0.05)",
+    "rgba(0, 0, 0, 0.2)",
+  )
+  const scrollbarThumb = useColorModeValue(
+    "rgba(0, 0, 0, 0.2)",
+    "rgba(255, 255, 255, 0.2)",
+  )
+  const scrollbarThumbHover = useColorModeValue(
+    "rgba(0, 0, 0, 0.3)",
+    "rgba(255, 255, 255, 0.3)",
+  )
   const ghostHover = useColorModeValue("gray.100", "whiteAlpha.200")
 
   const scrollToBottom = useCallback(() => {
@@ -90,7 +99,7 @@ const AgentTerminal = ({
       setMessages((prev) => {
         const historyMessages: AgentMessageType[] = sessionHistory.map(
           (msg: any) => {
-            let metadata = undefined
+            let metadata: any
             if (msg.metadata_json) {
               try {
                 metadata = JSON.parse(msg.metadata_json)
@@ -102,13 +111,14 @@ const AgentTerminal = ({
             let type: AgentMessageType["type"] = "output"
             if (msg.role === "user") type = "input_request"
             else if (msg.role === "system") type = "thought"
-            else if (msg.role === "function" || msg.role === "tool") type = "result"
+            else if (msg.role === "function" || msg.role === "tool")
+              type = "result"
             else if (msg.role === "assistant") {
               if (metadata?.tool_calls) type = "tool"
               else if (msg.content.startsWith("Step: ")) type = "thought"
               else if (metadata?.error) type = "result"
             }
-            
+
             return {
               id: msg.id,
               type,
@@ -134,7 +144,7 @@ const AgentTerminal = ({
         )
         return combined
       })
-      
+
       // Scroll to bottom after loading history if auto-scroll is enabled
       if (autoScrollRef.current) {
         setTimeout(() => scrollToBottom(), 100)
@@ -167,7 +177,7 @@ const AgentTerminal = ({
           if (data.id && prev.some((msg) => msg.id === data.id)) {
             return prev
           }
-          
+
           return [...prev, newMessage]
         })
 
@@ -220,7 +230,7 @@ const AgentTerminal = ({
       .join("\n\n")
 
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(transcript)
         showSuccessToast("Transcript copied to clipboard")
       } else {
@@ -231,25 +241,25 @@ const AgentTerminal = ({
       try {
         const textArea = document.createElement("textarea")
         textArea.value = transcript
-        
+
         // Ensure textarea is not visible but part of DOM
         textArea.style.position = "fixed"
         textArea.style.left = "-9999px"
         textArea.style.top = "0"
-        
+
         document.body.appendChild(textArea)
         textArea.focus()
         textArea.select()
-        
+
         const successful = document.execCommand("copy")
         document.body.removeChild(textArea)
-        
+
         if (successful) {
           showSuccessToast("Transcript copied to clipboard")
         } else {
           showErrorToast("Could not copy transcript to clipboard")
         }
-      } catch (e) {
+      } catch (_e) {
         showErrorToast("Could not copy transcript to clipboard")
       }
     }
