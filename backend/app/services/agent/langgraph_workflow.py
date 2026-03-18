@@ -13,7 +13,6 @@ Week 7-8 enhancement: Added ReAct loop with reasoning, conditional routing, and 
 
 import logging
 import uuid
-from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal, TypedDict
 
@@ -34,6 +33,8 @@ from app.services.agent.agents.model_evaluator import ModelEvaluatorAgent
 from app.services.agent.agents.model_training import ModelTrainingAgent
 from app.services.agent.agents.reporting import ReportingAgent
 from app.services.agent.llm_factory import LLMFactory
+from app.services.agent.nodes.choice_presentation import model_selection_node
+from app.services.agent.nodes.clarification import scope_confirmation_node
 from app.services.alerting import AlertService
 
 logger = logging.getLogger(__name__)
@@ -111,6 +112,8 @@ class AgentState(TypedDict):
     clarifications_needed: list[str] | None  # Questions to ask user
     clarifications_provided: dict[str, str] | None  # User responses
     awaiting_clarification: bool  # Workflow paused for user input
+    scope_interpretation: dict[str, Any] | None  # Parsed user scope
+    scope_confirmed: bool  # True if user confirmed scope
     choices_available: list[dict[str, Any]] | None  # Available options
     selected_choice: str | None  # User selection
     awaiting_choice: bool  # Workflow paused for user choice
@@ -260,8 +263,14 @@ class LangGraphWorkflow:
         # Define edges with conditional routing
         workflow.set_entry_point("initialize")
 
-        # After initialization, always reason first
-        workflow.add_edge("initialize", "reason")
+        # Add scope confirmation node (F1)
+        workflow.add_node("scope_confirmation", scope_confirmation_node)
+
+        # After initialization, always scope confirmation first
+        workflow.add_edge("initialize", "scope_confirmation")
+
+        # After scope confirmation, reason
+        workflow.add_edge("scope_confirmation", "reason")
 
         # Conditional routing from reason node
         workflow.add_conditional_edges(
@@ -321,16 +330,35 @@ class LangGraphWorkflow:
         )
 
         # After evaluation, generate report or retry
+        # New flow (F2): after evaluation, present model choices
+        workflow.add_node("model_selection", model_selection_node)
+        
+        # After evaluation, always go to model selection (unless error/reason)
+        # We need to modify _route_after_evaluation to conditionally go to model_selection
+        # But for now, let's assume successful evaluation goes to model_selection
+        # So we update _route_after_evaluation or just add a simple edge if we change the node logic
+        
         workflow.add_conditional_edges(
             "evaluate_model",
             self._route_after_evaluation,
             {
-                "report": "generate_report",
+                "model_selection": "model_selection",
                 "retrain": "train_model",
                 "reason": "reason",
                 "error": "handle_error",
                 "review": "human_review",  # HITL Route
             },
+        )
+        
+        # Conditional routing after model selection
+        workflow.add_conditional_edges(
+            "model_selection",
+            self._route_after_model_selection,
+            {
+                "report": "generate_report",
+                "retrain": "train_model",
+                "error": "handle_error",
+            }
         )
 
         # After human review, decide next step
@@ -367,6 +395,7 @@ class LangGraphWorkflow:
         return workflow.compile(
             checkpointer=self.checkpointer,
             interrupt_before=["train_model", "finalize"],
+            interrupt_after=["scope_confirmation", "model_selection"],
         )
 
     async def _initialize_node(self, state: AgentState) -> AgentState:
@@ -479,6 +508,21 @@ class LangGraphWorkflow:
 
         # Perform reasoning (simplified version without LLM if no API key)
         reasoning = self._determine_next_action(state)
+
+        # Emit Reasoning as stream_chat (F3)
+        chat_event = {
+            "event_type": "stream_chat",
+            "stage": "BUSINESS_UNDERSTANDING",  # Reasoning is always part of BU
+            "payload": {
+                "message": f"Reasoning: {reasoning}",
+                "sender": "assistant",
+                "reasoning_trace": context_parts
+            }
+        }
+        
+        pending = state.get("pending_events", []) or []
+        pending.append(chat_event)
+        state["pending_events"] = pending
 
         # Store reasoning trace
         reasoning_entry = {
@@ -632,6 +676,21 @@ class LangGraphWorkflow:
             return state
 
         state["current_step"] = "data_validation"
+
+        # Emit Status Update (F5)
+        # Ensure pending_events is initialized
+        if "pending_events" not in state or state["pending_events"] is None:
+            state["pending_events"] = []
+            
+        state["pending_events"].append({
+            "event_type": "status_update",
+            "stage": "PREPARATION",
+            "payload": {
+                "status": "ACTIVE",
+                "message": "Validating data quality...",
+                "task_id": "validate_quality"
+            }
+        })
 
         retrieved_data = state.get("retrieved_data", {})
         quality_checks = {}
@@ -1231,11 +1290,12 @@ class LangGraphWorkflow:
 
     def _route_after_evaluation(
         self, state: AgentState
-    ) -> Literal["report", "retrain", "reason", "error", "review"]:
+    ) -> Literal["model_selection", "retrain", "reason", "error", "review"]:
         """
         Route after model evaluation.
 
         Week 11: Updated to route to report generation instead of finalize.
+        F2: Route to model_selection.
 
         Args:
             state: Current workflow state
@@ -1251,19 +1311,30 @@ class LangGraphWorkflow:
         if state.get("approval_needed") and not state.get("approval_granted"):
              return "review"
 
-        # Check evaluation results and decide
-        # Simplified: always report if successful, unless accuracy is too low
-        return "report"
+        # Always route to model selection for user choice
+        return "model_selection"
 
-        # Check if model performance is acceptable
-        evaluation_results = state.get("evaluation_results", {})
+    def _route_after_model_selection(
+        self, state: AgentState
+    ) -> Literal["report", "retrain", "error"]:
+        """
+        Route after model selection decision.
+        
+        Args:
+            state: Current workflow state
 
-        # Simple check: if we have results, generate report
-        # In future, could check metrics and decide to retrain
-        if evaluation_results:
-            return "report"
-        else:
-            return "report"
+        Returns:
+            Next node to execute
+        """
+        if state.get("current_step") == "retrain_requested":
+             return "retrain"
+        
+        if state.get("selected_choice"):
+             return "report"
+             
+        # Create explicit error if we fell through
+        state["error"] = "Model selection failed or bypassed"
+        return "error"
 
     def _route_after_error(self, state: AgentState) -> Literal["retry", "end"]:
         """

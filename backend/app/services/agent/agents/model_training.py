@@ -104,9 +104,20 @@ class ModelTrainingAgent(BaseAgent):
 
             await self.emit_event(
                 state,
+                "stream_chat",
+                "MODELING",
+                {"message": f"I'm training a {model_type} model for this {task_type} task..."},
+            )
+
+            await self.emit_event(
+                state,
                 "status_update",
                 "MODELING",
-                {"status": "ACTIVE", "message": f"Training {model_type} ({task_type})..."},
+                {
+                    "status": "ACTIVE", 
+                    "message": f"Training {model_type} ({task_type})...",
+                    "task_id": "train_models"
+                },
             )
 
             # Train the model
@@ -189,6 +200,13 @@ class ModelTrainingAgent(BaseAgent):
             # Generate training summary
             state["training_summary"] = self._generate_training_summary(
                 model_result, cv_results, task_type
+            )
+
+            await self.emit_event(
+                state,
+                "stream_chat",
+                "MODELING",
+                {"message": f"Training complete. The model achieved a score of {model_result['metrics'].get('score', 'N/A')}. Let's evaluate it against our baseline."},
             )
 
             # Add message about training completion

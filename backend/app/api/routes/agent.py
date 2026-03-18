@@ -39,7 +39,7 @@ from app.services.agent.nodes.approval import (
     handle_approval_granted,
     handle_approval_rejected,
 )
-from app.services.agent.nodes.choice_presentation import handle_choice_selection
+from app.services.agent.nodes.choice_presentation import handle_model_selection_response
 from app.services.agent.nodes.clarification import handle_clarification_response
 from app.services.agent.override import apply_user_override, get_override_points
 from app.services.agent.playground import ModelPlaygroundService
@@ -60,6 +60,10 @@ orchestrator = AgentOrchestrator(session_manager)
 artifact_manager = ArtifactManager()
 playground_service = ModelPlaygroundService()
 explainability_service = ExplainabilityService()
+
+
+class MessageCreate(BaseModel):
+    content: str
 
 
 class RehydrationResponse(BaseModel):
@@ -321,6 +325,54 @@ async def get_session_messages(
     return messages
 
 
+@router.post(
+    "/sessions/{session_id}/messages", response_model=AgentSessionMessagePublic
+)
+async def create_user_message(
+    *,
+    session_id: uuid.UUID,
+    message: MessageCreate,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Send a message to the agent session.
+    Assigns monotonic sequence_id and persists to EventLedger.
+
+    Args:
+        session_id: ID of the session
+        message: Message content
+        db: Database session
+        current_user: Currently authenticated user
+
+    Returns:
+        Created message with assigned sequence_id
+    """
+    session = await session_manager.get_session(db, session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this session"
+        )
+    
+    # Add message and save to DB (sequence_id assigned inside add_message)
+    msg = await session_manager.add_message(
+        db,
+        session_id=session_id,
+        role="user",
+        content=message.content,
+        agent_name="user",
+        event_type="user_message",
+        stage=session.current_stage or "BUSINESS_UNDERSTANDING"
+    )
+    
+    return msg
+
+
+
 @router.get(
     "/sessions/{session_id}/artifacts", response_model=list[AgentArtifactPublic]
 )
@@ -539,7 +591,8 @@ class ClarificationResponse(BaseModel):
 class ChoiceSelection(BaseModel):
     """User selection from available choices."""
 
-    selected_model: str
+    selected_model: str | None = None
+    action: str = "PROMOTE_MODEL"  # PROMOTE_MODEL or RETRAIN
 
 
 class ApprovalDecision(BaseModel):
@@ -702,7 +755,8 @@ async def select_choice(
         raise HTTPException(status_code=400, detail="Session is not awaiting choice")
 
     # Apply selection
-    updated_state = handle_choice_selection(state, selection.selected_model)
+    payload = {"selected_model": selection.selected_model, "action": selection.action if hasattr(selection, "action") else "PROMOTE_MODEL"}
+    updated_state = handle_model_selection_response(state, payload)
 
     # Update state and resume workflow
     await session_manager.save_session_state(session_id, updated_state)

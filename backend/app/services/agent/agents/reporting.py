@@ -60,9 +60,20 @@ class ReportingAgent(BaseAgent):
         try:
             await self.emit_event(
                 state,
+                "stream_chat",
+                "DEPLOYMENT",
+                {"message": "I'm compiling the final report and generating visualizations for you."},
+            )
+
+            await self.emit_event(
+                state,
                 "status_update",
                 "DEPLOYMENT",
-                {"status": "ACTIVE", "message": "Generating final report..."},
+                {
+                    "status": "ACTIVE", 
+                    "message": "Generating final report...",
+                    "task_id": "generate_report"
+                },
             )
 
             # Get results from previous agents

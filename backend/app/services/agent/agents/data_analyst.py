@@ -53,9 +53,19 @@ class DataAnalystAgent(BaseAgent):
         try:
             await self.emit_event(
                 state,
+                "stream_chat",
+                "EXPLORATION",
+                {"message": "I'm starting the data analysis phase to identify patterns and signals.", "sender": "DataAnalystAgent"},
+            )
+            await self.emit_event(
+                state,
                 "status_update",
                 "EXPLORATION",
-                {"status": "ACTIVE", "message": "Analyzing data..."},
+                {
+                    "status": "ACTIVE", 
+                    "message": "Initializing analysis pipeline...",
+                    "task_id": "compute_indicators"
+                },
             )
 
             # Get retrieved data from previous agent
@@ -82,9 +92,15 @@ class DataAnalystAgent(BaseAgent):
                 if "price_data" in retrieved_data and retrieved_data["price_data"]:
                     await self.emit_event(
                         state,
+                        "stream_chat",
+                        "EXPLORATION",
+                        {"message": "Performing seasonal decomposition and trend analysis...", "sender": "DataAnalystAgent"},
+                    )
+                    await self.emit_event(
+                        state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "ACTIVE", "message": "Running EDA on price data..."},
+                        {"status": "ACTIVE", "message": "Running EDA on price metrics..."},
                     )
                     analysis_results["exploratory_analysis"]["price_eda"] = perform_eda(
                         retrieved_data["price_data"]

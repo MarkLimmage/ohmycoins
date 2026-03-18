@@ -7,12 +7,16 @@ clarification questions for the user.
 """
 
 import logging
-from typing import Any
+import json
+from typing import Any, List, Optional
+from datetime import datetime, timezone
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.models import AgentSessionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +240,27 @@ def handle_clarification_response(
     """
     logger.info("ClarificationNode: Processing user responses")
 
+    # Handle Scope Confirmation (Phase 5)
+    if state.get("awaiting_scope_confirmation"):
+        state["scope_confirmed"] = True
+        state["awaiting_scope_confirmation"] = False
+        
+        # If user provided adjustments, append to goal
+        # responses might be {"adjustment": "Actually look at SOL too"}
+        adjustment = responses.get("adjustment")
+        if adjustment:
+             state["user_goal"] = f"{state.get('user_goal', '')}. Adjustment: {adjustment}"
+             logger.info(f"ScopeConfirmation: Goal adjusted: {adjustment}")
+        
+        # Add to reasoning trace
+        if "reasoning_trace" not in state or state["reasoning_trace"] is None:
+            state["reasoning_trace"] = []
+        state["reasoning_trace"].append({
+            "step": "scope_confirmed",
+            "adjustment": adjustment
+        })
+        return state
+
     # Store responses in state
     if "clarifications_provided" not in state:
         state["clarifications_provided"] = {}
@@ -288,3 +313,108 @@ def _incorporate_clarifications(
     enhanced_goal = f"{original_goal}. {clarification_text}"
 
     return enhanced_goal
+
+
+class ScopeInterpretation(BaseModel):
+    assets: list[str] = Field(description="List of assets to analyze, e.g. ['BTC', 'ETH']")
+    timeframe: str = Field(description="Timeframe for analysis, e.g. '30d'")
+    analysis_type: str = Field(description="Type of analysis, e.g. 'trend_analysis', 'price_prediction'")
+    indicators: list[str] = Field(description="List of technical indicators")
+    modeling_target: str = Field(description="Target variable for modeling, e.g. 'price_direction_1h'")
+    reasoning: str = Field(description="Explanation of why this scope was chosen")
+
+
+def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
+    """
+    Parse user goal and emit scope confirmation request.
+    MANDATORY step for every session.
+    """
+    logger.info("ScopeConfirmationNode: Parsing user goal")
+    user_goal = state.get("user_goal", "")
+
+    # Check if we already have a confirmed scope (re-entry)
+    if state.get("scope_confirmed"):
+        return {"current_step": "scope_confirmed"}
+
+    llm = ChatOpenAI(
+        model=settings.OPENAI_MODEL,
+        temperature=0.0,
+        api_key=settings.OPENAI_API_KEY,
+    )
+
+    # 1. Parse Scope
+    structured_llm = llm.with_structured_output(ScopeInterpretation)
+    system_msg = SystemMessage(content="You are a trading strategy expert. Parse the user's goal into a structured scope.")
+    human_msg = HumanMessage(content=f"User goal: {user_goal}")
+    
+    try:
+        scope = structured_llm.invoke([system_msg, human_msg])
+    except Exception as e:
+        logger.error(f"Error parsing scope: {e}")
+        # Fallback
+        scope = ScopeInterpretation(
+            assets=["BTC"], timeframe="30d", analysis_type="trend_analysis", 
+            indicators=["RSI"], modeling_target="price_direction", reasoning="Fallback due to error"
+        )
+
+    # 2. Generate Events
+    events = []
+    
+    # Stream Chat (Explanation)
+    events.append({
+        "event_type": "stream_chat",
+        "stage": "BUSINESS_UNDERSTANDING",
+        "payload": {
+            "message": f"I've analyzed your request: '{user_goal}'. {scope.reasoning}",
+            "sender": "assistant"
+        }
+    })
+
+    # Action Request (Scope Confirmation)
+    events.append({
+        "event_type": "action_request",
+        "stage": "BUSINESS_UNDERSTANDING",
+        "action_id": "scope_confirmation_v1",
+        "payload": {
+            "description": "Please confirm the analysis scope.",
+            "interpretation": {
+                "assets": scope.assets,
+                "timeframe": scope.timeframe,
+                "analysis_type": scope.analysis_type,
+                "indicators": scope.indicators,
+                "modeling_target": scope.modeling_target
+            },
+            "questions": ["Is this the correct set of assets?", "Is the timeframe appropriate?"],
+            "options": ["CONFIRM_SCOPE", "ADJUST_SCOPE"]
+        }
+    })
+
+    # Plan Established
+    # Generate tasks based on analysis type (simple logic for now)
+    tasks = [
+         { "stage": "BUSINESS_UNDERSTANDING", "tasks": [{ "task_id": "scope_confirmation", "label": "Confirm Scope", "status": "in_progress" }] },
+         { "stage": "DATA_ACQUISITION", "tasks": [{ "task_id": "fetch_price_data", "label": f"Fetch OHLCV for {', '.join(scope.assets)}" }] },
+         { "stage": "PREPARATION", "tasks": [{ "task_id": "validate_quality", "label": "Run data quality checks" }] },
+         { "stage": "EXPLORATION", "tasks": [{ "task_id": "compute_indicators", "label": f"Calculate {', '.join(scope.indicators)}" }] },
+    ]
+    
+    if "predict" in scope.analysis_type:
+         tasks.append({ "stage": "MODELING", "tasks": [{ "task_id": "train_models", "label": f"Train model for {scope.modeling_target}" }] })
+         tasks.append({ "stage": "EVALUATION", "tasks": [{ "task_id": "evaluate_model", "label": "Evaluate model performance" }] })
+    
+    tasks.append({ "stage": "DEPLOYMENT", "tasks": [{ "task_id": "generate_report", "label": "Generate final report" }] })
+
+    events.append({
+        "event_type": "plan_established",
+        "stage": "BUSINESS_UNDERSTANDING",
+        "payload": { "plan": tasks }
+    })
+
+    return {
+        "current_step": "scope_confirmation",
+        "pending_events": events,
+        "scope_interpretation": scope.model_dump(),
+        # We rely on interrupt logic, but this flag helps track state
+        "awaiting_scope_confirmation": True
+    }
+

@@ -1116,6 +1116,9 @@ class AgentSessionMessage(SQLModel, table=True):
     metadata_json: str | None = Field(
         default=None, description="JSON metadata for message"
     )
+    sequence_id: int | None = Field(default=None, description="Monotonic sequence ID within session")
+    event_type: str | None = Field(default="message", max_length=50, description="Type of event (e.g. stream_chat, status_update)")
+    stage: str | None = Field(default=None, max_length=50, description="Processing stage (e.g. BUSINESS_UNDERSTANDING)")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False),
@@ -1240,6 +1243,9 @@ class AgentSessionMessagePublic(SQLModel):
     metadata_json: str | None = Field(
         default=None, description="JSON metadata for message"
     )
+    sequence_id: int | None = Field(default=None, description="Monotonic sequence ID within session")
+    event_type: str | None = Field(default="message", description="Type of event (e.g. stream_chat, status_update)")
+    stage: str | None = Field(default=None, description="Processing stage (e.g. BUSINESS_UNDERSTANDING)")
     created_at: datetime = Field(description="Message creation timestamp")
 
     # UI Loading State Support

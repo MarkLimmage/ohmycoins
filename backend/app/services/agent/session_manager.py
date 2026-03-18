@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import redis.asyncio as redis
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -155,6 +156,8 @@ class SessionManager:
         content: str,
         agent_name: str | None = None,
         metadata: str | None = None,
+        event_type: str = "message",
+        stage: str | None = None,
     ) -> AgentSessionMessage:
         """
         Add a message to the session conversation history.
@@ -166,16 +169,28 @@ class SessionManager:
             content: Message content
             agent_name: Optional name of the agent that sent the message
             metadata: Optional JSON metadata
+            event_type: Type of event (e.g. stream_chat, status_update)
+            stage: Processing stage (e.g. BUSINESS_UNDERSTANDING)
 
         Returns:
             Created message
         """
+        # Determine sequence_id
+        statement = select(func.max(AgentSessionMessage.sequence_id)).where(
+            AgentSessionMessage.session_id == session_id
+        )
+        max_seq = db.exec(statement).one() or 0
+        new_seq = max_seq + 1
+
         message = AgentSessionMessage(
             session_id=session_id,
             role=role,
             content=content,
             agent_name=agent_name,
             metadata_json=metadata,
+            sequence_id=new_seq,
+            event_type=event_type,
+            stage=stage,
         )
         db.add(message)
         db.commit()

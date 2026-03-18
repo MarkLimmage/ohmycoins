@@ -54,7 +54,11 @@ class ModelEvaluatorAgent(BaseAgent):
                 state,
                 "status_update",
                 "EVALUATION",
-                {"status": "ACTIVE", "message": "Evaluating models..."},
+                {
+                    "status": "ACTIVE", 
+                    "message": "Evaluating models...",
+                    "task_id": "evaluate_model"
+                },
             )
 
             # Get trained models from previous agent
@@ -76,6 +80,13 @@ class ModelEvaluatorAgent(BaseAgent):
 
             # Get test data for evaluation
             test_data = self._get_test_data(state, evaluation_params)
+            
+            await self.emit_event(
+                state,
+                "stream_chat",
+                "EVALUATION",
+                {"message": f"Evaluating the model using {len(test_data) if test_data is not None else 0} test samples..."},
+            )
 
             if test_data is None or len(test_data) == 0:
                 state["error"] = "No test data available for evaluation"
@@ -104,6 +115,16 @@ class ModelEvaluatorAgent(BaseAgent):
                 )
 
                 evaluation_results["primary_model_evaluation"] = model_evaluation
+
+                metrics = model_evaluation.get("metrics", {})
+                score_msg = f"Accuracy: {metrics.get('accuracy', 'N/A')}" if task_type == 'classification' else f"R2 Score: {metrics.get('r2_score', 'N/A')}"
+                
+                await self.emit_event(
+                    state,
+                    "stream_chat",
+                    "EVALUATION",
+                    {"message": f"Evaluation complete. {score_msg}. Analyzing feature importance now..."},
+                )
 
                 # Calculate feature importance
                 if evaluation_params.get("calculate_importance", True):
