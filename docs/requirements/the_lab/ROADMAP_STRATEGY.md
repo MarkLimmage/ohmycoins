@@ -1,14 +1,15 @@
 # 🗺️ Roadmap & Execution Strategy: "The Lab"
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Context:** This document outlines the strategic implementation phases for "The Lab" (Algo Development Module). Because this system involves stateful AI orchestration, isolated container execution, and real-time WebSockets, **strict adherence to the phase order is mandatory**.
 
-## 🔄 DIFF: v1.0 → v1.2
+## 🔄 DIFF: v1.2 → v1.3
 
-* [ ] **Phases 0–4:** Marked as COMPLETE (current implementation baseline).
-* [ ] **Phase 5:** Marked as IN PROGRESS — references `PHASE_5_INTEGRATION_PLAN.md` v1.2 for Workstreams A–E.
-* [ ] **Phase 5.5 (NEW):** "The Hardening Bridge" — 5 sub-phases bridging the Flat Chat prototype to the Scientific Grid architecture.
-* [ ] **Phase 6 (NEW):** "Production Readiness" — PostgresSaver migration, graph consolidation, air-gap enforcement.
+* [x] **Phases 0–4:** COMPLETE (baseline).
+* [x] **Phase 5:** COMPLETE — Hardening items unblocked by Phase 5.5.
+* [x] **Phase 5.5:** COMPLETE — Workstreams A–E merged (Sprint 2.50). EventLedger, action_request, rehydration, Scientific Grid, mime-type dispatcher.
+* [x] **Phase 6:** COMPLETE — PostgresSaver migration, graph consolidation, 12 production bug fixes.
+* [ ] **Phase 7 (NEW):** "Conversational Scientific Grid" — v1.3 contract. 3-column layout, mandatory scope confirmation, user messaging, agent narration, 4 interrupts, circuit breaker escalation.
 
 ---
 
@@ -84,7 +85,7 @@ The team must build from the core execution engine outward to the user interface
 
 ---
 
-## 🛡️ Phase 5: Hardening & UX Polish (The Final 10%) 🔄 IN PROGRESS
+## 🛡️ Phase 5: Hardening & UX Polish (The Final 10%) ✅ COMPLETE
 
 *Implement the strict constraints and low-code overlays that make the platform safe and user-friendly.*
 
@@ -97,7 +98,7 @@ The team must build from the core execution engine outward to the user interface
 
 ---
 
-## 🔧 Phase 5.5: The Hardening Bridge (NEW in v1.2)
+## 🔧 Phase 5.5: The Hardening Bridge ✅ COMPLETE
 
 *Bridge the gap between the Phase 3 "Flat Chat" prototype and the Phase 5 "Scientific Grid" architecture. This phase resolves the systemic gaps discovered in the integration audit (`PHASE_5_INTEGRATION_PLAN.md` v1.2).*
 
@@ -110,14 +111,43 @@ The team must build from the core execution engine outward to the user interface
 
 ---
 
-## 🚀 Phase 6: Production Readiness (NEW in v1.2)
+## 🚀 Phase 6: Production Readiness ✅ COMPLETE
 
 *Finalize the platform for production deployment by resolving known limitations and completing deferred work.*
 
-* **6.1 Persistent Checkpointer:** Migrate from `MemorySaver` (in-memory) to `PostgresSaver` (`langgraph-checkpoint-postgres`). Requires adding `langgraph-checkpoint-postgres` to `pyproject.toml` and creating a `checkpoints` table. The `LangGraphWorkflow.__init__()` changes from `MemorySaver()` to `PostgresSaver.from_conn_string(settings.DATABASE_URL)`. This ensures HITL-paused sessions survive process restarts.
-* **6.2 Graph Consolidation:** Delete deprecated `lab_graph.py` and `nodes/lab_nodes.py`. Port remaining `LabState` type definitions and `node_*` functions into `LangGraphWorkflow` node methods. Merge `LabState` fields into `AgentState`. Single graph implementation only.
-* **6.3 Air-Gap, HP Overlays & Graceful Degradation:** Complete the original Phase 5 hardening items (5.1–5.3) which are now unblocked by Phase 5.5.
-* **Dependencies:** Blocked by Phase 5.5.
+* **6.1 Persistent Checkpointer:** ✅ Migrated to `PostgresSaver` (`langgraph-checkpoint-postgres`). HITL sessions survive restarts.
+* **6.2 Graph Consolidation:** ✅ Deleted `lab_graph.py`, merged into `LangGraphWorkflow`. Single graph implementation.
+* **6.3 Air-Gap, HP Overlays & Graceful Degradation:** Complete the original Phase 5 hardening items.
+* **Dependencies:** Blocked by Phase 5.5. ✅ COMPLETE.
+
+---
+
+## 🌐 Phase 7: The Conversational Scientific Grid (NEW in v1.3) 🔄 IN PROGRESS
+
+*Transform the single-column Causal Grid into a 3-column Conversational Scientific Grid. The Lab becomes a dialogue between the researcher and the AI agent, with mandatory human gates at 4 critical decision points.*
+
+**Contract:** API_CONTRACTS.md v1.3 is the canonical source of truth.
+
+* **7.1 Backend (Workstream F — Graph Agent):**
+  * F1: Wire `scope_confirmation` interrupt (mandatory, no conditional skip)
+  * F2: Wire `model_selection` interrupt (evaluation gate)
+  * F3: Emit reasoning as `stream_chat` from every LangGraph node
+  * F4: Emit `plan_established` event after scope confirmation
+  * F5: Add `task_id` field to `status_update` events
+  * F6: Implement `POST /message` endpoint with `sequence_id` guarantee
+  * F7: Circuit breaker escalation → `action_request` (not TERMINAL_ERROR)
+
+* **7.2 Frontend (Workstream G — Glass Agent):**
+  * G1: 3-column CSS Grid layout (350px | 1fr | 300px)
+  * G2: DialoguePanel (stream_chat + user_message + action_request + error)
+  * G3: ActivityTracker (plan_established + status_update with task_id)
+  * G4: StageOutputs (render_output with mime-type dispatch)
+  * G5: ChatInput (POST /message, optimistic rendering)
+  * G6: Event router refactor (3-cell routing by event_type)
+  * G7: Updated state shape (LabSession with 3 cell arrays)
+  * G8: Rehydration replays all 3 cells
+
+* **Dependencies:** Blocked by Phase 6. Parallel worktree execution (omc-lab-graph, omc-lab-ui).
 
 ---
 

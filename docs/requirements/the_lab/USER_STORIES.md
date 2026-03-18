@@ -1,107 +1,170 @@
-The user stories have been updated to **Version 1.2**. The primary focus is shifting the UX from a "Chat Log" to a **"Causal Grid"** where every action is an immutable event in a scientific sequence.
+# 📖 User Stories: "The Lab" (v1.3 — Conversational Scientific Grid)
+
+## 🔄 DIFF: v1.2 → v1.3
+
+* **3-Column Grid:** Replaced "Causal Cells" with 3-column layout (Dialogue | Activity | Outputs).
+* **Scope Confirmation:** Added mandatory scope confirmation epic (no conditional skip).
+* **Conversational Dialogue:** Added epics for agent narration and user messaging.
+* **Plan Established:** Added story for master checklist initialization.
+* **Model Selection:** Added story for model comparison gate.
+* **Circuit Breaker Escalation:** Recoverable errors → `action_request`, not `TERMINAL_ERROR`.
 
 ---
 
-# 📖 User Stories: "The Lab" (v1.2)
-
-## 🔄 DIFF: User Experience & Resilience Hardening
-
-* **Event-Driven Grid:** Replaced "Rows" with "Causal Cells" driven by `sequence_id`.
-* **State Rehydration:** Added stories for browser-refresh recovery.
-* **Research Guardrails:** Added stories for automated data-health rejection.
-* **Artifact Lifecycle:** Integrated MLflow "Discarded" logic into the user's evaluation flow.
-
----
-
-## Epic 1: Workspace & State Management (The Causal Grid)
+## Epic 1: Workspace & State Management (The 3-Column Grid)
 
 ### 1.1 The Visual Graph & Sync
 
 **As an** Algo Architect,
-**I want** the visual stage graph to persist across browser refreshes,
+**I want** the visual stage graph (ReactFlow header) to persist across browser refreshes,
 **So that** I don't lose context of my research progress if my connection drops.
 
 * **AC 1:** Upon page load, the UI calls the `/rehydrate` endpoint and reconstructs the stage colors (Green/Amber/Blue) based on the `EventLedger`.
+* **AC 2:** All three cells (Dialogue, Activity, Outputs) are fully populated from the replayed ledger — the UI is pixel-identical to pre-refresh.
 
-### 1.2 The Causal Stage Cell
+### 1.2 The 3-Column Scientific Grid
 
 **As an** Algo Architect,
-**I want** each DSLC stage to be a self-contained "Cell" that populates in order,
-**So that** I can see the provenance of my model from data to deployment in a structured grid.
+**I want** my Lab session displayed as three columns — Dialogue, Activity Tracker, and Stage Outputs —
+**So that** I can see the conversation, progress, and artifacts simultaneously without scrolling through a single column of mixed content.
 
-* **AC 1:** Stage cells are hidden until the first `status_update` for that stage is received.
-* **AC 2:** Messages and outputs within a cell are sorted by `sequence_id` to ensure correct causal ordering.
+* **AC 1:** The Lab session view renders as a CSS Grid with columns: 350px | 1fr | 300px.
+* **AC 2:** Dialogue (Left) shows agent chat, user messages, and HITL cards.
+* **AC 3:** Activity Tracker (Center) shows a checklist of tasks grouped by stage.
+* **AC 4:** Stage Outputs (Right) shows rich artifacts for the active or selected stage.
 
 ---
 
-## Epic 2: Business Understanding (The Blueprint)
+## Epic 2: Business Understanding (Scope Confirmation)
 
 ### 2.1 Natural Language Initiation
 
-(Unchanged: Translating "vibe" to ML specs.)
+**As an** Algo Architect,
+**I want** to describe my analysis goal in plain English,
+**So that** the agent can translate my intent into a precise ML specification.
 
-### 2.2 The Solid Blueprint Gate
+* **AC 1:** The session starts with a text input for the user's goal.
+
+### 2.2 Mandatory Scope Confirmation
 
 **As an** Algo Architect,
-**I want** the agent to stop and wait for my approval after generating the Blueprint,
+**I want** the agent to always stop and present its interpretation of my goal before proceeding,
+**So that** I can correct misunderstandings before any compute is wasted.
+
+* **AC 1:** The agent emits a `stream_chat` event explaining its interpretation of the user's goal.
+* **AC 2:** The agent emits an `action_request` with `action_id: "scope_confirmation_v1"` containing parsed scope (assets, timeframe, analysis type, indicators) and clarifying questions.
+* **AC 3:** The workflow **does not** proceed until the user explicitly clicks CONFIRM_SCOPE or ADJUST_SCOPE. There is no conditional skip.
+* **AC 4:** If the user adjusts, the agent re-interprets and re-presents scope confirmation.
+
+### 2.3 Plan Establishment
+
+**As an** Algo Architect,
+**I want** to see a master checklist of all planned tasks after confirming scope,
+**So that** I know what the agent will do and can track progress through each stage.
+
+* **AC 1:** After scope confirmation, the agent emits a `plan_established` event with tasks grouped by stage.
+* **AC 2:** The Activity Tracker initializes all tasks as PENDING with stage section headers.
+
+### 2.4 The Blueprint Gate
+
+**As an** Algo Architect,
+**I want** the agent to stop and wait for my approval after generating the feature Blueprint,
 **So that** I can catch feature-engineering errors before any code is executed in the sandbox.
 
-* **AC 1:** The workflow triggers an `AWAITING_APPROVAL` status after the Blueprint is rendered.
-* **AC 2:** The "Proceed" button in the UI sends an approval response via `POST /api/v1/lab/agent/sessions/{id}/approvals` to resume the graph.
+* **AC 1:** The workflow triggers `action_request` with `action_id: "approve_modeling_v1"` after the Blueprint is rendered.
+* **AC 2:** The card renders inline in the Dialogue panel with APPROVE/REJECT/EDIT_BLUEPRINT buttons.
 
 ---
 
-## Epic 3: Data Acquisition & Safety
+## Epic 3: Conversational Dialogue
 
-### 3.1 The "Poisoned Data" Rejection
+### 3.1 Agent Narration
 
 **As an** Algo Architect,
-**I want** the Lab to automatically abort if the retrieved data is statistically "dead" (e.g., zero variance or extreme outliers),
-**So that** I don't waste time and compute training on corrupted signals.
+**I want** the agent to narrate its reasoning in the Dialogue panel at every decision point,
+**So that** I understand what it's doing and why without having to inspect internal logs.
 
-* **AC 1:** If the Safety Bridge detects a "Flatline" price feed, the UI renders a high-visibility `TERMINAL_DATA_ERROR` in the cell and kills the run.
+* **AC 1:** Every LangGraph node emits at least one `stream_chat` event with a human-readable explanation.
+* **AC 2:** Chat bubbles appear in the Left Cell with agent styling (left-aligned, blue border).
+* **AC 3:** Narration includes concrete details (e.g., "Retrieved 720 BTC candles", "RSI at 72, indicating overbought").
+
+### 3.2 User Messaging
+
+**As an** Algo Architect,
+**I want** to send free-text messages to the agent at any point during the session,
+**So that** I can steer the analysis, ask questions, or provide additional context.
+
+* **AC 1:** A text input at the bottom of the Dialogue panel lets me type and send messages.
+* **AC 2:** My message is immediately rendered as a user bubble (right-aligned, gray background).
+* **AC 3:** The message is sent via `POST /message` and returns a `sequence_id`. The agent's response is `sequence_id` N+1.
 
 ---
 
-## Epic 4: Modeling & Sandboxing
+## Epic 4: Data Acquisition & Safety
 
-### 4.1 "Cold-Start" Performance
+### 4.1 The "Poisoned Data" Rejection
+
+**As an** Algo Architect,
+**I want** the Lab to automatically abort if the retrieved data is statistically "dead",
+**So that** I don't waste time training on corrupted signals.
+
+* **AC 1:** If the Safety Bridge detects zero variance or >90% outliers, the UI renders an `error` card in the Dialogue panel.
+
+### 4.2 Circuit Breaker Escalation
+
+**As an** Algo Architect,
+**I want** the agent to ask me for guidance after 3 failed attempts instead of just dying,
+**So that** I can provide alternative approaches or choose to abort gracefully.
+
+* **AC 1:** After 3 failed iterations in any stage, the agent emits `action_request` with `action_id: "circuit_breaker_v1"`.
+* **AC 2:** The card shows the error context, suggestions, and buttons (CHOOSE_SUGGESTION, PROVIDE_GUIDANCE, ABORT_SESSION).
+* **AC 3:** Only truly unrecoverable errors (zero-variance, sandbox crash) show as `error` events.
+
+---
+
+## Epic 5: Modeling & Sandboxing
+
+### 5.1 Cold-Start Performance
 
 **As an** Algo Architect,
 **I want** repeated training runs on the same dataset to start instantly,
-**So that** I can iterate on hyperparameters without waiting for the data export process every time.
+**So that** I can iterate on hyperparameters without waiting for the data export process.
 
-* **AC 1:** The UI displays a "Using Cached Parquet" badge if the row-count matches the previous run, indicating an optimized start.
+* **AC 1:** The Activity Tracker shows a "Using Cached Data" indicator when Parquet cache hits.
 
-### 4.2 Hyperparameter UI Overlays
+### 5.2 Model Selection Gate
 
-(Updated) **As an** Algo Architect,
-**I want** my UI slider adjustments to be reflected as a new event in the `EventLedger`,
-**So that** I have a permanent record of every manual tweak I made during the session.
+**As an** Algo Architect,
+**I want** to compare trained models side-by-side and choose which to promote,
+**So that** I have informed control over which model reaches production.
+
+* **AC 1:** After evaluation, the agent emits `action_request` with `action_id: "model_selection_v1"` containing model comparison data (metrics, pros, cons, recommendation).
+* **AC 2:** The card renders inline in the Dialogue panel with a radio select for model choice.
+* **AC 3:** Only the selected model proceeds to promotion.
 
 ---
 
-## Epic 5: Evaluation & Registry Lifecycle
+## Epic 6: Evaluation & Registry Lifecycle
 
-### 5.1 The Tear Sheet & MLflow Link
+### 6.1 The Tear Sheet & MLflow Link
 
 **As an** Algo Architect,
 **I want** the Tear Sheet to show me the specific `mlflow_run_id`,
 **So that** I can verify the model lineage in the experiment tracker.
 
-### 5.2 Automated Model Discarding
+### 6.2 Automated Model Discarding
 
 **As an** Algo Architect,
-**I want** the system to automatically tag models as "Discarded" if they fail my performance threshold (e.g., Accuracy < 50%),
+**I want** the system to automatically tag models as "Discarded" if they fail my performance threshold,
 **So that** my production Model Registry doesn't get cluttered with "junk" experiments.
 
 * **AC 1:** If evaluation fails the gate, the UI renders a "Model Discarded" warning and disables the "Promote to Floor" button.
 
 ---
 
-## Epic 6: Deployment (The Bridge)
+## Epic 7: Deployment (The Bridge)
 
-### 6.1 Lineage-Locked Promotion
+### 7.1 Lineage-Locked Promotion
 
 **As an** Algo Architect,
 **I want** the "Promote to Floor" action to be immutable,
@@ -111,176 +174,15 @@ The user stories have been updated to **Version 1.2**. The primary focus is shif
 
 ---
 
+## Epic 8: Activity Tracking
 
-
-
-# ** REFERECE ONLY BELOW THIS - OLD USER - STORIES ** 
-
-# 📖 User Stories: "The Lab" (Algo Development Module)
-
-**Version:** 1.0
-**Context:** This document outlines the Agile User Stories and Acceptance Criteria (AC) for building "The Lab." These stories are grouped by the stages of the Data Science Life Cycle (DSLC) and the core architectural pillars.
-
-**Primary Persona:** * **Algo Architect (User):** A quantitative trader or data scientist who understands trading concepts and high-level ML goals but wants an AI Agent to handle the boilerplate code, data joining, and sandbox orchestration.
-
----
-
-## Epic 1: Workspace & State Management (The Stateful Grid)
-
-*The user needs a workspace that keeps them oriented within the complex ML lifecycle without overwhelming them with terminal windows.*
-
-### 1.1 The Visual Graph
+### 8.1 Master Checklist
 
 **As an** Algo Architect,
-**I want** to see a visual, linear graph of the DSLC stages at the top of my workspace,
-**So that** I instantly know where I am in the process and which steps are healthy, running, or stale.
+**I want** a central Activity Tracker that shows all planned tasks and their status,
+**So that** I can see at a glance how far the session has progressed.
 
-* **AC 1:** The UI renders a horizontal node graph (e.g., using Vue Flow) displaying all 7 DSLC stages.
-* **AC 2:** Nodes change color based on real-time WebSocket events (e.g., Gray = Pending, Blue = Active, Green = Complete, Amber = Stale).
-
-### 1.2 The Multi-Modal Cell
-
-**As an** Algo Architect,
-**I want** each stage of the DSLC to be represented as a row containing a Chat interface, a collapsible Code block, and a visual Output area,
-**So that** I can converse with the agent, verify its work, and see the results in one unified view.
-
-* **AC 1:** The Chat cell streams text from the LangGraph agent in real-time.
-* **AC 2:** The Code cell defaults to a "Collapsed" state to save screen space but can be expanded to view Python/SQL.
-* **AC 3:** The Output cell renders rich JSON payloads (like Plotly charts) seamlessly.
-
-### 1.3 The "Stale State" Warning
-
-**As an** Algo Architect,
-**I want** downstream stages to automatically flag themselves as "Stale" if I modify an earlier stage,
-**So that** I don't accidentally deploy a model that was trained on outdated or mismatched data.
-
-* **AC 1:** If the user edits the code or prompts a change in Stage 2, Stages 3 through 7 immediately turn Amber.
-* **AC 2:** The agent pauses execution and prompts the user to re-run the downstream nodes.
-
----
-
-## Epic 2: Business Understanding (The Blueprint)
-
-*The user defines the goal; the agent translates it into math.*
-
-### 2.1 Natural Language Initiation
-
-**As an** Algo Architect,
-**I want** to describe my trading goal in plain English (e.g., "Predict BTC 5% pumps over 48h using news sentiment"),
-**So that** the agent can translate my vibe into a strict ML specification.
-
-* **AC 1:** The agent parses the prompt and queries the database schema to verify the required data exists.
-
-### 2.2 The Blueprint Card
-
-**As an** Algo Architect,
-**I want** the agent to return a structured "Model Blueprint" rather than immediately writing code,
-**So that** I can approve or modify the target variables, features, and chosen algorithm before wasting compute time.
-
-* **AC 1:** The Output cell renders a Blueprint UI card detailing: Target Variable, Feature List, and ML Task Type.
-* **AC 2:** The user can add/remove features from the Blueprint via UI toggles before clicking "Approve."
-
----
-
-## Epic 3: Data Acquisition & Exploration
-
-*The agent retrieves data from the Materialized Views and visualizes its shape.*
-
-### 3.1 Secure Data Ingestion
-
-**As an** Algo Architect,
-**I want** the agent to pull data from the Materialized Views into its sandbox without exposing my live database credentials,
-**So that** my production trading floor remains secure from rogue agent queries.
-
-* **AC 1:** The backend system automatically executes the MV extraction and mounts a flat `.parquet` file into the Dagger container.
-* **AC 2:** The agent code has zero network access to the Postgres DB.
-
-### 3.2 Visual EDA (Exploratory Data Analysis)
-
-**As an** Algo Architect,
-**I want** the agent to show me data distributions and correlation matrices instead of printing raw Pandas DataFrames,
-**So that** I can quickly assess signal quality and feature validity.
-
-* **AC 1:** The agent generates a correlation heatmap (e.g., Sentiment vs. Forward Returns) and pushes the visual artifact to the UI.
-* **AC 2:** The agent provides specific text insights (e.g., "Warning: Volatility feature is highly skewed").
-
----
-
-## Epic 4: Modeling & The Solid Gate
-
-*The core engine where XGBoost and Scikit-learn do the heavy lifting in total isolation.*
-
-### 4.1 Low-Code Hyperparameter Tuning
-
-**As an** Algo Architect,
-**I want** to adjust the model's hyperparameters using UI sliders and inputs,
-**So that** I don't have to manually edit the Python dictionary in the agent's code block.
-
-* **AC 1:** When the agent proposes an XGBoost model, the UI overlays inputs for `learning_rate`, `max_depth`, and `n_estimators`.
-* **AC 2:** Adjusting these inputs automatically updates the agent's execution context.
-
-### 4.2 Automated Leakage Prevention
-
-**As an** Algo Architect,
-**I want** the system to automatically check my dataset for look-ahead bias before training starts,
-**So that** I don't waste time evaluating a model that is "cheating" by seeing the future.
-
-* **AC 1:** The LangGraph state machine forces a validation script to run before the `MODELING` stage.
-* **AC 2:** If overlapping time-windows (leakage) are detected between targets and features, the run halts and warns the user.
-
-### 4.3 Live Training Feedback
-
-**As an** Algo Architect,
-**I want** to see the loss curve updating in real-time while the model trains inside the sandbox,
-**So that** I know if the model is converging or if I should kill the run early.
-
-* **AC 1:** The backend streams standard output from the Dagger container to update an SVG line chart in the UI.
-* **AC 2:** The user has access to a persistent "Kill Switch" to terminate the Dagger container immediately.
-
-### 4.4 (Agentic Code Optimization):
-
-**As an** Algo Architect,
-**I want** the agent to automatically attempt to rewrite its code if it hits a memory or timeout limit,
-**So that** I don't have to manually debug Pandas chunking or memory management issues.
-* **AC 1:** If the sandbox crashes due to hardware limits, the UI status updates to "Retrying/Optimizing".
-* **AC 2:** The agent successfully modifies its code and re-runs without requiring user intervention.
-* **AC 3:** If the agent fails after 2 retry attempts, a graceful error is displayed detailing the hardware limit.
-
----
-
-## Epic 5: Evaluation & MLflow Tracking
-
-*Proving the model works and creating a permanent paper trail.*
-
-### 5.1 The Tear Sheet
-
-**As an** Algo Architect,
-**I want** to see a standardized performance report (Tear Sheet) once training is complete,
-**So that** I can evaluate the model's out-of-sample accuracy and assumed profitability.
-
-* **AC 1:** The Output cell renders a Tear Sheet containing: F1-Score, Precision/Recall, a Confusion Matrix, and Feature Importance bar charts.
-
-### 5.2 Silent Artifact Logging
-
-**As an** Algo Architect,
-**I want** the model artifact, parameters, and metrics to be automatically logged to MLflow,
-**So that** I have a versioned, reproducible history of every experiment without writing tracking code.
-
-* **AC 1:** Upon completion of `EVALUATION`, the system pushes the `.pkl` file, the feature list, and the metrics to the local MLflow server.
-* **AC 2:** The UI provides a direct hyperlink to the MLflow run for deep inspection.
-
----
-
-## Epic 6: Deployment (The Bridge)
-
-*Moving the Alpha from the Lab to the live-fire environment.*
-
-### 6.1 Promote to Floor
-
-**As an** Algo Architect,
-**I want** a simple button to promote my evaluated model to the live trading platform,
-**So that** I can connect it to an execution algorithm without manual file transfers.
-
-* **AC 1:** In the `DEPLOYMENT` stage, a "Promote to Floor" button is enabled.
-* **AC 2:** Clicking the button registers the MLflow artifact URI into the `Algorithm` database table.
-* **AC 3:** The UI strictly enforces that the deployed model only provides signals (0.0 to 1.0) and does not dictate position sizing or API trade execution.
+* **AC 1:** The `plan_established` event populates the Activity Tracker with all tasks grouped by stage (all PENDING).
+* **AC 2:** `status_update` events with matching `task_id` update specific items (ACTIVE → COMPLETE).
+* **AC 3:** Unmatched `status_update` events append as new items to the appropriate stage group.
+* **AC 4:** Stage icons: active (◉), complete (✓), task active (◎ spinner), pending (○).

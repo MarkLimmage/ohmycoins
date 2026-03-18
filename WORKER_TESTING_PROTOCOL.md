@@ -1,7 +1,10 @@
-# Worker Testing Protocol (v1.2)
+# Worker Testing Protocol (v1.3)
 
 **Purpose:** Prevent port conflicts and dependency errors during parallel worktree development.
 Workers MUST test inside Docker containers, never on the host machine.
+
+> **Note:** Each worktree has its own `docker-compose.override.yml` with isolated ports.
+> Graph Agent: proxy=8020, db=5434. Glass Agent: proxy=8030, db=5435.
 
 ---
 
@@ -19,12 +22,12 @@ that avoid conflicts with other worktrees or host services.
 
 | Service       | Internal Port | Host Port (override) | Notes                   |
 |--------------|---------------|---------------------|-------------------------|
-| Traefik HTTP | 80            | 8010                | API gateway             |
-| Traefik dash | 8080          | 8091                | Dashboard               |
-| PostgreSQL   | 5432          | 5433                | Dev DB                  |
+| Traefik HTTP | 80            | varies per worktree | API gateway             |
+| Traefik dash | 8080          | varies per worktree | Dashboard               |
+| PostgreSQL   | 5432          | 5434 (graph) / 5435 (glass) | Dev DB         |
 | Backend      | 8000          | (via Traefik)       | Not directly exposed    |
 | MLflow       | 5000          | 5000                | Tracking UI             |
-| Mock WS      | 8001          | 8003                | Supervisor mock server  |
+| Mock WS      | 8002          | 8002                | Supervisor mock server (v1.3) |
 | Frontend     | 5173          | 5173                | Vite dev server (local) |
 
 **Workers must NOT expose additional ports or modify docker-compose.override.yml** without filing

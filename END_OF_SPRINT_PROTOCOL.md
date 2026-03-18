@@ -2,51 +2,55 @@
 
 ## 1. Context & Architecture (The "Sprint Map")
 Before starting integration, establishing the landscape is critical.
-*   **Structure**: Sprints are organized as `../sprint-X.XX/track-{a,b,c}` relative to the `ohmycoins` main repository.
-    *   Each track is a **Git Worktree**.
-    *   Each track runs a **Docker Compose Project** named `track-{letter}`.
+*   **Structure**: Worktrees are organized as `../omc-lab-{name}` relative to the `ohmycoins` main repository.
+    *   Each worktree is a **Git Worktree** on its own feature branch.
+    *   Each worktree runs a **Docker Compose Project** with isolated ports via `docker-compose.override.yml`.
+*   **Current Topology (Sprint 2.51)**:
+    *   `../omc-lab-graph` — Graph Agent (`feature/langgraph-orchestrator`), proxy:8020, db:5434
+    *   `../omc-lab-ui` — Glass Agent (`feature/react-frontend`), proxy:8030, db:5435
 *   **Isolation**:
-    *   **Ports**: Track A (8001), C (8002), B (8020/3001). Main (80).
-    *   **Database**: Each track has its own distinct postgres container/volume.
+    *   **Ports**: Per-worktree via `docker-compose.override.yml`. Main repo uses 8080/5432.
+    *   **Database**: Each worktree has its own Postgres port. `COMPOSE_PROJECT_NAME` prevents container conflicts.
 *   **State check**: `git worktree list` and `docker ps` are the sources of truth.
 
-## 2. Integration Sequence (Per Track)
-For *each* track (A, B, C), follow this standard procedure:
+## 2. Integration Sequence (Per Worktree)
+For *each* worktree (graph, ui), follow this standard procedure:
 
-### A. Verification (In the Track Worktree)
-1.  **Navigate**: `cd ../sprint-X.XX/track-{letter}`
+### A. Verification (In the Worktree)
+1.  **Navigate**: `cd ../omc-lab-{name}`
 2.  **Status Check**: `git status` (Ensure clean), `docker compose ps` (Ensure healthy).
 3.  **Test**:
     *   Backend: `docker compose exec backend pytest`
-    *   Frontend: `docker run --rm -v $(pwd)/frontend:/app -w /app node:20 /bin/sh -c "npm install && npm test"` (Use transient container if needed).
+    *   Frontend: `docker compose run --rm frontend-dev npx tsc --noEmit`
     *   *Fixes*: If tests fail, fix them **in the worktree** and commit.
 
 ### B. Shutdown (The "Handoff")
-1.  **Stop**: `docker compose -p track-{letter} down`
+1.  **Stop**: `docker compose down`
     *   *Crucial*: Must stop to release locks and ports.
 
 ### C. Merge (In the Main Repo)
-1.  **Navigate**: `cd ../../ohmycoins` (or absolute path).
-2.  **Checkout**: `git checkout main` (or master).
-3.  **Merge**: `git merge origin/feat/{FEATURE_NAME}`
+1.  **Navigate**: `cd /home/mark/claude/ohmycoins` (or the main repo path).
+2.  **Checkout**: `git checkout main`.
+3.  **Merge**: `git merge feature/{branch-name}`
     *   *Conflict Resolution*:
-        *   `LOGBOOK.md`: Keep ALL entries (append/interleave history).
-        *   `docker-compose.override.yml`: **Always revert to Main's configuration** (Port 8001, standard volumes). Do not keep track-specific ports.
-        *   `.vscode/settings.json`: Revert to Main's color (Orange/Red).
+        *   `LOGBOOK.md`: Keep ALL entries.
+        *   `WORKER_MISSION.md`, `CLAUDE.md`, `CURRENT_SPRINT.md`: Resolve with `git checkout --ours` (scaffolding files differ by design).
+        *   `docker-compose.override.yml`: **Always revert to Main's configuration**. Do not keep worktree-specific ports.
 
 ## 3. Post-Integration Stabilization (The "Regression")
-After merging *all* tracks:
+After merging *all* worktrees:
 
 1.  **Environment Reset**:
     *   `docker compose down` (Clear old main containers).
-    *   `docker compose up -d --build` (Force rebuild to include new dependencies).
-2.  **Deep Cleaning (The "Root" Fix)**:
-    *   If `rm -rf` fails due to permissions: `docker run --rm -v $(pwd)/..:/work alpine rm -rf /work/sprint-X.XX`
+    *   `docker compose up -d --build` (Force rebuild).
+2.  **Worktree Cleanup**:
+    *   `git worktree remove ../omc-lab-graph`
+    *   `git worktree remove ../omc-lab-ui`
+    *   `git worktree prune`
 3.  **Test Suite Audit**:
     *   Run `docker compose exec backend pytest`.
-    *   *Singleton Fix*: Ensure `conftest.py` resets singletons (`OrderQueue._instance = None`).
-    *   *Legacy Audit*: If tests fail due to API changes (e.g. `/my/orders` -> `/ro/my/orders`), updates the **Test**, do not revert code.
-    *   *Obsolete Tests*: Delete tests for features that are explicitly depreciated or purely exploratory/mocked without implementation.
+    *   Run frontend type check: `docker compose run --rm frontend-dev npx tsc --noEmit`.
+    *   *Legacy Audit*: If tests fail due to API changes, update the **test**, do not revert code.
 
 ## 4. Final Polish
 1.  **Push**: `git push origin main`.

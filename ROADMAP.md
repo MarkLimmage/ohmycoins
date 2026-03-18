@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 5.5
-**Last Updated**: Mar 14, 2026
-**Current Phase**: Sprint 2.49 — Phase 6 In Progress
+**Version**: 6.0
+**Last Updated**: Mar 2025
+**Current Phase**: Sprint 2.51 — Phase 7 (Conversational Scientific Grid)
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -133,32 +133,58 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 **In Progress**:
 - 🔄 **Explainable AI + Feature Store**: SHAP values, decision path visualization, database-native Feature Store with materialized views (Sprint 2.48)
 
-### 🚀 Phase 5.5: The Lab 2.0 Architecture (Strategic Pivot)
+### ✅ Phase 5.5: The Lab 2.0 Architecture (Strategic Pivot)
 
+**Status**: Complete (Sprint 2.50)
 **Objective**: Harden "The Lab" from its Phase 3 "Flat Chat" prototype into the "Scientific Grid" architecture — a fully isolated, secure, and stateful research environment using Dagger, LangGraph, and an EventLedger-based messaging system.
-
-**Architecture (v1.2)**: All specifications at v1.2 — see [ROADMAP_STRATEGY.md](docs/requirements/the_lab/ROADMAP_STRATEGY.md) for phases and [PHASE_5_INTEGRATION_PLAN.md](docs/requirements/the_lab/PHASE_5_INTEGRATION_PLAN.md) for workstream details.
 
 **Completed Foundations (Phases 0–4)**:
 - ✅ **Dagger Execution Sandbox**: Secure, containerized code execution with `omc-agent-base:latest`.
-- ✅ **LangGraph Orchestrator**: `LangGraphWorkflow` state machine with MemorySaver checkpointing.
+- ✅ **LangGraph Orchestrator**: `LangGraphWorkflow` state machine with PostgresSaver checkpointing.
 - ✅ **React Flow & WebSocket Grid**: Real-time node-based DSLC visualization.
 - ✅ **MLflow Integration**: Full experiment tracking and artifact lineage.
 
-**In Progress — Phase 5.5 "The Hardening Bridge" (Workstreams A–E)**:
-- 🔄 **Workstream A+: Event Sequencing** — Refactor `chat_history` into immutable `EventLedger` with `sequence_id`/`timestamp`. Add `action_request` event type.
-- 🔄 **Workstream B+: State Rehydration** — `GET /api/v1/lab/agent/sessions/{id}/rehydrate` endpoint. WebSocket `?after_seq` dedup parameter.
-- 🔄 **Workstream C+: Dagger-MLflow Bridge** — Disposable Script pattern, `lifecycle: valid/discarded` tagging, Parquet row-count caching.
-- 🔄 **Workstream D+: Statistical Health Gates** — Zero-variance kill-switch, 3-cycle per-stage circuit breaker.
-- 🔄 **Workstream E: Frontend Remediation** — Stage-isolated Grid, mime-type dispatcher, HITL controls, `useRehydration()` hook.
-- **Dependency Order**: D → A → B → C → E
+**Completed — Phase 5.5 "The Hardening Bridge" (Workstreams A–E)**:
+- ✅ **Workstream A+: Event Sequencing** — `EventLedger` with `sequence_id`/`timestamp`, `action_request` event type.
+- ✅ **Workstream B+: State Rehydration** — `GET /rehydrate` endpoint, WebSocket `?after_seq` dedup.
+- ✅ **Workstream C+: Dagger-MLflow Bridge** — Disposable Script pattern, lifecycle tagging, Parquet caching.
+- ✅ **Workstream D+: Statistical Health Gates** — Zero-variance kill-switch, 3-cycle circuit breaker.
+- ✅ **Workstream E: Frontend Remediation** — Stage-isolated Grid, mime-type dispatcher, HITL controls, `useRehydration()` hook.
 
-**Phase 6 — Production Readiness (Planned)**:
-- 📋 **PostgresSaver Migration**: Replace MemorySaver with `langgraph-checkpoint-postgres` for persistent HITL sessions.
-- 📋 **Graph Consolidation**: Delete deprecated `lab_graph.py`, merge into `LangGraphWorkflow`.
-- 📋 **Air-Gap & Hardening**: Original Phase 5 items (5.1–5.3) unblocked by Phase 5.5.
+### ✅ Phase 6: Production Readiness
 
-**Integration Gate Tests**: The Refresh Test, Flatline Data Test, Circuit Breaker Test, Mime Compliance Test, HITL Round-Trip Test.
+**Status**: Complete (Sprint 2.50)
+- ✅ **PostgresSaver Migration**: `langgraph-checkpoint-postgres` — HITL sessions survive restarts.
+- ✅ **Graph Consolidation**: `lab_graph.py` deleted, `LangGraphWorkflow` is sole runtime.
+- ✅ **12 Production Bug Fixes**: Event pipeline, resume flow, duplicate dedup, checkpointer wiring.
+
+### 🔄 Phase 7: The Conversational Scientific Grid (v1.3)
+
+**Status**: In Progress (Sprint 2.51)
+**Objective**: Transform the single-column "Causal Grid" into a 3-column Conversational Scientific Grid with agent narration, user messaging, mandatory scope confirmation, and HITL gates at 4 interrupt points.
+
+**Architecture**: API_CONTRACTS.md v1.3 — 7 event types, 3-cell routing, 4 interrupts, POST /message.
+
+**Workstream F (Graph Agent — backend):**
+- 🔄 F1: Wire `scope_confirmation` interrupt (mandatory, no skip)
+- 🔄 F2: Wire `model_selection` interrupt (evaluation gate)
+- 🔄 F3: Emit reasoning as `stream_chat` from every node
+- 🔄 F4: Emit `plan_established` after scope confirmation
+- 🔄 F5: Add `task_id` to `status_update` events
+- 🔄 F6: POST `/message` endpoint with `sequence_id` guarantee
+- 🔄 F7: Circuit breaker → `action_request` escalation (not TERMINAL_ERROR)
+
+**Workstream G (Glass Agent — frontend):**
+- 🔄 G1: 3-column CSS Grid (Dialogue | Activity | Outputs)
+- 🔄 G2: DialoguePanel (stream_chat + user_message + action_request + error)
+- 🔄 G3: ActivityTracker (plan_established + status_update with task_id)
+- 🔄 G4: StageOutputs (render_output with mime-type dispatch)
+- 🔄 G5: ChatInput (POST /message, optimistic rendering)
+- 🔄 G6: Event router refactor (3-cell routing by event_type)
+- 🔄 G7: Updated state shape (LabSession with 3 cell arrays)
+- 🔄 G8: Rehydration replays all 3 cells
+
+**Integration Gate Tests**: Refresh Test, Flatline Data Test, Circuit Breaker Test, Mime Compliance Test, HITL Round-Trip Test, Scope Confirmation Test, POST /message Round-Trip Test.
 
 ---
 
@@ -205,13 +231,14 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 ### Sprint 2.48 - Explainable AI + Feature Store (COMPLETE)
 *   SHAP values, decision path visualization, model transparency features. Database-native Feature Store with 4 materialized views.
 
-### Sprint 2.49 - Lab 2.0 Integration & Release (IN PROGRESS)
-*   Finalizing the "Lab 2.0" backend architecture: Dagger-based execution, LangGraph workflow, strict typing compliance, and idempotent CI/CD migrations.
+### Sprint 2.49 - Lab 2.0 Integration & Release (COMPLETE)
+*   Lab 2.0 backend architecture: Dagger execution, LangGraph workflow, typing compliance, idempotent migrations.
 
----
+### Sprint 2.50 - Phase 5.5 Parallel Sprint (COMPLETE)
+*   Merged workstreams D→A→B→C→E. EventLedger, HITL action_request, rehydration, Scientific Grid refactor, mime-type dispatcher, useRehydration hook. PostgresSaver migration, graph consolidation, 12 production bug fixes. **1023 tests passing.** Base commit `2cd7e33` → final `7acf69b`.
 
-### Sprint 2.49 - Collector Performance & Freshness (PLANNED)
-*   Collector health monitoring, data freshness alerts, performance optimization.
+### Sprint 2.51 - Conversational Scientific Grid (IN PROGRESS)
+*   Phase 7: v1.3 Conversational Grid. Workstream F (Graph: scope_confirmation, model_selection, stream_chat narration, plan_established, POST /message, circuit breaker escalation). Workstream G (Glass: 3-column grid, DialoguePanel, ActivityTracker, StageOutputs, ChatInput, event router, rehydration). Parallel worktree sprint (omc-lab-graph, omc-lab-ui).
 
 ---
 

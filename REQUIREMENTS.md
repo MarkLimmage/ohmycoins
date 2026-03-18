@@ -1,14 +1,22 @@
-# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.2)
+# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.3 — Conversational Scientific Grid)
 
-## 🔄 DIFF: Outstanding Hardening Work 
+## 🔄 DIFF: v1.2 → v1.3
 
-The following items are the delta between the current "Flat Chat" implementation and the required "Scientific Grid" architecture:
+**Completed (Workstreams A–E):**
+* [x] **A+: Event Ledger** — Immutable `EventLedger` with `sequence_id` COMPLETE.
+* [x] **B+: Rehydration** — `GET /rehydrate` + `?after_seq` dedup COMPLETE.
+* [x] **C+: Dagger-MLflow Bridge** — Disposable Script, lifecycle tagging COMPLETE.
+* [x] **D+: Health Gates** — Zero-variance kill-switch, circuit breaker COMPLETE.
+* [x] **Phase 6:** PostgresSaver migration, graph consolidation COMPLETE.
 
-* [ ] **A+: Event Ledger Implementation:** Refactor `chat_history` into an immutable `EventLedger` using `sequence_id`.
-* [ ] **B+: Rehydration Logic:** Implement `get_rehydration_state` to allow the React UI to reconstruct the grid after a browser refresh.
-* [ ] **C+: Dagger-MLflow Bridge:** Redirect `ModelTrainingAgent` to generate standalone scripts for the sandbox and tag runs in MLflow.
-* [ ] **D+: Statistical Health Gates:** Inject variance/Z-score validation into `_validate_data_node` to kill "flatline" research loops.
-* [ ] **D+: Iteration Circuit Breaker:** Implement a 3-cycle cap per stage to prevent infinite reasoning loops.
+**New in v1.3 (Phase 7 — Conversational Grid):**
+* [ ] **Mandatory Scope Confirmation:** `action_request` with `scope_confirmation_v1` at session start. No conditional skip.
+* [ ] **Agent Narration:** Every LangGraph node emits `stream_chat` with reasoning.
+* [ ] **User Messaging:** `POST /message` → `sequence_id` N, agent response at N+1. New `user_message` event type.
+* [ ] **Plan Established:** New event type after scope confirmation with task checklist.
+* [ ] **Model Selection Gate:** `action_request` with `model_selection_v1` for model comparison.
+* [ ] **Circuit Breaker Escalation:** 3-cycle cap → `action_request` with `circuit_breaker_v1` (not TERMINAL_ERROR).
+* [ ] **3-Column Grid:** Dialogue (Left) | Activity (Center) | Outputs (Right).
 
 ---
 
@@ -22,13 +30,14 @@ The system **shall** maintain an immutable ledger for every session. A state obj
 
 * `sequence_id`: A monotonic integer incremented for every system action.
 * `stage`: The DSLC stage (e.g., `MODELING`).
-* `event_type`: `stream_chat`, `status_update`, `render_output`, `error`, `action_request`.
+* `event_type`: `stream_chat`, `status_update`, `render_output`, `error`, `action_request`, `user_message`, `plan_established`.
 * `payload`: The structured JSON data (Mime-Type compliant).
+* `timestamp`: ISO-8601 UTC with millisecond precision.
 
 ### 1.2 Research Integrity Gates
 
 * **The "Zero Variance" Kill-Switch:** The system **shall** terminate the workflow immediately if `_validate_data_node` detects zero variance in target/features or >90% outliers.
-* **The Iteration Cap:** No DSLC stage **shall** exceed 3 reasoning iterations. On the 4th attempt, the system **must** trigger a `Human_in_the_Loop` interrupt or a `TERMINAL_ERROR`.
+* **The Iteration Cap:** No DSLC stage **shall** exceed 3 reasoning iterations. On the 4th attempt, the system **must** emit an `action_request` with `action_id: "circuit_breaker_v1"` containing error context, suggestions, and options (CHOOSE_SUGGESTION, PROVIDE_GUIDANCE, ABORT_SESSION). Only truly unrecoverable errors (zero variance, sandbox crash) produce `error` events.
 * **State Rehydration:** Upon session initialization or reconnection, the backend **shall** replay the `EventLedger` to the frontend to ensure the Grid UI reflects the exact historical causality of the research.
 
 ---
@@ -56,13 +65,27 @@ The UI is a **Dashboard of Evidence**, not a chat window.
 
 ### 3.1 The Grid Layout
 
-* **Cell Isolation:** Each DSLC stage **shall** occupy a discrete "Cell" in the UI.
-* **State-Driven Visibility:** A cell only becomes visible or "Active" when a `status_update` with the corresponding `stage` is received.
-* **Mime-Type Dispatcher:** The UI **shall** use the `mime_type` in the event payload to decide whether to render a Markdown log, a Plotly chart, or a Blueprint card.
+* **3-Column Layout:** The Lab session renders as a CSS Grid: Dialogue (350px) | Activity Tracker (1fr) | Stage Outputs (300px).
+* **Left Cell (Dialogue):** Routes `stream_chat`, `user_message`, `action_request`, `error`. Shows agent narration, user messages, and HITL cards.
+* **Center Cell (Activity):** Routes `status_update`, `plan_established`. Master checklist of tasks grouped by stage.
+* **Right Cell (Outputs):** Routes `render_output`. Mime-type-dispatched artifacts for the active/selected stage.
+* **Mime-Type Dispatcher:** Uses `mime_type` in event payload to render Markdown, Plotly charts, Blueprint cards, or Tear Sheets.
 
 ### 3.2 Human-in-the-Loop (HITL) Controls
 
-* **Interrupt Rendering:** When the backend emits `status: AWAITING_APPROVAL`, the UI **must** render high-contrast "Approve/Reject" buttons within the active stage cell.
+4 mandatory interrupt points with `action_request` rendering:
+
+| Interrupt | Stage | action_id | Options |
+|-----------|-------|-----------|----------|
+| Scope Confirmation | BUSINESS_UNDERSTANDING | `scope_confirmation_v1` | CONFIRM_SCOPE, ADJUST_SCOPE |
+| Blueprint Approval | MODELING | `approve_modeling_v1` | APPROVE, REJECT, EDIT_BLUEPRINT |
+| Model Selection | EVALUATION | `model_selection_v1` | Radio select + CONFIRM |
+| Circuit Breaker | Any (after 3 failures) | `circuit_breaker_v1` | CHOOSE_SUGGESTION, PROVIDE_GUIDANCE, ABORT_SESSION |
+
+### 3.3 Conversational Interface
+
+* **ChatInput:** Text input at the bottom of the Dialogue panel. Sends via `POST /message`, response at `sequence_id` N+1.
+* **Agent Narration:** Every node emits `stream_chat` with human-readable reasoning. No silent processing.
 
 ---
 

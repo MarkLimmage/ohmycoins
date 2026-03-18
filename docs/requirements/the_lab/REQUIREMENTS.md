@@ -1,20 +1,21 @@
-# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.2)
+# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.3)
 
-## 🔄 DIFF: Outstanding Hardening Work 
+## 🔄 DIFF: v1.2 → v1.3 (Conversational Scientific Grid)
 
-The following items are the delta between the current "Flat Chat" implementation and the required "Scientific Grid" architecture:
-
-* [ ] **A+: Event Ledger Implementation:** Refactor `chat_history` into an immutable `EventLedger` using `sequence_id`.
-* [ ] **B+: Rehydration Logic:** Implement `get_rehydration_state` to allow the React UI to reconstruct the grid after a browser refresh.
-* [ ] **C+: Dagger-MLflow Bridge:** Redirect `ModelTrainingAgent` to generate standalone scripts for the sandbox and tag runs in MLflow.
-* [ ] **D+: Statistical Health Gates:** Inject variance/Z-score validation into `_validate_data_node` to kill "flatline" research loops.
-* [ ] **D+: Iteration Circuit Breaker:** Implement a 3-cycle cap per stage to prevent infinite reasoning loops.
+* [x] **A+: Event Ledger Implementation:** ✅ COMPLETE — `sequence_id`, `timestamp`, typed events via `emit_event()`.
+* [x] **B+: Rehydration Logic:** ✅ COMPLETE — `GET /rehydrate` endpoint, `?after_seq` WebSocket parameter.
+* [x] **C+: Dagger-MLflow Bridge:** ✅ COMPLETE — Disposable Script pattern, lifecycle tagging.
+* [x] **D+: Statistical Health Gates:** ✅ COMPLETE — Zero-variance kill-switch, 3-cycle circuit breaker.
+* [x] **D+: Iteration Circuit Breaker:** ✅ COMPLETE — Per-stage 3-cycle cap.
+* [x] **PostgresSaver:** ✅ COMPLETE — Persistent checkpointer (sessions survive restarts).
+* [ ] **F: Conversational Pipeline (NEW):** Wire scope confirmation, model selection, reasoning narration, `plan_established`, `POST /message`, circuit breaker → clarification escalation.
+* [ ] **G: Scientific Grid UI (NEW):** 3-column layout (Dialogue | Activity | Outputs), event router refactor, ChatInput, rehydration replays all 3 cells.
 
 ---
 
-## 1. 🧠 Scientific Orchestration (The Science Loop)
+## 1. 🧠 Scientific Orchestration (The Conversational Research Loop)
 
-The Lab operates as an **Autonomous Research Loop**. The orchestrator manages a sequence of experiments, where each step must produce a verifiable "Scientific Record."
+The Lab operates as a **Conversational Research Loop**. The orchestrator manages a sequence of experiments where each step is narrated to the user, and the user can steer the agent at any point.
 
 ### 1.1 The `EventLedger` (Causal State)
 
@@ -22,14 +23,22 @@ The system **shall** maintain an immutable ledger for every session. A state obj
 
 * `sequence_id`: A monotonic integer incremented for every system action.
 * `stage`: The DSLC stage (e.g., `MODELING`).
-* `event_type`: `stream_chat`, `status_update`, `render_output`, `error`, `action_request`.
-* `payload`: The structured JSON data (Mime-Type compliant).
+* `event_type`: One of 7 types: `stream_chat`, `status_update`, `render_output`, `error`, `action_request`, `user_message`, `plan_established`.
+* `timestamp`: ISO-8601 UTC with millisecond precision.
+* `payload`: The structured JSON data (type-specific).
 
 ### 1.2 Research Integrity Gates
 
 * **The "Zero Variance" Kill-Switch:** The system **shall** terminate the workflow immediately if `_validate_data_node` detects zero variance in target/features or >90% outliers.
-* **The Iteration Cap:** No DSLC stage **shall** exceed 3 reasoning iterations. On the 4th attempt, the system **must** trigger a `Human_in_the_Loop` interrupt or a `TERMINAL_ERROR`.
-* **State Rehydration:** Upon session initialization or reconnection, the backend **shall** replay the `EventLedger` to the frontend to ensure the Grid UI reflects the exact historical causality of the research.
+* **The Iteration Cap:** No DSLC stage **shall** exceed 3 reasoning iterations. On the 4th attempt, the system **must** escalate to an `action_request` with `action_id: "circuit_breaker_v1"` presenting the user with recovery options. The system **shall not** emit `TERMINAL_ERROR` for recoverable failures.
+* **Mandatory Scope Confirmation:** Every session **must** begin with a `scope_confirmation` interrupt at BUSINESS_UNDERSTANDING. The user explicitly confirms or adjusts the interpreted scope before any data retrieval begins. There is no conditional skip.
+* **State Rehydration:** Upon session initialization or reconnection, the backend **shall** return the full `EventLedger` via REST. The frontend replays it through the same event router to reconstruct all three UI cells identically.
+
+### 1.3 The Conversational Contract
+
+* **Agent Narration:** The agent **shall** emit `stream_chat` events at every significant decision point to explain what it is doing and why. The user must never be left guessing.
+* **User Messaging:** The user **may** send messages at any time via `POST /message`. The message is persisted as a `user_message` event with an assigned `sequence_id`. The agent's next event **must** be `sequence_id` N+1.
+* **Plan Visibility:** After scope confirmation, the agent **shall** emit a `plan_established` event containing the anticipated task list grouped by stage, enabling the Activity Tracker checklist.
 
 ---
 
@@ -50,19 +59,43 @@ The sandbox is the "Lab Bench." It must be isolated, tracked, and optimized for 
 
 ---
 
-## 3. 🖥️ Frontend UX: The Scientific Grid
+## 3. 🖥️ Frontend UX: The 3-Column Scientific Grid
 
-The UI is a **Dashboard of Evidence**, not a chat window.
+The UI is a **Conversational Dashboard of Evidence** — not a flat chat window, not a single-column stage list.
 
-### 3.1 The Grid Layout
+### 3.1 The 3-Column Grid Layout
 
-* **Cell Isolation:** Each DSLC stage **shall** occupy a discrete "Cell" in the UI.
-* **State-Driven Visibility:** A cell only becomes visible or "Active" when a `status_update` with the corresponding `stage` is received.
-* **Mime-Type Dispatcher:** The UI **shall** use the `mime_type` in the event payload to decide whether to render a Markdown log, a Plotly chart, or a Blueprint card.
+The Lab session view **shall** be organized as a CSS Grid with 3 columns:
 
-### 3.2 Human-in-the-Loop (HITL) Controls
+| Column | Width | Component | Routes events from |
+|--------|-------|-----------|-------------------|
+| Left | 350px | `DialoguePanel` | `stream_chat`, `user_message`, `action_request`, `error` |
+| Center | 1fr | `ActivityTracker` | `status_update`, `plan_established` |
+| Right | 300px | `StageOutputs` | `render_output` |
 
-* **Interrupt Rendering:** When the backend emits `status: AWAITING_APPROVAL`, the UI **must** render high-contrast "Approve/Reject" buttons within the active stage cell.
+### 3.2 Event Routing
+
+* **`stream_chat`** → Left Cell as agent chat bubble.
+* **`user_message`** → Left Cell as user chat bubble.
+* **`action_request`** → Left Cell as interactive HITL card (scope confirmation, model selection, blueprint approval, circuit breaker).
+* **`status_update`** → Center Cell as checklist item update. `status_update` **shall not** create cells or clutter. If `task_id` provided, update existing checklist item; otherwise append.
+* **`plan_established`** → Center Cell initializes the master checklist grouped by stage.
+* **`render_output`** → Right Cell for the active/selected stage. Uses mime-type dispatcher (markdown, plotly, blueprint, tearsheet, PNG).
+* **`error`** → Left Cell as error card.
+
+### 3.3 Human-in-the-Loop (HITL) Controls
+
+The system defines **4 interrupt points** with corresponding `action_request` subtypes:
+
+1. **`scope_confirmation_v1`** (BUSINESS_UNDERSTANDING): Mandatory scope lock — parsed goal, assets, timeframe, questions. Options: CONFIRM_SCOPE, ADJUST_SCOPE.
+2. **`approve_modeling_v1`** (MODELING): Blueprint approval — features, algorithm, estimated time. Options: APPROVE, REJECT, EDIT_BLUEPRINT.
+3. **`model_selection_v1`** (EVALUATION): Model comparison — metrics, pros/cons, recommendation. Options: SELECT_MODEL, RETRAIN_ALL, SKIP_MODELING.
+4. **`circuit_breaker_v1`** (Any stage): Escalation after 3 failed iterations — error context, suggestions. Options: CHOOSE_SUGGESTION, PROVIDE_GUIDANCE, ABORT_SESSION.
+
+### 3.4 ChatInput
+
+* The user **may** send free-text messages to the agent at any time via a text input at the bottom of the Dialogue panel.
+* Messages are sent via `POST /api/v1/lab/agent/sessions/{id}/message` and rendered optimistically.
 
 ---
 
@@ -71,125 +104,8 @@ The UI is a **Dashboard of Evidence**, not a chat window.
 * **Promotion Contract:** A model is only eligible for "The Floor" if it exists in the MLflow Registry with a `lifecycle: valid` tag.
 * **Signal Isolation:** The Bridge **shall** only pass the model's `weights` and `feature_map`. No execution logic (sizing/orders) is permitted to leave the Lab.
 
-
-
-
-
-# For REFERENCE ONLY - OLD REQUIREMENTS VERSION
-## 🔬 Requirements Specification: "The Lab" (Algo Development Module)
-
-**Version:** 1.1 (Updated Post-Review)
-**Context:** This module provides an interactive, agent-assisted Data Science Life Cycle (DSLC) environment. It sits between the Data Collectors (Materialized Views) and the Live Trading Platform ("The Floor").
-
-## 1. 🧠 Core Orchestration (LangGraph State Machine)
-
-The Lab operates as a directed state graph. The dev team must implement the orchestration layer to strictly manage transitions between these states.
-
-### 1.1 The `DSLCState` Object
-
-The system **shall** maintain a persistent state object for every Lab Session containing:
-
-* `session_id` (UUID)
-* `current_stage` (Enum: `BUSINESS_UNDERSTANDING`, `DATA_ACQUISITION`, `PREPARATION`, `EXPLORATION`, `MODELING`, `EVALUATION`, `DEPLOYMENT`)
-* `chat_history` (List of user/agent messages)
-* `artifacts` (Dict mapping stages to output file paths or MLflow URIs)
-* `stale_flags` (Dict mapping stages to Boolean values)
-
-### 1.2 State Transitions & The "Stale" Protocol
-
-* **Sequential Enforcement:** The agent **shall not** execute a stage if its immediate preceding stage is incomplete or marked as stale.
-* **Upstream Invalidation:** **If** the user modifies the output or code of Stage $N$, the system **shall** automatically set the `stale_flags` for all Stages > $N$ to `True`.
-* **Approval Gates:** The LangGraph implementation **shall** contain a `Human_in_the_Loop` interrupt node before transitioning from `EXPLORATION` to `MODELING`, and `MODELING` to `EVALUATION`.
-* **Self-Healing Loop:** **If** the Dagger execution engine returns a hardware limit error (Out of Memory or Timeout), the LangGraph orchestrator shall feed the error back to the agent for code optimization before surfacing a terminal error to the user. The system shall allow a maximum of 2 retry attempts.
-
-### 1.3 Automated Validation (The Leakage Guard)
-
-* **Pre-Training Check:** Before entering the `MODELING` stage, the system **shall** automatically run a validation script against the prepped data to detect label leakage (e.g., overlapping time windows between target variables and features).
-
 ---
 
-## 2. 🛡️ The Execution Sandbox (Dagger integration)
+## 5. 📜 Contract Reference
 
-No agent-generated data science code shall run on the host FastAPI process.
-
-### 2.1 Container Lifecycle & Specifications
-
-* **Base Image:** The system **shall** construct Dagger containers using a pre-baked, local Docker image tagged `omc-agent-base:latest`.
-* **Pre-loaded Toolchains:** The omc-agent-base image **shall** contain `scikit-learn`, `xgboost`, `pandas`, `numpy`, `matplotlib`, `ta-lib`, and `shap`. Dynamic `pip install` commands within the sandbox are strictly prohibited.
-* **Ephemeral Nature:** Containers **shall** be destroyed immediately upon task completion, failure, or timeout.
-
-### 2.2 Data Ingestion & Volume Mounting
-
-* **MV to Parquet Pipeline:** **When** the `DATA_ACQUISITION` stage executes, the FastAPI backend **shall** query the requested Materialized View, export the result to a local `.parquet` file, and mount *only* that file into the Dagger container.
-* **Database Isolation:** The Dagger container **shall not** possess database connection strings or drivers.
-* **Write-Only Artifact Store:** The container **shall** have access to a specific `/workspace/out` directory to write trained models (`.pkl`) and visual plots (`.json`/`.png`).
-
----
-
-## 3. 🤖 AI Agent Capabilities & Tools
-
-### 3.1 The "Model Blueprint" Generation
-
-* **When** in the `BUSINESS_UNDERSTANDING` stage, the agent **shall** output a structured JSON schema (The Blueprint) containing:
-* `target_variable` (e.g., `target_return_1h`)
-* `feature_list` (e.g., `['volatility_24h', 'sentiment_1h']`)
-* `ml_task_type` (Enum: `CLASSIFICATION`, `REGRESSION`)
-* `hyperparameters` (Dict of model-specific tuning parameters)
-
-
-
-### 3.2 Agent Tool Bindings
-
-The dev team must expose the following internal APIs to the LangGraph agent:
-
-* `extract_feature_store(query_params)`: Triggers the MV-to-Parquet pipeline.
-* `execute_sandbox_code(code: str)`: Sends Python code to Dagger and returns `stdout`, `stderr`, and artifact URIs.
-* `log_to_mlflow(metrics: dict, params: dict, model_path: str)`: Pushes execution results to the local experiment tracker.
-
----
-
-## 4. 🖥️ Frontend UX & Communication Protocol (React + FastAPI)
-
-### 4.1 Low-Code Overlays & Code Abstraction
-
-* **Hyperparameter Tuning UI:** **If** the agent generates a Blueprint with `hyperparameters` (e.g., XGBoost `learning_rate`), the UI **shall** render these as visual sliders/inputs, allowing the user to adjust them without editing the underlying Python script.
-* **Code Collapsibility:** The Python code generated by the agent **shall** be placed in a collapsible accordion panel within the cell, defaulting to "Closed".
-
-### 4.2 Standardized Insight Rendering (Result-First UI)
-
-* **Structured Visuals:** **If** the agent executes code that generates a chart, the backend **shall** return a Plotly-compatible JSON object or Base64 image string, which the React component **shall** render natively.
-* **The "Tear Sheet":** In the `EVALUATION` stage, the UI **shall** render a standardized metric card (The Tear Sheet) displaying the model's out-of-sample performance (e.g., Accuracy, Precision, assumed P&L).
-
-### 4.3 Visual State Graph
-
-* **Status Map:** A linear graph node display (e.g., using React Flow) **shall** persist at the top of the workspace.
-* **Real-time Sync:** The backend **shall** push WebSocket events (`status_update`) to instantly color-code nodes (Green = Healthy, Amber = Stale, Blue = In Progress).
-
----
-
-## 5. 🌉 Deployment (The Lab-to-Floor Bridge)
-
-### 5.1 Promotion Contract
-
-* **When** a user clicks "Promote to Floor" in the `DEPLOYMENT` stage, the system **shall**:
-1. Verify the model exists in the MLflow Model Registry with a "Production" tag.
-2. Create a new record in the `Algorithm` database table.
-3. Link the `Algorithm` record to the specific `mlflow_run_id` to maintain data lineage.
-
-
-* **Separation of Concerns:** The deployed model artifact **shall only** emit predictive signals (e.g., `[Buy: 0.85]`). It **shall not** contain execution logic (e.g., position sizing or Coinspot API calls), which remains the strict domain of The Floor.
-
----
-
-## 6. 🛑 Non-Functional Security & Performance Guardrails
-
-### 6.1 Resource Constraints
-
-* **Timeout:** Any single agent code execution inside the Dagger sandbox **shall** be terminated if it exceeds **300 seconds**.
-* **Memory:** The Dagger container **shall** be hard-capped at **2GB RAM** (adjustable via `.env`).
-
-### 6.2 Air-Gap Security
-
-* **Network Isolation:** During `PREPARATION`, `EXPLORATION`, and `MODELING`, the Dagger container **shall** have external internet access disabled.
-* **Credential Blacklist:** Real-world trading credentials **shall never** be mounted, passed, or accessible to The Lab's execution environment.
-
+All event schemas, payload structures, endpoint definitions, and the 3-Cell routing contract are defined in the root [API_CONTRACTS.md](/API_CONTRACTS.md) (v1.3). That file is the single source of truth for all JSON payloads.
