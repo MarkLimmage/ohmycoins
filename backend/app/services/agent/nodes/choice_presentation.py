@@ -17,66 +17,71 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def choice_presentation_node(state: dict[str, Any]) -> dict[str, Any]:
+
+def model_selection_node(state: dict[str, Any]) -> dict[str, Any]:
     """
     Present model choices to the user with comparison analysis.
-
-    This node is triggered when multiple models have been trained
-    or when there are different hyperparameter configurations to choose from.
-
-    Args:
-        state: Current workflow state with trained_models or evaluation_results
-
-    Returns:
-        Updated state with choices_available and awaiting_choice fields
+    Corresponds to 'model_selection' node in API Contract.
     """
-    logger.info("ChoicePresentationNode: Analyzing models for comparison")
+    logger.info("ModelSelectionNode: Analyzing models for comparison")
+
+    # Check if we already have a selection (re-entry)
+    if state.get("selected_choice"):
+        return {"current_step": "model_selected"}
 
     trained_models = state.get("trained_models", {})
     evaluation_results = state.get("evaluation_results", {})
 
     if not trained_models or not evaluation_results:
-        logger.info("ChoicePresentationNode: No models to compare, skipping")
-        state["awaiting_choice"] = False
-        return state
+        logger.info("ModelSelectionNode: No models to compare, skipping")
+        return {"awaiting_choice": False}
 
     # Generate choice comparison
     choices = _generate_model_choices(trained_models, evaluation_results)
 
-    if len(choices) <= 1:
-        logger.info(
-            "ChoicePresentationNode: Only one model available, no choice needed"
-        )
-        state["awaiting_choice"] = False
-        # Auto-select the single model
-        if choices:
-            state["selected_choice"] = choices[0]["model_name"]
-        return state
-
     # Generate recommendations using LLM
     recommendation = _generate_recommendation(choices)
 
-    # Update state
-    state["choices_available"] = choices
-    state["awaiting_choice"] = True
-    state["current_step"] = "awaiting_choice"
-    state["recommendation"] = recommendation
+    # Prepare Payload for Frontend
+    api_models = []
+    for c in choices:
+        api_models.append({
+            "name": c["model_name"],
+            "accuracy": c.get("metrics", {}).get("accuracy"),
+            "f1_score": c.get("metrics", {}).get("f1"),
+            "training_time": c.get("metrics", {}).get("training_time"),
+            "pros": c.get("pros", []),
+            "cons": c.get("cons", [])
+        })
 
-    # Add to reasoning trace
-    if "reasoning_trace" not in state or state["reasoning_trace"] is None:
-        state["reasoning_trace"] = []
+    action_payload = {
+        "description": "I've trained and evaluated models. Which should we promote?",
+        "models": api_models,
+        "recommendation": {
+            "model": recommendation.get("recommended_model"),
+            "confidence": recommendation.get("confidence", 0.0),
+            "reason": recommendation.get("reasoning", "")
+        },
+        "options": ["PROMOTE_MODEL", "RETRAIN"]
+    }
 
-    state["reasoning_trace"].append(
-        {
-            "step": "choice_presentation",
-            "num_choices": len(choices),
-            "recommendation": recommendation,
-        }
-    )
+    event = {
+        "event_type": "action_request",
+        "stage": "EVALUATION",
+        "action_id": "model_selection_v1",
+        "payload": action_payload
+    }
 
-    logger.info(f"ChoicePresentationNode: Presenting {len(choices)} choices to user")
+    logger.info(f"ModelSelectionNode: Presenting {len(choices)} choices to user")
 
-    return state
+    return {
+        "current_step": "model_selection",
+        "choices_available": choices,
+        "recommendation": recommendation,
+        "awaiting_choice": True,
+        "pending_events": [event]
+    }
+
 
 
 def _generate_model_choices(
@@ -124,6 +129,46 @@ def _generate_model_choices(
     choices.sort(key=lambda x: x["accuracy"], reverse=True)
 
     return choices
+
+
+def handle_model_selection_response(state: dict[str, Any], response: dict[str, Any]) -> dict[str, Any]:
+    """
+    Process user model selection.
+    """
+    logger.info(f"ModelSelection: Processing response {response}")
+
+    selected_model = response.get("selected_model")
+    action = response.get("action")  # PROMOTE_MODEL or RETRAIN
+
+    if action == "RETRAIN":
+        # Reset training state to trigger retrain
+        return {
+            "awaiting_choice": False,
+            "model_trained": False,
+            "current_step": "retrain_requested"
+        }
+
+    if selected_model:
+        # In a real scenario, we might want to flag this model as the 'active' one
+        # For now, we update state to indicate selection is done
+
+        # Add to reasoning trace
+        trace_entry = {
+            "step": "model_selected",
+            "model": selected_model,
+            "action": action
+        }
+
+        trace = state.get("reasoning_trace", []) or []
+        trace.append(trace_entry)
+
+        return {
+            "selected_choice": selected_model,
+            "awaiting_choice": False,
+            "reasoning_trace": trace
+        }
+
+    return state
 
 
 def _estimate_model_complexity(model_name: str) -> str:

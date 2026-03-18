@@ -127,23 +127,32 @@ class AgentRunner:
         with DBSession(engine) as db:
             try:
                 # Initialize sequence_id from existing message count
-                count_stmt = (
-                    select(func.count())
+                # Use max(sequence_id) instead of count() for correct sequence tracking (F6)
+                max_stmt = (
+                    select(func.max(AgentSessionMessage.sequence_id))
                     .select_from(AgentSessionMessage)
                     .where(AgentSessionMessage.session_id == session_id)
                 )
-                sequence_id = db.exec(count_stmt).one() or 0
+                sequence_id = db.exec(max_stmt).one() or 0
 
                 # Initialise the session via orchestrator (sets RUNNING, adds system msg)
-                # Only call start_session if this is a fresh run (sequence_id=0)
+                # Only call start_session if this is a fresh run (sequence_id=0 or None)
                 if sequence_id == 0:
                     await self.orchestrator.start_session(db, session_id)
-                    # Increment sequence_id for the start message
-                    sequence_id += 1
-                else:
-                    # Effectively "Touch" session to be RUNNING if not already
-                    # (handled by resume_session, but harmless)
-                    pass
+                    # This added a message, so sequence_id is now at least 1 (or more)
+
+                # Emit "Session started/resumed" event and persist to DB (F6)
+                status_msg = await self.session_manager.add_message(
+                    db,
+                    session_id,
+                    role="assistant",
+                    content="Session started" if sequence_id == 0 else "Session resumed",
+                    event_type="status_update",
+                    stage="BUSINESS_UNDERSTANDING",
+                    metadata=json.dumps({"status": AgentSessionStatus.RUNNING})
+                )
+
+                current_sequence_id = status_msg.sequence_id or 1
 
                 await self._publish(
                     redis,
@@ -151,11 +160,11 @@ class AgentRunner:
                     {
                         "event_type": "status_update",
                         "stage": "BUSINESS_UNDERSTANDING",
-                        "sequence_id": sequence_id,
+                        "sequence_id": current_sequence_id,
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "payload": {
                             "status": AgentSessionStatus.RUNNING,
-                            "message": "Session started" if sequence_id <= 1 else "Session resumed",
+                            "message": status_msg.content,
                         },
                     },
                 )
@@ -165,7 +174,7 @@ class AgentRunner:
                 if not session:
                     raise ValueError(f"Session {session_id} not found")
 
-                from .langgraph_workflow import AgentState, LangGraphWorkflow
+                from .langgraph_workflow import LangGraphWorkflow
 
                 # Initialize workflow with database session and user context
                 # Use persistent checkpointer for cross-container/restart resilience
@@ -178,10 +187,11 @@ class AgentRunner:
                 )
 
                 initial_state = None
-                if sequence_id <= 1:
-                    initial_state: AgentState = {
+                # If fresh run or force restart
+                if sequence_id == 0:
+                    initial_state = {
                         "session_id": str(session_id),
-                        "sequence_id": sequence_id,
+                        "sequence_id": current_sequence_id,
                         "user_goal": session.user_goal,
                         "status": AgentSessionStatus.RUNNING,
                         "current_step": "initialization",
@@ -231,39 +241,44 @@ class AgentRunner:
                                     continue
                                 processed_seq_ids.add(event_seq)
 
-                                # Update sequence_id tracker
-                                event_seq = event.get("sequence_id")
-                                if event_seq is not None:
-                                    sequence_id = max(sequence_id, event_seq)
-                                else:
-                                    sequence_id += 1
-                                    event["sequence_id"] = sequence_id
-                                    event["timestamp"] = datetime.now(timezone.utc).isoformat()
-
-                                # Publish to Redis
-                                await self._publish(redis, channel, event)
-
                                 # Persist full event to DB for reliable rehydration
                                 content_str = ""
-                                if event["event_type"] == "render_output":
+                                if event.get("event_type") == "render_output":
                                     content_str = (
-                                        f"Render Output: {event['payload'].get('mime_type')}"
+                                        f"Render Output: {event.get('payload', {}).get('mime_type')}"
                                     )
-                                elif event["event_type"] == "status_update":
-                                    msg = event["payload"].get("message", "")
-                                    status = event["payload"].get("status")
+                                elif event.get("event_type") == "status_update":
+                                    msg = event.get("payload", {}).get("message", "")
+                                    status = event.get("payload", {}).get("status")
                                     content_str = f"{status}: {msg}"
                                 else:
                                     content_str = str(event.get("payload"))
 
-                                await self.session_manager.add_message(
+                                # F6: Persist first to get correct monotonic sequence_id
+                                saved_msg = await self.session_manager.add_message(
                                     db,
                                     session_id,
                                     role="assistant",
                                     content=content_str,
                                     agent_name=node_name,
+                                    # Update metadata with potentially outdated sequence_id, will be fixed on read?
+                                    # Ideally we should update metadata after save, but circular dependency.
+                                    # The critical part is event["sequence_id"] for publish
                                     metadata=json.dumps(event),
+                                    event_type=event.get("event_type", "message"),
+                                    stage=event.get("stage")
                                 )
+
+                                # Update sequence_id and timestamp from DB truth
+                                event["sequence_id"] = saved_msg.sequence_id
+                                # Use DB timestamp for consistency
+                                event["timestamp"] = saved_msg.created_at.isoformat()
+                                # Update local tracker
+                                sequence_id = saved_msg.sequence_id
+
+                                # Publish to Redis with CORRECT sequence_id
+                                await self._publish(redis, channel, event)
+
 
                         # Fallback for Legacy Nodes (initialization, reason)
                         elif node_state.get("current_step"):

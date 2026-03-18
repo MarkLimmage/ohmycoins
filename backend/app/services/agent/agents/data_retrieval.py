@@ -84,7 +84,11 @@ class DataRetrievalAgent(BaseAgent):
                 state,
                 "status_update",
                 "DATA_ACQUISITION",
-                {"status": "ACTIVE", "message": "Starting data retrieval..."},
+                {
+                    "status": "ACTIVE",
+                    "message": "Starting data retrieval...",
+                    "task_id": "fetch_price_data"
+                },
             )
 
             # Parse user goal to determine what data to fetch
@@ -97,6 +101,17 @@ class DataRetrievalAgent(BaseAgent):
 
             # Determine coin type from goal or params
             coin_type = retrieval_params.get("coin_type", "BTC")
+
+            # Emit conversational update (stream_chat)
+            await self.emit_event(
+                state,
+                "stream_chat",
+                "DATA_ACQUISITION",
+                {
+                    "message": f"I'm initiating data retrieval for {coin_type}. Checking available datasets for the last {retrieval_params.get('days', 30)} days...",
+                    "sender": "DataRetrievalAgent"
+                },
+            )
 
             # Initialize data dictionary
             retrieved_data: dict[str, Any] = {}
@@ -121,9 +136,15 @@ class DataRetrievalAgent(BaseAgent):
             ):
                 await self.emit_event(
                     state,
+                    "stream_chat",
+                    "DATA_ACQUISITION",
+                    {"message": "Querying historical OHLCV price data...", "sender": "DataRetrievalAgent"},
+                )
+                await self.emit_event(
+                    state,
                     "status_update",
                     "DATA_ACQUISITION",
-                    {"status": "ACTIVE", "message": f"Fetching price data for {coin_type}..."},
+                    {"status": "ACTIVE", "message": f"Fetching {retrieval_params.get('days', 30)} days of {coin_type} price data"},
                 )
                 retrieved_data["price_data"] = await fetch_price_data(
                     self.session,
