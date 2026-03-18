@@ -139,7 +139,7 @@ class AgentState(TypedDict):
     terminal_error: dict[str, Any] | None  # Terminal error details if kill-switch triggers
     circuit_breaker_triggered: bool  # Flag if circuit breaker tripped (F7)
     action_requests: list[dict[str, Any]] | None  # Action requests for user intervention (F7)
-    interrupt_limit_reached: bool  # Flag if retry limit reached 
+    interrupt_limit_reached: bool  # Flag if retry limit reached
     # Phase 5 Messaging Infrastructure
     sequence_id: int | None  # Monotonic sequence counter
     pending_events: list[dict[str, Any]] | None  # Events to be emitted by the runner
@@ -337,12 +337,12 @@ class LangGraphWorkflow:
         # After evaluation, generate report or retry
         # New flow (F2): after evaluation, present model choices
         workflow.add_node("model_selection", model_selection_node)
-        
+
         # After evaluation, always go to model selection (unless error/reason)
         # We need to modify _route_after_evaluation to conditionally go to model_selection
         # But for now, let's assume successful evaluation goes to model_selection
         # So we update _route_after_evaluation or just add a simple edge if we change the node logic
-        
+
         workflow.add_conditional_edges(
             "evaluate_model",
             self._route_after_evaluation,
@@ -354,7 +354,7 @@ class LangGraphWorkflow:
                 "review": "human_review",  # HITL Route
             },
         )
-        
+
         # Conditional routing after model selection
         workflow.add_conditional_edges(
             "model_selection",
@@ -524,7 +524,7 @@ class LangGraphWorkflow:
                 "reasoning_trace": context_parts
             }
         }
-        
+
         pending = state.get("pending_events", []) or []
         pending.append(chat_event)
         state["pending_events"] = pending
@@ -609,17 +609,17 @@ class LangGraphWorkflow:
         counts = state.get("stage_iteration_counts", {})
         if not counts:
              counts = {}
-        
+
         current_count = counts.get(stage_name, 0) + 1
         counts[stage_name] = current_count
         state["stage_iteration_counts"] = counts
 
         if current_count >= 4:
             logger.warning(f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)")
-            
+
             # F7: Escalate to Action Request instead of hard fail
             state["circuit_breaker_triggered"] = True
-            state["interrupt_limit_reached"] = True 
+            state["interrupt_limit_reached"] = True
 
             # Construct Action Request for User Decision
             action_request = {
@@ -634,32 +634,32 @@ class LangGraphWorkflow:
                 },
                 "options": [
                     {
-                        "id": "retry", 
-                        "label": "Retry Stage", 
+                        "id": "retry",
+                        "label": "Retry Stage",
                         "action": "retry_stage",
                         "description": "Attempt the operation one more time."
                     },
                     {
-                        "id": "abort", 
-                        "label": "Abort Workflow", 
-                        "action": "abort_workflow", 
+                        "id": "abort",
+                        "label": "Abort Workflow",
+                        "action": "abort_workflow",
                         "style": "danger",
                         "description": "Stop current workflow execution."
                     },
                     {
-                        "id": "guidance", 
-                        "label": "Provide Guidance", 
+                        "id": "guidance",
+                        "label": "Provide Guidance",
                         "action": "provide_guidance",
                         "description": "Let me provide new instructions to fix the issue."
                     }
                 ]
             }
-            
+
             # Append to action_requests list (init if missing)
             requests = state.get("action_requests") or []
             requests.append(action_request)
             state["action_requests"] = requests
-            
+
             # Trigger interrupt by returning True (caller handles return)
             return True
         return False
@@ -727,7 +727,7 @@ class LangGraphWorkflow:
         # Ensure pending_events is initialized
         if "pending_events" not in state or state["pending_events"] is None:
             state["pending_events"] = []
-            
+
         state["pending_events"].append({
             "event_type": "status_update",
             "stage": "PREPARATION",
@@ -1370,7 +1370,7 @@ class LangGraphWorkflow:
     ) -> Literal["report", "retrain", "error"]:
         """
         Route after model selection decision.
-        
+
         Args:
             state: Current workflow state
 
@@ -1379,10 +1379,10 @@ class LangGraphWorkflow:
         """
         if state.get("current_step") == "retrain_requested":
              return "retrain"
-        
+
         if state.get("selected_choice"):
              return "report"
-             
+
         # Create explicit error if we fell through
         state["error"] = "Model selection failed or bypassed"
         return "error"
@@ -1447,7 +1447,7 @@ class LangGraphWorkflow:
         if state.get("approval_granted") or state.get("resume_approved"):
             logger.info("Approval granted, resuming workflow.")
             # F7: Also reset circuit breaker if resuming
-            state["circuit_breaker_triggered"] = False 
+            state["circuit_breaker_triggered"] = False
             # If we knew where we came from, we could go there.
             # But simpler is to go back to Reason, which should now see
             # the approval and decide next step.
@@ -1460,7 +1460,7 @@ class LangGraphWorkflow:
             # F7: Check pending action requests
             # If action requests exist but not resolved, we might want to stay in review?
             # But we only route AFTER review. If resumed, assume user action taken.
-            
+
             # Still pending? This shouldn't happen if we strictly interrupt BEFORE this node.
             # But if we are here, it means we resumed.
             # If no decision, go back to reason?

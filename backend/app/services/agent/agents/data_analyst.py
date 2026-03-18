@@ -62,7 +62,7 @@ class DataAnalystAgent(BaseAgent):
                 "status_update",
                 "EXPLORATION",
                 {
-                    "status": "ACTIVE", 
+                    "status": "ACTIVE",
                     "message": "Initializing analysis pipeline...",
                     "task_id": "compute_indicators"
                 },

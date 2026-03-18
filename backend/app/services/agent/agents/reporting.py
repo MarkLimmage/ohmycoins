@@ -70,7 +70,7 @@ class ReportingAgent(BaseAgent):
                 "status_update",
                 "DEPLOYMENT",
                 {
-                    "status": "ACTIVE", 
+                    "status": "ACTIVE",
                     "message": "Generating final report...",
                     "task_id": "generate_report"
                 },

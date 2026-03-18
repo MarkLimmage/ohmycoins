@@ -140,7 +140,7 @@ class AgentRunner:
                 if sequence_id == 0:
                     await self.orchestrator.start_session(db, session_id)
                     # This added a message, so sequence_id is now at least 1 (or more)
-                
+
                 # Emit "Session started/resumed" event and persist to DB (F6)
                 status_msg = await self.session_manager.add_message(
                     db,
@@ -151,7 +151,7 @@ class AgentRunner:
                     stage="BUSINESS_UNDERSTANDING",
                     metadata=json.dumps({"status": AgentSessionStatus.RUNNING})
                 )
-                
+
                 current_sequence_id = status_msg.sequence_id or 1
 
                 await self._publish(
@@ -174,7 +174,7 @@ class AgentRunner:
                 if not session:
                     raise ValueError(f"Session {session_id} not found")
 
-                from .langgraph_workflow import AgentState, LangGraphWorkflow
+                from .langgraph_workflow import LangGraphWorkflow
 
                 # Initialize workflow with database session and user context
                 # Use persistent checkpointer for cross-container/restart resilience
@@ -268,7 +268,7 @@ class AgentRunner:
                                     event_type=event.get("event_type", "message"),
                                     stage=event.get("stage")
                                 )
-                                
+
                                 # Update sequence_id and timestamp from DB truth
                                 event["sequence_id"] = saved_msg.sequence_id
                                 # Use DB timestamp for consistency

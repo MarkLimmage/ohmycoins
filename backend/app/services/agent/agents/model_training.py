@@ -114,7 +114,7 @@ class ModelTrainingAgent(BaseAgent):
                 "status_update",
                 "MODELING",
                 {
-                    "status": "ACTIVE", 
+                    "status": "ACTIVE",
                     "message": f"Training {model_type} ({task_type})...",
                     "task_id": "train_models"
                 },

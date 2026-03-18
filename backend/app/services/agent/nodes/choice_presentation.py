@@ -38,7 +38,7 @@ def model_selection_node(state: dict[str, Any]) -> dict[str, Any]:
 
     # Generate choice comparison
     choices = _generate_model_choices(trained_models, evaluation_results)
-    
+
     # Generate recommendations using LLM
     recommendation = _generate_recommendation(choices)
 
@@ -136,7 +136,7 @@ def handle_model_selection_response(state: dict[str, Any], response: dict[str, A
     Process user model selection.
     """
     logger.info(f"ModelSelection: Processing response {response}")
-    
+
     selected_model = response.get("selected_model")
     action = response.get("action")  # PROMOTE_MODEL or RETRAIN
 
@@ -147,18 +147,18 @@ def handle_model_selection_response(state: dict[str, Any], response: dict[str, A
             "model_trained": False,
             "current_step": "retrain_requested"
         }
-    
+
     if selected_model:
         # In a real scenario, we might want to flag this model as the 'active' one
         # For now, we update state to indicate selection is done
-        
+
         # Add to reasoning trace
         trace_entry = {
             "step": "model_selected",
             "model": selected_model,
             "action": action
         }
-        
+
         trace = state.get("reasoning_trace", []) or []
         trace.append(trace_entry)
 
@@ -167,9 +167,9 @@ def handle_model_selection_response(state: dict[str, Any], response: dict[str, A
             "awaiting_choice": False,
             "reasoning_trace": trace
         }
-    
+
     return state
-    
+
 
 def _estimate_model_complexity(model_name: str) -> str:
     """

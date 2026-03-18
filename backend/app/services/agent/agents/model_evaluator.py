@@ -55,7 +55,7 @@ class ModelEvaluatorAgent(BaseAgent):
                 "status_update",
                 "EVALUATION",
                 {
-                    "status": "ACTIVE", 
+                    "status": "ACTIVE",
                     "message": "Evaluating models...",
                     "task_id": "evaluate_model"
                 },
@@ -80,7 +80,7 @@ class ModelEvaluatorAgent(BaseAgent):
 
             # Get test data for evaluation
             test_data = self._get_test_data(state, evaluation_params)
-            
+
             await self.emit_event(
                 state,
                 "stream_chat",
@@ -118,7 +118,7 @@ class ModelEvaluatorAgent(BaseAgent):
 
                 metrics = model_evaluation.get("metrics", {})
                 score_msg = f"Accuracy: {metrics.get('accuracy', 'N/A')}" if task_type == 'classification' else f"R2 Score: {metrics.get('r2_score', 'N/A')}"
-                
+
                 await self.emit_event(
                     state,
                     "stream_chat",

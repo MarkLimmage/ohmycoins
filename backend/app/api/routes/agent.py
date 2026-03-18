@@ -357,7 +357,7 @@ async def create_user_message(
         raise HTTPException(
             status_code=403, detail="Not authorized to access this session"
         )
-    
+
     # Add message and save to DB (sequence_id assigned inside add_message)
     msg = await session_manager.add_message(
         db,
@@ -368,7 +368,7 @@ async def create_user_message(
         event_type="user_message",
         stage=session.current_stage or "BUSINESS_UNDERSTANDING"
     )
-    
+
     return msg
 
 

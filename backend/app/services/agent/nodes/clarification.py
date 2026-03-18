@@ -7,16 +7,13 @@ clarification questions for the user.
 """
 
 import logging
-import json
-from typing import Any, List, Optional
-from datetime import datetime, timezone
+from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
-from app.models import AgentSessionStatus
 
 logger = logging.getLogger(__name__)
 
@@ -244,14 +241,14 @@ def handle_clarification_response(
     if state.get("awaiting_scope_confirmation"):
         state["scope_confirmed"] = True
         state["awaiting_scope_confirmation"] = False
-        
+
         # If user provided adjustments, append to goal
         # responses might be {"adjustment": "Actually look at SOL too"}
         adjustment = responses.get("adjustment")
         if adjustment:
              state["user_goal"] = f"{state.get('user_goal', '')}. Adjustment: {adjustment}"
              logger.info(f"ScopeConfirmation: Goal adjusted: {adjustment}")
-        
+
         # Add to reasoning trace
         if "reasoning_trace" not in state or state["reasoning_trace"] is None:
             state["reasoning_trace"] = []
@@ -346,20 +343,20 @@ def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
     structured_llm = llm.with_structured_output(ScopeInterpretation)
     system_msg = SystemMessage(content="You are a trading strategy expert. Parse the user's goal into a structured scope.")
     human_msg = HumanMessage(content=f"User goal: {user_goal}")
-    
+
     try:
         scope = structured_llm.invoke([system_msg, human_msg])
     except Exception as e:
         logger.error(f"Error parsing scope: {e}")
         # Fallback
         scope = ScopeInterpretation(
-            assets=["BTC"], timeframe="30d", analysis_type="trend_analysis", 
+            assets=["BTC"], timeframe="30d", analysis_type="trend_analysis",
             indicators=["RSI"], modeling_target="price_direction", reasoning="Fallback due to error"
         )
 
     # 2. Generate Events
     events = []
-    
+
     # Stream Chat (Explanation)
     events.append({
         "event_type": "stream_chat",
@@ -397,11 +394,11 @@ def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
          { "stage": "PREPARATION", "tasks": [{ "task_id": "validate_quality", "label": "Run data quality checks" }] },
          { "stage": "EXPLORATION", "tasks": [{ "task_id": "compute_indicators", "label": f"Calculate {', '.join(scope.indicators)}" }] },
     ]
-    
+
     if "predict" in scope.analysis_type:
          tasks.append({ "stage": "MODELING", "tasks": [{ "task_id": "train_models", "label": f"Train model for {scope.modeling_target}" }] })
          tasks.append({ "stage": "EVALUATION", "tasks": [{ "task_id": "evaluate_model", "label": "Evaluate model performance" }] })
-    
+
     tasks.append({ "stage": "DEPLOYMENT", "tasks": [{ "task_id": "generate_report", "label": "Generate final report" }] })
 
     events.append({

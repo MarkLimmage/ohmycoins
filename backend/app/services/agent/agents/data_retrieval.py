@@ -85,7 +85,7 @@ class DataRetrievalAgent(BaseAgent):
                 "status_update",
                 "DATA_ACQUISITION",
                 {
-                    "status": "ACTIVE", 
+                    "status": "ACTIVE",
                     "message": "Starting data retrieval...",
                     "task_id": "fetch_price_data"
                 },
