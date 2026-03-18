@@ -1,8 +1,8 @@
-// Workstream E: Lab Context Refactor (Scientific Grid)
+// Workstream G: Lab Context Refactor (Scientific Grid)
 import React, { createContext, useContext, useReducer, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useLabWebSocket } from '../hooks/useLabWebSocket';
 import { useRehydration } from '../hooks/useRehydration';
-import { LabState, LabEvent, LabCell } from '../types';
+import { LabState, LabEvent, LabCell, LabStage, DialogueMessage, ActivityItem } from '../types';
 
 type Action =
   | { type: 'SET_SESSION'; payload: string | null }
@@ -10,11 +10,16 @@ type Action =
   | { type: 'PROCESS_EVENT'; payload: LabEvent }
   | { type: 'SET_CONNECTION_STATUS'; payload: { isConnected: boolean } }
   | { type: 'SET_DONE'; payload: boolean }
-  | { type: 'CLEAR_ACTION' };
+  | { type: 'CLEAR_ACTION' }
+  | { type: 'SET_SELECTED_STAGE'; payload: LabStage | null };
 
 const initialState: LabState = {
   sessionId: null,
-  stages: {
+  dialogueMessages: [],
+  pendingAction: null,
+  masterPlan: null,
+  activityItems: [],
+  stageOutputs: {
     'BUSINESS_UNDERSTANDING': [],
     'DATA_ACQUISITION': [],
     'PREPARATION': [],
@@ -23,13 +28,14 @@ const initialState: LabState = {
     'EVALUATION': [],
     'DEPLOYMENT': [],
   },
+  selectedStage: null,
   activeStages: new Set(),
   lastSequenceId: 0,
   isConnected: false,
   isDone: false,
-  pendingAction: null,
   metrics: [],
   blueprint: null,
+  stages: {} as any // Legacy
 };
 
 function labReducer(state: LabState, action: Action): LabState {
@@ -49,14 +55,34 @@ function labReducer(state: LabState, action: Action): LabState {
     case 'CLEAR_ACTION':
         return { ...state, pendingAction: null };
 
+    case 'SET_SELECTED_STAGE':
+        return { ...state, selectedStage: action.payload };
+
     case 'REHYDRATE': {
-      // E4: Rehydration logic
       // Sort ledger by sequence_id
       const sortedLedger = [...action.payload.ledger].sort((a, b) => a.sequence_id - b.sequence_id);
       
       // Replay events to build state
       let newState = { ...state, lastSequenceId: action.payload.lastSequenceId };
       
+      // Reset detailed state before replaying
+      newState = {
+          ...newState,
+          dialogueMessages: [],
+          activityItems: [],
+          stageOutputs: {
+            'BUSINESS_UNDERSTANDING': [],
+            'DATA_ACQUISITION': [],
+            'PREPARATION': [],
+            'EXPLORATION': [],
+            'MODELING': [],
+            'EVALUATION': [],
+            'DEPLOYMENT': [],
+          },
+          activeStages: new Set(),
+          pendingAction: null
+      };
+
       for (const event of sortedLedger) {
         newState = processEvent(newState, event);
       }
@@ -66,9 +92,8 @@ function labReducer(state: LabState, action: Action): LabState {
     case 'PROCESS_EVENT': {
       const event = action.payload;
 
-      // E2: Sequence-ID Ordering - Discard out-of-order events
+      // Discard out-of-order events
       if (event.sequence_id <= state.lastSequenceId) {
-        console.warn(`Discarding out-of-order event ${event.sequence_id} (current: ${state.lastSequenceId})`);
         return state;
       }
 
@@ -83,103 +108,140 @@ function labReducer(state: LabState, action: Action): LabState {
 function processEvent(state: LabState, event: LabEvent): LabState {
   const { event_type, stage, payload, sequence_id, timestamp } = event;
   
-  const newState = { 
+  let newState = { 
       ...state, 
       lastSequenceId: Math.max(state.lastSequenceId, sequence_id) 
   };
 
   // Update active stages
-  if (stage && !newState.activeStages.has(stage)) {
-       const newActive = new Set(newState.activeStages);
-       newActive.add(stage);
-       newState.activeStages = newActive;
+  if (stage) {
+      if (event_type === 'status_update' && (String(payload.status).toUpperCase() === 'ACTIVE')) {
+         if (!newState.activeStages.has(stage)) {
+            const newActive = new Set(newState.activeStages);
+            newActive.add(stage);
+            newState.activeStages = newActive;
+         }
+      }
+      
+      if (event_type === 'render_output') {
+         if (!newState.activeStages.has(stage)) {
+            const newActive = new Set(newState.activeStages);
+            newActive.add(stage);
+            newState.activeStages = newActive;
+         }
+      }
   }
 
-  // Handle Action Requests
-   if (event_type === 'action_request') {
-      return {
-        ...newState,
-        pendingAction: {
-          action_id: payload.action_id,
-          description: payload.description,
-          options: payload.options
-        }
+  // --- ROUTING ---
+
+  // 1. LEFT CELL (Dialogue)
+  if (event_type === 'stream_chat' || event_type === 'user_message' || event_type === 'error' || event_type === 'action_request') {
+      const content = payload.text_delta || payload.content || payload.message || payload.description || '';
+      
+      const message: DialogueMessage = {
+          id: String(sequence_id),
+          type: event_type === 'user_message' ? 'user' : (event_type === 'error' ? 'error' : 'agent'),
+          content: content,
+          timestamp,
+          sequence_id
       };
-   }
 
-   // Handle Status Updates 
-   if (event_type === 'status_update') {
-      if (payload.status === 'COMPLETE' || payload.status === 'completed') {
-          // Stage complete — no cell needed
-          return newState;
+      // Only add to dialogue if it has content to show
+      if (message.content) {
+          newState.dialogueMessages = [...newState.dialogueMessages, message];
       }
-      if (payload.status === 'AWAITING_APPROVAL' || payload.status === 'awaiting_approval') {
-          // Approval state handled by action_request events
-          return newState;
+
+      if (event_type === 'action_request') {
+         newState.pendingAction = {
+             action_id: payload.action_id,
+             description: payload.description,
+             options: payload.options,
+             title: payload.title
+         };
       }
-      // Show status messages as cells in the stage
-      if (payload.message) {
-          const targetStage = stage || 'BUSINESS_UNDERSTANDING';
-          const currentStageCells = newState.stages[targetStage] || [];
-          
-          if (currentStageCells.some(c => c.id === String(sequence_id))) {
-              return newState;
+  }
+
+  // 2. CENTER CELL (Activity Tracker)
+  if (event_type === 'plan_established') {
+     if (payload.stages) {
+        const newItems: ActivityItem[] = [];
+        Object.entries(payload.stages).forEach(([stageKey, items]: [string, any]) => {
+            if (Array.isArray(items)) {
+                items.forEach((item) => {
+                    newItems.push({
+                        id: item.id,
+                        description: item.description,
+                        status: item.status || 'pending',
+                        stage: stageKey as LabStage,
+                        sequence_id
+                    });
+                });
+            }
+        });
+        newState.activityItems = newItems;
+        newState.masterPlan = payload.stages;
+     }
+  }
+
+  if (event_type === 'status_update') {
+      const { task_id, status, message } = payload;
+      
+      if (task_id) {
+          const index = newState.activityItems.findIndex(item => item.id === task_id);
+          if (index !== -1) {
+              const updatedItems = [...newState.activityItems];
+              updatedItems[index] = {
+                  ...updatedItems[index],
+                  status: status || updatedItems[index].status,
+              };
+              newState.activityItems = updatedItems;
+          } else {
+              // Fallback
+              newState.activityItems = [...newState.activityItems, {
+                  id: task_id,
+                  description: message || `Task ${task_id}`,
+                  status: status || 'pending',
+                  stage: stage || 'BUSINESS_UNDERSTANDING',
+                  sequence_id
+              }];
           }
+      } 
+  }
 
-          const statusCell: LabCell = {
+  // 3. RIGHT CELL (Stage Outputs)
+  if (event_type === 'render_output') {
+      const targetStage = stage || 'BUSINESS_UNDERSTANDING';
+      const currentStageOutputs = newState.stageOutputs[targetStage] || [];
+      
+      if (!currentStageOutputs.some(c => c.id === String(sequence_id))) {
+          const newCell: LabCell = {
             id: String(sequence_id),
             stage: targetStage,
-            type: 'text/markdown',
-            content: payload.message,
+            type: payload.mime_type || 'text/markdown',
+            content: payload.content || '',
             timestamp,
-            metadata: { status: payload.status }
+            metadata: payload.metadata
+          };
+          
+          newState = {
+             ...newState,
+             stageOutputs: {
+                 ...newState.stageOutputs,
+                 [targetStage]: [...currentStageOutputs, newCell]
+             }
           };
 
-          return {
-            ...newState,
-            stages: {
-              ...newState.stages,
-              [targetStage]: [...currentStageCells, statusCell]
-            }
-          };
-      }
-      return newState;
-   }
-
-   // For render_output and fallback for others: Map to Cells
-  const targetStage = stage || 'BUSINESS_UNDERSTANDING';
-  const currentStageCells = newState.stages[targetStage] || [];
-  
-  // Check duplicate by sequence_id
-  if (currentStageCells.some(c => c.id === String(sequence_id))) {
-      return newState;
-  }
-
-  const newCell: LabCell = {
-    id: String(sequence_id),
-    stage: targetStage,
-    type: payload.mime_type || 'text/markdown',
-    content: payload.content || '',
-    timestamp,
-    metadata: payload.metadata
-  };
-
-  // Side-effect: Populate legacy state for dependent components
-  if (newCell.type === 'application/json+blueprint') {
-      try {
-        newState.blueprint = newCell.content; 
-      } catch (e) {
-          console.error("Failed to parse blueprint content:", e);
+          if (newCell.type === 'application/json+blueprint') {
+             let blueprintData = newCell.content;
+             if (typeof blueprintData === 'string') {
+                 try { blueprintData = JSON.parse(blueprintData); } catch {}
+             }
+             newState.blueprint = blueprintData; 
+          }
       }
   }
 
-  return {
-    ...newState,
-    stages: {
-      ...newState.stages,
-      [targetStage]: [...currentStageCells, newCell]
-    }
-  };
+  return newState;
 }
 
 const LabContext = createContext<{

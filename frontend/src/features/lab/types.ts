@@ -1,5 +1,5 @@
 // Workstream E: Lab Types
-// Spec: WORKER_MISSION.md v1.2
+// Spec: WORKER_MISSION.md v1.3
 
 export type LabStage = 
   | 'BUSINESS_UNDERSTANDING'
@@ -21,8 +21,17 @@ export interface LabEventPayload {
   [key: string]: any;
 }
 
+export type LabEventType = 
+  | 'stream_chat' 
+  | 'status_update' 
+  | 'render_output' 
+  | 'error' 
+  | 'action_request'
+  | 'user_message'
+  | 'plan_established';
+
 export interface LabEvent {
-  event_type: 'stream_chat' | 'status_update' | 'render_output' | 'error' | 'action_request';
+  event_type: LabEventType;
   stage: LabStage;
   sequence_id: number;
   timestamp: string; // ISO-8601
@@ -42,17 +51,55 @@ export interface ActionRequest {
   action_id: string;
   description: string;
   options: string[];
+  title?: string; // Optional title for the action
+}
+
+// G7: Updated State Shape
+export interface DialogueMessage {
+  id: string;
+  type: 'agent' | 'user' | 'error';
+  content: string;
+  timestamp: string;
+  sequence_id: number;
+}
+
+export interface ActivityItem {
+  id: string; // task_id
+  description: string;
+  status: 'pending' | 'active' | 'completed' | 'failed';
+  stage: LabStage;
+  sequence_id: number;
+}
+
+export interface MasterPlan {
+  stages: Record<LabStage, ActivityItem[]>;
 }
 
 export interface LabState {
   sessionId: string | null;
-  // E1: Stage-Isolated Grid - Map<StageID, LabCell[]>
-  stages: Record<LabStage, LabCell[]>; 
+  
+  // G6: 3-Cell Data Structures
+  
+  // Left Cell: Dialogue
+  dialogueMessages: DialogueMessage[];
+  pendingAction: ActionRequest | null;
+  
+  // Center Cell: Activity
+  masterPlan: MasterPlan | null;
+  activityItems: ActivityItem[]; // Flattened or processed list of current activities
+  
+  // Right Cell: Outputs (Stage-Isolated)
+  stageOutputs: Record<LabStage, LabCell[]>; 
+  
+  // Selection State
+  selectedStage: LabStage | null;
   activeStages: Set<LabStage>;
+  
   lastSequenceId: number;
   isConnected: boolean;
   isDone: boolean;
-  pendingAction: ActionRequest | null;
   metrics: any[];
   blueprint: any | null;
+  // Legacy support
+  stages?: Record<LabStage, LabCell[]>;
 }

@@ -25,39 +25,66 @@ const initialEdges: Edge[] = [
 ];
 
 export const LabHeader = () => {
-  const { state } = useLabContext();
-  const { stages, activeStages } = state;
+  const { state, dispatch } = useLabContext();
+  const { stageOutputs, activeStages, selectedStage, stages } = state;
+
+  const onNodeClick = (_: React.MouseEvent, node: Node) => {
+      const stageId = node.id as LabStage;
+      dispatch({ type: 'SET_SELECTED_STAGE', payload: stageId });
+  };
 
   const nodes = useMemo(() => {
     return initialNodes.map((node) => {
       const stageId = node.id as LabStage;
-      // Determine status from state
-      let status = 'PENDING';
-      const isActive = activeStages.has(stageId);
-      const hasCells = stages[stageId] && stages[stageId].length > 0;
-
-      if (isActive) status = 'ACTIVE';
-      else if (hasCells) status = 'COMPLETE';
-
-      let style: React.CSSProperties = { width: 150, fontSize: '10px' };
       
-      if (status === 'COMPLETE') style = { ...style, background: '#68D391', color: 'black' }; // Green
-      else if (status === 'ACTIVE') style = { ...style, background: '#F6E05E', color: 'black', border: '2px solid orange' }; // Yellow
-      else if (status === 'FAILED') style = { ...style, background: '#FC8181', color: 'white' }; // Red
-      else if (status === 'PENDING') style = { ...style, background: '#E2E8F0', color: 'gray' }; // Gray
+      const isActive = activeStages.has(stageId);
+      const outputCount = (stageOutputs[stageId]?.length || 0) + (stages?.[stageId]?.length || 0);
+      const isSelected = selectedStage === stageId;
+
+      let style: React.CSSProperties = { 
+          width: 150, 
+          fontSize: '10px',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          padding: '8px',
+          background: 'white',
+          cursor: 'pointer'
+      };
+      
+      if (typeof node.style === 'object') {
+          style = { ...style, ...node.style };
+      }
+
+      // Selection Highlight
+      if (isSelected) {
+          style.boxShadow = '0 0 0 2px #3182ce';
+          style.fontWeight = 'bold';
+      }
+
+      // Status Colors
+      if (isActive) {
+          style.background = '#FEFCBF'; // Yellow-100
+          style.borderColor = '#D69E2E'; // Yellow-600
+      } else if (outputCount > 0) {
+          style.background = '#C6F6D5'; // Green-100
+          style.borderColor = '#38A169'; // Green-500
+      } else {
+          style.background = '#EDF2F7'; // Gray-100
+      }
 
       return {
         ...node,
-        style: { ...node.style, ...style },
+        style,
       };
     });
-  }, [stages, activeStages]);
+  }, [stageOutputs, activeStages, selectedStage, stages]);
 
   return (
     <Box h="150px" w="100%" borderBottom="1px solid" borderColor="gray.200">
       <ReactFlow 
         nodes={nodes} 
         edges={initialEdges} 
+        onNodeClick={onNodeClick}
         fitView 
         attributionPosition="bottom-right"
         proOptions={{ hideAttribution: true }}
