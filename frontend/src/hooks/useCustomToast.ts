@@ -1,7 +1,7 @@
 "use client"
 
-import { toaster } from "@/components/ui/toaster"
 import { useCallback } from "react"
+import { toaster } from "@/components/ui/toaster"
 
 const useCustomToast = () => {
   const showSuccessToast = useCallback((description: string) => {

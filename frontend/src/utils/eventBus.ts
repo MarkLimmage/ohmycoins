@@ -10,5 +10,7 @@ export const onError = (listener: Listener) => {
 }
 
 export const emitError = (message: string) => {
-  listeners.forEach((l) => l(message))
+  listeners.forEach((l) => {
+    l(message)
+  })
 }

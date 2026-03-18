@@ -11,12 +11,8 @@ import { useState } from "react"
 import { FiPlus } from "react-icons/fi"
 import { SessionCreateForm } from "./components/SessionCreateForm"
 import { SessionList } from "./components/SessionList"
-import {
-  useDeleteSession,
-  useLabSessions,
-} from "./hooks"
-
 import { LabProvider } from "./context/LabContext"
+import { useDeleteSession, useLabSessions } from "./hooks"
 import { LabSessionView } from "./LabSessionView"
 
 export function LabDashboard() {

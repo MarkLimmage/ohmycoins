@@ -1,23 +1,24 @@
+# Docker Compose Override for Glass Agent Worktree
+# Isolated ports: Proxy=8030, DB=5435, Vite=5174
+# COMPOSE_PROJECT_NAME=omc-glass (in .env)
 services:
   proxy:
     ports:
-      - "8010:80"
-      - "8091:8080"
+      - "8030:80"
+      - "8093:8080"
   db:
     ports:
-      - "5433:5432"
+      - "5435:5432"
   backend:
+    deploy:
+      replicas: 1
     volumes:
       - ./backend/app:/app/app
-      - ./backend/tests:/app/tests
-      - agent-artifacts:/data/agent_artifacts
     environment:
       - POSTGRES_PORT=5432
   orchestrator:
     volumes:
       - ./backend/app:/app/app
-      - ./backend/tests:/app/tests
-      - agent-artifacts:/data/agent_artifacts
     environment:
       - POSTGRES_PORT=5432
   celery_worker:
@@ -26,17 +27,18 @@ services:
   prestart:
     environment:
       - POSTGRES_PORT=5432
-  supervisor-mock:
-    image: ${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}
-    container_name: supervisor-mock
-    working_dir: /app
+  frontend:
+    deploy:
+      replicas: 1
+    build:
+      context: frontend
+      target: dev
+      args:
+        - VITE_API_URL=http://localhost:8030
     volumes:
-      - ./scripts:/app/scripts:ro
+      - ./frontend/src:/app/src
     ports:
-      - "8003:8001"
-    command: python scripts/lab_supervisor.py
-    environment:
-      - PYTHONPATH=/app
-    restart: unless-stopped
-    networks:
-      - default
+      - "5174:5173"
+
+volumes:
+  glass-agent-artifacts:
