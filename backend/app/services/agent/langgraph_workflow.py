@@ -13,6 +13,7 @@ Week 7-8 enhancement: Added ReAct loop with reasoning, conditional routing, and 
 
 import logging
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal, TypedDict
 
@@ -136,6 +137,9 @@ class AgentState(TypedDict):
     # Workstream D+ additions - Safety Bridge
     stage_iteration_counts: dict[str, int]  # Track iterations per stage for circuit breaker
     terminal_error: dict[str, Any] | None  # Terminal error details if kill-switch triggers
+    circuit_breaker_triggered: bool  # Flag if circuit breaker tripped (F7)
+    action_requests: list[dict[str, Any]] | None  # Action requests for user intervention (F7)
+    interrupt_limit_reached: bool  # Flag if retry limit reached 
     # Phase 5 Messaging Infrastructure
     sequence_id: int | None  # Monotonic sequence counter
     pending_events: list[dict[str, Any]] | None  # Events to be emitted by the runner
@@ -300,6 +304,7 @@ class LangGraphWorkflow:
                 "reason": "reason",
                 "error": "handle_error",
                 "finalize": "finalize",
+                "review": "human_review",  # F7: Circuit Breaker escalation
             },
         )
 
@@ -394,7 +399,7 @@ class LangGraphWorkflow:
         # Compile the graph with checkpointer and potential interrupts
         return workflow.compile(
             checkpointer=self.checkpointer,
-            interrupt_before=["train_model", "finalize"],
+            interrupt_before=["train_model", "finalize", "human_review"], # F7: Interrupt for review
             interrupt_after=["scope_confirmation", "model_selection"],
         )
 
@@ -592,7 +597,7 @@ class LangGraphWorkflow:
         Check if the circuit breaker should trigger for the given stage.
 
         Increments the iteration count for the stage. If count >= 4, triggers
-        a terminal error or HITL intervention.
+        a terminal error or HITL intervention (Action Request).
 
         Args:
             state: Current workflow state
@@ -602,19 +607,60 @@ class LangGraphWorkflow:
             True if circuit breaker triggered (stop execution), False otherwise.
         """
         counts = state.get("stage_iteration_counts", {})
+        if not counts:
+             counts = {}
+        
         current_count = counts.get(stage_name, 0) + 1
         counts[stage_name] = current_count
         state["stage_iteration_counts"] = counts
 
         if current_count >= 4:
-            logger.error(f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)")
-            state["terminal_error"] = {
-                "code": "CIRCUIT_BREAKER_TRIPPED",
-                "message": f"Maximum retries (3) exceeded for stage '{stage_name}'. Workflow halted.",
-                "details": {"stage": stage_name, "iterations": current_count}
+            logger.warning(f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)")
+            
+            # F7: Escalate to Action Request instead of hard fail
+            state["circuit_breaker_triggered"] = True
+            state["interrupt_limit_reached"] = True 
+
+            # Construct Action Request for User Decision
+            action_request = {
+                "id": f"cb_{stage_name}_{int(datetime.utcnow().timestamp())}",
+                "type": "circuit_breaker",
+                "status": "pending",
+                "priority": "high",
+                "context": {
+                    "stage": stage_name,
+                    "attempt": current_count,
+                    "reason": "Max retries exceeded without success."
+                },
+                "options": [
+                    {
+                        "id": "retry", 
+                        "label": "Retry Stage", 
+                        "action": "retry_stage",
+                        "description": "Attempt the operation one more time."
+                    },
+                    {
+                        "id": "abort", 
+                        "label": "Abort Workflow", 
+                        "action": "abort_workflow", 
+                        "style": "danger",
+                        "description": "Stop current workflow execution."
+                    },
+                    {
+                        "id": "guidance", 
+                        "label": "Provide Guidance", 
+                        "action": "provide_guidance",
+                        "description": "Let me provide new instructions to fix the issue."
+                    }
+                ]
             }
-            state["error"] = f"Circuit breaker tripped at {stage_name}"
-            # Route to END or Trigger HITL - For now, we set error which leads to handle_error or finalize
+            
+            # Append to action_requests list (init if missing)
+            requests = state.get("action_requests") or []
+            requests.append(action_request)
+            state["action_requests"] = requests
+            
+            # Trigger interrupt by returning True (caller handles return)
             return True
         return False
 
@@ -1173,7 +1219,7 @@ class LangGraphWorkflow:
 
     def _route_after_validation(
         self, state: AgentState
-    ) -> Literal["analyze", "retry", "reason", "error", "finalize"]:
+    ) -> Literal["analyze", "retry", "reason", "error", "finalize", "review"]:
         """
         Route after data validation.
 
@@ -1183,6 +1229,11 @@ class LangGraphWorkflow:
         Returns:
             Next node to execute
         """
+        # F7: Circuit Breaker Check - Escalate to Human Review (Action Request)
+        if state.get("circuit_breaker_triggered"):
+            logger.warning("Routing to HUMAN REVIEW due to circuit breaker escalation.")
+            return "review"
+
         quality_checks = state.get("quality_checks", {})
         overall_quality = quality_checks.get("overall", "unknown")
 
@@ -1393,20 +1444,27 @@ class LangGraphWorkflow:
         Returns:
             Next node to execute
         """
-        if state.get("approval_granted"):
+        if state.get("approval_granted") or state.get("resume_approved"):
             logger.info("Approval granted, resuming workflow.")
+            # F7: Also reset circuit breaker if resuming
+            state["circuit_breaker_triggered"] = False 
             # If we knew where we came from, we could go there.
             # But simpler is to go back to Reason, which should now see
             # the approval and decide next step.
             return "resume"
-        elif state.get("approval_rejected"):
+        elif state.get("approval_rejected") or state.get("abort_workflow"):
             logger.info("Approval rejected, terminating or handling error.")
-            state["error"] = "Human review rejected the operation."
+            state["error"] = "Human review rejected/aborted the operation."
             return "error"
         else:
+            # F7: Check pending action requests
+            # If action requests exist but not resolved, we might want to stay in review?
+            # But we only route AFTER review. If resumed, assume user action taken.
+            
             # Still pending? This shouldn't happen if we strictly interrupt BEFORE this node.
             # But if we are here, it means we resumed.
             # If no decision, go back to reason?
+            logger.info("Resuming workflow (default path).")
             return "resume"
 
     async def execute(self, initial_state: AgentState | None = None, session_id: str | None = None) -> AgentState:
