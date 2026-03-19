@@ -124,7 +124,11 @@ class DataRetrievalAgent(BaseAgent):
                 state,
                 "status_update",
                 "DATA_ACQUISITION",
-                {"status": "ACTIVE", "message": f"Fetching statistics for {coin_type}..."},
+                {
+                    "status": "ACTIVE",
+                    "message": f"Fetching statistics for {coin_type}...",
+                    "task_id": "fetch_price_data"
+                },
             )
             retrieved_data["data_statistics"] = await get_data_statistics(
                 self.session, coin_type=coin_type
@@ -144,7 +148,11 @@ class DataRetrievalAgent(BaseAgent):
                     state,
                     "status_update",
                     "DATA_ACQUISITION",
-                    {"status": "ACTIVE", "message": f"Fetching {retrieval_params.get('days', 30)} days of {coin_type} price data"},
+                    {
+                        "status": "ACTIVE",
+                        "message": f"Fetching {retrieval_params.get('days', 30)} days of {coin_type} price data",
+                        "task_id": "fetch_price_data"
+                    },
                 )
                 retrieved_data["price_data"] = await fetch_price_data(
                     self.session,

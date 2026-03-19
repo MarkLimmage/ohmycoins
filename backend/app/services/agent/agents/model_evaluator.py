@@ -57,7 +57,7 @@ class ModelEvaluatorAgent(BaseAgent):
                 {
                     "status": "ACTIVE",
                     "message": "Evaluating models...",
-                    "task_id": "evaluate_model"
+                    "task_id": "evaluate_metrics"
                 },
             )
 

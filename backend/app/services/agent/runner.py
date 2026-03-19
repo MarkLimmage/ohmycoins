@@ -58,6 +58,22 @@ def _get_stage_from_step(step_name: str) -> str:
     return mapping.get(step_name, "BUSINESS_UNDERSTANDING")
 
 
+def _get_task_id_from_step(step_name: str) -> str:
+    """Map workflow step to task_id used in plan."""
+    mapping = {
+        "initialization": "scope_confirmation",
+        "scope_confirmation_node": "scope_confirmation",
+        "retrieve_data": "fetch_price_data",
+        "validate_data": "validate_quality",
+        "analyze_data": "compute_technical_indicators",
+        "train_model": "train_models",
+        "evaluate_model": "evaluate_metrics",
+        "generate_report": "generate_report",
+        "finalize": "generate_report",
+    }
+    return mapping.get(step_name, step_name)
+
+
 class AgentRunner:
     """Manages background execution of agent sessions."""
 
@@ -165,6 +181,7 @@ class AgentRunner:
                         "payload": {
                             "status": AgentSessionStatus.RUNNING,
                             "message": status_msg.content,
+                            "task_id": "scope_confirmation",
                         },
                     },
                 )
@@ -220,6 +237,8 @@ class AgentRunner:
                 # LangGraph's astream yields full state per node; nodes that don't
                 # clear pending_events cause the runner to re-process old events.
                 processed_seq_ids: set[int] = set()
+                # Track node-emitted action requests to prevent runner overwrite (F2 enforcement)
+                last_node_action: dict[str, Any] | None = None
 
                 async for state_update in workflow.stream_execute(initial_state, session_id=str(session_id)):
                     # Increment sequence_id for each state update
@@ -240,6 +259,10 @@ class AgentRunner:
                                 if event_seq in processed_seq_ids:
                                     continue
                                 processed_seq_ids.add(event_seq)
+
+                                # F2: Track action_request emission
+                                if event.get("event_type") == "action_request":
+                                    last_node_action = event
 
                                 # Persist full event to DB for reliable rehydration
                                 content_str = ""
@@ -296,6 +319,7 @@ class AgentRunner:
                                 "payload": {
                                     "status": AgentSessionStatus.RUNNING,
                                     "message": msg,
+                                    "task_id": _get_task_id_from_step(node_state.get("current_step")),
                                 },
                             }
 
@@ -383,42 +407,53 @@ class AgentRunner:
                     # Log interrupt
                     logger.info(f"Session {session_id} interrupted at {next_node}")
 
-                    # Determine action details
-                    action_id = f"approve_{next_node}"
-                    description = f"Workflow paused before step: {next_node}. Please review and approve to continue."
-                    options = ["APPROVE", "REJECT"]
+                    # F2 & F5: Logic to handle node-emitted action requests
+                    if last_node_action:
+                        # Use node's emitted action details for Redis state
+                        payload = last_node_action.get("payload", {})
+                        action_id = last_node_action.get("action_id") or payload.get("action_id") or f"approve_{next_node}"
+                        description = payload.get("description", "Action required")
+                        options = payload.get("options", ["APPROVE", "REJECT"])
+                        stage = last_node_action.get("stage", _get_stage_from_step(next_node))
 
-                    if next_node == "train_model":
-                        description = "Model training is ready. Please review data analysis and feature selection."
-                    elif next_node == "finalize":
-                        description = "Workflow complete. Please review reports and model artifacts before finalization."
+                        logger.info(f"Using existing node action_request: {action_id}")
+                    else:
+                        # Fallback: Generic action_request
+                        action_id = f"approve_{next_node}"
+                        description = f"Workflow paused before step: {next_node}. Please review and approve to continue."
+                        options = ["APPROVE", "REJECT"]
 
-                    stage = _get_stage_from_step(next_node)
+                        if next_node == "train_model":
+                            description = "Model training is ready. Please review data analysis and feature selection."
+                        elif next_node == "finalize":
+                            description = "Workflow complete. Please review reports and model artifacts before finalization."
 
-                    # Emit action_request
-                    sequence_id += 1
-                    action_event = {
-                        "event_type": "action_request",
-                        "stage": stage,
-                        "sequence_id": sequence_id,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "payload": {
-                            "action_id": action_id,
-                            "description": description,
-                            "options": options,
-                        },
-                    }
-                    await self._publish(redis, channel, action_event)
+                        stage = _get_stage_from_step(next_node)
 
-                    # Persist action_request to DB for rehydration
-                    await self.session_manager.add_message(
-                        db,
-                        session_id,
-                        role="assistant",
-                        content=f"Action Required: {description}",
-                        agent_name=next_node,
-                        metadata=json.dumps(action_event),
-                    )
+                        # Emit action_request
+                        sequence_id += 1
+                        action_event = {
+                            "event_type": "action_request",
+                            "stage": stage,
+                            "sequence_id": sequence_id,
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "payload": {
+                                "action_id": action_id,
+                                "description": description,
+                                "options": options,
+                            },
+                        }
+                        await self._publish(redis, channel, action_event)
+
+                        # Persist action_request to DB for rehydration
+                        await self.session_manager.add_message(
+                            db,
+                            session_id,
+                            role="assistant",
+                            content=f"Action Required: {description}",
+                            agent_name=next_node,
+                            metadata=json.dumps(action_event),
+                        )
 
                     # Emit status_update with AWAITING_APPROVAL
                     sequence_id += 1
@@ -430,6 +465,7 @@ class AgentRunner:
                         "payload": {
                             "status": AgentSessionStatus.AWAITING_APPROVAL,
                             "message": f"Waiting for approval to proceed to {next_node}",
+                            "task_id": _get_task_id_from_step(next_node),
                         },
                     }
                     await self._publish(redis, channel, status_event)

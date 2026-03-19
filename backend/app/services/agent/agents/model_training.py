@@ -52,7 +52,7 @@ class ModelTrainingAgent(BaseAgent):
                 state,
                 "status_update",
                 "MODELING",
-                {"status": "ACTIVE", "message": "Initializing model training..."},
+                {"status": "ACTIVE", "message": "Initializing model training...", "task_id": "train_models"},
             )
 
             # Get analysis results from previous agent
