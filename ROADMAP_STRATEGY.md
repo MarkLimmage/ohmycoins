@@ -1,15 +1,13 @@
 # 🗺️ Roadmap & Execution Strategy: "The Lab"
 
-**Version:** 1.3  
+**Version:** 1.3.1  
 **Context:** This document outlines the strategic implementation phases for "The Lab" (Algo Development Module). Because this system involves stateful AI orchestration, isolated container execution, and real-time WebSockets, **strict adherence to the phase order is mandatory**.
 
-## 🔄 DIFF: v1.2 → v1.3
+## 🔄 DIFF: v1.3 → v1.3.1
 
-* [x] **Phases 0–4:** COMPLETE (baseline).
-* [x] **Phase 5:** COMPLETE — Hardening items unblocked by Phase 5.5.
-* [x] **Phase 5.5:** COMPLETE — Workstreams A–E merged (Sprint 2.50). EventLedger, action_request, rehydration, Scientific Grid, mime-type dispatcher.
-* [x] **Phase 6:** COMPLETE — PostgresSaver migration, graph consolidation, 12 production bug fixes.
-* [ ] **Phase 7 (NEW):** "Conversational Scientific Grid" — v1.3 contract. 3-column layout, mandatory scope confirmation, user messaging, agent narration, 4 interrupts, circuit breaker escalation.
+* [x] **Phases 0–6:** COMPLETE (baseline).
+* [x] **Phase 7 (Sprint 2.51):** COMPLETE — Initial v1.3 Conversational Scientific Grid. 3-column layout, scope confirmation, user messaging, agent narration, 4 interrupts, circuit breaker escalation. Glass merged, Graph merged, production deployed.
+* [ ] **Phase 7.1 (Sprint 2.52, NEW):** "v1.3.1 Enforcement" — Production testing revealed 6 Severity-A violations and 5 Severity-B UX deficits. Backend: silent fallbacks, generic runner events overwriting node events, missing task_id, no plan on error. Frontend: no dedup, orphan buttons, wrong colors, disabled input. See API_CONTRACTS.md §0.1.
 
 ---
 

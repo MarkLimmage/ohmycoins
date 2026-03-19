@@ -12,6 +12,15 @@
 > - Mandated BUSINESS_UNDERSTANDING always starts with scope confirmation gate
 > - Mandated rehydration replays ALL event types to reconstruct all 3 cells
 > - Defined circuit breaker → clarification escalation (was terminal error)
+>
+> **v1.3.1 Enforcement Addendum (from Sprint 2.52 Gap Analysis):**
+> - Added §0.1: Explicit enforcement rules discovered from production testing
+> - Added §2.3.1 fallback rule: LLM failure in scope_confirmation MUST escalate via circuit_breaker, not silent fallback
+> - Added §2.4 task_id mandate: Every `status_update` MUST include `task_id` for Activity Tracker item matching
+> - Added §3.1: Deduplication law — frontend MUST discard events where `sequence_id ≤ max_seen`
+> - Added §3.2: Rehydration/WS overlap rule — WS reconnects with `?after_seq=N` to prevent duplicates
+> - Added §6.1: Pipeline node coloring contract — COMPLETE=green, ACTIVE=blue, PENDING=gray
+> - Added §7: HITL rendering rules — action_request cards MUST render inline in Dialogue, no external buttons
 
 ---
 
@@ -20,6 +29,28 @@
 The EventLedger is the **single source of truth** for the entire Lab UI. Every fact — agent reasoning, user responses, status changes, rich outputs, approval gates — is an immutable entry in the ledger with a monotonic `sequence_id`. The frontend renders by replaying the ledger. There is no separate state.
 
 **Corollary:** If it's not in the ledger, it doesn't exist in the UI. If the user refreshes, the rehydration endpoint returns the full ledger, and the frontend replays it through the same event router to reconstruct all three cells identically.
+
+### 0.1 Enforcement Rules (Discovered from Production Testing)
+
+These rules were implicit in v1.3 but are now stated explicitly after Sprint 2.51 production testing revealed violations.
+
+**E1 — No Silent Fallbacks:** If any LLM call fails (scope parsing, reasoning, etc.), the node MUST NOT emit a stub `stream_chat` with "Fallback due to error." Instead, it MUST escalate via `action_request` with `action_id: "circuit_breaker_v1"` containing the error details and user options. Silent continuation degrades the entire downstream pipeline (no scope → no plan → empty Activity Tracker → broken HITL).
+
+**E2 — Node Events vs Runner Events:** When a node emits `pending_events` (e.g., `scope_confirmation_node` emitting a structured `action_request`), the runner MUST publish those node-level events to the frontend. The runner's generic interrupt detection (`state_snapshot.next`) MUST NOT emit a duplicate generic `action_request` that overwrites or conflicts with the node's structured event. The node's events take priority.
+
+**E3 — Every `status_update` MUST carry `task_id`:** The Activity Tracker matches status updates to checklist items by `task_id`. A `status_update` without `task_id` is un-routable and creates orphan entries. Nodes MUST include `task_id` in every `status_update` payload.
+
+**E4 — `plan_established` MUST emit even on fallback:** If scope confirmation fails or is bypassed, the backend MUST still emit a `plan_established` event with a simplified/default plan. The Activity Tracker cannot function without it.
+
+**E5 — Deduplication is mandatory:** The frontend MUST track `max_seen_sequence_id` and discard any event where `sequence_id ≤ max_seen_sequence_id`. This prevents duplicate messages during rehydration+WS overlap and reconnection scenarios.
+
+**E6 — No orphan HITL buttons:** All approval/rejection/selection interactions MUST be rendered as inline `action_request` cards within the Dialogue panel (Left Cell). There MUST NOT be standalone buttons, banners, or modals for HITL outside the Dialogue. The legacy "Resume Workflow (HITL)" button pattern is deprecated.
+
+**E7 — Pipeline node coloring:** The ReactFlow pipeline MUST use these colors: COMPLETE stage = green (`#38A169`), ACTIVE stage = blue (`#3182CE`) with bold+shadow, PENDING = gray (`#EDF2F7`). Yellow is not a valid stage state.
+
+**E8 — ChatInput enabled during active sessions:** The text input in the Dialogue panel MUST be enabled whenever the session status is RUNNING or AWAITING_APPROVAL. It MUST only be disabled for COMPLETED, FAILED, or CANCELLED sessions.
+
+**E9 — Right Cell driven by selection:** The Stage Outputs panel MUST show outputs for the user-selected stage (via pipeline click) or the most recently active stage by default. It MUST NOT be hardcoded to a single stage.
 
 ---
 

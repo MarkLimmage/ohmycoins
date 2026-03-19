@@ -1,10 +1,11 @@
-# 🪟 WORKER MISSION: Glass Agent (Scientific Grid UI)
+# 🪟 WORKER MISSION: Glass Agent (v1.3.1 Enforcement Sprint)
 
-**Branch:** `feature/react-frontend`
+**Branch:** `fix/glass-enforcement`
 **Directory:** `../omc-lab-ui`
+**Sprint:** 2.52 — Gap Remediation
 **Role:** You are the Glass Agent. You are the sole developer in this worktree.
 
-> ⚠️ **IGNORE** all legacy docs (CLAUDE.md, CURRENT_SPRINT.md, AGENT_INSTRUCTIONS.md). This file is your only mission brief. Read `API_CONTRACTS.md` (v1.3) as the strict schema contract.
+> ⚠️ **IGNORE** all legacy docs (CLAUDE.md, CURRENT_SPRINT.md, AGENT_INSTRUCTIONS.md). This file is your only mission brief. Read `API_CONTRACTS.md` (v1.3.1) §0.1 Enforcement Rules as the strict acceptance criteria.
 
 ---
 
@@ -38,12 +39,6 @@ All test execution MUST happen inside containers. Do NOT install npm packages on
 # Run frontend tests (Vitest)
 docker compose exec frontend npx vitest run
 
-# Run specific test file
-docker compose exec frontend npx vitest run src/features/lab/components/DialoguePanel.test.tsx
-
-# Run with watch mode for development
-docker compose exec frontend npx vitest
-
 # Type checking
 docker compose exec frontend npx tsc --noEmit
 
@@ -53,151 +48,137 @@ docker compose exec frontend npx biome check src/
 
 ### Using the Mock WebSocket Server
 
-The Supervisor provides a mock WS server (`mock_ws_v13.py`) that emits the full v1.3 event sequence. Start it on the host BEFORE running the frontend:
-
 ```bash
-# In another terminal (on the host, NOT in a container):
 cd /home/mark/claude/ohmycoins
 python mock_ws_v13.py
 # → Listening on ws://localhost:8002
 ```
 
-During development, configure your WebSocket connection to use `ws://localhost:8002` to test the full event flow without needing the real backend.
+---
 
-### Verifying Your Work
+## 🎯 Mission: Fix 8 Frontend Enforcement Violations
 
-1. **Frontend loads:** Open `http://localhost:5174` in a browser
-2. **API via proxy:** `curl http://localhost:8030/api/v1/utils/health-check/`
-3. **3-column layout visible:** The Lab view shows Dialogue | Activity | Outputs columns
-4. **Mock WS flow:** Start mock server, create a session, see events populate all 3 cells
+Sprint 2.51 production testing revealed that the Scientific Grid has 8 frontend gaps. Your job is to fix all of them. The 3-column layout, event routing, and component structure from Sprint 2.51 are CORRECT — you are fixing enforcement violations, not rebuilding.
 
 ---
 
-## 🎯 Mission: Build the 3-Cell Scientific Grid
+## 📋 Workstream G: Enforcement Fixes (8 Tasks)
 
-The current Lab UI is a single-column layout of collapsible stage rows. Status updates create clutter cells ("Step: initialization"). The approval gate is a disconnected orange banner. There is no dialogue, no activity tracking, no structured output panel, and no way for the user to send messages.
-
-Your job is to rebuild the Lab session view as a **3-column Scientific Grid** with a Dialogue panel (Left), Activity Tracker (Center), and Stage Outputs (Right).
-
----
-
-## 📋 Workstream G: Scientific Grid Refactor (8 Tasks)
-
-### G1. 3-Column Grid Layout
-
-**Files:** `frontend/src/features/lab/components/LabGrid.tsx`, `frontend/src/features/lab/components/LabSessionView.tsx`
-
-Replace the single-column stage-row layout with a CSS Grid:
-
-```css
-.lab-grid {
-  display: grid;
-  grid-template-columns: 350px 1fr 300px;
-  gap: 1rem;
-  height: 100%;
-}
-```
-
-| Column | Width | Component | Content |
-|--------|-------|-----------|---------|
-| Left | 350px | `DialoguePanel` | Agent chat, user messages, HITL cards |
-| Center | 1fr | `ActivityTracker` | Status checklist grouped by stage |
-| Right | 300px | `StageOutputs` | Rich artifacts for active/selected stage |
-
-Keep the `LabHeader` (ReactFlow pipeline) above the grid. It drives stage selection for the Right Cell.
-
-### G2. DialoguePanel Component (NEW)
-
-**File:** `frontend/src/features/lab/components/DialoguePanel.tsx`
-
-The conversational heart of the Lab. Renders events routed to the Left Cell:
-
-- **`stream_chat`** → Agent chat bubble (left-aligned, blue border)
-- **`user_message`** → User chat bubble (right-aligned, gray background)
-- **`action_request`** → Interactive HITL card (inline, not a banner)
-- **`error`** → Error card with red border
-
-Auto-scrolls to the latest message. Shows "WS: LIVE" or "WS: DISCONNECTED" in the header.
-
-### G3. ActivityTracker Component (NEW)
-
-**File:** `frontend/src/features/lab/components/ActivityTracker.tsx`
-
-Renders events routed to the Center Cell as a checklist:
-
-1. **Initialize from `plan_established` event:** Render all tasks as PENDING grouped by stage.
-2. **Update from `status_update` events:** Match `task_id` to update specific items.
-3. **Fallback for unmatched status_update:** Append as new item to appropriate stage group.
-
-Icons: `◉` = stage active, `✓` = done, `◎` = task active (spinner), `○` = pending
-
-### G4. StageOutputs Component (NEW)
-
-**File:** `frontend/src/features/lab/components/StageOutputs.tsx`
-
-Renders `render_output` events for the currently active or user-selected stage:
-
-- Uses existing `CellRenderer` (markdown, plotly, blueprint, tearsheet, PNG)
-- Stage selection via `LabHeader` pipeline clicks
-- Default: most recently active stage
-- Empty state: "No outputs yet for this stage"
-
-### G5. ChatInput Component (NEW)
-
-**File:** `frontend/src/features/lab/components/ChatInput.tsx`
-
-Text input at the bottom of the DialoguePanel:
-
-- On submit: `POST /api/v1/lab/agent/sessions/{id}/message` with `{ "content": text }`
-- **Optimistic rendering:** Immediately append user bubble with returned `sequence_id`
-- Disabled states: no session, session completed, session errored
-- Contextual placeholder text
-
-### G6. Event Router Refactor in LabContext
+### G1. Sequence ID Deduplication in Event Router
 
 **File:** `frontend/src/features/lab/context/LabContext.tsx`
+**Enforcement Rule:** E5 — Dedup Mandatory
 
-Refactor the reducer to route events by type to the correct cell:
+**Problem:** Events from rehydration and live WS are both fed into the reducer without dedup, causing duplicate messages (same `stream_chat` appearing 2-3 times).
 
-| Event Type | Destination | State Field |
-|---|---|---|
-| `stream_chat` | Left (Dialogue) | `dialogueMessages[]` |
-| `user_message` | Left (Dialogue) | `dialogueMessages[]` |
-| `action_request` | Left (Dialogue) | `dialogueMessages[]` + `pendingAction` |
-| `status_update` | Center (Activity) | `activityItems[]` — NO cells |
-| `plan_established` | Center (Activity) | `masterPlan` + init `activityItems` |
-| `render_output` | Right (Outputs) | `stageOutputs[stage][]` |
-| `error` | Left (Dialogue) | `dialogueMessages[]` |
+**Fix:**
+1. Add `lastSequenceId: number` to `LabState` (if not already present)
+2. In the reducer's event handling, check: if `event.sequence_id <= state.lastSequenceId`, discard the event (return state unchanged)
+3. On successful event processing, update `lastSequenceId = Math.max(state.lastSequenceId, event.sequence_id)`
+4. On rehydration completion, set `lastSequenceId` to the max `sequence_id` from the replayed events
 
-**Critical:** `status_update` with `status: "ACTIVE"` MUST trigger stage container visibility.
+### G2. Render `action_request` as Inline HITL Cards
 
-### G7. Updated State Shape
+**Files:** `frontend/src/features/lab/components/DialoguePanel.tsx`, new files per subtype
+**Enforcement Rule:** E6 — Inline HITL Only
 
-**File:** `frontend/src/features/lab/types.ts`
+**Problem:** `action_request` events are either ignored in the Dialogue or shown as an external `ActionRequestBanner`. They must render inline.
 
-New interfaces: `DialogueMessage`, `ActivityItem`, updated `LabState` with `dialogueMessages`, `pendingAction`, `masterPlan`, `activityItems`, `stageOutputs`, `selectedStage`, `activeStages`, `lastSequenceId`.
+**Fix:**
+1. In `DialoguePanel`, when rendering a message with `event_type: "action_request"`, dispatch to a subtype component based on `payload.action_id`:
+   - `scope_confirmation_v1` → `ScopeConfirmationCard` (shows interpretation table + CONFIRM/ADJUST buttons)
+   - `approve_modeling_v1` → `ApprovalCard` (shows blueprint + APPROVE/REJECT/EDIT buttons)
+   - `model_selection_v1` → `ModelSelectionCard` (shows model comparison + radio select)
+   - `circuit_breaker_v1` → `CircuitBreakerCard` (shows error + suggestions + option buttons)
+2. Each card calls the appropriate backend endpoint (`/approve`, `/clarifications`, `/choices`) on user action
+3. After user responds, mark the card as "resolved" (gray out buttons, show chosen action)
+4. Reuse existing `AgentService.approveRequest` for approve/reject flows
 
-### G8. Rehydration Replays All 3 Cells
+### G3. Remove Legacy "Resume Workflow (HITL)" Button
 
-**File:** `frontend/src/features/lab/context/LabContext.tsx` (rehydration handler)
+**File:** `frontend/src/features/lab/LabSessionView.tsx` (line ~24)
+**Enforcement Rule:** E6 — Inline HITL Only
 
-When `useRehydration` fetches the event ledger on mount, replay every event through the same router (G6):
+**Problem:** There's a standalone `<button>Resume Workflow (HITL)</button>` rendered outside the grid between the pipeline and the 3-column area.
 
-- Left Cell: All `stream_chat` + `user_message` + `action_request` messages restored
-- Center Cell: `plan_established` rebuilds checklist, `status_update` marks items done/active
-- Right Cell: `render_output` populates stage outputs
+**Fix:** Remove the button entirely. All HITL is now inline in the Dialogue via G2.
 
-**The UI after rehydration must be pixel-identical to the UI before refresh.**
+### G4. Fix Pipeline Node Colors
+
+**File:** `frontend/src/features/lab/components/LabHeader.tsx` (lines ~132-133)
+**Enforcement Rule:** E7 — Pipeline Node Colors
+
+**Problem:** COMPLETE stages show yellow background (`#FEFCBF`) with yellow border (`#D69E2E`). Should be green.
+
+**Fix:**
+- COMPLETE: background `#C6F6D5` (green-100), border `#38A169` (green-500)
+- ACTIVE: background `#BEE3F8` (blue-100), border `#3182CE` (blue-500), bold, box-shadow `0 0 0 2px #3182CE`
+- PENDING: background `#EDF2F7` (gray-100), border `#DDD` (gray-300)
+
+### G5. Enable ChatInput During Active Sessions
+
+**File:** `frontend/src/features/lab/components/ChatInput.tsx` (line ~51)
+**Enforcement Rule:** E8 — ChatInput Enabled
+
+**Problem:** `isDisabled = !state.isConnected || state.isDone || isLoading` — but `state.isDone` may be true even when session is AWAITING_APPROVAL.
+
+**Fix:** The input should be enabled when:
+- Session status is RUNNING or AWAITING_APPROVAL
+- WebSocket is connected
+- Not currently sending a message
+
+Disabled when: COMPLETED, FAILED, CANCELLED, or WS disconnected.
+
+### G6. Stage Outputs Driven by Selection
+
+**File:** `frontend/src/features/lab/components/StageOutputs.tsx` (lines ~35-44)
+**Enforcement Rule:** E9 — Stage Outputs Selection
+
+**Problem:** Right Cell may not respond to pipeline node clicks for stage selection.
+
+**Fix:** Ensure `StageOutputs` reads `selectedStage` from LabContext (set when user clicks a pipeline node in LabHeader). Default to the most recently active stage. Update `LabHeader` to dispatch `SELECT_STAGE` action on node click if not already wired.
+
+### G7. Fix Rehydration/WS Overlap
+
+**File:** `frontend/src/features/lab/hooks/useLabWebSocket.ts` (line ~72-73)
+**Enforcement Rule:** E5 — Dedup Mandatory
+
+**Problem:** After rehydration replays events, the WS may deliver the same events again if `after_seq` is not correctly passed.
+
+**Fix:** Ensure `useLabWebSocket` reads `lastSequenceId` from LabContext state and passes it as `?after_seq={lastSequenceId}` in the WS URL. The WS should only connect AFTER rehydration completes (not in parallel).
+
+### G8. Differentiate Message Senders
+
+**File:** `frontend/src/features/lab/components/DialoguePanel.tsx`
+**Enforcement Rule:** Contract §2.1/2.2
+
+**Problem:** All messages show "System Agent" with the same CPU icon regardless of sender.
+
+**Fix:**
+- `stream_chat` → Agent bubble (left-aligned, blue accent, robot icon, "Agent")
+- `user_message` → User bubble (right-aligned, gray background, user icon, "You")
+- `action_request` → HITL card (full-width, orange accent) — handled by G2
+- `error` → Error card (full-width, red accent, alert icon)
 
 ---
 
 ## 🚫 Constraints
 
 - **DO NOT** write Python/backend code. That's the Graph Agent's job.
-- **DO NOT** invent new event types. Consume only what's in API_CONTRACTS.md v1.3.
-- **DO NOT** remove existing components (CellRenderer, BlueprintCard, Tearsheet, PromoteModal). Reuse them in StageOutputs.
-- **DO NOT** break the ReactFlow pipeline header. It continues to show stage status.
+- **DO NOT** invent new event types. Consume only what's in API_CONTRACTS.md v1.3.1.
+- **DO NOT** remove existing components (CellRenderer, BlueprintCard, Tearsheet, PromoteModal). Reuse them.
+- **DO NOT** break the ReactFlow pipeline header. Modify only the node coloring logic.
 - **DO NOT** install npm packages on the host. All work runs in containers.
+
+## ✅ Acceptance Criteria
+
+After all 8 fixes, refreshing a completed session must show:
+1. Zero duplicate messages in Dialogue
+2. HITL cards rendered inline (no external buttons/banners)
+3. Pipeline: green for complete, blue for active, gray for pending
+4. ChatInput enabled during RUNNING sessions
+5. Stage Outputs change when clicking pipeline nodes
+6. Different visual styling for agent vs user vs system messages
 - If the UI needs data not in the contract, write a `CONTRACT_RFC.md` and halt.
 
 ## ✅ Definition of Done

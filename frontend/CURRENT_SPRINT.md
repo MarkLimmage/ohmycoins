@@ -1,11 +1,7 @@
-# Current Sprint - Sprint 2.15 (Component Library & Storybook Foundation)
+# Current Sprint
 
-**Status:** 🟡 IN PROGRESS  
-**Date Started:** January 27, 2026 (planned)  
-**Date Expected:** January 31, 2026  
-**Duration:** 5 days  
-**Previous Sprint:** Sprint 2.14 - Complete ✅  
-**Focus:** Core UI component library with Storybook documentation (AI Agent Governance Pilot)
+See root `CURRENT_SPRINT.md` for Sprint 2.52 details.
+See `WORKER_MISSION.md` (Glass Agent) for frontend-specific tasks.
 
 ---
 

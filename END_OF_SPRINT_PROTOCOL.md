@@ -5,11 +5,11 @@ Before starting integration, establishing the landscape is critical.
 *   **Structure**: Worktrees are organized as `../omc-lab-{name}` relative to the `ohmycoins` main repository.
     *   Each worktree is a **Git Worktree** on its own feature branch.
     *   Each worktree runs a **Docker Compose Project** with isolated ports via `docker-compose.override.yml`.
-*   **Current Topology (Sprint 2.51)**:
-    *   `../omc-lab-graph` — Graph Agent (`feature/langgraph-orchestrator`), proxy:8020, db:5434
-    *   `../omc-lab-ui` — Glass Agent (`feature/react-frontend`), proxy:8030, db:5435
+*   **Current Topology (Sprint 2.52)**:
+    *   `../omc-lab-graph` — Graph Agent (`fix/graph-enforcement`), proxy:8020, db:5434
+    *   `../omc-lab-ui` — Glass Agent (`fix/glass-enforcement`), proxy:8030, db:5435
 *   **Isolation**:
-    *   **Ports**: Per-worktree via `docker-compose.override.yml`. Main repo uses 8080/5432.
+    *   **Ports**: Per-worktree via `docker-compose.override.yml`. Main repo uses 8010/5433.
     *   **Database**: Each worktree has its own Postgres port. `COMPOSE_PROJECT_NAME` prevents container conflicts.
 *   **State check**: `git worktree list` and `docker ps` are the sources of truth.
 

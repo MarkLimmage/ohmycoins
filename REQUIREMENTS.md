@@ -87,6 +87,20 @@ The UI is a **Dashboard of Evidence**, not a chat window.
 * **ChatInput:** Text input at the bottom of the Dialogue panel. Sends via `POST /message`, response at `sequence_id` N+1.
 * **Agent Narration:** Every node emits `stream_chat` with human-readable reasoning. No silent processing.
 
+### 3.4 Enforcement Rules (v1.3.1 — from Production Testing)
+
+These requirements were implicit in v1.3 but violated during Sprint 2.51. They are now mandatory acceptance criteria.
+
+* **No Silent Fallbacks:** If any LLM call fails, the backend **shall** escalate via `action_request` with `circuit_breaker_v1`. It **shall not** emit a stub `stream_chat` with fallback text and continue silently. A silent fallback cascades: no scope confirmation → no plan → empty Activity Tracker → broken HITL.
+* **Node Events Take Priority:** When a LangGraph node emits structured `pending_events` (e.g., `scope_confirmation_v1`), the runner **shall** publish those events. The runner **shall not** emit a duplicate generic `action_request` (e.g., `approve_reason`) that conflicts with or overwrites the node's structured event.
+* **`task_id` Mandatory on `status_update`:** Every `status_update` payload **shall** include a `task_id` field matching the `plan_established` task list. Updates without `task_id` cannot be matched to checklist items and create orphan entries in the Activity Tracker.
+* **`plan_established` Always Emitted:** The backend **shall** emit `plan_established` even when scope confirmation fails or is bypassed. A default/simplified plan **shall** be used as fallback. The Activity Tracker is non-functional without it.
+* **Sequence Deduplication:** The frontend **shall** track `max_seen_sequence_id` and discard events with `sequence_id ≤ max_seen_sequence_id`. This prevents duplicate messages during rehydration/WS overlap and reconnection.
+* **Inline HITL Only:** All HITL interactions **shall** render as inline `action_request` cards in the Dialogue panel. No standalone buttons, banners, or modals outside the Dialogue. The legacy "Resume Workflow (HITL)" button is deprecated.
+* **Pipeline Node Colors:** COMPLETE = green (`#38A169`), ACTIVE = blue (`#3182CE` with bold + box-shadow), PENDING = gray (`#EDF2F7`). Yellow is not a valid stage color.
+* **ChatInput Enabled:** The Dialogue text input **shall** be enabled during RUNNING and AWAITING_APPROVAL sessions. It **shall** be disabled only for COMPLETED, FAILED, or CANCELLED.
+* **Stage Outputs Selection:** The Right Cell **shall** display outputs for the user-selected stage (via pipeline click) or the most recently active stage. It **shall not** be hardcoded to a single stage.
+
 ---
 
 ## 4. 🌉 Deployment (The Lab-to-Floor Bridge)

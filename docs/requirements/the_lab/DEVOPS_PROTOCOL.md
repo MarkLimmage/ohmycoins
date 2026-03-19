@@ -65,15 +65,15 @@ Worker agents suffer from hallucination when exposed to out-of-scope system arch
 * **Always** pass the `API_CONTRACTS.md` v1.3 to every worker agent.
 * **Always** seed a `WORKER_MISSION.md` with explicit task list and role boundaries.
 
-### 4.2 Current Sprint Prompting Templates (v1.3)
+### 4.2 Current Sprint Prompting Templates (v1.3.1 — Sprint 2.52)
 
-**For the Graph Agent (Workstream F — 7 tasks):**
+**For the Graph Agent (Workstream F — 6 enforcement fixes):**
 
-> "You are the Graph Agent. You are the sole developer here. Ignore legacy docs. Read WORKER_MISSION.md for your task list (F1-F7): Wire scope_confirmation interrupt, wire model_selection interrupt, emit reasoning as stream_chat, emit plan_established, add task_id to status_update, implement POST /message endpoint, circuit breaker → clarification escalation. FastAPI WS gateway on Port 8000. Use PostgresSaver checkpointing. Strictly follow API_CONTRACTS.md v1.3. If a contract is impossible, write a CONTRACT_RFC.md and halt."
+> "You are the Graph Agent. You are the sole developer here. Ignore legacy docs. Read WORKER_MISSION.md for your task list (F1-F6): Scope confirmation fallback → circuit_breaker_v1, runner publishes node pending_events instead of generic interrupt, add task_id to ALL status_update payloads, emit plan_established on error/fallback paths, deduplicate runner vs node action_request, fix stage progression in status_updates. Strictly follow API_CONTRACTS.md v1.3.1 §0.1 Enforcement Rules. If a contract is impossible, write a CONTRACT_RFC.md and halt."
 
-**For the Glass Agent (Workstream G — 8 tasks):**
+**For the Glass Agent (Workstream G — 8 enforcement fixes):**
 
-> "You are the Glass Agent. You are the sole developer here. Ignore legacy docs. Read WORKER_MISSION.md for your task list (G1-G8): 3-column CSS Grid, DialoguePanel, ActivityTracker, StageOutputs, ChatInput, event router refactor, updated state shape, rehydration replays all 3 cells. React + Tailwind CSS. Connect WebSockets to ws://localhost:8002. Assume data matches API_CONTRACTS.md v1.3. If UI needs uncontracted data, write a CONTRACT_RFC.md and halt."
+> "You are the Glass Agent. You are the sole developer here. Ignore legacy docs. Read WORKER_MISSION.md for your task list (G1-G8): sequence_id deduplication, inline action_request HITL cards per subtype, remove legacy Resume button, fix pipeline colors (green/blue/gray), enable ChatInput during RUNNING/AWAITING_APPROVAL, Stage Outputs driven by selection, rehydration/WS after_seq overlap fix, differentiate message senders. Strictly follow API_CONTRACTS.md v1.3.1 §0.1. If a contract is impossible, write a CONTRACT_RFC.md and halt."
 
 ---
 
