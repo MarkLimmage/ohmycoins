@@ -1,6 +1,6 @@
 # Sprint 2.52: v1.3.1 Enforcement — Gap Remediation
 
-**Status:** Planning → Parallel Worktree Sprint
+**Status:** COMPLETE — Merged to main at `8efcab0`
 **Base Commit:** `a46af81`
 **Contract:** API_CONTRACTS.md v1.3.1 (Enforcement Addendum)
 **Predecessor:** Sprint 2.51 (Phase 7 initial implementation — merged, production-tested, gaps identified)
@@ -25,12 +25,12 @@ Sprint 2.51 delivered the initial v1.3 Conversational Scientific Grid. Productio
 
 | ID | Task | Enforcement Rule | Status |
 |----|------|-----------------|--------|
-| F1 | Scope confirmation fallback → `circuit_breaker_v1` escalation | E1 (No Silent Fallbacks) | 🔲 |
-| F2 | Runner publishes node `pending_events` instead of generic interrupt | E2 (Node Events Priority) | 🔲 |
-| F3 | Add `task_id` to ALL `status_update` payloads | E3 (task_id Mandatory) | 🔲 |
-| F4 | Emit `plan_established` even on fallback/error paths | E4 (plan_established Always) | 🔲 |
-| F5 | Deduplicate runner action_request when node already emitted one | E2 (Node Events Priority) | 🔲 |
-| F6 | Fix `status_update` stage progression (correct stage assignments) | E7 (Pipeline Colors) | 🔲 |
+| F1 | Scope confirmation fallback → `circuit_breaker_v1` escalation | E1 (No Silent Fallbacks) | ✅ |
+| F2 | Runner publishes node `pending_events` instead of generic interrupt | E2 (Node Events Priority) | ✅ |
+| F3 | Add `task_id` to ALL `status_update` payloads | E3 (task_id Mandatory) | ✅ |
+| F4 | Emit `plan_established` even on fallback/error paths | E4 (plan_established Always) | ✅ |
+| F5 | Deduplicate runner action_request when node already emitted one | E2 (Node Events Priority) | ✅ |
+| F6 | Fix `status_update` stage progression (correct stage assignments) | E7 (Pipeline Colors) | ✅ |
 
 ### F1 Detail: Scope Confirmation Fallback
 **File:** `backend/app/services/agent/nodes/clarification.py`
@@ -66,14 +66,14 @@ Sprint 2.51 delivered the initial v1.3 Conversational Scientific Grid. Productio
 
 | ID | Task | Enforcement Rule | Status |
 |----|------|-----------------|--------|
-| G1 | Implement `sequence_id` deduplication in event router | E5 (Dedup Mandatory) | 🔲 |
-| G2 | Render `action_request` as inline cards per `action_id` subtype | E6 (Inline HITL Only) | 🔲 |
-| G3 | Remove legacy "Resume Workflow (HITL)" button | E6 (Inline HITL Only) | 🔲 |
-| G4 | Fix pipeline node colors (COMPLETE=green, ACTIVE=blue, PENDING=gray) | E7 (Pipeline Colors) | 🔲 |
-| G5 | Enable ChatInput during RUNNING and AWAITING_APPROVAL sessions | E8 (ChatInput Enabled) | 🔲 |
-| G6 | Stage Outputs driven by selected stage, not hardcoded | E9 (Stage Selection) | 🔲 |
-| G7 | Fix rehydration/WS overlap (pass `after_seq` to WS connect) | E5 (Dedup Mandatory) | 🔲 |
-| G8 | Differentiate message senders (agent vs system vs user styling) | Contract §2.1/2.2 | 🔲 |
+| G1 | Implement `sequence_id` deduplication in event router | E5 (Dedup Mandatory) | ✅ (already done) |
+| G2 | Render `action_request` as inline cards per `action_id` subtype | E6 (Inline HITL Only) | ✅ |
+| G3 | Remove legacy "Resume Workflow (HITL)" button | E6 (Inline HITL Only) | ✅ |
+| G4 | Fix pipeline node colors (COMPLETE=green, ACTIVE=blue, PENDING=gray) | E7 (Pipeline Colors) | ✅ |
+| G5 | Enable ChatInput during RUNNING and AWAITING_APPROVAL sessions | E8 (ChatInput Enabled) | ✅ |
+| G6 | Stage Outputs driven by selected stage, not hardcoded | E9 (Stage Selection) | ✅ (already done) |
+| G7 | Fix rehydration/WS overlap (pass `after_seq` to WS connect) | E5 (Dedup Mandatory) | ✅ (already done) |
+| G8 | Differentiate message senders (agent vs system vs user styling) | Contract §2.1/2.2 | ✅ |
 
 ### G1 Detail: Sequence Dedup
 **File:** `frontend/src/features/lab/context/LabContext.tsx`
