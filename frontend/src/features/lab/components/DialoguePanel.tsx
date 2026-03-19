@@ -1,21 +1,52 @@
 import { Box, Flex, Icon, Text, VStack } from "@chakra-ui/react"
 import { useEffect, useRef } from "react"
-import { FiAlertTriangle, FiCpu, FiUser } from "react-icons/fi"
+import { FiAlertTriangle, FiMessageSquare, FiUser } from "react-icons/fi"
 import { useLabContext } from "../context/LabContext"
 import type { DialogueMessage } from "../types"
-import { ActionRequestBanner } from "./ActionRequestBanner"
 import { ChatInput } from "./ChatInput"
+import { ApprovalCard } from "./cards/ApprovalCard"
+import { CircuitBreakerCard } from "./cards/CircuitBreakerCard"
+import { ModelSelectionCard } from "./cards/ModelSelectionCard"
+import { ScopeConfirmationCard } from "./cards/ScopeConfirmationCard"
 
 const MessageBubble = ({ message }: { message: DialogueMessage }) => {
-  const isAgent = message.type === "agent"
   const isUser = message.type === "user"
   const isError = message.type === "error"
 
+  // G8: Differentiate senders
   const align = isUser ? "flex-end" : "flex-start"
   const bg = isUser ? "gray.100" : isError ? "red.50" : "blue.50"
   const color = isUser ? "gray.800" : isError ? "red.800" : "blue.900"
-  const borderColor = isError ? "red.200" : isAgent ? "blue.200" : "transparent"
-  const icon = isUser ? FiUser : isError ? FiAlertTriangle : FiCpu
+  const borderColor = isError ? "red.200" : !isUser ? "blue.200" : "transparent"
+  const icon = isUser ? FiUser : isError ? FiAlertTriangle : FiMessageSquare
+  const label = isUser ? "You" : isError ? "Error" : "Agent"
+
+  // Error messages render full-width
+  if (isError) {
+    return (
+      <Box
+        w="100%"
+        p={3}
+        borderRadius="lg"
+        bg="red.50"
+        color="red.800"
+        border="1px solid"
+        borderColor="red.200"
+        boxShadow="sm"
+        mb={2}
+      >
+        <Flex align="center" mb={1} gap={2}>
+          <Icon as={FiAlertTriangle} size="sm" color="red.500" />
+          <Text fontSize="xs" fontWeight="bold" color="red.500">
+            Error
+          </Text>
+        </Flex>
+        <Text whiteSpace="pre-wrap" fontSize="sm">
+          {message.content}
+        </Text>
+      </Box>
+    )
+  }
 
   return (
     <Flex w="100%" justify={align} mb={2}>
@@ -32,7 +63,7 @@ const MessageBubble = ({ message }: { message: DialogueMessage }) => {
         <Flex align="center" mb={1} gap={2}>
           <Icon as={icon} size="sm" opacity={0.7} />
           <Text fontSize="xs" fontWeight="bold" opacity={0.7}>
-            {isUser ? "You" : isError ? "System Error" : "System Agent"}
+            {label}
           </Text>
         </Flex>
         <Text whiteSpace="pre-wrap" fontSize="sm">
@@ -43,9 +74,35 @@ const MessageBubble = ({ message }: { message: DialogueMessage }) => {
   )
 }
 
+/** Dispatch action_request messages to the appropriate inline HITL card */
+const ActionRequestMessage = ({ message }: { message: DialogueMessage }) => {
+  const actionId = message.actionPayload?.action_id || ""
+
+  const commonProps = {
+    messageId: message.id,
+    payload: message.actionPayload || {},
+    resolved: message.resolved,
+    resolvedOption: message.resolvedOption,
+  }
+
+  switch (actionId) {
+    case "scope_confirmation_v1":
+      return <ScopeConfirmationCard {...commonProps} />
+    case "approve_modeling_v1":
+      return <ApprovalCard {...commonProps} />
+    case "model_selection_v1":
+      return <ModelSelectionCard {...commonProps} />
+    case "circuit_breaker_v1":
+      return <CircuitBreakerCard {...commonProps} />
+    default:
+      // Fallback: render as a generic action request card
+      return <ApprovalCard {...commonProps} />
+  }
+}
+
 export const DialoguePanel = () => {
   const { state } = useLabContext()
-  const { dialogueMessages, isConnected, pendingAction } = state
+  const { dialogueMessages, isConnected } = state
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -96,15 +153,12 @@ export const DialoguePanel = () => {
           },
         }}
       >
-        {dialogueMessages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-
-        {/* Pending Action Card */}
-        {pendingAction && (
-          <Box animation="pulse">
-            <ActionRequestBanner request={pendingAction} />
-          </Box>
+        {dialogueMessages.map((msg) =>
+          msg.type === "action_request" ? (
+            <ActionRequestMessage key={msg.id} message={msg} />
+          ) : (
+            <MessageBubble key={msg.id} message={msg} />
+          ),
         )}
 
         <div ref={messagesEndRef} />

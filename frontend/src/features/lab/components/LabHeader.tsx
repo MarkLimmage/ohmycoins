@@ -91,7 +91,7 @@ const initialEdges: Edge[] = [
 
 export const LabHeader = () => {
   const { state, dispatch } = useLabContext()
-  const { stageOutputs, activeStages, selectedStage, stages } = state
+  const { activeStages, selectedStage } = state
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
     const stageId = node.id as LabStage
@@ -99,12 +99,27 @@ export const LabHeader = () => {
   }
 
   const nodes = useMemo(() => {
+    // Determine the currently active stage (latest in pipeline order)
+    const ORDERED: LabStage[] = [
+      "BUSINESS_UNDERSTANDING",
+      "DATA_ACQUISITION",
+      "PREPARATION",
+      "EXPLORATION",
+      "MODELING",
+      "EVALUATION",
+      "DEPLOYMENT",
+    ]
+    let currentActiveStage: LabStage | null = null
+    for (let i = ORDERED.length - 1; i >= 0; i--) {
+      if (activeStages.has(ORDERED[i])) {
+        currentActiveStage = ORDERED[i]
+        break
+      }
+    }
+
     return initialNodes.map((node) => {
       const stageId = node.id as LabStage
 
-      const isActive = activeStages.has(stageId)
-      const outputCount =
-        (stageOutputs[stageId]?.length || 0) + (stages?.[stageId]?.length || 0)
       const isSelected = selectedStage === stageId
 
       let style: React.CSSProperties = {
@@ -121,21 +136,27 @@ export const LabHeader = () => {
         style = { ...style, ...node.style }
       }
 
-      // Selection Highlight
-      if (isSelected) {
-        style.boxShadow = "0 0 0 2px #3182ce"
+      // E7: Pipeline Node Colors — ACTIVE=blue, COMPLETE=green, PENDING=gray
+      if (stageId === currentActiveStage) {
+        // ACTIVE stage
+        style.background = "#BEE3F8" // blue-100
+        style.borderColor = "#3182CE" // blue-500
         style.fontWeight = "bold"
+        style.boxShadow = "0 0 0 2px #3182CE"
+      } else if (activeStages.has(stageId)) {
+        // COMPLETE stage (was active earlier)
+        style.background = "#C6F6D5" // green-100
+        style.borderColor = "#38A169" // green-500
+      } else {
+        // PENDING stage
+        style.background = "#EDF2F7" // gray-100
+        style.borderColor = "#DDD" // gray-300
       }
 
-      // Status Colors
-      if (isActive) {
-        style.background = "#FEFCBF" // Yellow-100
-        style.borderColor = "#D69E2E" // Yellow-600
-      } else if (outputCount > 0) {
-        style.background = "#C6F6D5" // Green-100
-        style.borderColor = "#38A169" // Green-500
-      } else {
-        style.background = "#EDF2F7" // Gray-100
+      // Selection highlight (separate from status)
+      if (isSelected && stageId !== currentActiveStage) {
+        style.outline = "2px solid #3182CE"
+        style.outlineOffset = "2px"
       }
 
       return {
@@ -143,7 +164,7 @@ export const LabHeader = () => {
         style,
       }
     })
-  }, [stageOutputs, activeStages, selectedStage, stages])
+  }, [activeStages, selectedStage])
 
   return (
     <Box h="150px" w="100%" borderBottom="1px solid" borderColor="gray.200">

@@ -57,10 +57,13 @@ export interface ActionRequest {
 // G7: Updated State Shape
 export interface DialogueMessage {
   id: string
-  type: "agent" | "user" | "error"
+  type: "agent" | "user" | "error" | "action_request"
   content: string
   timestamp: string
   sequence_id: number
+  actionPayload?: LabEventPayload // Full payload for action_request events
+  resolved?: boolean // Whether the HITL action has been resolved
+  resolvedOption?: string // Which option the user chose
 }
 
 export interface ActivityItem {

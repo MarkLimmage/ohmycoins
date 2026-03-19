@@ -31,6 +31,7 @@ type Action =
   | { type: "SET_DONE"; payload: boolean }
   | { type: "CLEAR_ACTION" }
   | { type: "SET_SELECTED_STAGE"; payload: LabStage | null }
+  | { type: "RESOLVE_ACTION"; payload: { messageId: string; option: string } }
 
 const initialState: LabState = {
   sessionId: null,
@@ -76,6 +77,19 @@ function labReducer(state: LabState, action: Action): LabState {
 
     case "SET_SELECTED_STAGE":
       return { ...state, selectedStage: action.payload }
+
+    case "RESOLVE_ACTION": {
+      const updatedMessages = state.dialogueMessages.map((msg) =>
+        msg.id === action.payload.messageId
+          ? { ...msg, resolved: true, resolvedOption: action.payload.option }
+          : msg,
+      )
+      return {
+        ...state,
+        dialogueMessages: updatedMessages,
+        pendingAction: null,
+      }
+    }
 
     case "REHYDRATE": {
       // Sort ledger by sequence_id
@@ -172,21 +186,26 @@ function processEvent(state: LabState, event: LabEvent): LabState {
       payload.description ||
       ""
 
+    const msgType =
+      event_type === "user_message"
+        ? ("user" as const)
+        : event_type === "error"
+          ? ("error" as const)
+          : event_type === "action_request"
+            ? ("action_request" as const)
+            : ("agent" as const)
+
     const message: DialogueMessage = {
       id: String(sequence_id),
-      type:
-        event_type === "user_message"
-          ? "user"
-          : event_type === "error"
-            ? "error"
-            : "agent",
+      type: msgType,
       content: content,
       timestamp,
       sequence_id,
+      ...(event_type === "action_request" ? { actionPayload: payload } : {}),
     }
 
     // Only add to dialogue if it has content to show
-    if (message.content) {
+    if (message.content || event_type === "action_request") {
       newState.dialogueMessages = [...newState.dialogueMessages, message]
     }
 

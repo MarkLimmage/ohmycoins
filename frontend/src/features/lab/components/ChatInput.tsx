@@ -5,7 +5,7 @@ import useCustomToast from "../../../hooks/useCustomToast"
 import { useLabContext } from "../context/LabContext"
 
 export const ChatInput = () => {
-  const { state, isLoading } = useLabContext()
+  const { state } = useLabContext()
   const [message, setMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
   const { showErrorToast } = useCustomToast()
@@ -47,7 +47,7 @@ export const ChatInput = () => {
     }
   }
 
-  const isDisabled = !state.isConnected || state.isDone || isLoading
+  const isDisabled = !state.isConnected || isSending
 
   return (
     <Box p={4} borderTop="1px solid" borderColor="gray.200" bg="white">
