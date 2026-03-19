@@ -346,72 +346,125 @@ def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
 
     try:
         scope = structured_llm.invoke([system_msg, human_msg])
+
+        # 2. Generate Events (Success Path)
+        events = []
+
+        # Stream Chat (Explanation)
+        events.append({
+            "event_type": "stream_chat",
+            "stage": "BUSINESS_UNDERSTANDING",
+            "payload": {
+                "message": f"I've analyzed your request: '{user_goal}'. {scope.reasoning}",
+                "sender": "assistant"
+            }
+        })
+
+        # Action Request (Scope Confirmation)
+        events.append({
+            "event_type": "action_request",
+            "stage": "BUSINESS_UNDERSTANDING",
+            "action_id": "scope_confirmation_v1",
+            "payload": {
+                "action_id": "scope_confirmation_v1",
+                "description": "Please confirm the analysis scope.",
+                "interpretation": {
+                    "assets": scope.assets,
+                    "timeframe": scope.timeframe,
+                    "analysis_type": scope.analysis_type,
+                    "indicators": scope.indicators,
+                    "modeling_target": scope.modeling_target
+                },
+                "questions": ["Is this the correct set of assets?", "Is the timeframe appropriate?"],
+                "options": ["CONFIRM_SCOPE", "ADJUST_SCOPE"]
+            }
+        })
+
+        # Plan Established
+        # Generate tasks based on analysis type (simple logic for now)
+        tasks = [
+             { "stage": "BUSINESS_UNDERSTANDING", "tasks": [{ "task_id": "scope_confirmation", "label": "Confirm Scope", "status": "in_progress" }] },
+             { "stage": "DATA_ACQUISITION", "tasks": [{ "task_id": "fetch_price_data", "label": f"Fetch OHLCV for {', '.join(scope.assets)}" }] },
+             { "stage": "PREPARATION", "tasks": [{ "task_id": "validate_quality", "label": "Run data quality checks" }] },
+             { "stage": "EXPLORATION", "tasks": [{ "task_id": "compute_indicators", "label": f"Calculate {', '.join(scope.indicators)}" }] },
+        ]
+
+        if "predict" in scope.analysis_type:
+             tasks.append({ "stage": "MODELING", "tasks": [{ "task_id": "train_models", "label": f"Train model for {scope.modeling_target}" }] })
+             tasks.append({ "stage": "EVALUATION", "tasks": [{ "task_id": "evaluate_model", "label": "Evaluate model performance" }] })
+
+        tasks.append({ "stage": "DEPLOYMENT", "tasks": [{ "task_id": "generate_report", "label": "Generate final report" }] })
+
+        events.append({
+            "event_type": "plan_established",
+            "stage": "BUSINESS_UNDERSTANDING",
+            "payload": { "plan": tasks }
+        })
+
+        return {
+            "current_step": "scope_confirmation",
+            "pending_events": events,
+            "scope_interpretation": scope.model_dump(),
+            # We rely on interrupt logic, but this flag helps track state
+            "awaiting_scope_confirmation": True
+        }
+
     except Exception as e:
         logger.error(f"Error parsing scope: {e}")
-        # Fallback
-        scope = ScopeInterpretation(
-            assets=["BTC"], timeframe="30d", analysis_type="trend_analysis",
-            indicators=["RSI"], modeling_target="price_direction", reasoning="Fallback due to error"
-        )
 
-    # 2. Generate Events
-    events = []
-
-    # Stream Chat (Explanation)
-    events.append({
-        "event_type": "stream_chat",
-        "stage": "BUSINESS_UNDERSTANDING",
-        "payload": {
-            "message": f"I've analyzed your request: '{user_goal}'. {scope.reasoning}",
-            "sender": "assistant"
+        # F1: Circuit Breaker Escalation
+        circuit_breaker_event = {
+            "event_type": "action_request",
+            "stage": "BUSINESS_UNDERSTANDING",
+            "payload": {
+                "action_id": "circuit_breaker_v1",
+                "description": "I encountered an error while analyzing your request. I need your guidance to proceed.",
+                "stage": "BUSINESS_UNDERSTANDING",
+                "attempts": 1,
+                "last_error": str(e),
+                "suggestions": [
+                    "Check your LLM API key in Settings → LLM Credentials",
+                    "Try a different LLM provider (Google Gemini, Anthropic)",
+                    "Retry the session after updating credentials"
+                ],
+                "options": ["CHOOSE_SUGGESTION", "PROVIDE_GUIDANCE", "ABORT_SESSION"]
+            }
         }
-    })
 
-    # Action Request (Scope Confirmation)
-    events.append({
-        "event_type": "action_request",
-        "stage": "BUSINESS_UNDERSTANDING",
-        "action_id": "scope_confirmation_v1",
-        "payload": {
-            "description": "Please confirm the analysis scope.",
-            "interpretation": {
-                "assets": scope.assets,
-                "timeframe": scope.timeframe,
-                "analysis_type": scope.analysis_type,
-                "indicators": scope.indicators,
-                "modeling_target": scope.modeling_target
-            },
-            "questions": ["Is this the correct set of assets?", "Is the timeframe appropriate?"],
-            "options": ["CONFIRM_SCOPE", "ADJUST_SCOPE"]
+        # F4: Plan Established Fallback
+        plan_established_event = {
+            "event_type": "plan_established",
+            "stage": "BUSINESS_UNDERSTANDING",
+            "payload": {
+                "plan": [
+                    {"stage": "DATA_ACQUISITION", "tasks": [
+                        {"task_id": "fetch_price_data", "label": "Fetch OHLCV price data"},
+                        {"task_id": "fetch_sentiment", "label": "Fetch sentiment scores"}
+                    ]},
+                    {"stage": "PREPARATION", "tasks": [
+                        {"task_id": "validate_quality", "label": "Run data quality checks"}
+                    ]},
+                    {"stage": "EXPLORATION", "tasks": [
+                        {"task_id": "compute_technical_indicators", "label": "Calculate technical indicators"},
+                        {"task_id": "perform_eda", "label": "Exploratory data analysis"}
+                    ]},
+                    {"stage": "MODELING", "tasks": [
+                        {"task_id": "train_models", "label": "Train ML models"}
+                    ]},
+                    {"stage": "EVALUATION", "tasks": [
+                        {"task_id": "evaluate_metrics", "label": "Compute evaluation metrics"},
+                        {"task_id": "compare_models", "label": "Compare model performance"}
+                    ]},
+                    {"stage": "DEPLOYMENT", "tasks": [
+                        {"task_id": "generate_report", "label": "Generate final report"}
+                    ]}
+                ]
+            }
         }
-    })
 
-    # Plan Established
-    # Generate tasks based on analysis type (simple logic for now)
-    tasks = [
-         { "stage": "BUSINESS_UNDERSTANDING", "tasks": [{ "task_id": "scope_confirmation", "label": "Confirm Scope", "status": "in_progress" }] },
-         { "stage": "DATA_ACQUISITION", "tasks": [{ "task_id": "fetch_price_data", "label": f"Fetch OHLCV for {', '.join(scope.assets)}" }] },
-         { "stage": "PREPARATION", "tasks": [{ "task_id": "validate_quality", "label": "Run data quality checks" }] },
-         { "stage": "EXPLORATION", "tasks": [{ "task_id": "compute_indicators", "label": f"Calculate {', '.join(scope.indicators)}" }] },
-    ]
-
-    if "predict" in scope.analysis_type:
-         tasks.append({ "stage": "MODELING", "tasks": [{ "task_id": "train_models", "label": f"Train model for {scope.modeling_target}" }] })
-         tasks.append({ "stage": "EVALUATION", "tasks": [{ "task_id": "evaluate_model", "label": "Evaluate model performance" }] })
-
-    tasks.append({ "stage": "DEPLOYMENT", "tasks": [{ "task_id": "generate_report", "label": "Generate final report" }] })
-
-    events.append({
-        "event_type": "plan_established",
-        "stage": "BUSINESS_UNDERSTANDING",
-        "payload": { "plan": tasks }
-    })
-
-    return {
-        "current_step": "scope_confirmation",
-        "pending_events": events,
-        "scope_interpretation": scope.model_dump(),
-        # We rely on interrupt logic, but this flag helps track state
-        "awaiting_scope_confirmation": True
-    }
+        return {
+            "current_step": "scope_confirmation",
+            "pending_events": [circuit_breaker_event, plan_established_event],
+            "awaiting_scope_confirmation": True
+        }
 

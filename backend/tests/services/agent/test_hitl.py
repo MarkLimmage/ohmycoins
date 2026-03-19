@@ -12,10 +12,11 @@ from app.services.agent.runner import AgentRunner
 async def test_runner_interrupt_detection():
     runner = AgentRunner()
     runner.session_manager = AsyncMock()
-    runner.orchestrator = AsyncMock()
-    runner.orchestrator.checkpointer = MagicMock()
+    runner._orchestrator = AsyncMock()
+    runner._orchestrator.checkpointer = MagicMock()
     runner._publish = AsyncMock()
     runner._get_redis = AsyncMock()
+    runner._get_checkpointer = AsyncMock()
 
     session_id = uuid.uuid4()
 

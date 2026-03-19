@@ -64,7 +64,7 @@ class DataAnalystAgent(BaseAgent):
                 {
                     "status": "ACTIVE",
                     "message": "Initializing analysis pipeline...",
-                    "task_id": "compute_indicators"
+                    "task_id": "compute_technical_indicators"
                 },
             )
 
@@ -100,7 +100,7 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "ACTIVE", "message": "Running EDA on price metrics..."},
+                        {"status": "ACTIVE", "message": "Running EDA on price metrics...", "task_id": "perform_eda"},
                     )
                     analysis_results["exploratory_analysis"]["price_eda"] = perform_eda(
                         retrieved_data["price_data"]

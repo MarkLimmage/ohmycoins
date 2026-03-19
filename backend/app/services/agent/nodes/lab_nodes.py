@@ -46,10 +46,10 @@ def _format_execution_output(
 
 
 async def _emit_status_update(
-    session_id: str, stage: StageID, status: NodeStatus, message: str | None = None
+    session_id: str, stage: StageID, status: NodeStatus, task_id: str, message: str | None = None
 ) -> None:
     """Emits a status_update event via WebSocket."""
-    payload = {"status": status, "message": message}
+    payload = {"status": status, "message": message, "task_id": task_id}
     await manager.broadcast_json(
         {"event_type": "status_update", "stage": stage, "payload": payload},
         channel_id=session_id,
@@ -124,7 +124,7 @@ async def node_business_understanding(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.BUSINESS_UNDERSTANDING
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "scope_confirmation")
 
     message = state["messages"][-1]
     user_input = message.content
@@ -132,7 +132,7 @@ async def node_business_understanding(state: LabState) -> dict[str, Any]:
     # Simulate some processing time or LLM call
     # For now, immediate completion
 
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "scope_confirmation")
 
     return {
         "user_goal": user_input,
@@ -147,7 +147,7 @@ async def node_data_acquisition(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.DATA_ACQUISITION
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "fetch_price_data")
 
     # In a full implementation, this node would select the dataset based on user input
     # For now, we default to a standard OHLCV view
@@ -174,7 +174,7 @@ else:
         insufficient_data = False
         if insufficient_data:
             await _emit_status_update(
-                session_id, stage, NodeStatus.STALE, "Insufficient Data"
+                session_id, stage, NodeStatus.STALE, "fetch_price_data", "Insufficient Data"
             )
             return {
                 "error": "insufficient_data",
@@ -192,7 +192,7 @@ else:
         }
 
     await _emit_render_output(session_id, stage, payload)
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "fetch_price_data")
 
     return {
         "dataset_name": mv_name,
@@ -209,12 +209,12 @@ async def node_preparation(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.PREPARATION
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "validate_quality")
 
     # Mock preparation logic
     features = ["open", "high", "low", "close", "volume"]
 
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "validate_quality")
 
     return {
         "current_stage": stage,
@@ -230,7 +230,7 @@ async def node_exploration(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.EXPLORATION
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "compute_technical_indicators")
 
     code = """
 import plotly.express as px
@@ -266,7 +266,7 @@ else:
         }
 
     await _emit_render_output(session_id, stage, payload)
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "compute_technical_indicators")
 
     return {
         "exploration_result": payload,
@@ -284,7 +284,7 @@ async def node_modeling(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.MODELING
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "train_models")
 
     code = """
 from xgboost import XGBClassifier
@@ -334,7 +334,7 @@ else:
         }
 
     await _emit_render_output(session_id, stage, payload)
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "train_models")
 
     return {
         "modeling_result": payload,
@@ -350,7 +350,7 @@ async def node_evaluation(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.EVALUATION
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "evaluate_metrics")
 
     code = """
 import json
@@ -378,7 +378,7 @@ print(json.dumps(metrics))
         }
 
     await _emit_render_output(session_id, stage, payload)
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE)
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "evaluate_metrics")
 
     return {
         "evaluation_result": payload,
@@ -394,8 +394,8 @@ async def node_deployment(state: LabState) -> dict[str, Any]:
     session_id = state.get("session_id", "default")
     stage = StageID.DEPLOYMENT
 
-    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE)
-    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "Deployed")
+    await _emit_status_update(session_id, stage, NodeStatus.ACTIVE, "generate_report")
+    await _emit_status_update(session_id, stage, NodeStatus.COMPLETE, "generate_report", "Deployed")
 
     return {
         "current_stage": stage,
