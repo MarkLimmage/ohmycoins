@@ -366,6 +366,13 @@ async def create_user_message(
     ).first()
     current_stage = (last_msg.stage if last_msg and last_msg.stage else "BUSINESS_UNDERSTANDING")
 
+    # Build event metadata so rehydrate recognises this as user_message
+    event_metadata = {
+        "event_type": "user_message",
+        "stage": current_stage,
+        "payload": {"content": message.content},
+    }
+
     # Add message and save to DB (sequence_id assigned inside add_message)
     msg = await session_manager.add_message(
         db,
@@ -373,6 +380,7 @@ async def create_user_message(
         role="user",
         content=message.content,
         agent_name="user",
+        metadata=json.dumps(event_metadata),
         event_type="user_message",
         stage=current_stage
     )
