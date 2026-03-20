@@ -358,6 +358,14 @@ async def create_user_message(
             status_code=403, detail="Not authorized to access this session"
         )
 
+    # Derive current stage from the last message in session
+    last_msg = db.exec(
+        select(AgentSessionMessage)
+        .where(AgentSessionMessage.session_id == session_id)
+        .order_by(AgentSessionMessage.created_at.desc())  # type: ignore[union-attr]
+    ).first()
+    current_stage = (last_msg.stage if last_msg and last_msg.stage else "BUSINESS_UNDERSTANDING")
+
     # Add message and save to DB (sequence_id assigned inside add_message)
     msg = await session_manager.add_message(
         db,
@@ -366,7 +374,7 @@ async def create_user_message(
         content=message.content,
         agent_name="user",
         event_type="user_message",
-        stage=session.current_stage or "BUSINESS_UNDERSTANDING"
+        stage=current_stage
     )
 
     return msg
@@ -505,7 +513,7 @@ async def rehydrate_session(
             event_ledger.append({
                 "event_type": metadata["event_type"],
                 "stage": metadata.get("stage", "BUSINESS_UNDERSTANDING"),
-                "sequence_id": metadata.get("sequence_id", i),
+                "sequence_id": msg.sequence_id if msg.sequence_id is not None else i,
                 "timestamp": metadata.get("timestamp", msg.created_at.isoformat() if msg.created_at else None),
                 "payload": metadata.get("payload", {"status": "ACTIVE", "message": msg.content or ""}),
             })
@@ -516,7 +524,7 @@ async def rehydrate_session(
             event_ledger.append({
                 "event_type": event_type,
                 "stage": stage,
-                "sequence_id": i,
+                "sequence_id": msg.sequence_id if msg.sequence_id is not None else i,
                 "timestamp": msg.created_at.isoformat() if msg.created_at else None,
                 "payload": metadata,
             })
@@ -526,7 +534,7 @@ async def rehydrate_session(
             event_ledger.append({
                 "event_type": "status_update",
                 "stage": stage,
-                "sequence_id": i,
+                "sequence_id": msg.sequence_id if msg.sequence_id is not None else i,
                 "timestamp": msg.created_at.isoformat() if msg.created_at else None,
                 "payload": {
                     "status": "ACTIVE",
@@ -534,8 +542,8 @@ async def rehydrate_session(
                 },
             })
 
-    # Last Sequence ID
-    last_seq_id = len(event_ledger)
+    # Last Sequence ID — use actual max from DB, not count
+    last_seq_id = max((e["sequence_id"] for e in event_ledger), default=0) if event_ledger else 0
 
     # For AWAITING_APPROVAL sessions, check if the last event is already an action_request
     # (new format stores it in DB). Only synthesize one if missing (legacy sessions).
