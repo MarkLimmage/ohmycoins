@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_layout/lab")({
 
 function LabPage() {
   return (
-    <Container maxW="full" py={8}>
+    <Container maxW="full" py={2} px={2}>
       <LabDashboard />
     </Container>
   )

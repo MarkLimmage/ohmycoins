@@ -32,6 +32,7 @@
     "form-data": "4.0.4",
     "lightweight-charts": "^5.1.0",
     "next-themes": "^0.4.6",
+    "plotly.js-dist-min": "^2.26.0",
     "react": "^19.1.1",
     "react-dom": "^19.2.0",
     "react-error-boundary": "^6.0.0",
@@ -40,10 +41,9 @@
     "react-is": "^19.2.4",
     "react-markdown": "^9.0.0",
     "react-plotly.js": "^2.6.0",
-    "plotly.js-dist-min": "^2.26.0",
     "reactflow": "^11.10.1",
-    "remark-gfm": "^4.0.0",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
@@ -60,6 +60,7 @@
     "@tanstack/router-plugin": "^1.133.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.2.1",

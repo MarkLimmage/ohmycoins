@@ -29,6 +29,7 @@ const items = [
 
 interface SidebarItemsProps {
   onClose?: () => void
+  collapsed?: boolean
 }
 
 interface Item {
@@ -37,7 +38,7 @@ interface Item {
   path: string
 }
 
-const SidebarItems = ({ onClose }: SidebarItemsProps) => {
+const SidebarItems = ({ onClose, collapsed }: SidebarItemsProps) => {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
 
@@ -48,9 +49,10 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   const listItems = finalItems.map(({ icon, title, path }) => (
     <RouterLink key={title} to={path} onClick={onClose}>
       <Flex
-        gap={4}
-        px={4}
+        gap={collapsed ? 0 : 4}
+        px={collapsed ? 0 : 4}
         py={2}
+        justify={collapsed ? "center" : "flex-start"}
         _hover={{
           background: "gray.subtle",
           color: "ui.main",
@@ -59,18 +61,21 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         fontSize="sm"
         fontWeight="medium"
         color="inherit"
+        title={collapsed ? title : undefined}
       >
         <Icon as={icon} alignSelf="center" boxSize={4} />
-        <Text ml={2}>{title}</Text>
+        {!collapsed && <Text ml={2}>{title}</Text>}
       </Flex>
     </RouterLink>
   ))
 
   return (
     <>
-      <Text fontSize="xs" px={4} py={2} fontWeight="bold">
-        Menu
-      </Text>
+      {!collapsed && (
+        <Text fontSize="xs" px={4} py={2} fontWeight="bold">
+          Menu
+        </Text>
+      )}
       <Box>{listItems}</Box>
     </>
   )
