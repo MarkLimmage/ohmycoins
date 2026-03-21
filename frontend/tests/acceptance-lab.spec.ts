@@ -16,7 +16,8 @@ async function login(page: import("@playwright/test").Page) {
   await page.getByPlaceholder("Email").fill(TEST_EMAIL)
   await page.getByPlaceholder("Password").fill(TEST_PASSWORD)
   await page.getByRole("button", { name: "Log In" }).click()
-  await page.waitForURL("**/")
+  // Wait for redirect after login — may take time on first load
+  await page.waitForURL("**/", { timeout: 30000 })
   // Wait for app to load
   await page.waitForTimeout(1000)
 }
@@ -216,9 +217,16 @@ test.describe("Phase 2: Lab UI Acceptance", () => {
 
     // Refresh
     await page.reload()
+    await page.waitForTimeout(3000)
+
+    // Session selection is in React state (not URL) — need to re-click the session
+    // Find the session in the list and click it
+    const sessionItem = page.getByText("Analyze BTC for refresh test").first()
+    await expect(sessionItem).toBeVisible({ timeout: 10000 })
+    await sessionItem.click()
     await page.waitForTimeout(5000)
 
-    // Scope confirmation should still be visible
+    // Scope confirmation should still be visible after rehydration
     await expect(page.getByText("Scope Confirmation").first()).toBeVisible({ timeout: 10000 })
     // Activity Tracker should be in DOM after refresh
     await expect(page.getByRole("heading", { name: "Activity Tracker" })).toBeAttached({ timeout: 5000 })
