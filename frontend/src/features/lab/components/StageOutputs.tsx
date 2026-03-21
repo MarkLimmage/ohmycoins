@@ -28,11 +28,11 @@ const ORDERED_STAGES: LabStage[] = [
   "DEPLOYMENT",
 ]
 
-export const StageOutputs = () => {
+export const StageOutputs = ({ stage }: { stage?: LabStage }) => {
   const { state } = useLabContext()
   const { stageOutputs, selectedStage, activeStages } = state
 
-  // Determine which stage to show
+  // Determine which stage to show (for unscoped mode)
   const activeStage = useMemo(() => {
     if (selectedStage) return selectedStage
 
@@ -45,6 +45,37 @@ export const StageOutputs = () => {
 
     return "BUSINESS_UNDERSTANDING" // Fallback
   }, [selectedStage, activeStages])
+
+  // Stage-scoped mode: render outputs for the given stage directly
+  if (stage) {
+    const outputs = stageOutputs[stage] || []
+    return (
+      <Box h="100%" bg="white" overflowY="auto" p={4}>
+        <Text fontSize="sm" color="gray.500" mb={3}>
+          {outputs.length} output{outputs.length !== 1 ? "s" : ""}
+        </Text>
+        {outputs.length === 0 ? (
+          <Center
+            h="100px"
+            bg="gray.50"
+            borderRadius="md"
+            border="1px dashed"
+            borderColor="gray.300"
+          >
+            <Text color="gray.400" fontSize="sm">
+              No outputs yet.
+            </Text>
+          </Center>
+        ) : (
+          <VStack gap={4} alignItems="stretch">
+            {outputs.map((cell) => (
+              <CellRenderer key={cell.id} cell={cell} />
+            ))}
+          </VStack>
+        )}
+      </Box>
+    )
+  }
 
   const outputs = stageOutputs[activeStage] || []
 

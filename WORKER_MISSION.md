@@ -1,11 +1,11 @@
-# 🪟 WORKER MISSION: Glass Agent (v1.3.1 Enforcement Sprint)
+# 🔬 WORKER MISSION: Glass-Grid Agent (Stage-Row System)
 
-**Branch:** `fix/glass-enforcement`
-**Directory:** `../omc-lab-ui`
-**Sprint:** 2.52 — Gap Remediation
-**Role:** You are the Glass Agent. You are the sole developer in this worktree.
+**Branch:** `feature/glass-grid`
+**Directory:** `../omc-lab-grid`
+**Sprint:** 2.53 — Phase 7.2.1 Layout Foundations
+**Role:** You are the Glass-Grid Agent. You are the sole developer in this worktree. You handle the **inner stage-row system** — types, state management, new StageRow components, and modifying existing sub-components (DialoguePanel, ActivityTracker, StageOutputs, ChatInput) to accept stage-filtering props.
 
-> ⚠️ **IGNORE** all legacy docs (CLAUDE.md, CURRENT_SPRINT.md, AGENT_INSTRUCTIONS.md). This file is your only mission brief. Read `API_CONTRACTS.md` (v1.3.1) §0.1 Enforcement Rules as the strict acceptance criteria.
+> ⚠️ **IGNORE** all legacy docs (CLAUDE.md, CURRENT_SPRINT.md, AGENT_INSTRUCTIONS.md). This file is your only mission brief. Read `API_CONTRACTS.md` v1.4 §3.1 (Grid Layout — Per-Stage Rows) and §3.2 (Stage Row Behavior) as acceptance criteria.
 
 ---
 
@@ -13,14 +13,12 @@
 
 | Resource | Value |
 |---|---|
-| Compose Project | `omc-glass` |
-| Proxy (Traefik) | `http://localhost:8030` |
-| Traefik Dashboard | `http://localhost:8093` |
-| PostgreSQL (host access) | `localhost:5435` |
+| Compose Project | `omc-grid` |
+| Proxy (Traefik) | `http://localhost:8040` |
+| Traefik Dashboard | `http://localhost:8094` |
+| PostgreSQL (host access) | `localhost:5436` |
 | PostgreSQL (container-internal) | `db:5432` |
-| Redis | container-internal only |
-| Frontend (Vite) | `http://localhost:5174` |
-| Mock WebSocket Server | `ws://localhost:8002` |
+| Frontend (Vite) | `http://localhost:5175` |
 
 ### How to Build & Run
 
@@ -28,168 +26,239 @@
 # From this worktree root:
 docker compose build
 docker compose up -d
-docker compose logs -f frontend
+
+# Frontend dev (optional, for fast iteration):
+cd frontend && npm install && npm run dev -- --port 5175
 ```
 
-### How to Run Tests (INSIDE CONTAINERS)
+### docker-compose.override.yml (CREATE THIS FIRST)
 
-All test execution MUST happen inside containers. Do NOT install npm packages on the host.
-
-```bash
-# Run frontend tests (Vitest)
-docker compose exec frontend npx vitest run
-
-# Type checking
-docker compose exec frontend npx tsc --noEmit
-
-# Lint checking
-docker compose exec frontend npx biome check src/
+```yaml
+services:
+  proxy:
+    ports:
+      - "8040:80"
+      - "8094:8080"
+  db:
+    ports:
+      - "5436:5432"
+  backend:
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - agent-artifacts:/data/agent_artifacts
+    environment:
+      - POSTGRES_PORT=5432
+  orchestrator:
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - agent-artifacts:/data/agent_artifacts
+    environment:
+      - POSTGRES_PORT=5432
+  celery_worker:
+    environment:
+      - POSTGRES_PORT=5432
+  prestart:
+    environment:
+      - POSTGRES_PORT=5432
 ```
 
-### Using the Mock WebSocket Server
-
-```bash
-cd /home/mark/claude/ohmycoins
-python mock_ws_v13.py
-# → Listening on ws://localhost:8002
-```
+Set `COMPOSE_PROJECT_NAME=omc-grid` in your `.env` or pass via CLI.
 
 ---
 
-## 🎯 Mission: Fix 8 Frontend Enforcement Violations
+## 🎯 YOUR TASKS (Workstream H — Stage-Row System)
 
-Sprint 2.51 production testing revealed that the Scientific Grid has 8 frontend gaps. Your job is to fix all of them. The 3-column layout, event routing, and component structure from Sprint 2.51 are CORRECT — you are fixing enforcement violations, not rebuilding.
+Execute these in the dependency order shown. A parallel `Glass-Shell` agent handles sidebar/drawer/LabHeader/whitespace. **DO NOT** touch any files listed in the Glass-Shell scope below.
 
----
+### STEP 1: Type & State Foundation
 
-## 📋 Workstream G: Enforcement Fixes (8 Tasks)
-
-### G1. Sequence ID Deduplication in Event Router
+#### H5: Add `stage` field to DialogueMessage
+**File:** `frontend/src/features/lab/types.ts`
+- Add `stage: LabStage` to the `DialogueMessage` interface (currently has: id, type, content, timestamp, sequence_id, actionPayload, resolved, resolvedOption)
 
 **File:** `frontend/src/features/lab/context/LabContext.tsx`
-**Enforcement Rule:** E5 — Dedup Mandatory
+- In `processEvent()`, wherever `DialogueMessage` objects are created, set `stage: event.stage`
 
-**Problem:** Events from rehydration and live WS are both fed into the reducer without dedup, causing duplicate messages (same `stream_chat` appearing 2-3 times).
+#### H6: Stage Lifecycle State
+**File:** `frontend/src/features/lab/types.ts`
+- Add to `LabState`:
+  - `staleStages: Set<LabStage>` — stages marked stale after revision
+  - `completedStages: Set<LabStage>` — stages that have finished (distinct from activeStages which only tracks "ever activated")
+- Add `revision_start` to `LabEventType` if an event type enum exists
 
-**Fix:**
-1. Add `lastSequenceId: number` to `LabState` (if not already present)
-2. In the reducer's event handling, check: if `event.sequence_id <= state.lastSequenceId`, discard the event (return state unchanged)
-3. On successful event processing, update `lastSequenceId = Math.max(state.lastSequenceId, event.sequence_id)`
-4. On rehydration completion, set `lastSequenceId` to the max `sequence_id` from the replayed events
+**File:** `frontend/src/features/lab/context/LabContext.tsx`
+- New reducer action types:
+  - `MARK_STAGE_COMPLETE` — move stage from activeStages to completedStages
+  - `MARK_STAGES_STALE` — add stage(s) to staleStages
+  - `CLEAR_STALE` — remove stage(s) from staleStages
+- Process `status_update` with `status: "COMPLETE"` → dispatch `MARK_STAGE_COMPLETE`
+- Process `status_update` with `status: "STALE"` → dispatch `MARK_STAGES_STALE`
+- Process new `revision_start` event → add divider to dialogueMessages + mark stale_stages
+- Initialize `staleStages` and `completedStages` as `new Set()` in initial state
 
-### G2. Render `action_request` as Inline HITL Cards
+#### Status Helper
+**File:** `frontend/src/features/lab/context/LabContext.tsx` (or a new utils file)
+- Create helper: `getStageStatus(stage: LabStage, state: LabState) → 'pending' | 'active' | 'complete' | 'stale'`
+- Logic:
+  ```
+  if (state.staleStages.has(stage)) return 'stale'
+  if (state.activeStages.has(stage) && !state.completedStages.has(stage)) return 'active'
+  if (state.completedStages.has(stage)) return 'complete'
+  return 'pending'
+  ```
+- Export this so StageRowList can use it
 
-**Files:** `frontend/src/features/lab/components/DialoguePanel.tsx`, new files per subtype
-**Enforcement Rule:** E6 — Inline HITL Only
+### STEP 2: New Stage-Row Components
 
-**Problem:** `action_request` events are either ignored in the Dialogue or shown as an external `ActionRequestBanner`. They must render inline.
+#### H7: StageRow Component
+**File:** NEW `frontend/src/features/lab/components/StageRow.tsx`
+- Props: `stage: LabStage`, `status: 'pending' | 'active' | 'complete' | 'stale'`, `isExpanded: boolean`, `onToggle: () => void`
+- Structure:
+  ```tsx
+  <Box borderLeft="4px solid" borderLeftColor={statusColor} borderRadius="md" mb={3}>
+    <StageRowHeader stage={stage} status={status} onToggle={onToggle} isExpanded={isExpanded} />
+    {isExpanded && (
+      <Grid templateColumns="2fr 1fr 1fr" gap={2} maxH="450px" p={3}>
+        <GridItem overflowY="auto"><DialoguePanel stage={stage} /></GridItem>
+        <GridItem overflowY="auto"><ActivityTracker stage={stage} /></GridItem>
+        <GridItem overflowY="auto"><StageOutputs stage={stage} /></GridItem>
+      </Grid>
+    )}
+  </Box>
+  ```
+- Status colors: `active` → `blue.500`, `complete` → `green.500`, `pending` → `gray.300`, `stale` → `orange.400`
+- PENDING rows are not expandable (return header only with no click handler)
 
-**Fix:**
-1. In `DialoguePanel`, when rendering a message with `event_type: "action_request"`, dispatch to a subtype component based on `payload.action_id`:
-   - `scope_confirmation_v1` → `ScopeConfirmationCard` (shows interpretation table + CONFIRM/ADJUST buttons)
-   - `approve_modeling_v1` → `ApprovalCard` (shows blueprint + APPROVE/REJECT/EDIT buttons)
-   - `model_selection_v1` → `ModelSelectionCard` (shows model comparison + radio select)
-   - `circuit_breaker_v1` → `CircuitBreakerCard` (shows error + suggestions + option buttons)
-2. Each card calls the appropriate backend endpoint (`/approve`, `/clarifications`, `/choices`) on user action
-3. After user responds, mark the card as "resolved" (gray out buttons, show chosen action)
-4. Reuse existing `AgentService.approveRequest` for approve/reject flows
+#### H8: StageRowHeader Component
+**File:** NEW `frontend/src/features/lab/components/StageRowHeader.tsx`
+- Props: `stage`, `status`, `isExpanded`, `onToggle`
+- Shows: Stage number + human-readable name (e.g., "1. Business Understanding")
+- Status indicators:
+  - ACTIVE: pulsing blue dot or spinner
+  - COMPLETE: green checkmark icon
+  - PENDING: gray circle
+  - STALE: orange/amber warning icon
+- Expand/collapse chevron (right side)
+- For COMPLETE stages: "Revise" button (small, secondary) — **stub only for now** (handler can be no-op; Phase 7.2.3 will wire it)
+- For STALE stages: "Re-run" / "Keep" buttons — **stub only for now**
+- Compact: ~48px height
+- Collapsed COMPLETE/STALE rows should show a summary (e.g., "3 tasks, 2 outputs") if feasible
 
-### G3. Remove Legacy "Resume Workflow (HITL)" Button
+#### H9: StageRowList Component
+**File:** NEW `frontend/src/features/lab/components/StageRowList.tsx`
+- Import `ORDERED_STAGES` (the 7 DSLC stages in order) — define locally if no shared constant exists:
+  ```ts
+  const ORDERED_STAGES: LabStage[] = [
+    'BUSINESS_UNDERSTANDING', 'DATA_ACQUISITION', 'PREPARATION',
+    'EXPLORATION', 'MODELING', 'EVALUATION', 'DEPLOYMENT'
+  ]
+  ```
+- Use `useLabContext()` to get state
+- For each stage: compute status via `getStageStatus(stage, state)`
+- Render `<StageRow>` for each stage
+- Manage expanded state: `Set<LabStage>` — ACTIVE stage is always expanded
+- Auto-expand on `status_update ACTIVE`: when a new stage becomes active, expand it, collapse previous active
+- Auto-scroll: use `useRef` + `scrollIntoView({ behavior: 'smooth' })` when active stage changes
+- User can manually expand/collapse any COMPLETE stage
 
-**File:** `frontend/src/features/lab/LabSessionView.tsx` (line ~24)
-**Enforcement Rule:** E6 — Inline HITL Only
+### STEP 3: Modify Existing Sub-Components
 
-**Problem:** There's a standalone `<button>Resume Workflow (HITL)</button>` rendered outside the grid between the pipeline and the 3-column area.
-
-**Fix:** Remove the button entirely. All HITL is now inline in the Dialogue via G2.
-
-### G4. Fix Pipeline Node Colors
-
-**File:** `frontend/src/features/lab/components/LabHeader.tsx` (lines ~132-133)
-**Enforcement Rule:** E7 — Pipeline Node Colors
-
-**Problem:** COMPLETE stages show yellow background (`#FEFCBF`) with yellow border (`#D69E2E`). Should be green.
-
-**Fix:**
-- COMPLETE: background `#C6F6D5` (green-100), border `#38A169` (green-500)
-- ACTIVE: background `#BEE3F8` (blue-100), border `#3182CE` (blue-500), bold, box-shadow `0 0 0 2px #3182CE`
-- PENDING: background `#EDF2F7` (gray-100), border `#DDD` (gray-300)
-
-### G5. Enable ChatInput During Active Sessions
-
-**File:** `frontend/src/features/lab/components/ChatInput.tsx` (line ~51)
-**Enforcement Rule:** E8 — ChatInput Enabled
-
-**Problem:** `isDisabled = !state.isConnected || state.isDone || isLoading` — but `state.isDone` may be true even when session is AWAITING_APPROVAL.
-
-**Fix:** The input should be enabled when:
-- Session status is RUNNING or AWAITING_APPROVAL
-- WebSocket is connected
-- Not currently sending a message
-
-Disabled when: COMPLETED, FAILED, CANCELLED, or WS disconnected.
-
-### G6. Stage Outputs Driven by Selection
-
-**File:** `frontend/src/features/lab/components/StageOutputs.tsx` (lines ~35-44)
-**Enforcement Rule:** E9 — Stage Outputs Selection
-
-**Problem:** Right Cell may not respond to pipeline node clicks for stage selection.
-
-**Fix:** Ensure `StageOutputs` reads `selectedStage` from LabContext (set when user clicks a pipeline node in LabHeader). Default to the most recently active stage. Update `LabHeader` to dispatch `SELECT_STAGE` action on node click if not already wired.
-
-### G7. Fix Rehydration/WS Overlap
-
-**File:** `frontend/src/features/lab/hooks/useLabWebSocket.ts` (line ~72-73)
-**Enforcement Rule:** E5 — Dedup Mandatory
-
-**Problem:** After rehydration replays events, the WS may deliver the same events again if `after_seq` is not correctly passed.
-
-**Fix:** Ensure `useLabWebSocket` reads `lastSequenceId` from LabContext state and passes it as `?after_seq={lastSequenceId}` in the WS URL. The WS should only connect AFTER rehydration completes (not in parallel).
-
-### G8. Differentiate Message Senders
-
+#### H10a: Stage-Filtered DialoguePanel
 **File:** `frontend/src/features/lab/components/DialoguePanel.tsx`
-**Enforcement Rule:** Contract §2.1/2.2
+- Accept new prop: `stage?: LabStage`
+- When `stage` is provided: `dialogueMessages.filter(m => m.stage === stage)`
+- When `stage` is undefined: show all messages (backward compatibility during transition)
+- Edge case: `error` events without a meaningful stage → show in the currently active stage's row. If `event.stage` is missing, default to the latest active stage.
 
-**Problem:** All messages show "System Agent" with the same CPU icon regardless of sender.
+#### H10b: Stage-Filtered ActivityTracker
+**File:** `frontend/src/features/lab/components/ActivityTracker.tsx`
+- Accept new prop: `stage?: LabStage`
+- When `stage` is provided: filter to only that stage's tasks — render as a **flat task list** (no accordion)
+- When `stage` is undefined: show the accordion of all stages (backward compat)
+- Simplifies to: `activityItems.filter(item => item.stage === stage).map(item => <TaskRow />)`
 
-**Fix:**
-- `stream_chat` → Agent bubble (left-aligned, blue accent, robot icon, "Agent")
-- `user_message` → User bubble (right-aligned, gray background, user icon, "You")
-- `action_request` → HITL card (full-width, orange accent) — handled by G2
-- `error` → Error card (full-width, red accent, alert icon)
+#### H10c: Stage-Scoped StageOutputs
+**File:** `frontend/src/features/lab/components/StageOutputs.tsx`
+- Accept new prop: `stage?: LabStage`
+- When `stage` is provided: always render `stageOutputs[stage]` directly
+- Remove the selection/fallback logic when in stage-scoped mode
+- Remove the stage name heading (the StageRowHeader already shows it)
+
+#### H10d: Stage-Scoped ChatInput
+**File:** `frontend/src/features/lab/components/ChatInput.tsx`
+- Accept new prop: `stage?: LabStage`
+- When `stage` is provided: include `stage` in the POST body: `{ content, stage }`
+- ChatInput should be disabled for PENDING stages
+- For ACTIVE stages: enabled as normal
+- For COMPLETE stages: **hidden by default**. The "Revise" button in StageRowHeader will make it visible (Phase 7.2.3 will wire this — for now, just support the prop and send stage in the POST body)
+
+### STEP 4: Wire Into LabSessionView + Cleanup
+
+#### A5/A7: Replace LabGrid with StageRowList
+**File:** `frontend/src/features/lab/LabSessionView.tsx`
+- Replace `<LabGrid />` with `<StageRowList />`
+- Keep the session heading (goal text, status badge) as a compact bar at top
+- Remove the wrapper `<Box flex={1}>` if StageRowList handles its own layout
+
+#### Cleanup: Delete Replaced Components
+**Files to DELETE:**
+- `frontend/src/features/lab/components/LabGrid.tsx` — replaced by StageRowList
+- `frontend/src/features/lab/components/LabStageRow.tsx` — unused legacy, replaced by StageRow
+- Remove any imports of these deleted files from other components
 
 ---
 
-## 🚫 Constraints
+## 🚫 SCOPE LOCK — DO NOT TOUCH THESE FILES
 
-- **DO NOT** write Python/backend code. That's the Graph Agent's job.
-- **DO NOT** invent new event types. Consume only what's in API_CONTRACTS.md v1.3.1.
-- **DO NOT** remove existing components (CellRenderer, BlueprintCard, Tearsheet, PromoteModal). Reuse them.
-- **DO NOT** break the ReactFlow pipeline header. Modify only the node coloring logic.
-- **DO NOT** install npm packages on the host. All work runs in containers.
+These files belong to the **Glass-Shell** agent working in parallel. Touching them will cause merge conflicts.
 
-## ✅ Acceptance Criteria
+| File | Owner |
+|---|---|
+| `frontend/src/components/Common/Sidebar.tsx` | Glass-Shell |
+| `frontend/src/components/Common/SidebarItems.tsx` | Glass-Shell |
+| `frontend/src/routes/_layout.tsx` | Glass-Shell |
+| `frontend/src/routes/_layout/lab.tsx` | Glass-Shell |
+| `frontend/src/features/lab/components/LabHeader.tsx` | Glass-Shell (will delete) |
+| Any `backend/` files | Graph-Stale agent |
 
-After all 8 fixes, refreshing a completed session must show:
-1. Zero duplicate messages in Dialogue
-2. HITL cards rendered inline (no external buttons/banners)
-3. Pipeline: green for complete, blue for active, gray for pending
-4. ChatInput enabled during RUNNING sessions
-5. Stage Outputs change when clicking pipeline nodes
-6. Different visual styling for agent vs user vs system messages
-- If the UI needs data not in the contract, write a `CONTRACT_RFC.md` and halt.
+The Glass-Shell agent also modifies `LabDashboard.tsx` (session drawer). You MAY need to import `StageRowList` into `LabSessionView.tsx` which Glass-Shell also touches (to remove LabHeader). **This is the ONE expected merge point** — the Supervisor will resolve it during integration. Just make your changes to `LabSessionView.tsx` cleanly.
 
-## ✅ Definition of Done
+If you encounter a situation where you MUST modify a locked file, write a `CONTRACT_RFC.md` in this worktree root explaining why, and halt.
 
-1. 3-column grid layout visible at `http://localhost:5174`
-2. DialoguePanel renders `stream_chat`, `user_message`, `action_request`, `error` events
-3. ActivityTracker renders `plan_established` checklist and updates from `status_update`
-4. StageOutputs renders `render_output` for selected stage
-5. ChatInput sends messages via `POST /message` with optimistic rendering
-6. Event router correctly routes all 7 event types to their target cells
-7. Updated TypeScript interfaces for new state shape
-8. Rehydration replays events into all 3 cells identically
-9. All existing tests still pass (`docker compose exec frontend npx vitest run`)
-10. Mock WS server (`ws://localhost:8002`) drives complete event flow through all components
+---
+
+## ✅ ACCEPTANCE CRITERIA
+
+Rehydrate an existing completed session and verify:
+
+1. Each DSLC stage appears as its own collapsible row with colored left border
+2. ACTIVE stage row is expanded with blue border; COMPLETE rows collapsed with green border; PENDING rows gray
+3. Expanding a COMPLETE row shows ONLY that stage's dialogue messages, tasks, and outputs
+4. Dialogue panel in each row shows only messages where `event.stage` matches the row's stage
+5. ActivityTracker in each row shows a flat task list for that stage only (no 7-stage accordion)
+6. StageOutputs in each row shows outputs for that stage only
+7. ChatInput sends `stage` param in POST body when `stage` prop is provided
+8. Page auto-scrolls to bring the active stage row into view
+9. Stage row headers show status indicators (spinner, check, gray circle)
+10. Expanded rows have max-height 450px with internal column scrolling
+11. `npx tsc --noEmit` passes
+12. `npx biome check src/` passes (or only pre-existing warnings)
+
+---
+
+## 📋 VERIFICATION COMMANDS
+
+```bash
+cd frontend
+npx tsc --noEmit
+npx biome check src/
+npm run build
+```
+
+---
+
+## ⛔ CONTRACT BOUNDARY
+
+If any of your tasks are blocked by an API contract issue, write a `CONTRACT_RFC.md` in this worktree root and halt. Do NOT improvise around contract boundaries.

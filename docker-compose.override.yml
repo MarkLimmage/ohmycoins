@@ -1,11 +1,11 @@
 services:
   proxy:
     ports:
-      - "8010:80"
-      - "8091:8080"
+      - "8040:80"
+      - "8094:8080"
   db:
     ports:
-      - "5433:5432"
+      - "5436:5432"
   backend:
     volumes:
       - ./backend/app:/app/app

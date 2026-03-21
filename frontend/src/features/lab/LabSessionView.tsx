@@ -1,7 +1,7 @@
 import { Box, VStack } from "@chakra-ui/react"
 import type React from "react"
-import { LabGrid } from "./components/LabGrid"
 import { LabHeader } from "./components/LabHeader"
+import { StageRowList } from "./components/StageRowList"
 
 // import { Artifact } from './components/ArtifactViewer'; // Keep if types needed for props, but we are removing props.
 
@@ -13,7 +13,7 @@ export const LabSessionView: React.FC = () => {
       <LabHeader />
 
       <Box flex={1} overflowY="auto" px={4} pb={4}>
-        <LabGrid />
+        <StageRowList />
       </Box>
     </VStack>
   )

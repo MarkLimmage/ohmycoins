@@ -58,7 +58,7 @@ const ActivityItemRow = ({ item }: { item: ActivityItem }) => (
   </HStack>
 )
 
-export const ActivityTracker = () => {
+export const ActivityTracker = ({ stage }: { stage?: LabStage }) => {
   const { state } = useLabContext()
   const { activityItems, activeStages } = state
 
@@ -66,8 +66,8 @@ export const ActivityTracker = () => {
     const groups: Record<string, ActivityItem[]> = {}
 
     // Initialize groups for all stages
-    ORDERED_STAGES.forEach((stage) => {
-      groups[stage] = []
+    ORDERED_STAGES.forEach((s) => {
+      groups[s] = []
     })
 
     activityItems.forEach((item) => {
@@ -79,10 +79,31 @@ export const ActivityTracker = () => {
     return groups
   }, [activityItems])
 
+  // Stage-scoped mode: flat task list filtered to one stage
+  if (stage) {
+    const items = activityItems.filter((item) => item.stage === stage)
+    return (
+      <Box h="100%" bg="gray.50" overflowY="auto">
+        <Box p={3} borderBottom="1px solid" borderColor="gray.200" bg="white">
+          <Heading size="sm">Tasks</Heading>
+        </Box>
+        <VStack alignItems="stretch" gap={1} p={2}>
+          {items.length === 0 ? (
+            <Text fontSize="xs" color="gray.400" pl={2}>
+              No tasks tracked
+            </Text>
+          ) : (
+            items.map((item, idx) => (
+              <ActivityItemRow key={item.id || idx} item={item} />
+            ))
+          )}
+        </VStack>
+      </Box>
+    )
+  }
+
   // Determine which accordion items are open (active stages)
-  const activeStageValues = ORDERED_STAGES.filter((stage) =>
-    activeStages.has(stage),
-  )
+  const activeStageValues = ORDERED_STAGES.filter((s) => activeStages.has(s))
   const defaultValue =
     activeStageValues.length > 0 ? activeStageValues : [ORDERED_STAGES[0]]
 
