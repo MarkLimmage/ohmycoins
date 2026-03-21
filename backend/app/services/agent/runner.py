@@ -62,10 +62,12 @@ def _get_task_id_from_step(step_name: str) -> str:
     """Map workflow step to task_id used in plan."""
     mapping = {
         "initialization": "scope_confirmation",
+        "scope_confirmation": "scope_confirmation",
         "scope_confirmation_node": "scope_confirmation",
+        "reason": "scope_confirmation",
         "retrieve_data": "fetch_price_data",
         "validate_data": "validate_quality",
-        "analyze_data": "compute_technical_indicators",
+        "analyze_data": "compute_indicators",
         "train_model": "train_models",
         "evaluate_model": "evaluate_metrics",
         "generate_report": "generate_report",
