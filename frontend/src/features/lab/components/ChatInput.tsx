@@ -15,12 +15,14 @@ export const ChatInput = () => {
 
     setIsSending(true)
     try {
+      const token = localStorage.getItem("access_token")
       const response = await fetch(
-        `/api/v1/lab/agent/sessions/${state.sessionId}/message`,
+        `/api/v1/lab/agent/sessions/${state.sessionId}/messages`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ content: message }),
         },
