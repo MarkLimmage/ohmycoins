@@ -242,6 +242,8 @@ class AgentRunner:
                 processed_event_keys: set[str] = set()
                 # Track node-emitted action requests to prevent runner overwrite (F2 enforcement)
                 last_node_action: dict[str, Any] | None = None
+                # Track current stage for COMPLETE signaling (D5)
+                current_tracked_stage: str | None = None
 
                 async for state_update in workflow.stream_execute(initial_state, session_id=str(session_id)):
                     # Increment sequence_id for each state update
@@ -266,6 +268,41 @@ class AgentRunner:
                                 if dedup_key in processed_event_keys:
                                     continue
                                 processed_event_keys.add(dedup_key)
+
+                                # D5: COMPLETE signaling on stage transition
+                                event_stage = event.get("stage")
+                                if (
+                                    event_stage
+                                    and current_tracked_stage
+                                    and event_stage != current_tracked_stage
+                                    and event.get("event_type") != "revision_start"
+                                ):
+                                    complete_event = {
+                                        "event_type": "status_update",
+                                        "stage": current_tracked_stage,
+                                        "payload": {
+                                            "status": "COMPLETE",
+                                            "message": f"Stage {current_tracked_stage} completed",
+                                            "task_id": "stage_complete",
+                                        },
+                                    }
+                                    saved_complete = await self.session_manager.add_message(
+                                        db,
+                                        session_id,
+                                        role="assistant",
+                                        content=f"COMPLETE: Stage {current_tracked_stage} completed",
+                                        agent_name=node_name,
+                                        metadata=json.dumps(complete_event),
+                                        event_type="status_update",
+                                        stage=current_tracked_stage,
+                                    )
+                                    complete_event["sequence_id"] = saved_complete.sequence_id
+                                    complete_event["timestamp"] = saved_complete.created_at.isoformat()
+                                    await self._publish(redis, channel, complete_event)
+                                    sequence_id = saved_complete.sequence_id
+
+                                if event_stage:
+                                    current_tracked_stage = event_stage
 
                                 # F2: Track action_request emission
                                 if event.get("event_type") == "action_request":
@@ -316,6 +353,37 @@ class AgentRunner:
                             stage = _get_stage_from_step(
                                 node_state.get("current_step", "initialization")
                             )
+
+                            # D5: COMPLETE signaling for legacy fallback path
+                            if (
+                                current_tracked_stage
+                                and stage != current_tracked_stage
+                            ):
+                                legacy_complete = {
+                                    "event_type": "status_update",
+                                    "stage": current_tracked_stage,
+                                    "payload": {
+                                        "status": "COMPLETE",
+                                        "message": f"Stage {current_tracked_stage} completed",
+                                        "task_id": "stage_complete",
+                                    },
+                                }
+                                saved_lc = await self.session_manager.add_message(
+                                    db,
+                                    session_id,
+                                    role="assistant",
+                                    content=f"COMPLETE: Stage {current_tracked_stage} completed",
+                                    agent_name=node_name,
+                                    metadata=json.dumps(legacy_complete),
+                                    event_type="status_update",
+                                    stage=current_tracked_stage,
+                                )
+                                legacy_complete["sequence_id"] = saved_lc.sequence_id
+                                legacy_complete["timestamp"] = saved_lc.created_at.isoformat()
+                                await self._publish(redis, channel, legacy_complete)
+                                sequence_id = saved_lc.sequence_id
+
+                            current_tracked_stage = stage
                             msg = f"Step: {node_state.get('current_step')}"
 
                             fallback_event = {
@@ -513,6 +581,31 @@ class AgentRunner:
                         },
                     )
                 else:
+                    # D5: Emit COMPLETE for the final stage before marking session done
+                    if current_tracked_stage:
+                        final_complete = {
+                            "event_type": "status_update",
+                            "stage": current_tracked_stage,
+                            "payload": {
+                                "status": "COMPLETE",
+                                "message": f"Stage {current_tracked_stage} completed",
+                                "task_id": "stage_complete",
+                            },
+                        }
+                        saved_final = await self.session_manager.add_message(
+                            db,
+                            session_id,
+                            role="assistant",
+                            content=f"COMPLETE: Stage {current_tracked_stage} completed",
+                            agent_name="runner",
+                            metadata=json.dumps(final_complete),
+                            event_type="status_update",
+                            stage=current_tracked_stage,
+                        )
+                        final_complete["sequence_id"] = saved_final.sequence_id
+                        final_complete["timestamp"] = saved_final.created_at.isoformat()
+                        await self._publish(redis, channel, final_complete)
+
                     # Mark completed
                     await self.session_manager.update_session_status(
                         db,
