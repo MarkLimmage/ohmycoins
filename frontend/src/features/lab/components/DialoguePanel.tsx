@@ -2,7 +2,7 @@ import { Box, Flex, Icon, Text, VStack } from "@chakra-ui/react"
 import { useEffect, useRef } from "react"
 import { FiAlertTriangle, FiMessageSquare, FiUser } from "react-icons/fi"
 import { useLabContext } from "../context/LabContext"
-import type { DialogueMessage } from "../types"
+import type { DialogueMessage, LabStage } from "../types"
 import { ChatInput } from "./ChatInput"
 import { ApprovalCard } from "./cards/ApprovalCard"
 import { CircuitBreakerCard } from "./cards/CircuitBreakerCard"
@@ -100,10 +100,15 @@ const ActionRequestMessage = ({ message }: { message: DialogueMessage }) => {
   }
 }
 
-export const DialoguePanel = () => {
+export const DialoguePanel = ({ stage }: { stage?: LabStage }) => {
   const { state } = useLabContext()
   const { dialogueMessages, isConnected } = state
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Filter messages by stage when prop is provided
+  const filteredMessages = stage
+    ? dialogueMessages.filter((m) => m.stage === stage)
+    : dialogueMessages
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -153,9 +158,15 @@ export const DialoguePanel = () => {
           },
         }}
       >
-        {dialogueMessages.map((msg) =>
+        {filteredMessages.map((msg) =>
           msg.type === "action_request" ? (
             <ActionRequestMessage key={msg.id} message={msg} />
+          ) : msg.type === "divider" ? (
+            <Box key={msg.id} textAlign="center" py={2}>
+              <Text fontSize="xs" color="orange.500" fontWeight="bold">
+                {msg.content}
+              </Text>
+            </Box>
           ) : (
             <MessageBubble key={msg.id} message={msg} />
           ),
@@ -165,7 +176,7 @@ export const DialoguePanel = () => {
       </VStack>
 
       {/* Input Area */}
-      <ChatInput />
+      <ChatInput stage={stage} />
     </Flex>
   )
 }

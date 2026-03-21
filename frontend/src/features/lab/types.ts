@@ -29,6 +29,9 @@ export type LabEventType =
   | "action_request"
   | "user_message"
   | "plan_established"
+  | "revision_start"
+
+export type StageStatus = "pending" | "active" | "complete" | "stale"
 
 export interface LabEvent {
   event_type: LabEventType
@@ -57,10 +60,11 @@ export interface ActionRequest {
 // G7: Updated State Shape
 export interface DialogueMessage {
   id: string
-  type: "agent" | "user" | "error" | "action_request"
+  type: "agent" | "user" | "error" | "action_request" | "divider"
   content: string
   timestamp: string
   sequence_id: number
+  stage?: LabStage
   actionPayload?: LabEventPayload // Full payload for action_request events
   resolved?: boolean // Whether the HITL action has been resolved
   resolvedOption?: string // Which option the user chose
@@ -97,6 +101,8 @@ export interface LabState {
   // Selection State
   selectedStage: LabStage | null
   activeStages: Set<LabStage>
+  completedStages: Set<LabStage>
+  staleStages: Set<LabStage>
 
   lastSequenceId: number
   isConnected: boolean

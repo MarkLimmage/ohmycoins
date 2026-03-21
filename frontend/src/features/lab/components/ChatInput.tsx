@@ -3,8 +3,9 @@ import type React from "react"
 import { useState } from "react"
 import useCustomToast from "../../../hooks/useCustomToast"
 import { useLabContext } from "../context/LabContext"
+import type { LabStage } from "../types"
 
-export const ChatInput = () => {
+export const ChatInput = ({ stage }: { stage?: LabStage }) => {
   const { state, dispatch } = useLabContext()
   const [message, setMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
@@ -25,7 +26,10 @@ export const ChatInput = () => {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ content: sentText }),
+          body: JSON.stringify({
+            content: sentText,
+            ...(stage ? { stage } : {}),
+          }),
         },
       )
 

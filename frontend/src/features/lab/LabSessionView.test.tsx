@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from "vitest"
 import { renderWithProviders } from "@/test-utils"
 
-// Mock LabGrid to avoid deep dependency tree
-vi.mock("./components/LabGrid", () => ({
-  LabGrid: () => <div data-testid="lab-grid">LabGrid</div>,
+// Mock StageRowList to avoid deep dependency tree
+vi.mock("./components/StageRowList", () => ({
+  StageRowList: () => <div data-testid="stage-row-list">StageRowList</div>,
 }))
 
 import { LabSessionView } from "./LabSessionView"
 
 describe("LabSessionView", () => {
-  it("renders LabGrid", () => {
+  it("renders StageRowList", () => {
     const { getByTestId } = renderWithProviders(<LabSessionView />)
-    expect(getByTestId("lab-grid")).toBeInTheDocument()
+    expect(getByTestId("stage-row-list")).toBeInTheDocument()
   })
 
   it("does NOT render LabHeader (H4: removed)", () => {

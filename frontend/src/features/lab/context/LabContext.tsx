@@ -18,6 +18,7 @@ import type {
   LabEvent,
   LabStage,
   LabState,
+  StageStatus,
 } from "../types"
 
 type Action =
@@ -32,6 +33,9 @@ type Action =
   | { type: "CLEAR_ACTION" }
   | { type: "SET_SELECTED_STAGE"; payload: LabStage | null }
   | { type: "RESOLVE_ACTION"; payload: { messageId: string; option: string } }
+  | { type: "MARK_STAGE_COMPLETE"; payload: LabStage }
+  | { type: "MARK_STAGES_STALE"; payload: LabStage[] }
+  | { type: "CLEAR_STALE"; payload: LabStage[] }
 
 const initialState: LabState = {
   sessionId: null,
@@ -50,6 +54,8 @@ const initialState: LabState = {
   },
   selectedStage: null,
   activeStages: new Set(),
+  completedStages: new Set(),
+  staleStages: new Set(),
   lastSequenceId: 0,
   isConnected: false,
   isDone: false,
@@ -91,6 +97,24 @@ function labReducer(state: LabState, action: Action): LabState {
       }
     }
 
+    case "MARK_STAGE_COMPLETE": {
+      const newCompleted = new Set(state.completedStages)
+      newCompleted.add(action.payload)
+      return { ...state, completedStages: newCompleted }
+    }
+
+    case "MARK_STAGES_STALE": {
+      const newStale = new Set(state.staleStages)
+      for (const s of action.payload) newStale.add(s)
+      return { ...state, staleStages: newStale }
+    }
+
+    case "CLEAR_STALE": {
+      const newStale = new Set(state.staleStages)
+      for (const s of action.payload) newStale.delete(s)
+      return { ...state, staleStages: newStale }
+    }
+
     case "REHYDRATE": {
       // Sort ledger by sequence_id
       const sortedLedger = [...action.payload.ledger].sort(
@@ -115,6 +139,8 @@ function labReducer(state: LabState, action: Action): LabState {
           DEPLOYMENT: [],
         },
         activeStages: new Set(),
+        completedStages: new Set(),
+        staleStages: new Set(),
         pendingAction: null,
       }
 
@@ -140,6 +166,44 @@ function labReducer(state: LabState, action: Action): LabState {
   }
 }
 
+const ORDERED_STAGES: LabStage[] = [
+  "BUSINESS_UNDERSTANDING",
+  "DATA_ACQUISITION",
+  "PREPARATION",
+  "EXPLORATION",
+  "MODELING",
+  "EVALUATION",
+  "DEPLOYMENT",
+]
+
+/** Return the latest (highest-index) active stage, or fallback */
+function getLatestActiveStage(state: LabState): LabStage {
+  for (let i = ORDERED_STAGES.length - 1; i >= 0; i--) {
+    if (
+      state.activeStages.has(ORDERED_STAGES[i]) &&
+      !state.completedStages.has(ORDERED_STAGES[i])
+    ) {
+      return ORDERED_STAGES[i]
+    }
+  }
+  // Fallback to any active stage or first stage
+  for (let i = ORDERED_STAGES.length - 1; i >= 0; i--) {
+    if (state.activeStages.has(ORDERED_STAGES[i])) {
+      return ORDERED_STAGES[i]
+    }
+  }
+  return "BUSINESS_UNDERSTANDING"
+}
+
+/** Compute the display status for a given stage */
+export function getStageStatus(stage: LabStage, state: LabState): StageStatus {
+  if (state.staleStages.has(stage)) return "stale"
+  if (state.activeStages.has(stage) && !state.completedStages.has(stage))
+    return "active"
+  if (state.completedStages.has(stage)) return "complete"
+  return "pending"
+}
+
 function processEvent(state: LabState, event: LabEvent): LabState {
   const { event_type, stage, payload, sequence_id, timestamp } = event
 
@@ -148,7 +212,7 @@ function processEvent(state: LabState, event: LabEvent): LabState {
     lastSequenceId: Math.max(state.lastSequenceId, sequence_id),
   }
 
-  // Update active stages
+  // Update active stages + stage lifecycle
   if (stage) {
     if (
       event_type === "status_update" &&
@@ -159,6 +223,35 @@ function processEvent(state: LabState, event: LabEvent): LabState {
         newActive.add(stage)
         newState.activeStages = newActive
       }
+      // Remove from completed/stale if re-activated
+      if (newState.completedStages.has(stage)) {
+        const newCompleted = new Set(newState.completedStages)
+        newCompleted.delete(stage)
+        newState.completedStages = newCompleted
+      }
+      if (newState.staleStages.has(stage)) {
+        const newStale = new Set(newState.staleStages)
+        newStale.delete(stage)
+        newState.staleStages = newStale
+      }
+    }
+
+    if (
+      event_type === "status_update" &&
+      String(payload.status).toUpperCase() === "COMPLETE"
+    ) {
+      const newCompleted = new Set(newState.completedStages)
+      newCompleted.add(stage)
+      newState.completedStages = newCompleted
+    }
+
+    if (
+      event_type === "status_update" &&
+      String(payload.status).toUpperCase() === "STALE"
+    ) {
+      const newStale = new Set(newState.staleStages)
+      newStale.add(stage)
+      newState.staleStages = newStale
     }
 
     if (event_type === "render_output") {
@@ -168,6 +261,40 @@ function processEvent(state: LabState, event: LabEvent): LabState {
         newState.activeStages = newActive
       }
     }
+  }
+
+  // Handle revision_start
+  if (event_type === "revision_start") {
+    // Add divider message to dialogue
+    const divider: DialogueMessage = {
+      id: String(sequence_id),
+      type: "divider",
+      content: `--- Revision: ${stage} ---`,
+      timestamp,
+      sequence_id,
+      stage,
+    }
+    newState.dialogueMessages = [...newState.dialogueMessages, divider]
+
+    // Mark downstream stages as stale
+    const staleList: LabStage[] = payload.stale_stages || []
+    if (staleList.length > 0) {
+      const newStale = new Set(newState.staleStages)
+      for (const s of staleList) newStale.add(s as LabStage)
+      newState.staleStages = newStale
+    }
+
+    // Re-activate the revised stage
+    if (stage) {
+      const newActive = new Set(newState.activeStages)
+      newActive.add(stage)
+      newState.activeStages = newActive
+      const newCompleted = new Set(newState.completedStages)
+      newCompleted.delete(stage)
+      newState.completedStages = newCompleted
+    }
+
+    return newState
   }
 
   // --- ROUTING ---
@@ -201,6 +328,7 @@ function processEvent(state: LabState, event: LabEvent): LabState {
       content: content,
       timestamp,
       sequence_id,
+      stage: stage || getLatestActiveStage(newState),
       ...(event_type === "action_request" ? { actionPayload: payload } : {}),
     }
 
