@@ -10,9 +10,6 @@ import logging
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -273,11 +270,8 @@ def _generate_recommendation(choices: list[dict[str, Any]]) -> dict[str, Any]:
         }
 
     # Initialize LLM for recommendation
-    llm = ChatOpenAI(
-        model=settings.OPENAI_MODEL,
-        temperature=0.3,
-        api_key=settings.OPENAI_API_KEY,
-    )
+    from app.services.agent.llm_factory import LLMFactory
+    llm = LLMFactory._create_system_default_llm()
 
     # Prepare comparison data
     comparison_text = _format_choices_for_llm(choices)

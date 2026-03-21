@@ -10,10 +10,7 @@ import logging
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
-
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +38,8 @@ def clarification_node(state: dict[str, Any]) -> dict[str, Any]:
     clarifications_needed = []
 
     # Initialize LLM for clarification generation
-    llm = ChatOpenAI(
-        model=settings.OPENAI_MODEL,
-        temperature=0.3,  # Lower temperature for more focused questions
-        api_key=settings.OPENAI_API_KEY,
-    )
+    from app.services.agent.llm_factory import LLMFactory
+    llm = LLMFactory._create_system_default_llm()
 
     # Check for ambiguous goal
     if _is_goal_ambiguous(user_goal):
@@ -333,11 +327,8 @@ def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
     if state.get("scope_confirmed"):
         return {"current_step": "scope_confirmed"}
 
-    llm = ChatOpenAI(
-        model=settings.OPENAI_MODEL,
-        temperature=0.0,
-        api_key=settings.OPENAI_API_KEY,
-    )
+    from app.services.agent.llm_factory import LLMFactory
+    llm = LLMFactory._create_system_default_llm()
 
     # 1. Parse Scope
     structured_llm = llm.with_structured_output(ScopeInterpretation)

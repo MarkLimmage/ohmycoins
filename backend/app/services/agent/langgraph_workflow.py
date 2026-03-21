@@ -18,7 +18,6 @@ from decimal import Decimal
 from typing import Any, Literal, TypedDict
 
 import numpy as np
-from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from sqlmodel import Session
@@ -204,20 +203,12 @@ class LangGraphWorkflow:
                 )
                 # Fallback to system default if BYOM fails
                 if settings.OPENAI_API_KEY:
-                    self.llm = ChatOpenAI(
-                        model=settings.OPENAI_MODEL,
-                        api_key=settings.OPENAI_API_KEY,
-                        max_tokens=settings.MAX_TOKENS_PER_REQUEST,
-                        streaming=settings.ENABLE_STREAMING,
-                    )
+                    from app.services.agent.llm_factory import LLMFactory
+                self.llm = LLMFactory._create_system_default_llm()
         elif settings.OPENAI_API_KEY:
             # No BYOM context - use system default OpenAI
-            self.llm = ChatOpenAI(
-                model=settings.OPENAI_MODEL,
-                api_key=settings.OPENAI_API_KEY,
-                max_tokens=settings.MAX_TOKENS_PER_REQUEST,
-                streaming=settings.ENABLE_STREAMING,
-            )
+            from app.services.agent.llm_factory import LLMFactory
+            self.llm = LLMFactory._create_system_default_llm()
 
     def set_session(self, session: Session) -> None:
         """

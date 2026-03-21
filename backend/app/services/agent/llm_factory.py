@@ -206,6 +206,13 @@ class LLMFactory:
             return LLMFactory._create_openai_llm(
                 api_key=settings.OPENAI_API_KEY, model_name=settings.OPENAI_MODEL
             )
+        elif provider == "google":
+            if not settings.GOOGLE_API_KEY:
+                raise ValueError("GOOGLE_API_KEY not configured in environment")
+            return LLMFactory._create_google_llm(
+                api_key=settings.GOOGLE_API_KEY,
+                model_name=getattr(settings, "GOOGLE_MODEL", "gemini-2.0-flash"),
+            )
         elif provider == "anthropic":
             if not settings.ANTHROPIC_API_KEY:
                 raise ValueError("ANTHROPIC_API_KEY not configured in environment")

@@ -142,11 +142,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_ADMIN_MULTIPLIER: int = 5
 
     # LLM Provider configuration (Phase 3)
-    LLM_PROVIDER: Literal["openai", "anthropic", "azure", "local"] = "openai"
+    LLM_PROVIDER: Literal["openai", "anthropic", "azure", "google", "local"] = "openai"
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4-turbo-preview"
     ANTHROPIC_API_KEY: str | None = None
     ANTHROPIC_MODEL: str = "claude-3-sonnet-20240229"
+    GOOGLE_API_KEY: str | None = None
+    GOOGLE_MODEL: str = "gemini-2.0-flash"
     MAX_TOKENS_PER_REQUEST: int = 4000
     ENABLE_STREAMING: bool = True
 
