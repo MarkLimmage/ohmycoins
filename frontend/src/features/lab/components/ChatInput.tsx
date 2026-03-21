@@ -5,7 +5,7 @@ import useCustomToast from "../../../hooks/useCustomToast"
 import { useLabContext } from "../context/LabContext"
 
 export const ChatInput = () => {
-  const { state } = useLabContext()
+  const { state, dispatch } = useLabContext()
   const [message, setMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
   const { showErrorToast } = useCustomToast()
@@ -13,6 +13,7 @@ export const ChatInput = () => {
   const handleSend = async () => {
     if (!message.trim() || !state.sessionId) return
 
+    const sentText = message.trim()
     setIsSending(true)
     try {
       const token = localStorage.getItem("access_token")
@@ -24,7 +25,7 @@ export const ChatInput = () => {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ content: message }),
+          body: JSON.stringify({ content: sentText }),
         },
       )
 
@@ -32,7 +33,19 @@ export const ChatInput = () => {
         throw new Error("Failed to send message")
       }
 
-      await response.json()
+      const saved = await response.json()
+
+      // Optimistic render: dispatch user_message so it appears in DialoguePanel immediately
+      dispatch({
+        type: "PROCESS_EVENT",
+        payload: {
+          event_type: "user_message",
+          stage: saved.stage || "BUSINESS_UNDERSTANDING",
+          sequence_id: saved.sequence_id,
+          timestamp: saved.created_at || new Date().toISOString(),
+          payload: { content: sentText },
+        },
+      })
 
       setMessage("")
     } catch (_error) {
