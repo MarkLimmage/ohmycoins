@@ -202,12 +202,9 @@ class LangGraphWorkflow:
                     f"Failed to create LLM via factory: {e}. Falling back to system default."
                 )
                 # Fallback to system default if BYOM fails
-                if settings.OPENAI_API_KEY:
-                    from app.services.agent.llm_factory import LLMFactory
                 self.llm = LLMFactory._create_system_default_llm()
-        elif settings.OPENAI_API_KEY:
-            # No BYOM context - use system default OpenAI
-            from app.services.agent.llm_factory import LLMFactory
+        else:
+            # No BYOM context - use system default
             self.llm = LLMFactory._create_system_default_llm()
 
     def set_session(self, session: Session) -> None:
