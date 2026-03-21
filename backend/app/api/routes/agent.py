@@ -13,12 +13,14 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import delete, select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.core.config import settings
 from app.models import (
     AgentArtifact,
     AgentArtifactPublic,
@@ -384,6 +386,22 @@ async def create_user_message(
         event_type="user_message",
         stage=current_stage
     )
+
+    # Publish user_message to Redis so the WebSocket delivers it to the frontend
+    channel = f"agent:session:{session_id}:stream"
+    ws_event = {
+        "event_type": "user_message",
+        "stage": current_stage,
+        "payload": {"content": message.content},
+        "sequence_id": msg.sequence_id,
+        "timestamp": msg.created_at.isoformat() if msg.created_at else datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await redis.publish(channel, json.dumps(ws_event, default=str))
+        await redis.aclose()
+    except Exception:
+        pass  # Non-critical: message is persisted; WS delivery is best-effort
 
     return msg
 
