@@ -66,6 +66,7 @@ explainability_service = ExplainabilityService()
 
 class MessageCreate(BaseModel):
     content: str
+    stage: str | None = None  # Optional StageID for revision-mode messages
 
 
 class RehydrationResponse(BaseModel):
@@ -360,13 +361,16 @@ async def create_user_message(
             status_code=403, detail="Not authorized to access this session"
         )
 
-    # Derive current stage from the last message in session
-    last_msg = db.exec(
-        select(AgentSessionMessage)
-        .where(AgentSessionMessage.session_id == session_id)
-        .order_by(AgentSessionMessage.created_at.desc())  # type: ignore[union-attr]
-    ).first()
-    current_stage = (last_msg.stage if last_msg and last_msg.stage else "BUSINESS_UNDERSTANDING")
+    # Derive current stage: use explicit stage from request, or fall back to last message
+    if message.stage:
+        current_stage = message.stage
+    else:
+        last_msg = db.exec(
+            select(AgentSessionMessage)
+            .where(AgentSessionMessage.session_id == session_id)
+            .order_by(AgentSessionMessage.created_at.desc())  # type: ignore[union-attr]
+        ).first()
+        current_stage = (last_msg.stage if last_msg and last_msg.stage else "BUSINESS_UNDERSTANDING")
 
     # Build event metadata so rehydrate recognises this as user_message
     event_metadata = {
@@ -405,6 +409,228 @@ async def create_user_message(
 
     return msg
 
+
+# ============================================================================
+# Revision & Stale Protocol Endpoints (Phase 7.2.1/7.2.2)
+# ============================================================================
+
+# Valid DSLC stages in order
+_DSLC_ORDER = [
+    "BUSINESS_UNDERSTANDING",
+    "DATA_ACQUISITION",
+    "PREPARATION",
+    "EXPLORATION",
+    "MODELING",
+    "EVALUATION",
+    "DEPLOYMENT",
+]
+
+
+class ReviseRequest(BaseModel):
+    instructions: str | None = None
+
+
+class RevisionAccepted(BaseModel):
+    revision_id: str
+
+
+async def _get_session_for_user(
+    db: SessionDep, session_id: uuid.UUID, current_user: CurrentUser
+) -> AgentSession:
+    """Validate session exists and belongs to the user."""
+    session = await session_manager.get_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+    return session
+
+
+def _validate_stage_id(stage_id: str) -> None:
+    """Validate that stage_id is a valid DSLC stage."""
+    if stage_id not in _DSLC_ORDER:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid stage_id: {stage_id}. Must be one of: {_DSLC_ORDER}",
+        )
+
+
+def _stages_after(stage_id: str) -> list[str]:
+    """Return all DSLC stages ordered AFTER the given stage."""
+    idx = _DSLC_ORDER.index(stage_id)
+    return _DSLC_ORDER[idx + 1:]
+
+
+async def _emit_event_to_session(
+    db: SessionDep,
+    session_id: uuid.UUID,
+    event: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist an event to DB and publish to Redis. Returns event with sequence_id/timestamp."""
+    content_str = f"{event['event_type']}: {event.get('payload', {}).get('message', '') or event.get('payload', {}).get('revised_stage', '')}"
+    saved_msg = await session_manager.add_message(
+        db,
+        session_id,
+        role="assistant",
+        content=content_str,
+        agent_name="runner",
+        metadata=json.dumps(event),
+        event_type=event["event_type"],
+        stage=event.get("stage"),
+    )
+    event["sequence_id"] = saved_msg.sequence_id
+    event["timestamp"] = saved_msg.created_at.isoformat() if saved_msg.created_at else datetime.now(timezone.utc).isoformat()
+
+    # Publish to Redis
+    channel = f"agent:session:{session_id}:stream"
+    try:
+        redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await redis.publish(channel, json.dumps(event, default=str))
+        await redis.aclose()
+    except Exception:
+        pass  # Best-effort WS delivery
+    return event
+
+
+@router.post(
+    "/sessions/{session_id}/stages/{stage_id}/revise",
+    response_model=RevisionAccepted,
+    status_code=202,
+)
+async def revise_stage(
+    *,
+    session_id: uuid.UUID,
+    stage_id: str,
+    request: ReviseRequest,  # noqa: ARG001 — kept for OpenAPI schema
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Initiate a revision of a completed stage.
+
+    Emits revision_start event, marks downstream stages as STALE,
+    and re-invokes the agent runner for the target stage.
+    """
+    await _get_session_for_user(db, session_id, current_user)
+    _validate_stage_id(stage_id)
+
+    revision_id = str(uuid.uuid4())
+    stale_stages = _stages_after(stage_id)
+
+    # 1. Emit revision_start event
+    revision_event: dict[str, Any] = {
+        "event_type": "revision_start",
+        "stage": stage_id,
+        "payload": {
+            "revised_stage": stage_id,
+            "stale_stages": stale_stages,
+            "revision_epoch": 1,
+        },
+    }
+    await _emit_event_to_session(db, session_id, revision_event)
+
+    # 2. Emit STALE status_update for each downstream stage
+    for stale_stage in stale_stages:
+        stale_event: dict[str, Any] = {
+            "event_type": "status_update",
+            "stage": stale_stage,
+            "payload": {
+                "status": "STALE",
+                "message": f"Stage stale due to revision of {stage_id}",
+                "task_id": "stage_stale",
+            },
+        }
+        await _emit_event_to_session(db, session_id, stale_event)
+
+    # 3. Emit ACTIVE for the target stage (revision begins)
+    active_event: dict[str, Any] = {
+        "event_type": "status_update",
+        "stage": stage_id,
+        "payload": {
+            "status": "ACTIVE",
+            "message": f"Revising stage {stage_id}",
+            "task_id": "stage_revision",
+        },
+    }
+    await _emit_event_to_session(db, session_id, active_event)
+
+    # 4. Re-invoke the agent runner for the target stage
+    runner = get_runner()
+    await runner.start_session(session_id)
+
+    return RevisionAccepted(revision_id=revision_id)
+
+
+@router.post(
+    "/sessions/{session_id}/stages/{stage_id}/rerun",
+    status_code=202,
+)
+async def rerun_stage(
+    *,
+    session_id: uuid.UUID,
+    stage_id: str,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Re-run a stale stage with revised upstream context.
+
+    Emits ACTIVE status_update and invokes the runner.
+    """
+    await _get_session_for_user(db, session_id, current_user)
+    _validate_stage_id(stage_id)
+
+    # Emit ACTIVE for the stage
+    active_event: dict[str, Any] = {
+        "event_type": "status_update",
+        "stage": stage_id,
+        "payload": {
+            "status": "ACTIVE",
+            "message": f"Re-running stage {stage_id}",
+            "task_id": "stage_rerun",
+        },
+    }
+    await _emit_event_to_session(db, session_id, active_event)
+
+    # Re-invoke runner
+    runner = get_runner()
+    await runner.start_session(session_id)
+
+    return {"message": f"Stage {stage_id} rerun initiated", "stage": stage_id}
+
+
+@router.post(
+    "/sessions/{session_id}/stages/{stage_id}/keep-stale",
+    status_code=200,
+)
+async def keep_stale_stage(
+    *,
+    session_id: uuid.UUID,
+    stage_id: str,
+    db: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Accept stale results as-is for a stage.
+
+    Emits COMPLETE status_update clearing the stale status.
+    """
+    await _get_session_for_user(db, session_id, current_user)
+    _validate_stage_id(stage_id)
+
+    # Emit COMPLETE to clear stale status
+    complete_event: dict[str, Any] = {
+        "event_type": "status_update",
+        "stage": stage_id,
+        "payload": {
+            "status": "COMPLETE",
+            "message": f"Stale results accepted for stage {stage_id}",
+            "task_id": "stage_complete",
+        },
+    }
+    await _emit_event_to_session(db, session_id, complete_event)
+
+    return {"message": f"Stale results accepted for stage {stage_id}", "stage": stage_id}
 
 
 @router.get(

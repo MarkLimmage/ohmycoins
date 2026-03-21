@@ -15,6 +15,10 @@ class StageID(str, Enum):
     DEPLOYMENT = "DEPLOYMENT"
 
 
+# Ordered list of DSLC stages for stale-cascade calculation
+DSLC_STAGE_ORDER: list[StageID] = list(StageID)
+
+
 class NodeStatus(str, Enum):
     PENDING = "PENDING"
     ACTIVE = "ACTIVE"
@@ -64,7 +68,8 @@ class LabState(TypedDict):
 # Event Schemas for WebSocket communication (Pydantic for validation)
 class BaseEvent(BaseModel):
     event_type: Literal[
-        "stream_chat", "status_update", "render_output", "error", "action_request"
+        "stream_chat", "status_update", "render_output", "error",
+        "action_request", "user_message", "plan_established", "revision_start",
     ]
     stage: StageID
     sequence_id: int
@@ -91,11 +96,11 @@ class StatusUpdateEvent(BaseEvent):
     payload: StatusUpdatePayload
 
 
-class RenderOutputPayload(TypedDict):
+class RenderOutputPayload(BaseModel):
     mime_type: str
     content: Any
-    code_snippet: str | None
-    hyperparameters: dict[str, Any] | None
+    code_snippet: str | None = None
+    hyperparameters: dict[str, Any] | None = None
 
 
 class RenderOutputEvent(BaseEvent):
@@ -124,3 +129,23 @@ class ErrorPayload(BaseModel):
 class ErrorEvent(BaseEvent):
     event_type: Literal["error"] = "error"
     payload: ErrorPayload
+
+
+class RevisionStartPayload(BaseModel):
+    revised_stage: str
+    stale_stages: list[str]
+    revision_epoch: int = 1
+
+
+class RevisionStartEvent(BaseEvent):
+    event_type: Literal["revision_start"] = "revision_start"
+    payload: RevisionStartPayload
+
+
+def stages_after(stage_id: StageID) -> list[StageID]:
+    """Return all DSLC stages ordered AFTER the given stage."""
+    try:
+        idx = DSLC_STAGE_ORDER.index(stage_id)
+    except ValueError:
+        return []
+    return DSLC_STAGE_ORDER[idx + 1:]
