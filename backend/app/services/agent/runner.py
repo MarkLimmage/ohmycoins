@@ -233,10 +233,11 @@ class AgentRunner:
                         "pending_events": [],
                     }
 
-                # Track which sequence_ids we've already processed to avoid duplicates.
+                # Track which event identities we've already processed to avoid duplicates.
                 # LangGraph's astream yields full state per node; nodes that don't
                 # clear pending_events cause the runner to re-process old events.
-                processed_seq_ids: set[int] = set()
+                # Use (event_type, content_hash) as dedup key since nodes don't assign sequence_ids.
+                processed_event_keys: set[str] = set()
                 # Track node-emitted action requests to prevent runner overwrite (F2 enforcement)
                 last_node_action: dict[str, Any] | None = None
 
@@ -254,11 +255,15 @@ class AgentRunner:
                         # Process Explicit Events (New Agent System)
                         if pending_events:
                             for event in pending_events:
-                                # Deduplicate: skip events we've already stored
-                                event_seq = event.get("sequence_id", 0)
-                                if event_seq in processed_seq_ids:
+                                # Deduplicate: build a stable identity key
+                                # Nodes don't assign sequence_ids (they're set after DB persist),
+                                # so we use event_type + payload hash instead.
+                                evt_type = event.get("event_type", "")
+                                evt_payload = json.dumps(event.get("payload", {}), sort_keys=True)
+                                dedup_key = f"{evt_type}:{evt_payload}"
+                                if dedup_key in processed_event_keys:
                                     continue
-                                processed_seq_ids.add(event_seq)
+                                processed_event_keys.add(dedup_key)
 
                                 # F2: Track action_request emission
                                 if event.get("event_type") == "action_request":

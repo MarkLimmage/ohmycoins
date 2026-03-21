@@ -7,7 +7,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 
 HOST = "192.168.0.241"
-BASE = "http://localhost:8001"
+BASE = "http://192.168.0.241:8001"
 RESULTS = []
 
 def api(method, path, data=None, token=None, follow=True):
@@ -263,17 +263,25 @@ else:
     else:
         log("B4", "plan_established structure", "SKIP", "No plan")
 
-    # B5: status_update has task_id (init events before plan are exempt)
+    # B5: status_update has task_id (init events before plan_established are exempt)
     status_updates = [e for e in ledger if e.get("event_type") == "status_update"]
     if status_updates:
+        # Find the sequence_id of the first plan_established event
+        plan_seq = None
+        for e in ledger:
+            if e.get("event_type") == "plan_established":
+                plan_seq = e.get("sequence_id", 0)
+                break
         missing = []
         for su in status_updates:
             p = get_payload(su)
             tid = p.get("task_id")
-            if not tid:
-                missing.append(su.get("sequence_id", "?"))
+            su_seq = su.get("sequence_id", 0)
+            # Exempt init events that come before the plan
+            if not tid and (plan_seq is None or su_seq >= plan_seq):
+                missing.append(su_seq)
         if not missing:
-            log("B5", "status_update has task_id", "PASS", f"All {len(status_updates)} have task_id")
+            log("B5", "status_update has task_id", "PASS", f"All post-plan {len(status_updates)} have task_id (or pre-plan exempt)")
         elif cb_path:
             log("B5", "status_update has task_id", "SKIP", f"E1 circuit-breaker path — {len(missing)} init events without task_id (expected)")
         else:
