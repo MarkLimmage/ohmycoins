@@ -1,4 +1,122 @@
-# Sprint 2.52: v1.3.1 Enforcement — Gap Remediation
+# Sprint 2.53: Phase 7.2.1 — Stage-Row Architecture (Layout Foundations)
+
+**Status:** PLANNED
+**Predecessor:** Sprint 2.52 (v1.3.1 Enforcement — merged at `8efcab0`)
+**Contract:** API_CONTRACTS.md v1.4 (Stage-Row Architecture & Stale Protocol)
+**Scope:** Frontend-only. No backend changes. Can be verified against existing rehydrated sessions.
+
+## Context
+
+Sprint 2.52 completed v1.3.1 enforcement (41 PASS / 0 FAIL / 6 SKIP). The current Lab grid is a single 3-column layout for the entire session. The gap analysis identified that each DSLC stage should have its own collapsible 3-column row with stage-filtered events. This sprint implements the layout foundations (Phase 7.2.1).
+
+## Architecture
+
+Per-stage row architecture. Each of 7 DSLC stages renders as a `StageRow` with its own 3-column grid (Dialogue 2fr | Activity 1fr | Outputs 1fr). Rows expand/collapse based on stage status. Events are filtered by `event.stage`.
+
+## Worktree Topology
+
+| Agent | Branch | Directory |
+|-------|--------|-----------|
+| Main (Supervisor) | `main` | `/home/mark/claude/ohmycoins` |
+| Glass | `feature/stage-row-layout` | `../omc-lab-ui` |
+
+## Workstream H (Glass Agent — Layout Foundations)
+
+| ID | Task | Status |
+|----|------|--------|
+| H1 | Collapsible desktop sidebar (48px ↔ 200px, localStorage) | ⬜ |
+| H2 | Reduce whitespace / maximize grid area | ⬜ |
+| H3 | Session list → drawer overlay (DrawerRoot, left, 350px) | ⬜ |
+| H4 | Remove LabHeader (ReactFlow pipeline) — recover 150px | ⬜ |
+| H5 | Add `stage` field to `DialogueMessage` type + processEvent | ⬜ |
+| H6 | Stage lifecycle state (staleStages, completedStages, getStageStatus) | ⬜ |
+| H7 | `StageRow` component (3-column grid, status-colored left border) | ⬜ |
+| H8 | `StageRowHeader` (status icon, expand/collapse, Revise button stub) | ⬜ |
+| H9 | `StageRowList` (replaces LabGrid, auto-scroll to active stage) | ⬜ |
+| H10 | Stage-filtered DialoguePanel, ActivityTracker, StageOutputs | ⬜ |
+| H11 | Max-height (450px) + overflow scroll on expanded rows | ⬜ |
+| H12 | Cleanup: delete LabHeader.tsx, LabGrid.tsx, LabStageRow.tsx | ⬜ |
+
+### H1 Detail: Collapsible Sidebar
+**Files:** `frontend/src/components/Common/Sidebar.tsx`, `SidebarItems.tsx`
+- Desktop: 48px collapsed (icon-only rail) ↔ 200px expanded (icons + text)
+- Toggle: chevron button at bottom of sidebar
+- `localStorage` key: `sidebar-collapsed`
+- SidebarItems: render icon only when collapsed, icon+text when expanded
+
+### H3 Detail: Session Drawer
+**Files:** `frontend/src/features/lab/LabDashboard.tsx`, new `SessionDrawer.tsx`
+- Remove inline `SessionList` (currently 350px in body)
+- Wrapin Chakra `DrawerRoot` with `placement="start"`, width 350px
+- Trigger button: FiList icon + session count badge in Lab page header
+- Contains: SessionList + SessionCreateForm + search
+- Auto-closes on session select
+
+### H4 Detail: Remove LabHeader
+**Files:** `frontend/src/features/lab/components/LabHeader.tsx` (DELETE), `LabSessionView.tsx`
+- Remove ReactFlow pipeline visualization (150px)
+- Remove `<LabHeader />` from LabSessionView
+- Check: no other routes import LabHeader or reactflow before removing
+
+### H5-H6 Detail: State Shape Changes
+**Files:** `frontend/src/features/lab/types.ts`, `context/LabContext.tsx`
+- Add `stage: LabStage` to `DialogueMessage` interface
+- Add `staleStages: Set<LabStage>`, `completedStages: Set<LabStage>` to `LabState`
+- New reducer actions: `MARK_STAGE_COMPLETE`, `MARK_STAGES_STALE`, `CLEAR_STALE`
+- New helper: `getStageStatus(stage, state) → 'pending' | 'active' | 'complete' | 'stale'`
+- In `processEvent()`: copy `event.stage` into `DialogueMessage` objects
+
+### H7-H9 Detail: Stage Row Components
+**New files:** `StageRow.tsx`, `StageRowHeader.tsx`, `StageRowList.tsx`
+- StageRow: `<Box borderLeft="4px solid {statusColor}">` wrapping 3-column grid
+- StageRowHeader: stage name + status icon + expand/collapse chevron + action buttons
+- StageRowList: iterates ORDERED_STAGES, determines status, renders rows, manages expanded set
+- Auto-expand on ACTIVE status_update, auto-scroll via `ref.scrollIntoView()`
+- Column proportions: `templateColumns="2fr 1fr 1fr"`
+
+### H10 Detail: Stage Filtering
+**Files:** `DialoguePanel.tsx`, `ActivityTracker.tsx`, `StageOutputs.tsx`
+- Each accepts `stage: LabStage` prop
+- DialoguePanel: `dialogueMessages.filter(m => m.stage === stage)`
+- ActivityTracker: `activityItems.filter(i => i.stage === stage)` — flat list, no accordion
+- StageOutputs: `stageOutputs[stage]` directly — no selection/fallback logic
+
+## New Files
+| File | Purpose |
+|------|---------|
+| `frontend/src/features/lab/components/StageRow.tsx` | Per-stage 3-column row |
+| `frontend/src/features/lab/components/StageRowHeader.tsx` | Compact header with status + actions |
+| `frontend/src/features/lab/components/StageRowList.tsx` | Vertical list of all stage rows |
+| `frontend/src/features/lab/components/SessionDrawer.tsx` | Drawer wrapper for session list |
+
+## Deleted Files
+| File | Reason |
+|------|--------|
+| `frontend/src/features/lab/components/LabHeader.tsx` | ReactFlow pipeline removed |
+| `frontend/src/features/lab/components/LabGrid.tsx` | Replaced by StageRowList |
+| `frontend/src/features/lab/components/LabStageRow.tsx` | Replaced by StageRow (was unused) |
+
+## Acceptance Criteria
+
+Rehydrate an existing completed session and verify:
+1. Each DSLC stage appears as its own collapsible row with colored left border
+2. ACTIVE stage row is expanded; COMPLETE rows are collapsed; PENDING rows are gray
+3. Expanding a COMPLETE row shows ONLY that stage's dialogue, tasks, and outputs
+4. Sidebar collapses to 48px icon rail; grid adjusts to fill space
+5. Session drawer slides out from left; selecting a session loads it and closes drawer
+6. No ReactFlow pipeline visible; LabHeader removed
+7. Each expanded row has max-height scroll (no page-breaking overflow)
+8. Page scrolls to bring active stage into view on status change
+
+## Upcoming (Phase 7.2.2 & 7.2.3)
+
+**Phase 7.2.2 — Stale Protocol (~0.5 sprint):** Backend stage COMPLETE signaling, `revision_start` event type, `POST /messages` stage param. Depends on this sprint.
+
+**Phase 7.2.3 — Revision Flow (~1 sprint):** `POST /revise`, checkpoint rewind, stale re-run/keep endpoints, Revise/Re-run UI buttons. Depends on 7.2.2.
+
+---
+
+# Sprint 2.52: v1.3.1 Enforcement — Gap Remediation (ARCHIVED)
 
 **Status:** COMPLETE — Merged to main at `8efcab0`
 **Base Commit:** `a46af81`

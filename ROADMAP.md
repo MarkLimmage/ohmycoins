@@ -1,8 +1,8 @@
 # Oh My Coins (OMC) - Strategic Roadmap
 
-**Version**: 6.1
+**Version**: 6.2
 **Last Updated**: Mar 2026
-**Current Phase**: Sprint 2.52 — Phase 7.1 (v1.3.1 Enforcement)
+**Current Phase**: Sprint 2.53 — Phase 7.2 (Stage-Row Architecture & Stale Protocol)
 **Status**: Active Development - Live Beta (On-Prem)
 **Documentation Strategy**: [DOCUMENTATION_STRATEGY.md](docs/DOCUMENTATION_STRATEGY.md)
 **Current Sprint Details**: [CURRENT_SPRINT.md](CURRENT_SPRINT.md)
@@ -170,28 +170,71 @@ The project has shifted focus from AWS cloud deployment to a **high-performance 
 - ✅ G1-G8: 3-column grid, DialoguePanel, ActivityTracker, StageOutputs, ChatInput, event router, rehydration
 - ✅ Glass merge (`e368672`), Graph merge (`5ee3ef2`), production deploy
 
-**Sprint 2.52 — v1.3.1 Enforcement (IN PROGRESS):**
-Production testing revealed 6 backend and 8 frontend enforcement violations. See `API_CONTRACTS.md` §0.1.
+**Sprint 2.52 — v1.3.1 Enforcement (COMPLETE):**
+Production testing revealed 6 backend and 8 frontend enforcement violations. See `API_CONTRACTS.md` §0.1. Merged to main at `8efcab0`. 41 PASS / 0 FAIL / 6 SKIP acceptance tests.
 
-**Workstream F (Graph — backend enforcement):**
-- 🔄 F1: Scope confirmation fallback → `circuit_breaker_v1` (not silent fallback)
-- 🔄 F2: Runner publishes node `pending_events`, no generic overwrite
-- 🔄 F3: `task_id` mandatory on all `status_update` payloads
-- 🔄 F4: `plan_established` emitted even on error/fallback paths
-- 🔄 F5: Deduplicate runner vs node action_request events
-- 🔄 F6: Correct stage values in status_update emissions
+**Workstream F (Graph — backend enforcement):** ✅ COMPLETE
+- ✅ F1: Scope confirmation fallback → `circuit_breaker_v1` (not silent fallback)
+- ✅ F2: Runner publishes node `pending_events`, no generic overwrite
+- ✅ F3: `task_id` mandatory on all `status_update` payloads
+- ✅ F4: `plan_established` emitted even on error/fallback paths
+- ✅ F5: Deduplicate runner vs node action_request events
+- ✅ F6: Correct stage values in status_update emissions
 
-**Workstream G (Glass — frontend enforcement):**
-- 🔄 G1: `sequence_id` deduplication in event router
-- 🔄 G2: Inline `action_request` HITL cards per subtype
-- 🔄 G3: Remove legacy "Resume Workflow" button
-- 🔄 G4: Pipeline colors (green=complete, blue=active, gray=pending)
-- 🔄 G5: ChatInput enabled during RUNNING/AWAITING_APPROVAL
-- 🔄 G6: Stage Outputs driven by pipeline selection
-- 🔄 G7: Rehydration/WS `after_seq` overlap fix
-- 🔄 G8: Differentiate agent/user/system message styling
+**Workstream G (Glass — frontend enforcement):** ✅ COMPLETE
+- ✅ G1: `sequence_id` deduplication in event router
+- ✅ G2: Inline `action_request` HITL cards per subtype
+- ✅ G3: Remove legacy "Resume Workflow" button
+- ✅ G4: Pipeline colors (green=complete, blue=active, gray=pending)
+- ✅ G5: ChatInput enabled during RUNNING/AWAITING_APPROVAL
+- ✅ G6: Stage Outputs driven by pipeline selection
+- ✅ G7: Rehydration/WS `after_seq` overlap fix
+- ✅ G8: Differentiate agent/user/system message styling
 
-**Integration Gate Tests**: Refresh Test, Flatline Data Test, Circuit Breaker Test, Mime Compliance Test, HITL Round-Trip Test, Scope Confirmation Test, POST /message Round-Trip Test.
+### 🔄 Phase 7.2: Stage-Row Architecture & Stale Protocol (UPCOMING — Sprint 2.53+)
+
+**Objective:** Transform the single 3-column grid into per-DSLC-stage rows. Each of the 7 stages gets its own collapsible 3-column row (dialogue, tasks, outputs) with stage-filtered events, stale protocol, and revision flow for revisiting completed stages.
+
+**Design Decisions:**
+- Single session with events filtered by `event.stage` per row (NOT multi-session)
+- Session list moved to drawer overlay (saves horizontal space)
+- ReactFlow pipeline graph removed entirely (stage row headers replace it)
+- Downstream invalidation via stale protocol with user override (NOT semantic diffing)
+- Collapsible desktop sidebar (48px icon rail ↔ 200px expanded)
+
+**Phase 7.2.1 — Layout Foundations (frontend-only, ~1 sprint):**
+- [ ] H1: Collapsible desktop sidebar (48px collapsed / 200px expanded, localStorage persist)
+- [ ] H2: Reduce whitespace / maximize grid area (route-conditional padding)
+- [ ] H3: Session list → drawer overlay (`DrawerRoot`, left slide, 350px)
+- [ ] H4: Remove LabHeader (ReactFlow pipeline) — recover 150px vertical
+- [ ] H5: Add `stage` field to `DialogueMessage` type + `processEvent()`
+- [ ] H6: Stage lifecycle state (`staleStages`, `completedStages`, stage status derivation)
+- [ ] H7: `StageRow` component (per-stage 3-column grid with status colors)
+- [ ] H8: `StageRowHeader` (status icon, expand/collapse, Revise button)
+- [ ] H9: `StageRowList` (replaces LabGrid — vertical list of stage rows)
+- [ ] H10: Stage-filtered DialoguePanel, ActivityTracker, StageOutputs
+- [ ] H11: Max-height + overflow scroll on expanded stage rows (450px)
+- [ ] H12: Cleanup — remove LabHeader.tsx, LabGrid.tsx, LabStageRow.tsx (unused)
+
+**Phase 7.2.2 — Stale Protocol (backend + frontend, ~0.5 sprint):**
+- [ ] I1: Backend emits `status_update` with `status: COMPLETE` at stage transitions
+- [ ] I2: Frontend processes COMPLETE status_update (stage lifecycle)
+- [ ] I3: Add `revision_start` event type to schema + runner
+- [ ] I4: Frontend processes `revision_start` events (stale markers, dividers)
+- [ ] I5: Add optional `stage` param to `POST /messages`
+- [ ] I6: ChatInput sends stage param
+
+**Phase 7.2.3 — Revision Flow (backend + frontend, ~1 sprint):**
+- [ ] J1: `POST /sessions/{id}/revise` endpoint (checkpoint rewind + stale cascade)
+- [ ] J2: LangGraph checkpoint rewind logic (PostgresSaver, reset downstream flags)
+- [ ] J3: Stale-aware re-run endpoints (`POST /rerun`, `POST /keep-stale`)
+- [ ] J4: "Revise" button on COMPLETE stage row headers
+- [ ] J5: "Re-run from here" / "Keep results" on STALE stage row headers
+- [ ] J6: Revision divider in dialogue panel
+
+**New Files:** StageRow.tsx, StageRowHeader.tsx, StageRowList.tsx, SessionDrawer.tsx
+**Modified:** types.ts, LabContext.tsx, DialoguePanel.tsx, ActivityTracker.tsx, StageOutputs.tsx, ChatInput.tsx, LabDashboard.tsx, LabSessionView.tsx, Sidebar.tsx, SidebarItems.tsx, _layout.tsx, lab.tsx, agent.py, runner.py, lab_schema.py, langgraph_workflow.py, session_manager.py
+**Deleted:** LabHeader.tsx, LabGrid.tsx, LabStageRow.tsx
 
 ---
 
@@ -247,8 +290,11 @@ Production testing revealed 6 backend and 8 frontend enforcement violations. See
 ### Sprint 2.51 - Conversational Scientific Grid (COMPLETE)
 *   Phase 7: v1.3 Conversational Grid. Workstream F (Graph: scope_confirmation, model_selection, stream_chat narration, plan_established, POST /message, circuit breaker escalation). Workstream G (Glass: 3-column grid, DialoguePanel, ActivityTracker, StageOutputs, ChatInput, event router, rehydration). Parallel worktree sprint (omc-lab-graph, omc-lab-ui). Glass merged `e368672`, Graph merged `5ee3ef2`. Production deployed.
 
-### Sprint 2.52 - v1.3.1 Enforcement / Gap Remediation (IN PROGRESS)
-*   Phase 7.1: Production testing revealed 6 Severity-A contract violations and 5 Severity-B UX deficits. Backend: silent LLM fallback instead of circuit_breaker escalation, runner overwrites node events with generic action_request, missing task_id on status_update, no plan_established on error paths. Frontend: duplicate messages (no sequence_id dedup), orphan HITL button, wrong pipeline colors (yellow not green), disabled ChatInput, hardcoded Stage Outputs. Two-agent parallel sprint (fix/graph-enforcement, fix/glass-enforcement). Base commit `a46af81`.
+### Sprint 2.52 - v1.3.1 Enforcement / Gap Remediation (COMPLETE)
+*   Phase 7.1: Production testing revealed 6 Severity-A contract violations and 5 Severity-B UX deficits. Backend: silent LLM fallback instead of circuit_breaker escalation, runner overwrites node events with generic action_request, missing task_id on status_update, no plan_established on error paths. Frontend: duplicate messages (no sequence_id dedup), orphan HITL button, wrong pipeline colors (yellow not green), disabled ChatInput, hardcoded Stage Outputs. Two-agent parallel sprint (fix/graph-enforcement, fix/glass-enforcement). Merged to main at `8efcab0`. 41 PASS / 0 FAIL / 6 SKIP acceptance tests.
+
+### Sprint 2.53 - Phase 7.2: Stage-Row Architecture & Stale Protocol (UPCOMING)
+*   Transform the single 3-column grid into per-stage rows (each DSLC stage = one 3-column row with dialogue, tasks, outputs). Collapsible sidebar, session drawer overlay, remove ReactFlow pipeline. Backend: stage COMPLETE signaling, revision_start event type, POST /revise endpoint, stale protocol. ~2.5 sprints across 3 phases: Layout Foundations (frontend), Stale Protocol (backend+frontend), Revision Flow (backend+frontend).
 
 ---
 

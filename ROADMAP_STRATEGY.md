@@ -1,13 +1,14 @@
 # 🗺️ Roadmap & Execution Strategy: "The Lab"
 
-**Version:** 1.3.1  
+**Version:** 1.3.2  
 **Context:** This document outlines the strategic implementation phases for "The Lab" (Algo Development Module). Because this system involves stateful AI orchestration, isolated container execution, and real-time WebSockets, **strict adherence to the phase order is mandatory**.
 
-## 🔄 DIFF: v1.3 → v1.3.1
+## 🔄 DIFF: v1.3.1 → v1.3.2
 
 * [x] **Phases 0–6:** COMPLETE (baseline).
-* [x] **Phase 7 (Sprint 2.51):** COMPLETE — Initial v1.3 Conversational Scientific Grid. 3-column layout, scope confirmation, user messaging, agent narration, 4 interrupts, circuit breaker escalation. Glass merged, Graph merged, production deployed.
-* [ ] **Phase 7.1 (Sprint 2.52, NEW):** "v1.3.1 Enforcement" — Production testing revealed 6 Severity-A violations and 5 Severity-B UX deficits. Backend: silent fallbacks, generic runner events overwriting node events, missing task_id, no plan on error. Frontend: no dedup, orphan buttons, wrong colors, disabled input. See API_CONTRACTS.md §0.1.
+* [x] **Phase 7 (Sprint 2.51):** COMPLETE — Initial v1.3 Conversational Scientific Grid.
+* [x] **Phase 7.1 (Sprint 2.52):** COMPLETE — v1.3.1 Enforcement. 6 Severity-A backend + 8 frontend violations remediated. Merged at `8efcab0`. 41 PASS / 0 FAIL / 6 SKIP.
+* [ ] **Phase 7.2 (Sprint 2.53+, NEW):** Stage-Row Architecture & Stale Protocol — Per-DSLC-stage 3-column rows, collapsible sidebar, session drawer, revision flow with stale cascade. 3 sub-phases (~2.5 sprints). See §Phase 7.2 below.
 
 ---
 
@@ -146,6 +147,58 @@ The team must build from the core execution engine outward to the user interface
   * G8: Rehydration replays all 3 cells
 
 * **Dependencies:** Blocked by Phase 6. Parallel worktree execution (omc-lab-graph, omc-lab-ui).
+
+---
+
+## 🏗️ Phase 7.2: Stage-Row Architecture & Stale Protocol (NEW) 🔜 UPCOMING
+
+*Transform the single 3-column grid into per-DSLC-stage rows. Each stage gets its own collapsible 3-column row with stage-filtered events. Add stale protocol for downstream invalidation when a completed stage is revised. Enable revision flow with LangGraph checkpoint rewind.*
+
+**Contract:** API_CONTRACTS.md v1.4 — adds `revision_start` event, stage COMPLETE signaling, revision/rerun/keep-stale endpoints, per-stage row layout contract.
+
+**Design Decisions (Resolved):**
+| Decision | Choice | Rationale |
+|---|---|---|
+| Stage dialogue model | Single session, events filtered by `event.stage` | Avoids 3-5 sprint rearchitecture of multi-session; LangGraph checkpointing supports rewind natively |
+| Session list placement | Drawer overlay (slide-out panel) | Saves horizontal space; sessions are selected infrequently vs grid which is always visible |
+| Graph visualization | Remove entirely | Low value; stage rows themselves indicate progress via headers with status badges |
+| Downstream invalidation | Stale protocol with user override | Semantic diffing is fragile for ML pipelines; user sees stale markers and chooses re-run scope |
+| Stage row architecture | Each DSLC stage = one 3-column row (dialogue, tasks, outputs) | Matches original `LabStageRow` intent from §3.3 |
+
+* **7.2.1 Layout Foundations (Workstream H — Glass Agent, frontend-only, ~1 sprint):**
+  * H1: Collapsible desktop sidebar (48px icon rail ↔ 200px expanded, localStorage)
+  * H2: Reduce whitespace / maximize grid area
+  * H3: Session list → drawer overlay (Chakra `DrawerRoot`, left slide, 350px)
+  * H4: Remove LabHeader (ReactFlow pipeline) — recover 150px
+  * H5: Add `stage` field to `DialogueMessage` + `processEvent()`
+  * H6: Stage lifecycle state (`staleStages`, `completedStages`, `getStageStatus()`)
+  * H7: `StageRow` component (per-stage 3-column grid: `2fr 1fr 1fr`, status-colored left border)
+  * H8: `StageRowHeader` (stage name + status icon + expand/collapse + Revise button)
+  * H9: `StageRowList` (replaces LabGrid — vertical list of stage rows, auto-scroll to active)
+  * H10: Stage-filtered DialoguePanel, ActivityTracker, StageOutputs (`stage` prop)
+  * H11: Max-height (450px) + overflow scroll on expanded rows
+  * H12: Cleanup — delete LabHeader.tsx, LabGrid.tsx, LabStageRow.tsx
+
+* **7.2.2 Stale Protocol (Workstream I — Graph + Glass Agents, ~0.5 sprint):**
+  * I1: Backend emits `status_update COMPLETE` at stage transitions
+  * I2: Frontend processes COMPLETE status_update → stage lifecycle
+  * I3: `revision_start` event type in schema + runner
+  * I4: Frontend processes `revision_start` → stale markers, dialogue dividers
+  * I5: Add optional `stage` param to `POST /messages`
+  * I6: ChatInput sends `stage` param
+
+* **7.2.3 Revision Flow (Workstream J — Graph + Glass Agents, ~1 sprint):**
+  * J1: `POST /sessions/{id}/revise` endpoint (checkpoint rewind + stale cascade)
+  * J2: LangGraph checkpoint rewind (PostgresSaver `get_tuple`, reset downstream flags)
+  * J3: `POST /sessions/{id}/rerun` + `POST /sessions/{id}/keep-stale` endpoints
+  * J4: "Revise" button on COMPLETE row headers
+  * J5: "Re-run from here" / "Keep results" buttons on STALE row headers
+  * J6: Revision divider in dialogue panel (revision_start event → divider marker)
+
+* **Dependencies:** Blocked by Phase 7.1.  
+  Phase 7.2.1 is frontend-only, can be verified against existing rehydrated sessions.  
+  Phase 7.2.2 depends on 7.2.1.  
+  Phase 7.2.3 depends on 7.2.2.
 
 ---
 

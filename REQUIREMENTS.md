@@ -1,22 +1,19 @@
-# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.3 — Conversational Scientific Grid)
+# 🧬 REQUIREMENTS.md: The Lab 2.0 (v1.4 — Stage-Row Architecture & Stale Protocol)
 
-## 🔄 DIFF: v1.2 → v1.3
+## 🔄 DIFF: v1.3 → v1.4
 
-**Completed (Workstreams A–E):**
-* [x] **A+: Event Ledger** — Immutable `EventLedger` with `sequence_id` COMPLETE.
-* [x] **B+: Rehydration** — `GET /rehydrate` + `?after_seq` dedup COMPLETE.
-* [x] **C+: Dagger-MLflow Bridge** — Disposable Script, lifecycle tagging COMPLETE.
-* [x] **D+: Health Gates** — Zero-variance kill-switch, circuit breaker COMPLETE.
-* [x] **Phase 6:** PostgresSaver migration, graph consolidation COMPLETE.
+**Completed (Phase 7 + 7.1):**
+* [x] **v1.3 Conversational Grid:** 3-column layout, scope confirmation, user messaging, agent narration, 4 interrupts.
+* [x] **v1.3.1 Enforcement:** Silent fallback fix, node event priority, task_id mandate, plan_established always, dedup, inline HITL, pipeline colors.
 
-**New in v1.3 (Phase 7 — Conversational Grid):**
-* [ ] **Mandatory Scope Confirmation:** `action_request` with `scope_confirmation_v1` at session start. No conditional skip.
-* [ ] **Agent Narration:** Every LangGraph node emits `stream_chat` with reasoning.
-* [ ] **User Messaging:** `POST /message` → `sequence_id` N, agent response at N+1. New `user_message` event type.
-* [ ] **Plan Established:** New event type after scope confirmation with task checklist.
-* [ ] **Model Selection Gate:** `action_request` with `model_selection_v1` for model comparison.
-* [ ] **Circuit Breaker Escalation:** 3-cycle cap → `action_request` with `circuit_breaker_v1` (not TERMINAL_ERROR).
-* [ ] **3-Column Grid:** Dialogue (Left) | Activity (Center) | Outputs (Right).
+**New in v1.4 (Phase 7.2 — Stage-Row Architecture):**
+* [ ] **Per-Stage Rows:** Each DSLC stage = one 3-column row (dialogue, tasks, outputs). Events filtered by `event.stage`.
+* [ ] **Collapsible Sidebar:** Desktop sidebar toggles between 48px icon rail and 200px expanded.
+* [ ] **Session Drawer:** Session list moves to drawer overlay (not inline).
+* [ ] **ReactFlow Removal:** Pipeline graph removed; stage row headers with status badges replace it.
+* [ ] **Stage COMPLETE Signaling:** Backend emits explicit `status_update COMPLETE` at stage transitions.
+* [ ] **Stale Protocol:** Revising a completed stage marks all downstream stages STALE with amber UI.
+* [ ] **Revision Flow:** `POST /revise` triggers checkpoint rewind; `POST /rerun` and `POST /keep-stale` handle stale stages.
 
 ---
 
@@ -39,6 +36,9 @@ The system **shall** maintain an immutable ledger for every session. A state obj
 * **The "Zero Variance" Kill-Switch:** The system **shall** terminate the workflow immediately if `_validate_data_node` detects zero variance in target/features or >90% outliers.
 * **The Iteration Cap:** No DSLC stage **shall** exceed 3 reasoning iterations. On the 4th attempt, the system **must** emit an `action_request` with `action_id: "circuit_breaker_v1"` containing error context, suggestions, and options (CHOOSE_SUGGESTION, PROVIDE_GUIDANCE, ABORT_SESSION). Only truly unrecoverable errors (zero variance, sandbox crash) produce `error` events.
 * **State Rehydration:** Upon session initialization or reconnection, the backend **shall** replay the `EventLedger` to the frontend to ensure the Grid UI reflects the exact historical causality of the research.
+* **Stage COMPLETE Signaling:** When a DSLC stage finishes and the next stage activates, the backend **shall** emit a `status_update` with `status: "COMPLETE"` for the departing stage. This enables the frontend to distinguish ACTIVE from COMPLETE stages for row collapse/expand behavior.
+* **The Stale Protocol:** **If** a user revises a completed Stage $N$, the system **shall** automatically mark all Stages > $N$ as STALE by emitting `status_update` events with `status: "STALE"` for each downstream stage. Stale stages retain their original outputs (visible but dimmed). The user **shall** be offered three options: "Re-run from here" (re-execute from the first stale stage), "Skip to stage M" (preserve intermediate stages), or "Keep results" (clear stale flags without re-running).
+* **Revision Events:** When a revision is initiated, the backend **shall** emit a `revision_start` event containing `{ revised_stage, stale_stages[] }`. This event is persisted in the EventLedger and renders as a divider in the dialogue panel during rehydration.
 
 ---
 
@@ -63,13 +63,27 @@ The sandbox is the "Lab Bench." It must be isolated, tracked, and optimized for 
 
 The UI is a **Dashboard of Evidence**, not a chat window.
 
-### 3.1 The Grid Layout
+### 3.1 The Grid Layout (v1.4 — Per-Stage Rows)
 
-* **3-Column Layout:** The Lab session renders as a CSS Grid: Dialogue (350px) | Activity Tracker (1fr) | Stage Outputs (300px).
-* **Left Cell (Dialogue):** Routes `stream_chat`, `user_message`, `action_request`, `error`. Shows agent narration, user messages, and HITL cards.
-* **Center Cell (Activity):** Routes `status_update`, `plan_established`. Master checklist of tasks grouped by stage.
-* **Right Cell (Outputs):** Routes `render_output`. Mime-type-dispatched artifacts for the active/selected stage.
+* **Stage-Row Architecture:** Each DSLC stage renders as its own collapsible 3-column row: Dialogue (2fr) | Activity Tracker (1fr) | Stage Outputs (1fr). The page is a vertical stack of stage rows.
+* **Stage Row States:**
+  - **ACTIVE:** Expanded, blue left-border, 3-column grid visible, spinner in header.
+  - **COMPLETE:** Collapsed by default (click to expand), green left-border, checkmark. "Revise" button in header.
+  - **PENDING:** Collapsed, gray, not expandable until first `status_update ACTIVE` arrives.
+  - **STALE:** Collapsed, amber/orange left-border, "Stale — needs re-run" badge. Original content visible but dimmed. "Re-run from here" / "Keep results" buttons.
+* **Max-Height:** Each expanded row: `maxH=450px`, each inner column: `overflowY=auto`. Page scrolls vertically through rows.
+* **Auto-Expand:** When `status_update ACTIVE` arrives for a stage, that row expands and page scrolls to it.
+* **Event Filtering:** Each row's Dialogue, Activity, and Outputs components filter events by `event.stage === rowStage`.
+* **Left Cell (Dialogue):** Routes `stream_chat`, `user_message`, `action_request`, `error` **for that stage only**.
+* **Center Cell (Activity):** Routes `status_update`, `plan_established` tasks **for that stage only**. Flat task list (no accordion).
+* **Right Cell (Outputs):** Routes `render_output` **for that stage only**.
 * **Mime-Type Dispatcher:** Uses `mime_type` in event payload to render Markdown, Plotly charts, Blueprint cards, or Tear Sheets.
+
+### 3.1.1 Sidebar & Session Management
+
+* **Collapsible Sidebar:** Desktop sidebar toggles between collapsed (48px, icon-only rail) and expanded (200px, icons + text). Collapsed state persisted in `localStorage`. Toggle button at bottom of sidebar.
+* **Session Drawer:** Session list renders in a `DrawerRoot` overlay (left slide, 350px). Triggered by a button with session count badge. Contains search/filter + session list + "New Session" button. Drawer overlays grid content, does not push it.
+* **ReactFlow Removal:** The LabHeader ReactFlow pipeline graph is removed. Stage row headers with status badges replace its functionality.
 
 ### 3.2 Human-in-the-Loop (HITL) Controls
 
@@ -100,6 +114,20 @@ These requirements were implicit in v1.3 but violated during Sprint 2.51. They a
 * **Pipeline Node Colors:** COMPLETE = green (`#38A169`), ACTIVE = blue (`#3182CE` with bold + box-shadow), PENDING = gray (`#EDF2F7`). Yellow is not a valid stage color.
 * **ChatInput Enabled:** The Dialogue text input **shall** be enabled during RUNNING and AWAITING_APPROVAL sessions. It **shall** be disabled only for COMPLETED, FAILED, or CANCELLED.
 * **Stage Outputs Selection:** The Right Cell **shall** display outputs for the user-selected stage (via pipeline click) or the most recently active stage. It **shall not** be hardcoded to a single stage.
+
+### 3.5 Revision Protocol (v1.4)
+
+* **Revision Initiation:** A user **may** click "Revise" on any COMPLETE stage row header. This re-expands the row, enables the ChatInput, and renders a `--- Revision ---` divider in the dialogue column.
+* **Revision Message:** The user's revision message is sent via `POST /messages` with `{ content, stage }`. The `stage` parameter overrides the current active stage, directing the message to the revised stage's context.
+* **Checkpoint Rewind:** The backend **shall** rewind the LangGraph checkpoint to the post-completion state of the revised stage, inject the revision message, and resume graph execution from that point.
+* **Stale Cascade:** Upon revision initiation, the backend **shall** emit `revision_start` (with `revised_stage` and `stale_stages[]`) followed by `status_update STALE` for each downstream stage and `status_update ACTIVE` for the revised stage.
+* **Audit Trail:** The EventLedger is NEVER truncated. Old events from the original run remain; revision events append with new `sequence_id` values. Optionally tagged with a `revision_epoch` counter.
+
+### 3.6 Stale Stage Resolution (v1.4)
+
+* **Re-run All:** `POST /sessions/{id}/rerun` with `{ from_stage }` — clears stale flags, resets completion flags from that stage onward, resumes graph from that stage's checkpoint.
+* **Skip to Stage:** `POST /sessions/{id}/rerun` with `{ from_stage, skip_to }` — runs only from `skip_to` stage, stages between `from_stage` and `skip_to` remain stale (user asserts they're acceptable).
+* **Keep Results:** `POST /sessions/{id}/keep-stale` — clears stale flags without re-running. Stale stages become COMPLETE again. User asserts downstream results remain valid despite upstream revision.
 
 ---
 

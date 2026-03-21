@@ -1,17 +1,16 @@
-# 📜 API_CONTRACTS.md: The Lab 2.0 (v1.3 — Conversational Scientific Grid)
+# 📜 API_CONTRACTS.md: The Lab 2.0 (v1.4 — Stage-Row Architecture & Stale Protocol)
 
-> **v1.3 Changeset (from v1.2):**
-> - Added `stream_chat` as a live event type (was dead letter in v1.2)
-> - Added `user_message` event type for bi-directional dialogue
-> - Added `plan_established` event type for the Master Checklist
-> - Added `clarification_request` as an `action_request` subtype
-> - Added `model_selection` as an `action_request` subtype
-> - Added `POST /message` endpoint with sequence_id return guarantee
-> - Expanded `interrupt_before` to 4 nodes (was 2)
-> - Defined 3-Cell routing contract (Dialogue | Activity | Outputs)
-> - Mandated BUSINESS_UNDERSTANDING always starts with scope confirmation gate
-> - Mandated rehydration replays ALL event types to reconstruct all 3 cells
-> - Defined circuit breaker → clarification escalation (was terminal error)
+> **v1.4 Changeset (from v1.3.1):**
+> - Added `revision_start` event type for revision boundaries (persisted in ledger)
+> - Added stage COMPLETE signaling: `status_update` with `status: COMPLETE` at stage transitions
+> - Added optional `stage` parameter to `POST /message` for revision-mode messages
+> - Added `POST /sessions/{id}/revise` endpoint (checkpoint rewind + stale cascade)
+> - Added `POST /sessions/{id}/rerun` endpoint (re-execute from stale stage)
+> - Added `POST /sessions/{id}/keep-stale` endpoint (accept stale results)
+> - Updated §3 Grid Layout contract to describe per-stage rows (was single 3-column grid)
+> - Deprecated ReactFlow pipeline visualization (LabHeader removed; stage row headers replace it)
+> - Added §3.3 Sidebar & Session Drawer contract
+> - Added §3.4 Stage Row Behavior contract (expand/collapse, status colors)
 >
 > **v1.3.1 Enforcement Addendum (from Sprint 2.52 Gap Analysis):**
 > - Added §0.1: Explicit enforcement rules discovered from production testing
@@ -60,7 +59,7 @@ Every message sent over the WebSocket (`/ws/agent/{session_id}/stream`) **must**
 
 ```json
 {
-  "event_type": "stream_chat | status_update | render_output | error | action_request | user_message | plan_established",
+  "event_type": "stream_chat | status_update | render_output | error | action_request | user_message | plan_established | revision_start",
   "stage": "BUSINESS_UNDERSTANDING | DATA_ACQUISITION | PREPARATION | EXPLORATION | MODELING | EVALUATION | DEPLOYMENT",
   "sequence_id": 142,
   "timestamp": "2026-03-16T17:14:29.123Z",
@@ -86,6 +85,7 @@ Every event type has a designated cell in the Scientific Grid:
 | `stream_chat` | **Left Cell** (Dialogue) | Agent reasoning, explanations, conversational turns |
 | `user_message` | **Left Cell** (Dialogue) | Human responses, clarification answers, steering input |
 | `action_request` | **Left Cell** (Dialogue) | Interactive HITL cards (approve, clarify, select model) |
+| `revision_start` | **Left Cell** (Dialogue) + **State** | Revision boundary divider + marks downstream stages STALE |
 | `status_update` | **Center Cell** (Activity Tracker) | Step progress checklist items (done/active/pending) |
 | `plan_established` | **Center Cell** (Activity Tracker) | Master checklist template for the session |
 | `render_output` | **Right Cell** (Stage Outputs) | Rich artifacts (markdown, plotly, blueprint, tearsheet) |
@@ -104,6 +104,45 @@ Agent-to-human conversational messages. Used for reasoning narration, explanatio
 ```
 
 **Usage:** The agent MUST emit `stream_chat` events to narrate its reasoning at every significant decision point. This replaces the invisible internal `reasoning_trace`. The human should always know *what* the agent is doing and *why*.
+
+### 2.1.1 `status_update` with `status: COMPLETE` (v1.4)
+
+When a DSLC stage finishes processing and the next stage activates, the backend MUST emit a `status_update` with `status: "COMPLETE"` for the departing stage. This is distinct from individual task completion — it signals the entire stage is done.
+
+```json
+{
+  "event_type": "status_update",
+  "stage": "DATA_ACQUISITION",
+  "payload": {
+    "status": "COMPLETE",
+    "message": "Data acquisition complete. Moving to preparation.",
+    "task_id": "stage_complete"
+  }
+}
+```
+
+**Trigger:** Emitted by the runner when the first `status_update ACTIVE` arrives for a new stage. The previous stage receives a COMPLETE signal.
+
+### 2.1.2 `revision_start` (v1.4 — Revision Boundary) → Left Cell + State
+
+Emitted when a user initiates a revision of a completed stage. Persisted in the EventLedger to survive rehydration. Routes to Dialogue as a visual divider and triggers state updates (downstream stale marking).
+
+```json
+{
+  "event_type": "revision_start",
+  "stage": "DATA_ACQUISITION",
+  "payload": {
+    "revised_stage": "DATA_ACQUISITION",
+    "stale_stages": ["PREPARATION", "EXPLORATION", "MODELING", "EVALUATION", "DEPLOYMENT"],
+    "revision_epoch": 1
+  }
+}
+```
+
+**Frontend behavior:**
+- Render a `--- Revision ---` divider in the revised stage's Dialogue column
+- Mark all `stale_stages` as STALE in the state (amber left-border, dimmed content)
+- Re-expand the revised stage row, enable ChatInput for that stage
 
 ### 2.2 `user_message` (The Human Voice) → Left Cell
 
@@ -335,6 +374,54 @@ The rehydration endpoint returns the **complete** EventLedger. The frontend MUST
 
 *The frontend shall iterate through the `event_ledger` in ascending order of `sequence_id`, routing each event to the correct cell via the same dispatcher used for live events.*
 
+### 3.1 Grid Layout Contract (v1.4 — Per-Stage Rows)
+
+The single 3-column grid layout (v1.3) is replaced with a per-stage-row architecture. Each DSLC stage renders as its own collapsible 3-column row.
+
+**Row Structure:**
+```
+<StageRow stage={stage} status={status}>
+  <Grid templateColumns="2fr 1fr 1fr" gap={2} maxH="450px">
+    <DialoguePanel stage={stage} />   ← filtered by event.stage
+    <ActivityTracker stage={stage} /> ← filtered by event.stage
+    <StageOutputs stage={stage} />   ← filtered by event.stage
+  </Grid>
+</StageRow>
+```
+
+**Column Proportions:** `2fr 1fr 1fr` — Dialogue gets 50% (carries chat + HITL cards), Tasks 25%, Outputs 25%.
+
+### 3.2 Stage Row Behavior Contract (v1.4)
+
+| Status | Left Border | Expand | Content | Header Actions |
+|--------|-------------|--------|---------|----------------|
+| ACTIVE | `blue.500` | Auto-expanded | Live 3-column grid | Spinner indicator |
+| COMPLETE | `green.500` | Collapsed (click to expand) | Historical events, dimmed slightly | "Revise" button |
+| PENDING | `gray.300` | Not expandable | None | None |
+| STALE | `orange.400` | Collapsed | Original content, dimmed | "Re-run from here" / "Keep results" |
+
+**Auto-expand rule:** When `status_update ACTIVE` arrives for stage N, expand stage N's row, collapse the previous active stage's row, and smooth-scroll to bring stage N into view.
+
+**Collapsed summary:** Collapsed COMPLETE/STALE rows show a compact summary line (e.g., "3 tasks done, 2 outputs").
+
+### 3.3 Sidebar & Session Drawer Contract (v1.4)
+
+**Sidebar:**
+- Desktop: collapsible between 48px (icon-only rail) and 200px (icons + text)
+- Toggle: chevron button at bottom of sidebar
+- Persistence: `localStorage` key `sidebar-collapsed`
+- Collapse does NOT hide navigation — icons remain visible
+
+**Session Drawer:**
+- Trigger: Button in Lab page top area with FiList icon + active session count badge
+- Implementation: Chakra `DrawerRoot` with `placement="start"`, width 350px
+- Contents: Search/filter input, SessionList, "New Session" button
+- Behavior: Overlays grid content (does not push), auto-closes on session select
+
+### 3.4 ReactFlow Deprecation (v1.4)
+
+The ReactFlow pipeline visualization (LabHeader, 150px) is deprecated and removed. Stage row headers with status badges, colored left borders, and expand/collapse behavior provide equivalent stage-progress visibility with less vertical overhead.
+
 ---
 
 ## 4. 📡 REST Endpoints
@@ -378,8 +465,10 @@ The rehydration endpoint returns the **complete** EventLedger. The frontend MUST
 
 **Request:**
 ```json
-{ "content": "Focus on ETH instead, use a 7-day window." }
+{ "content": "Focus on ETH instead, use a 7-day window.", "stage": "DATA_ACQUISITION" }
 ```
+
+The `stage` field is **optional** (v1.4). When provided, the message is directed to that specific stage's context (used for revisions of completed stages). When omitted, the message targets the current active stage.
 
 **Response:**
 ```json
@@ -394,6 +483,61 @@ The rehydration endpoint returns the **complete** EventLedger. The frontend MUST
 2. The backend broadcasts the `user_message` event (with `sequence_id` N) to all connected WS clients.
 3. The agent's next response event MUST have `sequence_id` N+1. No other event may be interleaved.
 4. The frontend renders the user's message immediately on submit (optimistic), then confirms via the WS broadcast matching `sequence_id` N.
+
+### 4.5 Revision Endpoints (NEW in v1.4)
+
+#### Initiate Revision
+`POST /api/v1/lab/agent/sessions/{id}/revise`
+
+Initiates a revision of a completed DSLC stage. Rewinds the LangGraph checkpoint, marks downstream stages as STALE, and resumes graph execution.
+
+**Request:**
+```json
+{ "stage": "DATA_ACQUISITION", "message": "Add ETH data alongside BTC" }
+```
+
+**Response:**
+```json
+{
+  "sequence_id": 85,
+  "stale_stages": ["PREPARATION", "EXPLORATION", "MODELING", "EVALUATION", "DEPLOYMENT"]
+}
+```
+
+**Behavior:**
+1. Validate `stage` is COMPLETE for this session.
+2. Emit `revision_start` event (persisted in ledger).
+3. Emit `status_update STALE` for each downstream stage.
+4. Emit `status_update ACTIVE` for the revised stage.
+5. Rewind LangGraph checkpoint to post-completion of the revised stage.
+6. Inject revision message into state and resume graph execution.
+
+#### Re-run from Stale Stage
+`POST /api/v1/lab/agent/sessions/{id}/rerun`
+
+Re-executes the pipeline from a stale stage onward.
+
+**Request:**
+```json
+{ "from_stage": "PREPARATION", "skip_to": "MODELING" }
+```
+
+`skip_to` is **optional**. When omitted, re-runs from `from_stage` through all downstream stages. When provided, only runs from `skip_to`, leaving stages between `from_stage` and `skip_to` stale.
+
+**Response:**
+```json
+{ "message": "Re-run initiated", "from_stage": "PREPARATION" }
+```
+
+#### Accept Stale Results
+`POST /api/v1/lab/agent/sessions/{id}/keep-stale`
+
+Clears STALE flags without re-running. User asserts downstream results remain valid.
+
+**Response:**
+```json
+{ "message": "Stale flags cleared", "cleared_stages": ["PREPARATION", "EXPLORATION", "MODELING", "EVALUATION", "DEPLOYMENT"] }
+```
 
 ### 4.4 Rehydration (Updated)
 
