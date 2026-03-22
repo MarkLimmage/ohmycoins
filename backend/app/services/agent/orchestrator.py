@@ -5,6 +5,7 @@ Agent Orchestrator for coordinating multiple specialized agents.
 This is the main entry point for the agentic data science system.
 """
 
+import logging
 import uuid
 from typing import Any
 
@@ -14,10 +15,13 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from sqlmodel import Session
 
+from app.core.config import settings
 from app.models import AgentSessionStatus
 
 from .langgraph_workflow import AgentState, LangGraphWorkflow
 from .session_manager import SessionManager
+
+logger = logging.getLogger(__name__)
 
 
 class AgentOrchestrator:
@@ -34,14 +38,35 @@ class AgentOrchestrator:
 
         Args:
             session_manager: Session manager for state persistence
-            checkpointer: LangGraph checkpointer for state persistence (default: MemorySaver)
+            checkpointer: LangGraph checkpointer for state persistence (lazy Postgres init)
         """
         self.session_manager = session_manager
-        self.checkpointer = checkpointer or MemorySaver()
+        self._checkpointer = checkpointer
         self.workflow = LangGraphWorkflow(
             session=None,
-            checkpointer=self.checkpointer
+            checkpointer=checkpointer or MemorySaver()
         )  # Session will be set per execution
+
+    async def _ensure_checkpointer(self) -> Any:
+        """Lazily create an AsyncPostgresSaver connected to the same DB as the runner."""
+        if self._checkpointer is not None:
+            return self._checkpointer
+        try:
+            import psycopg
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+            s = settings
+            conn_str = f"postgresql://{s.POSTGRES_USER}:{s.POSTGRES_PASSWORD}@{s.POSTGRES_SERVER}:{s.POSTGRES_PORT}/{s.POSTGRES_DB}"
+            conn = await psycopg.AsyncConnection.connect(
+                conn_str, autocommit=True, prepare_threshold=0
+            )
+            self._checkpointer = AsyncPostgresSaver(conn)
+            await self._checkpointer.setup()
+            logger.info("Orchestrator: initialized AsyncPostgresSaver")
+        except Exception:
+            logger.warning("Orchestrator: falling back to MemorySaver", exc_info=True)
+            self._checkpointer = MemorySaver()
+        return self._checkpointer
 
     async def start_session(self, db: Session, session_id: uuid.UUID) -> dict[str, Any]:
         """
@@ -125,7 +150,7 @@ class AgentOrchestrator:
                 session=db,
                 user_id=session.user_id,
                 credential_id=session.llm_credential_id,
-                checkpointer=self.checkpointer,
+                checkpointer=await self._ensure_checkpointer(),
             )
 
             # Track which LLM was selected by the factory
@@ -286,12 +311,13 @@ class AgentOrchestrator:
         if not session:
             raise ValueError(f"Session {session_id} not found")
 
-        # Create workflow instance to access the graph
+        # Create workflow instance with the persistent checkpointer
+        checkpointer = await self._ensure_checkpointer()
         workflow = LangGraphWorkflow(
             session=db,
             user_id=session.user_id,
             credential_id=session.llm_credential_id,
-            checkpointer=self.checkpointer,
+            checkpointer=checkpointer,
         )
 
         # Update graph state if action provided
