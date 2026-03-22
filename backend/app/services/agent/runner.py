@@ -247,9 +247,9 @@ class AgentRunner:
                 # Without this, the runner re-publishes old events on every resume.
                 if sequence_id > 0:
                     existing_msgs_stmt = (
-                        select(AgentSessionMessage.metadata)
+                        select(AgentSessionMessage.metadata_json)
                         .where(AgentSessionMessage.session_id == session_id)
-                        .where(AgentSessionMessage.metadata.isnot(None))
+                        .where(AgentSessionMessage.metadata_json.isnot(None))
                     )
                     for (raw_meta,) in db.exec(existing_msgs_stmt).all():
                         try:
