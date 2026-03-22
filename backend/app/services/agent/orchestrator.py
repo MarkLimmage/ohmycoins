@@ -323,27 +323,43 @@ class AgentOrchestrator:
         # Update graph state if action provided
         if action:
             config = {"configurable": {"thread_id": str(session_id)}}
-            updates = {}
 
             if action.upper() == "APPROVE":
-                updates = {
-                    "approval_granted": True,
-                    "approval_needed": False,
-                    "scope_confirmed": True,
-                    "pending_events": [],
-                }
-            elif action.upper() == "REJECT":
-                updates = {"approval_rejected": True, "approval_needed": False}
-
-            if updates:
                 # Determine which node was interrupted from the checkpoint
                 graph_state = await workflow.graph.aget_state(config)
+                next_nodes = graph_state.next if graph_state else ()
+
+                # Only call aupdate_state for interrupt_after nodes
+                # (scope_confirmation, model_selection) where the node already
+                # executed and we need to modify state so it doesn't re-execute.
+                # For interrupt_before nodes (train_model, finalize, human_review),
+                # Command(resume=True) alone advances past the interrupt.
                 last_node = "scope_confirmation"  # safe default
                 if graph_state and graph_state.metadata:
                     writes = graph_state.metadata.get("writes") or {}
                     if writes:
                         last_node = next(iter(writes.keys()))
 
+                interrupt_after_nodes = {"scope_confirmation", "model_selection"}
+                if last_node in interrupt_after_nodes:
+                    updates = {
+                        "approval_granted": True,
+                        "approval_needed": False,
+                        "scope_confirmed": True,
+                        "pending_events": [],
+                    }
+                    await workflow.graph.aupdate_state(
+                        config, updates, as_node=last_node
+                    )
+
+            elif action.upper() == "REJECT":
+                graph_state = await workflow.graph.aget_state(config)
+                last_node = "scope_confirmation"
+                if graph_state and graph_state.metadata:
+                    writes = graph_state.metadata.get("writes") or {}
+                    if writes:
+                        last_node = next(iter(writes.keys()))
+                updates = {"approval_rejected": True, "approval_needed": False}
                 await workflow.graph.aupdate_state(
                     config, updates, as_node=last_node
                 )
