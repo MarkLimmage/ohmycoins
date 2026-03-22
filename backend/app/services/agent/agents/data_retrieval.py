@@ -99,8 +99,8 @@ class DataRetrievalAgent(BaseAgent):
             end_date = datetime.now()
             start_date = end_date - timedelta(days=retrieval_params.get("days", 30))
 
-            # Determine coin type from goal or params
-            coin_type = retrieval_params.get("coin_type", "BTC")
+            # Determine coin type from goal or params (normalise to lowercase)
+            coin_type = retrieval_params.get("coin_type", "BTC").lower()
 
             # Emit conversational update (stream_chat)
             await self.emit_event(
@@ -199,6 +199,63 @@ class DataRetrievalAgent(BaseAgent):
                     end_date=end_date,
                     currencies=currencies,
                 )
+
+            # --- Build outcome summary for StageOutputs panel ---
+            summary_lines = ["## Data Acquisition Results\n"]
+            summary_lines.append(
+                f"**Coin**: `{coin_type}` &nbsp; "
+                f"**Period**: {start_date.strftime('%Y-%m-%d')} → "
+                f"{end_date.strftime('%Y-%m-%d')} "
+                f"({retrieval_params.get('days', 30)} days)\n"
+            )
+            summary_lines.append("| Dataset | Rows | Notes |")
+            summary_lines.append("|---------|-----:|-------|")
+
+            if "price_data" in retrieved_data:
+                n = len(retrieved_data["price_data"])
+                note = "" if n > 0 else "⚠ No rows returned"
+                summary_lines.append(f"| Price (5 min) | {n:,} | {note} |")
+
+            if "sentiment_data" in retrieved_data:
+                sd = retrieved_data["sentiment_data"]
+                news_n = len(sd.get("news_sentiment", []))
+                social_n = len(sd.get("social_sentiment", []))
+                summary_lines.append(f"| News sentiment | {news_n:,} | |")
+                summary_lines.append(f"| Social sentiment | {social_n:,} | |")
+
+            if "on_chain_metrics" in retrieved_data:
+                n = len(retrieved_data["on_chain_metrics"])
+                summary_lines.append(f"| On-chain metrics | {n:,} | |")
+
+            if "catalyst_events" in retrieved_data:
+                n = len(retrieved_data["catalyst_events"])
+                summary_lines.append(f"| Catalyst events | {n:,} | |")
+
+            # DB coverage from statistics
+            ds = retrieved_data.get("data_statistics", {})
+            ps = ds.get("price_data", {})
+            if ps.get("earliest_timestamp") and ps.get("latest_timestamp"):
+                summary_lines.append(
+                    f"\n**DB coverage**: "
+                    f"{ps['earliest_timestamp'][:10]} → {ps['latest_timestamp'][:10]} "
+                    f"({ps['total_records']:,} total price records)"
+                )
+
+            coins = retrieved_data.get("available_coins", [])
+            if coins:
+                summary_lines.append(
+                    f"\n**Available coins**: {', '.join(f'`{c}`' for c in coins)}"
+                )
+
+            await self.emit_event(
+                state,
+                "render_output",
+                "DATA_ACQUISITION",
+                {
+                    "mime_type": "text/markdown",
+                    "content": "\n".join(summary_lines),
+                },
+            )
 
             # Update state
             state["data_retrieved"] = True

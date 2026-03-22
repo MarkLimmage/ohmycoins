@@ -44,6 +44,8 @@ async def fetch_price_data(
     if end_date is None:
         end_date = datetime.now()
 
+    coin_type = coin_type.lower()
+
     statement = (
         select(PriceData5Min)
         .where(
@@ -177,6 +179,8 @@ async def fetch_on_chain_metrics(
     if end_date is None:
         end_date = datetime.now()
 
+    asset = asset.lower()
+
     statement = select(OnChainMetrics).where(
         and_(
             OnChainMetrics.asset == asset,
@@ -297,6 +301,7 @@ async def get_data_statistics(
 
     # Price data statistics
     if coin_type:
+        coin_type = coin_type.lower()
         price_statement = select(
             func.min(PriceData5Min.timestamp).label("earliest"),
             func.max(PriceData5Min.timestamp).label("latest"),
@@ -381,7 +386,7 @@ async def fetch_order_history(
     )
 
     if coin_type:
-        statement = statement.where(Order.coin_type == coin_type)
+        statement = statement.where(Order.coin_type == coin_type.lower())
 
     if status:
         statement = statement.where(Order.status == status)
@@ -424,7 +429,7 @@ async def fetch_user_positions(
     statement = select(Position).where(Position.user_id == user_id)
 
     if coin_type:
-        statement = statement.where(Position.coin_type == coin_type)
+        statement = statement.where(Position.coin_type == coin_type.lower())
 
     results = session.exec(statement).all()
 
