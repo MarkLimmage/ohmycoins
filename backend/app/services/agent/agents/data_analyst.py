@@ -207,6 +207,19 @@ class DataAnalystAgent(BaseAgent):
             state["insights"] = insights
             state["message"] = "Data analysis completed successfully"
 
+            # Emit findings to user
+            if insights:
+                findings_text = "\n".join(f"- {i}" for i in insights)
+                await self.emit_event(
+                    state,
+                    "stream_chat",
+                    "EXPLORATION",
+                    {
+                        "message": f"Analysis complete. Key findings:\n{findings_text}",
+                        "sender": "DataAnalystAgent",
+                    },
+                )
+
         except Exception as e:
             state["error"] = f"Data analysis failed: {str(e)}"
             state["analysis_completed"] = False
@@ -248,12 +261,34 @@ class DataAnalystAgent(BaseAgent):
         if "sentiment_analysis" in analysis_results:
             sa = analysis_results["sentiment_analysis"]
             overall = sa.get("overall_sentiment", {})
+            news = sa.get("news_sentiment", {})
+            social = sa.get("social_sentiment", {})
             trend = overall.get("trend", "neutral")
+            avg_score = overall.get("avg_score", 0.0)
+
+            # Always report sentiment statistics when data exists
+            news_count = news.get("count", 0)
+            social_count = social.get("count", 0)
+            total_sources = news_count + social_count
+            if total_sources > 0:
+                parts = []
+                if news_count > 0:
+                    parts.append(f"{news_count} news articles (avg score: {news.get('avg_score', 0):.3f}, {news.get('positive_ratio', 0)*100:.0f}% positive)")
+                if social_count > 0:
+                    parts.append(f"{social_count} social posts (avg score: {social.get('avg_score', 0):.3f})")
+                insights.append(f"Sentiment data: {', '.join(parts)}")
 
             if trend == "bullish":
-                insights.append("Overall sentiment is bullish, positive market outlook")
+                insights.append(f"Overall sentiment is bullish (score: {avg_score:.3f}), positive market outlook")
             elif trend == "bearish":
-                insights.append("Overall sentiment is bearish, cautious market outlook")
+                insights.append(f"Overall sentiment is bearish (score: {avg_score:.3f}), cautious market outlook")
+            else:
+                insights.append(f"Overall sentiment is neutral (score: {avg_score:.3f}), no strong directional bias")
+
+            # Report score dispersion if available
+            std = news.get("std_score", 0.0)
+            if std > 0.3 and news_count > 5:
+                insights.append(f"High sentiment dispersion (std: {std:.3f}) — mixed signals among sources")
 
         # On-chain insights
         if "on_chain_signals" in analysis_results:

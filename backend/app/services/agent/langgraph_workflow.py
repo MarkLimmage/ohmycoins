@@ -1018,7 +1018,37 @@ class LangGraphWorkflow:
         insights = state.get("insights", [])
         if insights:
             result_parts.append("\n\nData Analysis Insights:")
-            result_parts.extend([f"- {insight}" for insight in insights[:5]])
+            result_parts.extend([f"- {insight}" for insight in insights[:10]])
+
+        # Surface key analysis statistics
+        analysis_results = state.get("analysis_results", {})
+        if analysis_results:
+            stats_parts = []
+            if "sentiment_analysis" in analysis_results:
+                sa = analysis_results["sentiment_analysis"]
+                news = sa.get("news_sentiment", {})
+                overall = sa.get("overall_sentiment", {})
+                if news.get("count", 0) > 0:
+                    stats_parts.append(
+                        f"Sentiment: {news['count']} articles analyzed, "
+                        f"avg={overall.get('avg_score', 0):.3f}, "
+                        f"trend={overall.get('trend', 'unknown')}"
+                    )
+            if "technical_indicators" in analysis_results:
+                ti = analysis_results["technical_indicators"]
+                stats_parts.append(f"Technical: {ti.get('data_points', 0)} data points, {len(ti.get('columns', []))} indicators")
+            if "anomaly_detection" in analysis_results:
+                ad = analysis_results["anomaly_detection"]
+                stats_parts.append(f"Anomalies: {ad.get('total_anomalies', 0)} detected")
+            if stats_parts:
+                result_parts.append("\n\nAnalysis Statistics:")
+                result_parts.extend([f"- {s}" for s in stats_parts])
+
+        # Add data quality context
+        qc = state.get("quality_checks", {})
+        if qc:
+            data_types = qc.get("data_types_available", [])
+            result_parts.append(f"\n\nData: {', '.join(data_types) if data_types else 'none'} (quality: {qc.get('overall', 'unknown')})")
 
         # Add training summary
         training_summary = state.get("training_summary")
