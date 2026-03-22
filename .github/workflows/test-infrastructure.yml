@@ -181,7 +181,7 @@ jobs:
           terraform plan -out=tfplan
 
       - name: Upload plan artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: terraform-plan-${{ github.event.inputs.environment || 'staging' }}
           path: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}/tfplan
