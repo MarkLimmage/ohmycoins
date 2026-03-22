@@ -329,19 +329,26 @@ class AgentOrchestrator:
                 graph_state = await workflow.graph.aget_state(config)
                 next_nodes = graph_state.next if graph_state else ()
 
-                # Only call aupdate_state for interrupt_after nodes
-                # (scope_confirmation, model_selection) where the node already
-                # executed and we need to modify state so it doesn't re-execute.
+                # For interrupt_after nodes (scope_confirmation, model_selection),
+                # the node already executed — we update state so routing doesn't
+                # re-execute or loop.
                 # For interrupt_before nodes (train_model, finalize, human_review),
-                # Command(resume=True) alone advances past the interrupt.
-                last_node = "scope_confirmation"  # safe default
-                if graph_state and graph_state.metadata:
-                    writes = graph_state.metadata.get("writes") or {}
-                    if writes:
-                        last_node = next(iter(writes.keys()))
+                # the node has NOT run yet — passing None to graph.astream()
+                # resumes execution into the node.  Do NOT call aupdate_state
+                # here or it resets the graph position and causes a loop.
+                interrupt_before_nodes = {"train_model", "finalize", "human_review"}
+                is_interrupt_before = bool(
+                    next_nodes and set(next_nodes) & interrupt_before_nodes
+                )
 
-                interrupt_after_nodes = {"scope_confirmation", "model_selection"}
-                if last_node in interrupt_after_nodes:
+                if not is_interrupt_before:
+                    # interrupt_after case: find last node from writes
+                    last_node = "scope_confirmation"  # safe default
+                    if graph_state and graph_state.metadata:
+                        writes = graph_state.metadata.get("writes") or {}
+                        if writes:
+                            last_node = next(iter(writes.keys()))
+
                     updates = {
                         "approval_granted": True,
                         "approval_needed": False,
@@ -350,6 +357,12 @@ class AgentOrchestrator:
                     }
                     await workflow.graph.aupdate_state(
                         config, updates, as_node=last_node
+                    )
+                else:
+                    logger.info(
+                        "Skipping aupdate_state for interrupt_before node %s "
+                        "(session %s) — astream(None) will resume execution",
+                        next_nodes, session_id,
                     )
 
             elif action.upper() == "REJECT":

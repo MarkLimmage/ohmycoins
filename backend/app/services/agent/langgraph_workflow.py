@@ -891,6 +891,7 @@ class LangGraphWorkflow:
         Returns:
             Updated state with trained models
         """
+        logger.debug("train_model node: session=%s retry=%s", state.get('session_id'), state.get('retry_count'))
         state["current_step"] = "model_training"
 
         try:
@@ -1383,10 +1384,10 @@ class LangGraphWorkflow:
         Returns:
             Next node to execute
         """
-        if state.get("retry_count", 0) <= state.get("max_retries", 3):
-            return "retry"
-        else:
-            return "end"
+        retry_count = state.get("retry_count", 0)
+        max_retries = state.get("max_retries", 3)
+        result = "retry" if retry_count <= max_retries else "end"
+        return result
 
     async def _human_review_node(self, state: AgentState) -> AgentState:
         """
