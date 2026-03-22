@@ -1139,7 +1139,7 @@ async def approve_request(
     await session_manager.save_session_state(session_id, updated_state)
 
     if decision.approved:
-        await orchestrator.resume_session(db, session_id)
+        await orchestrator.resume_session(db, session_id, action="APPROVE")
         await get_runner().start_session(session_id)
 
     return {

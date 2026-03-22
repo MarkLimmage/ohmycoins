@@ -300,7 +300,11 @@ class AgentOrchestrator:
             updates = {}
 
             if action.upper() == "APPROVE":
-                updates = {"approval_granted": True, "approval_needed": False}
+                updates = {
+                    "approval_granted": True,
+                    "approval_needed": False,
+                    "scope_confirmed": True,
+                }
             elif action.upper() == "REJECT":
                 updates = {"approval_rejected": True, "approval_needed": False}
 
