@@ -18,6 +18,8 @@ function Navbar() {
       w="100%"
       top={0}
       p={4}
+      zIndex={10}
+      flexShrink={0}
     >
       <Link to="/">
         <Image src={Logo} alt="Oh My Coins" maxW="3xs" p={2} />

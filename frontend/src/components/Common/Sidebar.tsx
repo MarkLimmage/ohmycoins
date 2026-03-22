@@ -106,7 +106,7 @@ const Sidebar = () => {
         top={0}
         w={collapsed ? "48px" : "200px"}
         minW={collapsed ? "48px" : "200px"}
-        h="100vh"
+        h="100%"
         p={collapsed ? 1 : 4}
         direction="column"
         justifyContent="space-between"

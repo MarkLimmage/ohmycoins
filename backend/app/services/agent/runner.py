@@ -244,6 +244,9 @@ class AgentRunner:
                 last_node_action: dict[str, Any] | None = None
                 # Track current stage for COMPLETE signaling (D5)
                 current_tracked_stage: str | None = None
+                # Track stages already marked COMPLETE to prevent duplicate emissions
+                # when LangGraph replays nodes after approval/resume cycles.
+                completed_stages: set[str] = set()
 
                 async for state_update in workflow.stream_execute(initial_state, session_id=str(session_id)):
                     # Increment sequence_id for each state update
@@ -271,12 +274,26 @@ class AgentRunner:
 
                                 # D5: COMPLETE signaling on stage transition
                                 event_stage = event.get("stage")
+
+                                # Guard: ignore events from stages that are behind
+                                # current_tracked_stage (happens when LangGraph replays
+                                # earlier nodes after approval/resume cycles).
                                 if (
                                     event_stage
                                     and current_tracked_stage
                                     and event_stage != current_tracked_stage
+                                    and event_stage in completed_stages
+                                ):
+                                    continue
+
+                                if (
+                                    event_stage
+                                    and current_tracked_stage
+                                    and event_stage != current_tracked_stage
+                                    and current_tracked_stage not in completed_stages
                                     and event.get("event_type") != "revision_start"
                                 ):
+                                    completed_stages.add(current_tracked_stage)
                                     complete_event = {
                                         "event_type": "status_update",
                                         "stage": current_tracked_stage,

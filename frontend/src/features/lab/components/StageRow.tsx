@@ -52,18 +52,19 @@ export const StageRow = ({
         <Grid
           templateColumns="2fr 1fr 1fr"
           gap={2}
-          maxH="450px"
+          h="450px"
+          overflow="hidden"
           p={3}
           borderTop="1px solid"
           borderColor="gray.100"
         >
-          <GridItem overflowY="auto" h="100%">
+          <GridItem overflowY="auto" minH={0}>
             <DialoguePanel stage={stage} />
           </GridItem>
-          <GridItem overflowY="auto" h="100%">
+          <GridItem overflowY="auto" minH={0}>
             <ActivityTracker stage={stage} />
           </GridItem>
-          <GridItem overflowY="auto" h="100%">
+          <GridItem overflowY="auto" minH={0}>
             <StageOutputs stage={stage} />
           </GridItem>
         </Grid>
