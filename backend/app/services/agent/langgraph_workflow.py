@@ -513,8 +513,7 @@ class LangGraphWorkflow:
             }
         }
 
-        pending = state.get("pending_events", []) or []
-        pending.append(chat_event)
+        pending = [chat_event]
         state["pending_events"] = pending
 
         # Store reasoning trace
@@ -712,9 +711,8 @@ class LangGraphWorkflow:
         state["current_step"] = "data_validation"
 
         # Emit Status Update (F5)
-        # Ensure pending_events is initialized
-        if "pending_events" not in state or state["pending_events"] is None:
-            state["pending_events"] = []
+        # Clear pending_events — each node owns its own events
+        state["pending_events"] = []
 
         state["pending_events"].append({
             "event_type": "status_update",

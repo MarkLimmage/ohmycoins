@@ -240,6 +240,27 @@ class AgentRunner:
                 # clear pending_events cause the runner to re-process old events.
                 # Use (event_type, content_hash) as dedup key since nodes don't assign sequence_ids.
                 processed_event_keys: set[str] = set()
+
+                # On resume, pre-populate dedup keys from existing DB messages.
+                # LangGraph state carries pending_events across node boundaries;
+                # nodes like reason() inherit and append to previous events.
+                # Without this, the runner re-publishes old events on every resume.
+                if sequence_id > 0:
+                    existing_msgs_stmt = (
+                        select(AgentSessionMessage.metadata)
+                        .where(AgentSessionMessage.session_id == session_id)
+                        .where(AgentSessionMessage.metadata.isnot(None))
+                    )
+                    for (raw_meta,) in db.exec(existing_msgs_stmt).all():
+                        try:
+                            md = json.loads(raw_meta) if isinstance(raw_meta, str) else raw_meta
+                            if md:
+                                et = md.get("event_type", "")
+                                ep = json.dumps(md.get("payload", {}), sort_keys=True)
+                                processed_event_keys.add(f"{et}:{ep}")
+                        except Exception:
+                            pass
+
                 # Track node-emitted action requests to prevent runner overwrite (F2 enforcement)
                 last_node_action: dict[str, Any] | None = None
                 # Track current stage for COMPLETE signaling (D5)
