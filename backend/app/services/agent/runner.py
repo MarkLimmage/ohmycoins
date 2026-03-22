@@ -251,7 +251,7 @@ class AgentRunner:
                         .where(AgentSessionMessage.session_id == session_id)
                         .where(AgentSessionMessage.metadata_json.isnot(None))
                     )
-                    for (raw_meta,) in db.exec(existing_msgs_stmt).all():
+                    for raw_meta in db.exec(existing_msgs_stmt).all():
                         try:
                             md = json.loads(raw_meta) if isinstance(raw_meta, str) else raw_meta
                             if md:
