@@ -105,6 +105,12 @@ class DataAnalystAgent(BaseAgent):
                     analysis_results["exploratory_analysis"]["price_eda"] = perform_eda(
                         retrieved_data["price_data"]
                     )
+                    await self.emit_event(
+                        state,
+                        "status_update",
+                        "EXPLORATION",
+                        {"status": "DONE", "message": "EDA complete", "task_id": "perform_eda"},
+                    )
 
             # Calculate technical indicators if price data available
             if "price_data" in retrieved_data and retrieved_data["price_data"]:
@@ -115,6 +121,12 @@ class DataAnalystAgent(BaseAgent):
                     or "technical" in user_goal.lower()
                     or analysis_params.get("include_indicators", True)
                 ):
+                    await self.emit_event(
+                        state,
+                        "status_update",
+                        "EXPLORATION",
+                        {"status": "ACTIVE", "message": "Computing technical indicators...", "task_id": "compute_indicators"},
+                    )
                     # Calculate indicators
                     df_with_indicators = calculate_technical_indicators(
                         retrieved_data["price_data"], indicators=indicators_to_calc
@@ -137,6 +149,12 @@ class DataAnalystAgent(BaseAgent):
                             ).columns
                         },
                     }
+                    await self.emit_event(
+                        state,
+                        "status_update",
+                        "EXPLORATION",
+                        {"status": "DONE", "message": f"Indicators: {len(df_with_indicators.columns)} columns, {len(df_with_indicators)} points", "task_id": "compute_indicators"},
+                    )
 
             # Analyze sentiment trends if sentiment data available
             if "sentiment_data" in retrieved_data and retrieved_data["sentiment_data"]:
@@ -145,8 +163,20 @@ class DataAnalystAgent(BaseAgent):
                 if "sentiment" in user_goal.lower() or analysis_params.get(
                     "include_sentiment", True
                 ):
+                    await self.emit_event(
+                        state,
+                        "status_update",
+                        "EXPLORATION",
+                        {"status": "ACTIVE", "message": "Analysing sentiment trends...", "task_id": "analyse_sentiment"},
+                    )
                     analysis_results["sentiment_analysis"] = analyze_sentiment_trends(
                         retrieved_data["sentiment_data"], time_window=time_window
+                    )
+                    await self.emit_event(
+                        state,
+                        "status_update",
+                        "EXPLORATION",
+                        {"status": "DONE", "message": "Sentiment analysis complete", "task_id": "analyse_sentiment"},
                     )
 
             # Analyze on-chain signals if on-chain data available
@@ -219,6 +249,81 @@ class DataAnalystAgent(BaseAgent):
                         "sender": "DataAnalystAgent",
                     },
                 )
+
+            # --- Emit exploration render_output with analysis summary ---
+            out_lines = ["## Exploration Results\n"]
+
+            # Technical indicators
+            if "technical_indicators" in analysis_results:
+                ti = analysis_results["technical_indicators"]
+                out_lines.append(f"### Technical Indicators")
+                out_lines.append(f"- **Data points**: {ti.get('data_points', 0):,}")
+                out_lines.append(f"- **Indicators calculated**: {len(ti.get('columns', []))}")
+                latest = ti.get("latest_values", {})
+                if latest:
+                    selected = {k: v for k, v in latest.items() if k in ("rsi", "macd", "bb_upper", "bb_lower", "sma_20", "ema_12")}
+                    if selected:
+                        out_lines.append("| Indicator | Latest Value |")
+                        out_lines.append("|-----------|-------------|")
+                        for k, v in selected.items():
+                            out_lines.append(f"| {k.upper()} | {v:.4f} |" if isinstance(v, float) else f"| {k.upper()} | {v} |")
+                out_lines.append("")
+
+            # EDA
+            if "exploratory_analysis" in analysis_results:
+                eda = analysis_results["exploratory_analysis"]
+                price_eda = eda.get("price_eda", {})
+                if price_eda:
+                    out_lines.append("### Exploratory Data Analysis")
+                    stats = price_eda.get("basic_stats", {})
+                    if stats:
+                        out_lines.append("| Metric | Value |")
+                        out_lines.append("|--------|-------|")
+                        for k, v in list(stats.items())[:8]:
+                            out_lines.append(f"| {k} | {v:.4f} |" if isinstance(v, float) else f"| {k} | {v} |")
+                    out_lines.append("")
+
+            # Sentiment
+            if "sentiment_analysis" in analysis_results:
+                sa = analysis_results["sentiment_analysis"]
+                overall = sa.get("overall_sentiment", {})
+                news = sa.get("news_sentiment", {})
+                social = sa.get("social_sentiment", {})
+                out_lines.append("### Sentiment Analysis")
+                out_lines.append(f"- **Trend**: {overall.get('trend', 'N/A')} (score: {overall.get('avg_score', 0):.3f})")
+                out_lines.append(f"- **News articles**: {news.get('count', 0)}")
+                out_lines.append(f"- **Social posts**: {social.get('count', 0)}")
+                out_lines.append("")
+
+            # Anomaly detection
+            if "anomaly_detection" in analysis_results:
+                ad = analysis_results["anomaly_detection"]
+                out_lines.append("### Anomaly Detection")
+                out_lines.append(f"- **Model**: {ad.get('model', 'IsolationForest')}")
+                out_lines.append(f"- **Total anomalies**: {ad.get('total_anomalies', 0)}")
+                out_lines.append("")
+
+            # On-chain / Catalyst
+            if "on_chain_signals" in analysis_results:
+                out_lines.append("### On-Chain Signals")
+                out_lines.append(f"- Metrics analysed: {len(analysis_results['on_chain_signals'].get('metrics', {}))}")
+                out_lines.append("")
+
+            if "catalyst_impact" in analysis_results:
+                ci = analysis_results["catalyst_impact"]
+                out_lines.append("### Catalyst Impact")
+                out_lines.append(f"- Events analysed: {ci.get('events_analyzed', 0)}")
+                out_lines.append("")
+
+            await self.emit_event(
+                state,
+                "render_output",
+                "EXPLORATION",
+                {
+                    "mime_type": "text/markdown",
+                    "content": "\n".join(out_lines),
+                },
+            )
 
         except Exception as e:
             state["error"] = f"Data analysis failed: {str(e)}"

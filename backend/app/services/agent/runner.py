@@ -538,8 +538,14 @@ class AgentRunner:
 
                         if next_node == "train_model":
                             description = "Model training is ready. Please review data analysis and feature selection."
+                        elif next_node == "finalize" and current_tracked_stage == "EXPLORATION":
+                            description = "Exploration complete. Review the analysis results and approve to finalise."
                         elif next_node == "finalize":
                             description = "Workflow complete. Please review reports and model artifacts before finalization."
+                        elif next_node == "analyze_data":
+                            description = "Data quality check complete. Review the quality report and approve to proceed to exploration."
+                        elif next_node in ("report", "generate_report") and current_tracked_stage == "EXPLORATION":
+                            description = "Exploration complete. Review the analysis results and approve to generate report."
 
                         stage = _get_stage_from_step(next_node)
 

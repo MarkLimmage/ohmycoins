@@ -160,17 +160,42 @@ class DataRetrievalAgent(BaseAgent):
                     start_date=start_date,
                     end_date=end_date,
                 )
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {
+                        "status": "DONE",
+                        "message": f"Price data: {len(retrieved_data['price_data']):,} rows",
+                        "task_id": "fetch_price_data"
+                    },
+                )
 
             # Fetch sentiment data if requested
             if "sentiment" in user_goal.lower() or retrieval_params.get(
                 "include_sentiment", False
             ):
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "ACTIVE", "message": "Fetching sentiment data...", "task_id": "fetch_sentiment_data"},
+                )
                 currencies = retrieval_params.get("currencies", [coin_type])
                 retrieved_data["sentiment_data"] = await fetch_sentiment_data(
                     self.session,
                     start_date=start_date,
                     end_date=end_date,
                     currencies=currencies,
+                )
+                sd = retrieved_data["sentiment_data"]
+                news_n = len(sd.get("news_sentiment", []))
+                social_n = len(sd.get("social_sentiment", []))
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "DONE", "message": f"Sentiment: {news_n} news, {social_n} social", "task_id": "fetch_sentiment_data"},
                 )
 
             # Fetch on-chain metrics if requested
@@ -179,11 +204,23 @@ class DataRetrievalAgent(BaseAgent):
                 or "onchain" in user_goal.lower()
                 or retrieval_params.get("include_onchain", False)
             ):
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "ACTIVE", "message": "Fetching on-chain metrics...", "task_id": "fetch_onchain_data"},
+                )
                 retrieved_data["on_chain_metrics"] = await fetch_on_chain_metrics(
                     self.session,
                     asset=coin_type,
                     start_date=start_date,
                     end_date=end_date,
+                )
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "DONE", "message": f"On-chain: {len(retrieved_data['on_chain_metrics'])} metrics", "task_id": "fetch_onchain_data"},
                 )
 
             # Fetch catalyst events if requested
@@ -192,12 +229,24 @@ class DataRetrievalAgent(BaseAgent):
                 or "event" in user_goal.lower()
                 or retrieval_params.get("include_catalysts", False)
             ):
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "ACTIVE", "message": "Fetching catalyst events...", "task_id": "fetch_catalyst_data"},
+                )
                 currencies = retrieval_params.get("currencies", [coin_type])
                 retrieved_data["catalyst_events"] = await fetch_catalyst_events(
                     self.session,
                     start_date=start_date,
                     end_date=end_date,
                     currencies=currencies,
+                )
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "DATA_ACQUISITION",
+                    {"status": "DONE", "message": f"Catalysts: {len(retrieved_data['catalyst_events'])} events", "task_id": "fetch_catalyst_data"},
                 )
 
             # --- Build outcome summary for StageOutputs panel ---

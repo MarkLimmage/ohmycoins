@@ -388,7 +388,7 @@ class LangGraphWorkflow:
         return workflow.compile(
             checkpointer=self.checkpointer,
             interrupt_before=["train_model", "finalize", "human_review"], # F7: Interrupt for review
-            interrupt_after=["scope_confirmation", "model_selection"],
+            interrupt_after=["scope_confirmation", "validate_data", "analyze_data", "model_selection"],
         )
 
     async def _initialize_node(self, state: AgentState) -> AgentState:
@@ -827,6 +827,48 @@ class LangGraphWorkflow:
 
         # Log validation results
         logger.info(f"Data validation: {quality_checks['overall']}")
+
+        # --- Build quality check render_output for PREPARATION stage ---
+        overall = quality_checks.get("overall", "unknown")
+        qc_lines = ["## Data Quality Report\n"]
+        qc_lines.append(f"**Overall quality**: `{overall}`\n")
+        qc_lines.append("| Check | Result |")
+        qc_lines.append("|-------|--------|")
+        qc_lines.append(f"| Has data | {'Yes' if quality_checks.get('has_data') else 'No'} |")
+        dtypes = quality_checks.get("data_types_available", [])
+        qc_lines.append(f"| Data types | {', '.join(dtypes) if dtypes else 'none'} |")
+        qc_lines.append(f"| Price records | {quality_checks.get('price_records', 0):,} |")
+        qc_lines.append(f"| Sufficient records (≥30) | {'Yes' if quality_checks.get('sufficient_records') else 'No'} |")
+        if quality_checks.get("anomaly_stats"):
+            astats = quality_checks["anomaly_stats"]
+            qc_lines.append(f"| Anomalies (Z>3) | {astats.get('anomaly_count', 0)} (max Z: {astats.get('max_z_score', 0):.2f}) |")
+        if quality_checks.get("price_variance") is not None:
+            qc_lines.append(f"| Price variance | {quality_checks['price_variance']:.6f} |")
+        ci = quality_checks.get("continuity_issues", 0)
+        if ci:
+            qc_lines.append(f"| Continuity issues | {ci} |")
+        if quality_checks.get("continuity_warning"):
+            qc_lines.append(f"\n⚠ {quality_checks['continuity_warning']}")
+        if quality_checks.get("status_message"):
+            qc_lines.append(f"\n⚠ {quality_checks['status_message']}")
+
+        state["pending_events"].append({
+            "event_type": "status_update",
+            "stage": "PREPARATION",
+            "payload": {
+                "status": "ACTIVE",
+                "message": f"Quality assessment: {overall}",
+                "task_id": "validate_quality"
+            }
+        })
+        state["pending_events"].append({
+            "event_type": "render_output",
+            "stage": "PREPARATION",
+            "payload": {
+                "mime_type": "text/markdown",
+                "content": "\n".join(qc_lines),
+            }
+        })
 
         # Handle retry logic for no_data scenario (LangGraph state updates must happen in nodes)
         if quality_checks.get("overall") == "no_data":

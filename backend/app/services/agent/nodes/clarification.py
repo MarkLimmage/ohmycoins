@@ -243,6 +243,30 @@ def handle_clarification_response(
              state["user_goal"] = f"{state.get('user_goal', '')}. Adjustment: {adjustment}"
              logger.info(f"ScopeConfirmation: Goal adjusted: {adjustment}")
 
+        # --- Wire scope_interpretation → retrieval_params ---
+        scope_interp = state.get("scope_interpretation", {})
+        retrieval_params = state.get("retrieval_params") or {}
+
+        # Parse timeframe string ("7d", "30d", "1w", "2 weeks", etc.) → days
+        timeframe = scope_interp.get("timeframe", "30d")
+        retrieval_params["days"] = _parse_timeframe_to_days(timeframe)
+
+        # Map assets → coin_type (first asset) and currencies list
+        assets = scope_interp.get("assets", [])
+        if assets:
+            retrieval_params["coin_type"] = assets[0]
+            retrieval_params["currencies"] = assets
+
+        # Map analysis_type to data inclusion flags
+        analysis_type = scope_interp.get("analysis_type", "")
+        if "sentiment" in analysis_type.lower():
+            retrieval_params["include_sentiment"] = True
+        if "onchain" in analysis_type.lower() or "on_chain" in analysis_type.lower():
+            retrieval_params["include_onchain"] = True
+
+        state["retrieval_params"] = retrieval_params
+        logger.info(f"ScopeConfirmation: retrieval_params set to {retrieval_params}")
+
         # Add to reasoning trace
         if "reasoning_trace" not in state or state["reasoning_trace"] is None:
             state["reasoning_trace"] = []
@@ -281,6 +305,33 @@ def handle_clarification_response(
     logger.info(f"ClarificationNode: Updated goal: {clarified_goal}")
 
     return state
+
+
+def _parse_timeframe_to_days(timeframe: str) -> int:
+    """
+    Parse a timeframe string to a number of days.
+
+    Supports: "7d", "30d", "1w", "2 weeks", "3m", "7 days", etc.
+    Defaults to 30 if unparseable.
+    """
+    import re
+
+    tf = timeframe.strip().lower()
+    m = re.match(r"(\d+)\s*(d|day|days|w|week|weeks|m|month|months)", tf)
+    if m:
+        value = int(m.group(1))
+        unit = m.group(2)
+        if unit.startswith("d"):
+            return value
+        elif unit.startswith("w"):
+            return value * 7
+        elif unit.startswith("m"):
+            return value * 30
+    # Try bare number
+    try:
+        return int(tf)
+    except ValueError:
+        return 30
 
 
 def _incorporate_clarifications(
@@ -390,6 +441,28 @@ def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
             "event_type": "plan_established",
             "stage": "BUSINESS_UNDERSTANDING",
             "payload": { "plan": tasks }
+        })
+
+        # Emit agreed scope as a render_output for the BU stage outputs panel
+        scope_md_lines = [
+            "## Agreed Analysis Scope\n",
+            f"**Goal**: {user_goal}\n",
+            "| Parameter | Value |",
+            "|-----------|-------|",
+            f"| Assets | {', '.join(scope.assets)} |",
+            f"| Timeframe | {scope.timeframe} |",
+            f"| Analysis type | {scope.analysis_type.replace('_', ' ')} |",
+            f"| Modelling target | {scope.modeling_target} |",
+            f"\n**Indicators**: {', '.join(scope.indicators)}\n",
+            f"**Reasoning**: {scope.reasoning}",
+        ]
+        events.append({
+            "event_type": "render_output",
+            "stage": "BUSINESS_UNDERSTANDING",
+            "payload": {
+                "mime_type": "text/markdown",
+                "content": "\n".join(scope_md_lines),
+            }
         })
 
         return {
