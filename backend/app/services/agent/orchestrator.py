@@ -304,12 +304,23 @@ class AgentOrchestrator:
                     "approval_granted": True,
                     "approval_needed": False,
                     "scope_confirmed": True,
+                    "pending_events": [],
                 }
             elif action.upper() == "REJECT":
                 updates = {"approval_rejected": True, "approval_needed": False}
 
             if updates:
-                await workflow.graph.aupdate_state(config, updates)
+                # Determine which node was interrupted from the checkpoint
+                graph_state = await workflow.graph.aget_state(config)
+                last_node = "scope_confirmation"  # safe default
+                if graph_state and graph_state.metadata:
+                    writes = graph_state.metadata.get("writes") or {}
+                    if writes:
+                        last_node = next(iter(writes.keys()))
+
+                await workflow.graph.aupdate_state(
+                    config, updates, as_node=last_node
+                )
 
         # Update DB status
         await self.session_manager.update_session_status(
