@@ -58,7 +58,10 @@ class DataAnalystAgent(BaseAgent):
                 state,
                 "stream_chat",
                 "EXPLORATION",
-                {"message": "I'm starting the data analysis phase to identify patterns and signals.", "sender": "DataAnalystAgent"},
+                {
+                    "message": "I'm starting the data analysis phase to identify patterns and signals.",
+                    "sender": "DataAnalystAgent",
+                },
             )
             await self.emit_event(
                 state,
@@ -67,7 +70,7 @@ class DataAnalystAgent(BaseAgent):
                 {
                     "status": "ACTIVE",
                     "message": "Initializing analysis pipeline...",
-                    "task_id": "compute_technical_indicators"
+                    "task_id": "compute_technical_indicators",
                 },
             )
 
@@ -97,13 +100,20 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "stream_chat",
                         "EXPLORATION",
-                        {"message": "Performing seasonal decomposition and trend analysis...", "sender": "DataAnalystAgent"},
+                        {
+                            "message": "Performing seasonal decomposition and trend analysis...",
+                            "sender": "DataAnalystAgent",
+                        },
                     )
                     await self.emit_event(
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "ACTIVE", "message": "Running EDA on price metrics...", "task_id": "perform_eda"},
+                        {
+                            "status": "ACTIVE",
+                            "message": "Running EDA on price metrics...",
+                            "task_id": "perform_eda",
+                        },
                     )
                     analysis_results["exploratory_analysis"]["price_eda"] = perform_eda(
                         retrieved_data["price_data"]
@@ -112,7 +122,11 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "DONE", "message": "EDA complete", "task_id": "perform_eda"},
+                        {
+                            "status": "DONE",
+                            "message": "EDA complete",
+                            "task_id": "perform_eda",
+                        },
                     )
 
             # Calculate technical indicators if price data available
@@ -128,7 +142,11 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "ACTIVE", "message": "Computing technical indicators...", "task_id": "compute_indicators"},
+                        {
+                            "status": "ACTIVE",
+                            "message": "Computing technical indicators...",
+                            "task_id": "compute_indicators",
+                        },
                     )
                     # Calculate indicators
                     df_with_indicators = calculate_technical_indicators(
@@ -156,15 +174,23 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "DONE", "message": f"Indicators: {len(df_with_indicators.columns)} columns, {len(df_with_indicators)} points", "task_id": "compute_indicators"},
+                        {
+                            "status": "DONE",
+                            "message": f"Indicators: {len(df_with_indicators.columns)} columns, {len(df_with_indicators)} points",
+                            "task_id": "compute_indicators",
+                        },
                     )
 
             # Analyze sentiment trends if sentiment data available
             sentiment_data_raw = retrieved_data.get("sentiment_data", {})
             has_sentiment = (
-                len(sentiment_data_raw.get("news_sentiment", [])) > 0
-                or len(sentiment_data_raw.get("social_sentiment", [])) > 0
-            ) if isinstance(sentiment_data_raw, dict) else bool(sentiment_data_raw)
+                (
+                    len(sentiment_data_raw.get("news_sentiment", [])) > 0
+                    or len(sentiment_data_raw.get("social_sentiment", [])) > 0
+                )
+                if isinstance(sentiment_data_raw, dict)
+                else bool(sentiment_data_raw)
+            )
             if has_sentiment:
                 time_window = analysis_params.get("sentiment_window", "24h")
 
@@ -175,7 +201,11 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "ACTIVE", "message": "Analysing sentiment trends...", "task_id": "analyse_sentiment"},
+                        {
+                            "status": "ACTIVE",
+                            "message": "Analysing sentiment trends...",
+                            "task_id": "analyse_sentiment",
+                        },
                     )
                     analysis_results["sentiment_analysis"] = analyze_sentiment_trends(
                         sentiment_data_raw, time_window=time_window
@@ -184,15 +214,22 @@ class DataAnalystAgent(BaseAgent):
                         state,
                         "status_update",
                         "EXPLORATION",
-                        {"status": "DONE", "message": "Sentiment analysis complete", "task_id": "analyse_sentiment"},
+                        {
+                            "status": "DONE",
+                            "message": "Sentiment analysis complete",
+                            "task_id": "analyse_sentiment",
+                        },
                     )
             else:
                 # No actual sentiment data — record unavailability if goal expected it
                 scope = state.get("scope_interpretation", {})
                 analysis_type = scope.get("analysis_type", "")
-                if "sentiment" in user_goal.lower() or "sentiment" in analysis_type.lower():
+                if (
+                    "sentiment" in user_goal.lower()
+                    or "sentiment" in analysis_type.lower()
+                ):
                     analysis_results["sentiment_analysis"] = {
-                        "overall_sentiment": {"trend": "unavailable", "avg_score": None},
+                        "overall_sentiment": {"trend": "unavailable", "avg_score": 0.0},
                         "news_sentiment": {"count": 0, "avg_score": 0.0},
                         "social_sentiment": {"count": 0, "avg_score": 0.0},
                         "note": "No sentiment data available for analysis",
@@ -258,11 +295,17 @@ class DataAnalystAgent(BaseAgent):
                     state,
                     "status_update",
                     "EXPLORATION",
-                    {"status": "ACTIVE", "message": "Computing correlations...", "task_id": "compute_correlations"},
+                    {
+                        "status": "ACTIVE",
+                        "message": "Computing correlations...",
+                        "task_id": "compute_correlations",
+                    },
                 )
                 # Build price DataFrame for correlation
                 price_data_list = retrieved_data.get("price_data", [])
-                corr_price_df = pd.DataFrame(price_data_list) if price_data_list else pd.DataFrame()
+                corr_price_df = (
+                    pd.DataFrame(price_data_list) if price_data_list else pd.DataFrame()
+                )
                 if not corr_price_df.empty and "last" in corr_price_df.columns:
                     corr_price_df["close"] = corr_price_df["last"]
 
@@ -275,7 +318,11 @@ class DataAnalystAgent(BaseAgent):
                     state,
                     "status_update",
                     "EXPLORATION",
-                    {"status": "DONE", "message": "Correlation analysis complete", "task_id": "compute_correlations"},
+                    {
+                        "status": "DONE",
+                        "message": "Correlation analysis complete",
+                        "task_id": "compute_correlations",
+                    },
                 )
 
             # Generate insights summary
@@ -308,15 +355,26 @@ class DataAnalystAgent(BaseAgent):
                 ti = analysis_results["technical_indicators"]
                 out_lines.append("### Technical Indicators")
                 out_lines.append(f"- **Data points**: {ti.get('data_points', 0):,}")
-                out_lines.append(f"- **Indicators calculated**: {len(ti.get('columns', []))}")
+                out_lines.append(
+                    f"- **Indicators calculated**: {len(ti.get('columns', []))}"
+                )
                 latest = ti.get("latest_values", {})
                 if latest:
-                    selected = {k: v for k, v in latest.items() if k in ("rsi", "macd", "bb_upper", "bb_lower", "sma_20", "ema_12")}
+                    selected = {
+                        k: v
+                        for k, v in latest.items()
+                        if k
+                        in ("rsi", "macd", "bb_upper", "bb_lower", "sma_20", "ema_12")
+                    }
                     if selected:
                         out_lines.append("| Indicator | Latest Value |")
                         out_lines.append("|-----------|-------------|")
                         for k, v in selected.items():
-                            out_lines.append(f"| {k.upper()} | {v:.4f} |" if isinstance(v, float) else f"| {k.upper()} | {v} |")
+                            out_lines.append(
+                                f"| {k.upper()} | {v:.4f} |"
+                                if isinstance(v, float)
+                                else f"| {k.upper()} | {v} |"
+                            )
                 out_lines.append("")
 
             # EDA
@@ -343,7 +401,11 @@ class DataAnalystAgent(BaseAgent):
                         out_lines.append("| Metric | Value |")
                         out_lines.append("|--------|-------|")
                         for k, v in list(stats.items())[:12]:
-                            out_lines.append(f"| {k} | {v:.4f} |" if isinstance(v, float) else f"| {k} | {v} |")
+                            out_lines.append(
+                                f"| {k} | {v:.4f} |"
+                                if isinstance(v, float)
+                                else f"| {k} | {v} |"
+                            )
                     else:
                         out_lines.append("_No numeric statistics available._")
                     out_lines.append("")
@@ -355,7 +417,9 @@ class DataAnalystAgent(BaseAgent):
                 news = sa.get("news_sentiment", {})
                 social = sa.get("social_sentiment", {})
                 out_lines.append("### Sentiment Analysis")
-                out_lines.append(f"- **Trend**: {overall.get('trend', 'N/A')} (score: {overall.get('avg_score', 0):.3f})")
+                out_lines.append(
+                    f"- **Trend**: {overall.get('trend', 'N/A')} (score: {overall.get('avg_score', 0):.3f})"
+                )
                 out_lines.append(f"- **News articles**: {news.get('count', 0)}")
                 out_lines.append(f"- **Social posts**: {social.get('count', 0)}")
                 out_lines.append("")
@@ -365,13 +429,17 @@ class DataAnalystAgent(BaseAgent):
                 ad = analysis_results["anomaly_detection"]
                 out_lines.append("### Anomaly Detection")
                 out_lines.append(f"- **Model**: {ad.get('model', 'IsolationForest')}")
-                out_lines.append(f"- **Total anomalies**: {ad.get('total_anomalies', 0)}")
+                out_lines.append(
+                    f"- **Total anomalies**: {ad.get('total_anomalies', 0)}"
+                )
                 out_lines.append("")
 
             # On-chain / Catalyst
             if "on_chain_signals" in analysis_results:
                 out_lines.append("### On-Chain Signals")
-                out_lines.append(f"- Metrics analysed: {len(analysis_results['on_chain_signals'].get('metrics', {}))}")
+                out_lines.append(
+                    f"- Metrics analysed: {len(analysis_results['on_chain_signals'].get('metrics', {}))}"
+                )
                 out_lines.append("")
 
             if "catalyst_impact" in analysis_results:
@@ -393,8 +461,12 @@ class DataAnalystAgent(BaseAgent):
                         out_lines.append(f"| {pair['pair']} | {pair['r']:.4f} |")
                 psc = ca.get("price_sentiment_correlation", {})
                 if psc and psc.get("pearson_r") is not None:
-                    out_lines.append(f"- **Price–Sentiment Pearson r**: {psc['pearson_r']}")
-                    out_lines.append(f"- **Price–Sentiment Spearman r**: {psc.get('spearman_r', 'N/A')}")
+                    out_lines.append(
+                        f"- **Price–Sentiment Pearson r**: {psc['pearson_r']}"
+                    )
+                    out_lines.append(
+                        f"- **Price–Sentiment Spearman r**: {psc.get('spearman_r', 'N/A')}"
+                    )
                 elif psc.get("note"):
                     out_lines.append(f"- {psc['note']}")
                 out_lines.append("")
@@ -462,22 +534,34 @@ class DataAnalystAgent(BaseAgent):
             if total_sources > 0:
                 parts = []
                 if news_count > 0:
-                    parts.append(f"{news_count} news articles (avg score: {news.get('avg_score', 0):.3f}, {news.get('positive_ratio', 0)*100:.0f}% positive)")
+                    parts.append(
+                        f"{news_count} news articles (avg score: {news.get('avg_score', 0):.3f}, {news.get('positive_ratio', 0) * 100:.0f}% positive)"
+                    )
                 if social_count > 0:
-                    parts.append(f"{social_count} social posts (avg score: {social.get('avg_score', 0):.3f})")
+                    parts.append(
+                        f"{social_count} social posts (avg score: {social.get('avg_score', 0):.3f})"
+                    )
                 insights.append(f"Sentiment data: {', '.join(parts)}")
 
             if trend == "bullish":
-                insights.append(f"Overall sentiment is bullish (score: {avg_score:.3f}), positive market outlook")
+                insights.append(
+                    f"Overall sentiment is bullish (score: {avg_score:.3f}), positive market outlook"
+                )
             elif trend == "bearish":
-                insights.append(f"Overall sentiment is bearish (score: {avg_score:.3f}), cautious market outlook")
+                insights.append(
+                    f"Overall sentiment is bearish (score: {avg_score:.3f}), cautious market outlook"
+                )
             else:
-                insights.append(f"Overall sentiment is neutral (score: {avg_score:.3f}), no strong directional bias")
+                insights.append(
+                    f"Overall sentiment is neutral (score: {avg_score:.3f}), no strong directional bias"
+                )
 
             # Report score dispersion if available
             std = news.get("std_score", 0.0)
             if std > 0.3 and news_count > 5:
-                insights.append(f"High sentiment dispersion (std: {std:.3f}) — mixed signals among sources")
+                insights.append(
+                    f"High sentiment dispersion (std: {std:.3f}) — mixed signals among sources"
+                )
 
         # On-chain insights
         if "on_chain_signals" in analysis_results:
