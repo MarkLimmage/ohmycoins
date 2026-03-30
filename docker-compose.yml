@@ -82,6 +82,9 @@ services:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     build:
       context: ./backend
+    dns:
+      - 192.168.0.241
+      - 1.1.1.1
     networks:
       - traefik-public
       - default
@@ -116,6 +119,9 @@ services:
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
+    dns:
+      - 192.168.0.241
+      - 1.1.1.1
     deploy:
       replicas: 2
       update_config:
@@ -193,6 +199,9 @@ services:
   orchestrator:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
+    dns:
+      - 192.168.0.241
+      - 1.1.1.1
     deploy:
       replicas: 1
       restart_policy:
@@ -248,6 +257,9 @@ services:
   watcher:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
+    dns:
+      - 192.168.0.241
+      - 1.1.1.1
     networks:
       - traefik-public
       - default
@@ -322,6 +334,9 @@ services:
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
     image: ${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}
+    dns:
+      - 192.168.0.241
+      - 1.1.1.1
     env_file:
       - .env
     depends_on:
@@ -345,6 +360,9 @@ services:
     image: python:3.10-slim
     container_name: mlflow
     restart: always
+    dns:
+      - 192.168.0.241
+      - 1.1.1.1
     ports:
       - "5000:5000"
     depends_on:
