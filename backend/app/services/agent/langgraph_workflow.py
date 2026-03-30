@@ -139,6 +139,8 @@ class AgentState(TypedDict):
     circuit_breaker_triggered: bool  # Flag if circuit breaker tripped (F7)
     action_requests: list[dict[str, Any]] | None  # Action requests for user intervention (F7)
     interrupt_limit_reached: bool  # Flag if retry limit reached
+    # Stage tracking
+    completed_stages: list[str]  # Tracks which DSLC stages have completed
     # Phase 5 Messaging Infrastructure
     sequence_id: int | None  # Monotonic sequence counter
     pending_events: list[dict[str, Any]] | None  # Events to be emitted by the runner
@@ -434,6 +436,9 @@ class LangGraphWorkflow:
         state["stage_iteration_counts"] = {}
         state["terminal_error"] = None
 
+        # Stage tracking
+        state["completed_stages"] = []
+
         state["messages"].append(
             {
                 "role": "system",
@@ -465,6 +470,40 @@ class LangGraphWorkflow:
 
         # Increment iteration for 10-iteration cap
         state["iteration"] = state.get("iteration", 0) + 1
+
+        # Determine current stage dynamically based on completed stages
+        completed_stages = list(state.get("completed_stages", []))
+        if state.get("analysis_completed"):
+            current_stage = "EXPLORATION"
+        elif state.get("data_retrieved"):
+            current_stage = "DATA_ACQUISITION"
+        elif "BUSINESS_UNDERSTANDING" in completed_stages:
+            current_stage = "DATA_ACQUISITION"
+        else:
+            current_stage = "BUSINESS_UNDERSTANDING"
+
+        # Mark the previous stage as COMPLETE (only once per stage)
+        prev_stage = None
+        if current_stage == "DATA_ACQUISITION" and "BUSINESS_UNDERSTANDING" not in completed_stages:
+            prev_stage = "BUSINESS_UNDERSTANDING"
+        elif current_stage == "EXPLORATION" and "DATA_ACQUISITION" not in completed_stages:
+            prev_stage = "DATA_ACQUISITION"
+
+        state["pending_events"] = []
+
+        if prev_stage and prev_stage not in completed_stages:
+            completed_stages.append(prev_stage)
+            state["pending_events"].append({
+                "event_type": "status_update",
+                "stage": prev_stage,
+                "payload": {
+                    "status": "COMPLETE",
+                    "message": f"{prev_stage} complete",
+                    "task_id": "stage_complete"
+                }
+            })
+
+        state["completed_stages"] = completed_stages
 
         # Build context for reasoning
         context_parts = [f"User Goal: {state.get('user_goal', 'Unknown')}"]
@@ -502,10 +541,10 @@ class LangGraphWorkflow:
         # Perform reasoning (simplified version without LLM if no API key)
         reasoning = self._determine_next_action(state)
 
-        # Emit Reasoning as stream_chat (F3)
+        # Emit Reasoning as stream_chat with correct stage attribution
         chat_event = {
             "event_type": "stream_chat",
-            "stage": "BUSINESS_UNDERSTANDING",  # Reasoning is always part of BU
+            "stage": current_stage,
             "payload": {
                 "message": f"Reasoning: {reasoning}",
                 "sender": "assistant",
@@ -513,8 +552,7 @@ class LangGraphWorkflow:
             }
         }
 
-        pending = [chat_event]
-        state["pending_events"] = pending
+        state["pending_events"].append(chat_event)
 
         # Store reasoning trace
         reasoning_entry = {
@@ -827,6 +865,43 @@ class LangGraphWorkflow:
 
         # Log validation results
         logger.info(f"Data validation: {quality_checks['overall']}")
+
+        # --- Issue 3: Goal-aware quality warnings ---
+        # Check if goal-essential data types are present based on scope_interpretation
+        scope = state.get("scope_interpretation", {})
+        indicators = scope.get("indicators", [])
+        goal_analysis_type = (scope.get("analysis_type") or "").lower()
+        goal_warnings = []
+
+        if any("sentiment" in i.lower() for i in indicators) or "sentiment" in goal_analysis_type:
+            sentiment = retrieved_data.get("sentiment_data", {})
+            news_count = len(sentiment.get("news_sentiment", [])) if isinstance(sentiment, dict) else 0
+            social_count = len(sentiment.get("social_sentiment", [])) if isinstance(sentiment, dict) else 0
+            if news_count == 0 and social_count == 0:
+                goal_warnings.append("Goal requires sentiment data but none was retrieved")
+
+        if any("on_chain" in i.lower() or "onchain" in i.lower() for i in indicators) or "on_chain" in goal_analysis_type:
+            onchain = retrieved_data.get("on_chain_data") or retrieved_data.get("onchain_data") or {}
+            if not onchain or all(len(v) == 0 for v in onchain.values() if isinstance(v, list)):
+                goal_warnings.append("Goal requires on-chain data but none was retrieved")
+
+        if any("correlation" in i.lower() for i in indicators) or "correlation" in goal_analysis_type:
+            # Correlation requires at least 2 data types
+            available_types = quality_checks.get("data_types_available", [])
+            if len(available_types) < 2:
+                goal_warnings.append("Goal requires correlation analysis but only one data type is available")
+
+        # Emit warnings (don't block pipeline — just inform)
+        for w in goal_warnings:
+            state["pending_events"].append({
+                "event_type": "status_update",
+                "stage": "PREPARATION",
+                "payload": {
+                    "status": "WARNING",
+                    "message": f"⚠ {w}",
+                    "task_id": "goal_quality_check"
+                }
+            })
 
         # --- Build quality check render_output for PREPARATION stage ---
         overall = quality_checks.get("overall", "unknown")
@@ -1250,6 +1325,23 @@ class LangGraphWorkflow:
         if state.get("error"):
             return "error"
 
+        # Determine if modeling is required from scope_interpretation (Issue 9)
+        scope = state.get("scope_interpretation", {})
+        analysis_type = (scope.get("analysis_type") or "").lower()
+        requires_modeling = analysis_type in [
+            "prediction", "forecasting", "modeling", "classification",
+            "regression", "machine_learning", "ml",
+        ]
+
+        # Keyword fallback: if scope_interpretation didn't set analysis_type,
+        # check user_goal directly for backward compatibility
+        if not requires_modeling and not analysis_type:
+            user_goal = state.get("user_goal", "").lower()
+            requires_modeling = any(
+                keyword in user_goal
+                for keyword in ["predict", "model", "forecast", "train", "ml"]
+            )
+
         # Normal flow based on completion status
         if not state.get("data_retrieved"):
             return "retrieve"
@@ -1257,20 +1349,14 @@ class LangGraphWorkflow:
             return "retrieve"
         elif not state.get("analysis_completed") and not state.get("skip_analysis"):
             return "analyze"
-        elif not state.get("model_trained") and not state.get("skip_training"):
-            # Check if modeling is needed
-            user_goal = state.get("user_goal", "").lower()
-            if any(
-                keyword in user_goal
-                for keyword in ["predict", "model", "forecast", "train", "ml"]
-            ):
-                return "train"
-            else:
-                # Skip training for non-ML goals
-                state["skip_training"] = True
-                return "finalize"
-        elif state.get("model_trained") and not state.get("model_evaluated"):
+        elif requires_modeling and not state.get("model_trained"):
+            return "train"
+        elif requires_modeling and state.get("model_trained") and not state.get("model_evaluated"):
             return "evaluate"
+        elif not requires_modeling and not state.get("skip_training"):
+            # Skip training for non-ML goals, go to report
+            state["skip_training"] = True
+            return "report"
         elif state.get("model_evaluated") and not state.get("report_generated"):
             return "report"
         else:
@@ -1360,21 +1446,26 @@ class LangGraphWorkflow:
         if state.get("approval_needed") and not state.get("approval_granted"):
              return "review"
 
-        # Check if training is needed
-        user_goal = state.get("user_goal", "").lower()
-        is_ml_goal = any(
-            keyword in user_goal
-            for keyword in ["predict", "model", "forecast", "train", "ml"]
-        )
+        # Check if training is needed (scope_interpretation primary, keyword fallback)
+        scope = state.get("scope_interpretation", {})
+        analysis_type = (scope.get("analysis_type") or "").lower()
+        is_ml_goal = analysis_type in [
+            "prediction", "forecasting", "modeling", "classification",
+            "regression", "machine_learning", "ml",
+        ]
+
+        if not is_ml_goal and not analysis_type:
+            user_goal = state.get("user_goal", "").lower()
+            is_ml_goal = any(
+                keyword in user_goal
+                for keyword in ["predict", "model", "forecast", "train", "ml"]
+            )
 
         if is_ml_goal:
             return "train"
-        elif state.get("anomaly_detected"):
-            # Sprint 2.36: anomalies bypass finalize, go to report
-            return "report"
         else:
-            # No training needed, finalize
-            return "finalize"
+            # No training needed, go to report (always generate report)
+            return "report"
 
     def _route_after_training(
         self, state: AgentState

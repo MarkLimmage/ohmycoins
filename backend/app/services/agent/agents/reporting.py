@@ -210,6 +210,17 @@ class ReportingAgent(BaseAgent):
             complete_report_path.write_text(complete_report)
             reporting_results["complete_report_path"] = str(complete_report_path)
 
+            # Always emit the complete report as render_output (Issue 8)
+            await self.emit_event(
+                state,
+                "render_output",
+                "DEPLOYMENT",
+                {
+                    "mime_type": "text/markdown",
+                    "content": complete_report,
+                },
+            )
+
             # Update state
             state["reporting_results"] = reporting_results
             state["reporting_completed"] = True
