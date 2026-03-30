@@ -306,7 +306,7 @@ class DataAnalystAgent(BaseAgent):
             # Technical indicators
             if "technical_indicators" in analysis_results:
                 ti = analysis_results["technical_indicators"]
-                out_lines.append(f"### Technical Indicators")
+                out_lines.append("### Technical Indicators")
                 out_lines.append(f"- **Data points**: {ti.get('data_points', 0):,}")
                 out_lines.append(f"- **Indicators calculated**: {len(ti.get('columns', []))}")
                 latest = ti.get("latest_values", {})

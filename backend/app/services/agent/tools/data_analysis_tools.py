@@ -374,7 +374,9 @@ def perform_eda(
         }
 
     # Flat basic_stats — prioritise 'close' / 'last' for the headline summary
-    close_col = "close" if "close" in df.columns else ("last" if "last" in df.columns else None)
+    close_col = (
+        "close" if "close" in df.columns else ("last" if "last" in df.columns else None)
+    )
     basic: dict[str, Any] = {
         "rows": len(df),
         "columns": len(df.columns),
@@ -447,7 +449,9 @@ def perform_correlation_analysis(
                     seen.add((c1, c2))
                     val = corr_matrix.loc[c1, c2]
                     if not np.isnan(val):
-                        top_pairs.append({"pair": f"{c1} vs {c2}", "r": round(float(val), 4)})
+                        top_pairs.append(
+                            {"pair": f"{c1} vs {c2}", "r": round(float(val), 4)}
+                        )
         top_pairs.sort(key=lambda x: abs(x["r"]), reverse=True)
         results["top_correlations"] = top_pairs[:10]
 
@@ -461,16 +465,20 @@ def perform_correlation_analysis(
         sentiment_scores: list[dict[str, Any]] = []
         for item in news:
             if item.get("sentiment_score") is not None and item.get("published_at"):
-                sentiment_scores.append({
-                    "date": str(item["published_at"])[:10],
-                    "score": float(item["sentiment_score"]),
-                })
+                sentiment_scores.append(
+                    {
+                        "date": str(item["published_at"])[:10],
+                        "score": float(item["sentiment_score"]),
+                    }
+                )
         for item in social:
             if item.get("sentiment") and item.get("collected_at"):
-                sentiment_scores.append({
-                    "date": str(item["collected_at"])[:10],
-                    "score": sentiment_map.get(item["sentiment"], 0.0),
-                })
+                sentiment_scores.append(
+                    {
+                        "date": str(item["collected_at"])[:10],
+                        "score": sentiment_map.get(item["sentiment"], 0.0),
+                    }
+                )
 
         if len(sentiment_scores) >= 5 and "close" in price_df.columns:
             sent_df = pd.DataFrame(sentiment_scores)
@@ -490,11 +498,19 @@ def perform_correlation_analysis(
                 daily_price = pdf.groupby("date")["close"].mean().reset_index()
                 merged = pd.merge(daily_price, daily_sent, on="date", how="inner")
                 if len(merged) >= 5:
-                    r_pearson = float(merged["close"].corr(merged["score"], method="pearson"))
-                    r_spearman = float(merged["close"].corr(merged["score"], method="spearman"))
+                    r_pearson = float(
+                        merged["close"].corr(merged["score"], method="pearson")
+                    )
+                    r_spearman = float(
+                        merged["close"].corr(merged["score"], method="spearman")
+                    )
                     results["price_sentiment_correlation"] = {
-                        "pearson_r": round(r_pearson, 4) if not np.isnan(r_pearson) else None,
-                        "spearman_r": round(r_spearman, 4) if not np.isnan(r_spearman) else None,
+                        "pearson_r": round(r_pearson, 4)
+                        if not np.isnan(r_pearson)
+                        else None,
+                        "spearman_r": round(r_spearman, 4)
+                        if not np.isnan(r_spearman)
+                        else None,
                         "data_points": len(merged),
                     }
                 else:
