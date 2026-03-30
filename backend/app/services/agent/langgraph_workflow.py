@@ -134,10 +134,16 @@ class AgentState(TypedDict):
     alert_triggered: bool  # True if HIGH severity anomalies found
     alert_payload: dict[str, Any] | None  # Structured payload for alerting service
     # Workstream D+ additions - Safety Bridge
-    stage_iteration_counts: dict[str, int]  # Track iterations per stage for circuit breaker
-    terminal_error: dict[str, Any] | None  # Terminal error details if kill-switch triggers
+    stage_iteration_counts: dict[
+        str, int
+    ]  # Track iterations per stage for circuit breaker
+    terminal_error: (
+        dict[str, Any] | None
+    )  # Terminal error details if kill-switch triggers
     circuit_breaker_triggered: bool  # Flag if circuit breaker tripped (F7)
-    action_requests: list[dict[str, Any]] | None  # Action requests for user intervention (F7)
+    action_requests: (
+        list[dict[str, Any]] | None
+    )  # Action requests for user intervention (F7)
     interrupt_limit_reached: bool  # Flag if retry limit reached
     # Stage tracking
     completed_stages: list[str]  # Tracks which DSLC stages have completed
@@ -353,7 +359,7 @@ class LangGraphWorkflow:
                 "report": "generate_report",
                 "retrain": "train_model",
                 "error": "handle_error",
-            }
+            },
         )
 
         # After human review, decide next step
@@ -361,10 +367,10 @@ class LangGraphWorkflow:
             "human_review",
             self._route_after_human_review,
             {
-                "resume": "reason",   # Usually go back to reasoning to decide next step
+                "resume": "reason",  # Usually go back to reasoning to decide next step
                 "finalize": "finalize",
-                "error": "handle_error"
-            }
+                "error": "handle_error",
+            },
         )
 
         # After report generation, finalize
@@ -389,8 +395,17 @@ class LangGraphWorkflow:
         # Compile the graph with checkpointer and potential interrupts
         return workflow.compile(
             checkpointer=self.checkpointer,
-            interrupt_before=["train_model", "finalize", "human_review"], # F7: Interrupt for review
-            interrupt_after=["scope_confirmation", "validate_data", "analyze_data", "model_selection"],
+            interrupt_before=[
+                "train_model",
+                "finalize",
+                "human_review",
+            ],  # F7: Interrupt for review
+            interrupt_after=[
+                "scope_confirmation",
+                "validate_data",
+                "analyze_data",
+                "model_selection",
+            ],
         )
 
     async def _initialize_node(self, state: AgentState) -> AgentState:
@@ -437,7 +452,8 @@ class LangGraphWorkflow:
         state["terminal_error"] = None
 
         # Stage tracking
-        state["completed_stages"] = []
+        if "completed_stages" not in state or state["completed_stages"] is None:
+            state["completed_stages"] = []
 
         state["messages"].append(
             {
@@ -484,25 +500,21 @@ class LangGraphWorkflow:
 
         # Mark the previous stage as COMPLETE (only once per stage)
         prev_stage = None
-        if current_stage == "DATA_ACQUISITION" and "BUSINESS_UNDERSTANDING" not in completed_stages:
+        if (
+            current_stage == "DATA_ACQUISITION"
+            and "BUSINESS_UNDERSTANDING" not in completed_stages
+        ):
             prev_stage = "BUSINESS_UNDERSTANDING"
-        elif current_stage == "EXPLORATION" and "DATA_ACQUISITION" not in completed_stages:
+        elif (
+            current_stage == "EXPLORATION"
+            and "DATA_ACQUISITION" not in completed_stages
+        ):
             prev_stage = "DATA_ACQUISITION"
 
         state["pending_events"] = []
 
         if prev_stage and prev_stage not in completed_stages:
             completed_stages.append(prev_stage)
-            state["pending_events"].append({
-                "event_type": "status_update",
-                "stage": prev_stage,
-                "payload": {
-                    "status": "COMPLETE",
-                    "message": f"{prev_stage} complete",
-                    "task_id": "stage_complete"
-                }
-            })
-
         state["completed_stages"] = completed_stages
 
         # Build context for reasoning
@@ -548,8 +560,8 @@ class LangGraphWorkflow:
             "payload": {
                 "message": f"Reasoning: {reasoning}",
                 "sender": "assistant",
-                "reasoning_trace": context_parts
-            }
+                "reasoning_trace": context_parts,
+            },
         }
 
         state["pending_events"].append(chat_event)
@@ -633,14 +645,16 @@ class LangGraphWorkflow:
         """
         counts = state.get("stage_iteration_counts", {})
         if not counts:
-             counts = {}
+            counts = {}
 
         current_count = counts.get(stage_name, 0) + 1
         counts[stage_name] = current_count
         state["stage_iteration_counts"] = counts
 
         if current_count >= 4:
-            logger.warning(f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)")
+            logger.warning(
+                f"Circuit breaker triggered for stage '{stage_name}' (Attempt {current_count}/4)"
+            )
 
             # F7: Escalate to Action Request instead of hard fail
             state["circuit_breaker_triggered"] = True
@@ -655,29 +669,29 @@ class LangGraphWorkflow:
                 "context": {
                     "stage": stage_name,
                     "attempt": current_count,
-                    "reason": "Max retries exceeded without success."
+                    "reason": "Max retries exceeded without success.",
                 },
                 "options": [
                     {
                         "id": "retry",
                         "label": "Retry Stage",
                         "action": "retry_stage",
-                        "description": "Attempt the operation one more time."
+                        "description": "Attempt the operation one more time.",
                     },
                     {
                         "id": "abort",
                         "label": "Abort Workflow",
                         "action": "abort_workflow",
                         "style": "danger",
-                        "description": "Stop current workflow execution."
+                        "description": "Stop current workflow execution.",
                     },
                     {
                         "id": "guidance",
                         "label": "Provide Guidance",
                         "action": "provide_guidance",
-                        "description": "Let me provide new instructions to fix the issue."
-                    }
-                ]
+                        "description": "Let me provide new instructions to fix the issue.",
+                    },
+                ],
             }
 
             # Append to action_requests list (init if missing)
@@ -752,15 +766,17 @@ class LangGraphWorkflow:
         # Clear pending_events — each node owns its own events
         state["pending_events"] = []
 
-        state["pending_events"].append({
-            "event_type": "status_update",
-            "stage": "PREPARATION",
-            "payload": {
-                "status": "ACTIVE",
-                "message": "Validating data quality...",
-                "task_id": "validate_quality"
+        state["pending_events"].append(
+            {
+                "event_type": "status_update",
+                "stage": "PREPARATION",
+                "payload": {
+                    "status": "ACTIVE",
+                    "message": "Validating data quality...",
+                    "task_id": "validate_quality",
+                },
             }
-        })
+        )
 
         retrieved_data = state.get("retrieved_data", {})
         quality_checks = {}
@@ -803,10 +819,14 @@ class LangGraphWorkflow:
                 quality_checks["anomaly_stats"] = anomaly_stats
 
                 if anomaly_stats["has_anomalies"]:
-                    quality_checks["status_message"] = f"Warning: {anomaly_stats['anomaly_count']} price anomalies detected (max Z-score: {anomaly_stats['max_z_score']:.2f})"
+                    quality_checks["status_message"] = (
+                        f"Warning: {anomaly_stats['anomaly_count']} price anomalies detected (max Z-score: {anomaly_stats['max_z_score']:.2f})"
+                    )
                     # Flag anomalies for downstream processing
                     state["anomaly_detected"] = True
-                    state["anomaly_summary"] = f"Detected {anomaly_stats['anomaly_count']} price anomalies (max Z={anomaly_stats['max_z_score']:.1f})"
+                    state["anomaly_summary"] = (
+                        f"Detected {anomaly_stats['anomaly_count']} price anomalies (max Z={anomaly_stats['max_z_score']:.1f})"
+                    )
 
                 # 2. Variance Check & Zero-Variance Kill-Switch
                 variance = anomaly_stats.get("variance", 0.0)
@@ -819,7 +839,7 @@ class LangGraphWorkflow:
                     state["terminal_error"] = {
                         "code": "TERMINAL_DATA_ERROR",
                         "message": error_msg,
-                        "details": {"variance": 0.0, "null_count": 0}
+                        "details": {"variance": 0.0, "null_count": 0},
                     }
                     state["error"] = "TERMINAL_DATA_ERROR"
                     quality_checks["overall"] = "terminal_error"
@@ -827,11 +847,15 @@ class LangGraphWorkflow:
                     return state
 
                 # 3. Continuity Check (Flash Crashes)
-                continuity = validate_price_continuity(prices, max_drop_pct=0.3)  # 30% drop check
+                continuity = validate_price_continuity(
+                    prices, max_drop_pct=0.3
+                )  # 30% drop check
                 quality_checks["continuity_issues"] = continuity.get("issue_count", 0)
 
                 if not continuity["valid"]:
-                    quality_checks["continuity_warning"] = "Significant price gaps detected"
+                    quality_checks["continuity_warning"] = (
+                        "Significant price gaps detected"
+                    )
 
             quality_checks["price_records"] = len(price_data)
 
@@ -839,7 +863,9 @@ class LangGraphWorkflow:
             # If retrieved data < 50 rows after 1 retry, route to finalize with completed_with_errors
             retry_count = state.get("retry_count", 0)
             if len(price_data) < 50 and retry_count >= 1:
-                logger.warning(f"Data insufficiency detected: {len(price_data)} rows after {retry_count} retries.")
+                logger.warning(
+                    f"Data insufficiency detected: {len(price_data)} rows after {retry_count} retries."
+                )
                 quality_checks["overall"] = "insufficient_data"
             else:
                 quality_checks["sufficient_records"] = (
@@ -847,14 +873,24 @@ class LangGraphWorkflow:
                 )  # At least 30 records
 
                 # Overall quality assessment
-                if quality_checks.get("overall") != "terminal_error": # Don't overwrite terminal
-                    if quality_checks["completeness"] and quality_checks["sufficient_records"]:
+                if (
+                    quality_checks.get("overall") != "terminal_error"
+                ):  # Don't overwrite terminal
+                    if (
+                        quality_checks["completeness"]
+                        and quality_checks["sufficient_records"]
+                    ):
                         # Downgrade if anomalies found
-                        if quality_checks.get("anomaly_stats", {}).get("has_anomalies", False):
+                        if quality_checks.get("anomaly_stats", {}).get(
+                            "has_anomalies", False
+                        ):
                             quality_checks["overall"] = "good_with_warnings"
                         else:
                             quality_checks["overall"] = "good"
-                    elif quality_checks["completeness"] or quality_checks["sufficient_records"]:
+                    elif (
+                        quality_checks["completeness"]
+                        or quality_checks["sufficient_records"]
+                    ):
                         quality_checks["overall"] = "fair"
                     else:
                         quality_checks["overall"] = "poor"
@@ -873,35 +909,66 @@ class LangGraphWorkflow:
         goal_analysis_type = (scope.get("analysis_type") or "").lower()
         goal_warnings = []
 
-        if any("sentiment" in i.lower() for i in indicators) or "sentiment" in goal_analysis_type:
+        if (
+            any("sentiment" in i.lower() for i in indicators)
+            or "sentiment" in goal_analysis_type
+        ):
             sentiment = retrieved_data.get("sentiment_data", {})
-            news_count = len(sentiment.get("news_sentiment", [])) if isinstance(sentiment, dict) else 0
-            social_count = len(sentiment.get("social_sentiment", [])) if isinstance(sentiment, dict) else 0
+            news_count = (
+                len(sentiment.get("news_sentiment", []))
+                if isinstance(sentiment, dict)
+                else 0
+            )
+            social_count = (
+                len(sentiment.get("social_sentiment", []))
+                if isinstance(sentiment, dict)
+                else 0
+            )
             if news_count == 0 and social_count == 0:
-                goal_warnings.append("Goal requires sentiment data but none was retrieved")
+                goal_warnings.append(
+                    "Goal requires sentiment data but none was retrieved"
+                )
 
-        if any("on_chain" in i.lower() or "onchain" in i.lower() for i in indicators) or "on_chain" in goal_analysis_type:
-            onchain = retrieved_data.get("on_chain_data") or retrieved_data.get("onchain_data") or {}
-            if not onchain or all(len(v) == 0 for v in onchain.values() if isinstance(v, list)):
-                goal_warnings.append("Goal requires on-chain data but none was retrieved")
+        if (
+            any("on_chain" in i.lower() or "onchain" in i.lower() for i in indicators)
+            or "on_chain" in goal_analysis_type
+        ):
+            onchain = (
+                retrieved_data.get("on_chain_data")
+                or retrieved_data.get("onchain_data")
+                or {}
+            )
+            if not onchain or all(
+                len(v) == 0 for v in onchain.values() if isinstance(v, list)
+            ):
+                goal_warnings.append(
+                    "Goal requires on-chain data but none was retrieved"
+                )
 
-        if any("correlation" in i.lower() for i in indicators) or "correlation" in goal_analysis_type:
+        if (
+            any("correlation" in i.lower() for i in indicators)
+            or "correlation" in goal_analysis_type
+        ):
             # Correlation requires at least 2 data types
             available_types = quality_checks.get("data_types_available", [])
             if len(available_types) < 2:
-                goal_warnings.append("Goal requires correlation analysis but only one data type is available")
+                goal_warnings.append(
+                    "Goal requires correlation analysis but only one data type is available"
+                )
 
         # Emit warnings (don't block pipeline — just inform)
         for w in goal_warnings:
-            state["pending_events"].append({
-                "event_type": "status_update",
-                "stage": "PREPARATION",
-                "payload": {
-                    "status": "WARNING",
-                    "message": f"⚠ {w}",
-                    "task_id": "goal_quality_check"
+            state["pending_events"].append(
+                {
+                    "event_type": "status_update",
+                    "stage": "PREPARATION",
+                    "payload": {
+                        "status": "WARNING",
+                        "message": f"⚠ {w}",
+                        "task_id": "goal_quality_check",
+                    },
                 }
-            })
+            )
 
         # --- Build quality check render_output for PREPARATION stage ---
         overall = quality_checks.get("overall", "unknown")
@@ -909,16 +976,26 @@ class LangGraphWorkflow:
         qc_lines.append(f"**Overall quality**: `{overall}`\n")
         qc_lines.append("| Check | Result |")
         qc_lines.append("|-------|--------|")
-        qc_lines.append(f"| Has data | {'Yes' if quality_checks.get('has_data') else 'No'} |")
+        qc_lines.append(
+            f"| Has data | {'Yes' if quality_checks.get('has_data') else 'No'} |"
+        )
         dtypes = quality_checks.get("data_types_available", [])
         qc_lines.append(f"| Data types | {', '.join(dtypes) if dtypes else 'none'} |")
-        qc_lines.append(f"| Price records | {quality_checks.get('price_records', 0):,} |")
-        qc_lines.append(f"| Sufficient records (≥30) | {'Yes' if quality_checks.get('sufficient_records') else 'No'} |")
+        qc_lines.append(
+            f"| Price records | {quality_checks.get('price_records', 0):,} |"
+        )
+        qc_lines.append(
+            f"| Sufficient records (≥30) | {'Yes' if quality_checks.get('sufficient_records') else 'No'} |"
+        )
         if quality_checks.get("anomaly_stats"):
             astats = quality_checks["anomaly_stats"]
-            qc_lines.append(f"| Anomalies (Z>3) | {astats.get('anomaly_count', 0)} (max Z: {astats.get('max_z_score', 0):.2f}) |")
+            qc_lines.append(
+                f"| Anomalies (Z>3) | {astats.get('anomaly_count', 0)} (max Z: {astats.get('max_z_score', 0):.2f}) |"
+            )
         if quality_checks.get("price_variance") is not None:
-            qc_lines.append(f"| Price variance | {quality_checks['price_variance']:.6f} |")
+            qc_lines.append(
+                f"| Price variance | {quality_checks['price_variance']:.6f} |"
+            )
         ci = quality_checks.get("continuity_issues", 0)
         if ci:
             qc_lines.append(f"| Continuity issues | {ci} |")
@@ -927,28 +1004,34 @@ class LangGraphWorkflow:
         if quality_checks.get("status_message"):
             qc_lines.append(f"\n⚠ {quality_checks['status_message']}")
 
-        state["pending_events"].append({
-            "event_type": "status_update",
-            "stage": "PREPARATION",
-            "payload": {
-                "status": "ACTIVE",
-                "message": f"Quality assessment: {overall}",
-                "task_id": "validate_quality"
+        state["pending_events"].append(
+            {
+                "event_type": "status_update",
+                "stage": "PREPARATION",
+                "payload": {
+                    "status": "ACTIVE",
+                    "message": f"Quality assessment: {overall}",
+                    "task_id": "validate_quality",
+                },
             }
-        })
-        state["pending_events"].append({
-            "event_type": "render_output",
-            "stage": "PREPARATION",
-            "payload": {
-                "mime_type": "text/markdown",
-                "content": "\n".join(qc_lines),
+        )
+        state["pending_events"].append(
+            {
+                "event_type": "render_output",
+                "stage": "PREPARATION",
+                "payload": {
+                    "mime_type": "text/markdown",
+                    "content": "\n".join(qc_lines),
+                },
             }
-        })
+        )
 
         # Handle retry logic for no_data scenario (LangGraph state updates must happen in nodes)
         if quality_checks.get("overall") == "no_data":
             current_retry = state.get("retry_count", 0)
-            logger.warning(f"No data retrieved, incrementing retry count from {current_retry}")
+            logger.warning(
+                f"No data retrieved, incrementing retry count from {current_retry}"
+            )
             state["retry_count"] = current_retry + 1
 
         state["messages"].append(
@@ -1008,7 +1091,11 @@ class LangGraphWorkflow:
         Returns:
             Updated state with trained models
         """
-        logger.debug("train_model node: session=%s retry=%s", state.get('session_id'), state.get('retry_count'))
+        logger.debug(
+            "train_model node: session=%s retry=%s",
+            state.get("session_id"),
+            state.get("retry_count"),
+        )
         state["current_step"] = "model_training"
 
         try:
@@ -1153,10 +1240,14 @@ class LangGraphWorkflow:
                     )
             if "technical_indicators" in analysis_results:
                 ti = analysis_results["technical_indicators"]
-                stats_parts.append(f"Technical: {ti.get('data_points', 0)} data points, {len(ti.get('columns', []))} indicators")
+                stats_parts.append(
+                    f"Technical: {ti.get('data_points', 0)} data points, {len(ti.get('columns', []))} indicators"
+                )
             if "anomaly_detection" in analysis_results:
                 ad = analysis_results["anomaly_detection"]
-                stats_parts.append(f"Anomalies: {ad.get('total_anomalies', 0)} detected")
+                stats_parts.append(
+                    f"Anomalies: {ad.get('total_anomalies', 0)} detected"
+                )
             if stats_parts:
                 result_parts.append("\n\nAnalysis Statistics:")
                 result_parts.extend([f"- {s}" for s in stats_parts])
@@ -1165,7 +1256,9 @@ class LangGraphWorkflow:
         qc = state.get("quality_checks", {})
         if qc:
             data_types = qc.get("data_types_available", [])
-            result_parts.append(f"\n\nData: {', '.join(data_types) if data_types else 'none'} (quality: {qc.get('overall', 'unknown')})")
+            result_parts.append(
+                f"\n\nData: {', '.join(data_types) if data_types else 'none'} (quality: {qc.get('overall', 'unknown')})"
+            )
 
         # Add training summary
         training_summary = state.get("training_summary")
@@ -1317,7 +1410,9 @@ class LangGraphWorkflow:
         """
         # Check iteration cap
         if state.get("iteration", 0) >= settings.AGENT_MAX_ITERATIONS:
-            state["error"] = f"Workflow halted: Max iterations ({settings.AGENT_MAX_ITERATIONS}) reached."
+            state["error"] = (
+                f"Workflow halted: Max iterations ({settings.AGENT_MAX_ITERATIONS}) reached."
+            )
             logger.warning(state["error"])
             return "finalize"
 
@@ -1329,8 +1424,13 @@ class LangGraphWorkflow:
         scope = state.get("scope_interpretation", {})
         analysis_type = (scope.get("analysis_type") or "").lower()
         requires_modeling = analysis_type in [
-            "prediction", "forecasting", "modeling", "classification",
-            "regression", "machine_learning", "ml",
+            "prediction",
+            "forecasting",
+            "modeling",
+            "classification",
+            "regression",
+            "machine_learning",
+            "ml",
         ]
 
         # Keyword fallback: if scope_interpretation didn't set analysis_type,
@@ -1351,7 +1451,11 @@ class LangGraphWorkflow:
             return "analyze"
         elif requires_modeling and not state.get("model_trained"):
             return "train"
-        elif requires_modeling and state.get("model_trained") and not state.get("model_evaluated"):
+        elif (
+            requires_modeling
+            and state.get("model_trained")
+            and not state.get("model_evaluated")
+        ):
             return "evaluate"
         elif not requires_modeling and not state.get("skip_training"):
             # Skip training for non-ML goals, go to report
@@ -1444,14 +1548,19 @@ class LangGraphWorkflow:
 
         # Check for HITL interrupts
         if state.get("approval_needed") and not state.get("approval_granted"):
-             return "review"
+            return "review"
 
         # Check if training is needed (scope_interpretation primary, keyword fallback)
         scope = state.get("scope_interpretation", {})
         analysis_type = (scope.get("analysis_type") or "").lower()
         is_ml_goal = analysis_type in [
-            "prediction", "forecasting", "modeling", "classification",
-            "regression", "machine_learning", "ml",
+            "prediction",
+            "forecasting",
+            "modeling",
+            "classification",
+            "regression",
+            "machine_learning",
+            "ml",
         ]
 
         if not is_ml_goal and not analysis_type:
@@ -1485,7 +1594,7 @@ class LangGraphWorkflow:
 
         # Check for HITL interrupts
         if state.get("approval_needed") and not state.get("approval_granted"):
-             return "review"
+            return "review"
 
         return "evaluate"
 
@@ -1510,7 +1619,7 @@ class LangGraphWorkflow:
 
         # Check for HITL interrupts
         if state.get("approval_needed") and not state.get("approval_granted"):
-             return "review"
+            return "review"
 
         # Always route to model selection for user choice
         return "model_selection"
@@ -1528,10 +1637,10 @@ class LangGraphWorkflow:
             Next node to execute
         """
         if state.get("current_step") == "retrain_requested":
-             return "retrain"
+            return "retrain"
 
         if state.get("selected_choice"):
-             return "report"
+            return "report"
 
         # Create explicit error if we fell through
         state["error"] = "Model selection failed or bypassed"
@@ -1567,7 +1676,9 @@ class LangGraphWorkflow:
         Returns:
             Updated state after review
         """
-        logger.info(f"Human review checkpoint reached for session {state.get('session_id')}")
+        logger.info(
+            f"Human review checkpoint reached for session {state.get('session_id')}"
+        )
 
         # Add a system message indicating review was processed
         state["messages"].append(
@@ -1579,12 +1690,14 @@ class LangGraphWorkflow:
 
         # Clear approval flag if granted
         if state.get("approval_granted") and not state.get("approval_needed"):
-             # Already handled by external state update?
-             pass
+            # Already handled by external state update?
+            pass
 
         return state
 
-    def _route_after_human_review(self, state: AgentState) -> Literal["resume", "finalize", "error"]:
+    def _route_after_human_review(
+        self, state: AgentState
+    ) -> Literal["resume", "finalize", "error"]:
         """
         Route after human review based on approval status.
 
@@ -1617,7 +1730,9 @@ class LangGraphWorkflow:
             logger.info("Resuming workflow (default path).")
             return "resume"
 
-    async def execute(self, initial_state: AgentState | None = None, session_id: str | None = None) -> AgentState:
+    async def execute(
+        self, initial_state: AgentState | None = None, session_id: str | None = None
+    ) -> AgentState:
         """
         Execute the workflow from start to finish.
 
@@ -1635,18 +1750,15 @@ class LangGraphWorkflow:
         if not session_id:
             raise ValueError("Session ID required")
 
-        config = {
-            "configurable": {"thread_id": str(session_id)},
-            "recursion_limit": 50
-        }
+        config = {"configurable": {"thread_id": str(session_id)}, "recursion_limit": 50}
 
         # Execute the graph with the initial state
-        final_state = await self.graph.ainvoke(
-            initial_state, config=config
-        )
+        final_state = await self.graph.ainvoke(initial_state, config=config)
         return final_state
 
-    async def stream_execute(self, initial_state: AgentState | None = None, session_id: str | None = None):
+    async def stream_execute(
+        self, initial_state: AgentState | None = None, session_id: str | None = None
+    ):
         """
         Execute the workflow with streaming for real-time updates.
 
@@ -1666,17 +1778,12 @@ class LangGraphWorkflow:
         if not session_id:
             raise ValueError("Session ID required")
 
-        config = {
-            "configurable": {"thread_id": str(session_id)},
-            "recursion_limit": 50
-        }
+        config = {"configurable": {"thread_id": str(session_id)}, "recursion_limit": 50}
 
         # If no initial_state, we're resuming from a compile-time interrupt
         # (interrupt_before / interrupt_after). Pass None to resume from the
         # checkpoint — Command(resume=…) is for the in-node interrupt() API.
         input_data: AgentState | None = initial_state
 
-        async for state in self.graph.astream(
-            input_data, config=config
-        ):
+        async for state in self.graph.astream(input_data, config=config):
             yield state
