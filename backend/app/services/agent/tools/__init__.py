@@ -19,6 +19,7 @@ from .data_analysis_tools import (
     calculate_technical_indicators,
     clean_data,
     detect_catalyst_impact,
+    perform_correlation_analysis,
     perform_eda,
 )
 from .data_retrieval_tools import (

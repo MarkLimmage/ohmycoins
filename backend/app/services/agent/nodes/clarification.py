@@ -465,12 +465,30 @@ def scope_confirmation_node(state: dict[str, Any]) -> dict[str, Any]:
             }
         })
 
+        # Wire retrieval_params from scope BEFORE the interrupt so that
+        # when the graph resumes after approval, data_retrieval already
+        # has the correct timeframe / assets / flags.
+        retrieval_params = {
+            "days": _parse_timeframe_to_days(scope.timeframe),
+            "coin_type": scope.assets[0].lower() if scope.assets else "btc",
+            "currencies": [a.lower() for a in scope.assets],
+            "include_sentiment": any(
+                i.lower() in ("sentiment", "sentiment_trend")
+                for i in scope.indicators
+            ),
+            "include_onchain": any(
+                i.lower() in ("on_chain", "onchain")
+                for i in scope.indicators
+            ),
+        }
+
         return {
             "current_step": "scope_confirmation",
             "pending_events": events,
             "scope_interpretation": scope.model_dump(),
+            "retrieval_params": retrieval_params,
             # We rely on interrupt logic, but this flag helps track state
-            "awaiting_scope_confirmation": True
+            "awaiting_scope_confirmation": True,
         }
 
     except Exception as e:
