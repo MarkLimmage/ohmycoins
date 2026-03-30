@@ -198,6 +198,27 @@ class DataRetrievalAgent(BaseAgent):
                     {"status": "DONE", "message": f"Sentiment: {news_n} news, {social_n} social", "task_id": "fetch_sentiment_data"},
                 )
 
+                # Check for missing goal-relevant sentiment data
+                if news_n == 0 and social_n == 0:
+                    scope = state.get("scope_interpretation", {})
+                    indicators = scope.get("indicators", [])
+                    analysis_type = scope.get("analysis_type", "")
+                    if (
+                        any("sentiment" in i.lower() for i in indicators)
+                        or "sentiment" in analysis_type.lower()
+                        or "sentiment" in user_goal.lower()
+                    ):
+                        await self.emit_event(
+                            state,
+                            "status_update",
+                            "DATA_ACQUISITION",
+                            {
+                                "status": "WARNING",
+                                "message": "\u26a0 Goal requires sentiment data but 0 records found. Analysis may be incomplete.",
+                                "task_id": "fetch_sentiment_data",
+                            },
+                        )
+
             # Fetch on-chain metrics if requested
             if (
                 "on-chain" in user_goal.lower()

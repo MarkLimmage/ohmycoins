@@ -373,4 +373,153 @@ def perform_eda(
             "q75": float(df[col].quantile(0.75)),
         }
 
+    # Flat basic_stats — prioritise 'close' / 'last' for the headline summary
+    close_col = (
+        "close" if "close" in df.columns else ("last" if "last" in df.columns else None)
+    )
+    basic: dict[str, Any] = {
+        "rows": len(df),
+        "columns": len(df.columns),
+    }
+    # Date range
+    for tc in ("timestamp", "date"):
+        if tc in df.columns:
+            ts = pd.to_datetime(df[tc], errors="coerce").dropna()
+            if len(ts) > 0:
+                basic["date_start"] = str(ts.min())[:19]
+                basic["date_end"] = str(ts.max())[:19]
+            break
+
+    if close_col and close_col in numeric_cols:
+        s = eda_results["summary_statistics"][close_col]
+        basic["close_mean"] = s["mean"]
+        basic["close_std"] = s["std"]
+        basic["close_min"] = s["min"]
+        basic["close_max"] = s["max"]
+        basic["close_median"] = s["median"]
+
+    eda_results["basic_stats"] = basic
+
     return eda_results
+
+
+def perform_correlation_analysis(
+    price_df: pd.DataFrame,
+    sentiment_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Compute correlation between price metrics and other data series.
+
+    Args:
+        price_df: DataFrame with price data (must have 'close' or 'last' column).
+        sentiment_data: Optional dict with 'news_sentiment' / 'social_sentiment' lists.
+
+    Returns:
+        Dictionary with correlation results.
+    """
+    results: dict[str, Any] = {"correlations": [], "method": "pearson"}
+
+    if len(price_df) < 5:
+        results["note"] = "Insufficient data for meaningful correlation"
+        return results
+
+    # Ensure 'close' column exists
+    if "close" not in price_df.columns and "last" in price_df.columns:
+        price_df = price_df.copy()
+        price_df["close"] = price_df["last"]
+
+    # --- Price self-correlation matrix ---
+    numeric_cols = price_df.select_dtypes(include="number").columns.tolist()
+    # Limit to first 20 columns to avoid huge matrices
+    numeric_cols = numeric_cols[:20]
+
+    if len(numeric_cols) >= 2:
+        corr_matrix = price_df[numeric_cols].corr(method="pearson")
+        results["price_correlation_matrix"] = {
+            col: {k: round(v, 4) for k, v in row.items()}
+            for col, row in corr_matrix.to_dict().items()
+        }
+
+        # Extract top 10 strongest off-diagonal correlations
+        top_pairs: list[dict[str, Any]] = []
+        seen: set[tuple[str, str]] = set()
+        for i, c1 in enumerate(numeric_cols):
+            for c2 in numeric_cols[i + 1 :]:
+                if (c1, c2) not in seen:
+                    seen.add((c1, c2))
+                    val = corr_matrix.loc[c1, c2]
+                    if not np.isnan(val):
+                        top_pairs.append(
+                            {"pair": f"{c1} vs {c2}", "r": round(float(val), 4)}
+                        )
+        top_pairs.sort(key=lambda x: abs(x["r"]), reverse=True)
+        results["top_correlations"] = top_pairs[:10]
+
+    # --- Price vs sentiment correlation ---
+    if sentiment_data:
+        sentiment_map = {"positive": 1.0, "neutral": 0.0, "negative": -1.0}
+        # Build daily sentiment scores
+        news = sentiment_data.get("news_sentiment", [])
+        social = sentiment_data.get("social_sentiment", [])
+
+        sentiment_scores: list[dict[str, Any]] = []
+        for item in news:
+            if item.get("sentiment_score") is not None and item.get("published_at"):
+                sentiment_scores.append(
+                    {
+                        "date": str(item["published_at"])[:10],
+                        "score": float(item["sentiment_score"]),
+                    }
+                )
+        for item in social:
+            if item.get("sentiment") and item.get("collected_at"):
+                sentiment_scores.append(
+                    {
+                        "date": str(item["collected_at"])[:10],
+                        "score": sentiment_map.get(item["sentiment"], 0.0),
+                    }
+                )
+
+        if len(sentiment_scores) >= 5 and "close" in price_df.columns:
+            sent_df = pd.DataFrame(sentiment_scores)
+            sent_df["date"] = pd.to_datetime(sent_df["date"])
+            daily_sent = sent_df.groupby("date")["score"].mean().reset_index()
+
+            # Build daily close prices
+            pdf = price_df.copy()
+            if "timestamp" in pdf.columns:
+                pdf["date"] = pd.to_datetime(pdf["timestamp"]).dt.normalize()
+            elif pdf.index.name == "timestamp" or hasattr(pdf.index, "date"):
+                pdf["date"] = pd.to_datetime(pdf.index).normalize()
+            else:
+                daily_sent = pd.DataFrame()  # can't align
+
+            if len(daily_sent) > 0 and "date" in pdf.columns:
+                daily_price = pdf.groupby("date")["close"].mean().reset_index()
+                merged = pd.merge(daily_price, daily_sent, on="date", how="inner")
+                if len(merged) >= 5:
+                    r_pearson = float(
+                        merged["close"].corr(merged["score"], method="pearson")
+                    )
+                    r_spearman = float(
+                        merged["close"].corr(merged["score"], method="spearman")
+                    )
+                    results["price_sentiment_correlation"] = {
+                        "pearson_r": round(r_pearson, 4)
+                        if not np.isnan(r_pearson)
+                        else None,
+                        "spearman_r": round(r_spearman, 4)
+                        if not np.isnan(r_spearman)
+                        else None,
+                        "data_points": len(merged),
+                    }
+                else:
+                    results["price_sentiment_correlation"] = {
+                        "note": f"Only {len(merged)} overlapping days — too few for reliable correlation",
+                    }
+        elif not sentiment_scores:
+            results["price_sentiment_correlation"] = {
+                "note": "No sentiment data available for correlation",
+            }
+
+    return results

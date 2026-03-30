@@ -6,12 +6,15 @@ Week 3-4 implementation: New agent for comprehensive data analysis.
 
 from typing import Any
 
+import pandas as pd
+
 from ..tools import (
     analyze_on_chain_signals,
     analyze_sentiment_trends,
     calculate_technical_indicators,
     detect_catalyst_impact,
     detect_price_anomalies,
+    perform_correlation_analysis,
     perform_eda,
 )
 from .base import BaseAgent
@@ -157,7 +160,12 @@ class DataAnalystAgent(BaseAgent):
                     )
 
             # Analyze sentiment trends if sentiment data available
-            if "sentiment_data" in retrieved_data and retrieved_data["sentiment_data"]:
+            sentiment_data_raw = retrieved_data.get("sentiment_data", {})
+            has_sentiment = (
+                len(sentiment_data_raw.get("news_sentiment", [])) > 0
+                or len(sentiment_data_raw.get("social_sentiment", [])) > 0
+            ) if isinstance(sentiment_data_raw, dict) else bool(sentiment_data_raw)
+            if has_sentiment:
                 time_window = analysis_params.get("sentiment_window", "24h")
 
                 if "sentiment" in user_goal.lower() or analysis_params.get(
@@ -170,7 +178,7 @@ class DataAnalystAgent(BaseAgent):
                         {"status": "ACTIVE", "message": "Analysing sentiment trends...", "task_id": "analyse_sentiment"},
                     )
                     analysis_results["sentiment_analysis"] = analyze_sentiment_trends(
-                        retrieved_data["sentiment_data"], time_window=time_window
+                        sentiment_data_raw, time_window=time_window
                     )
                     await self.emit_event(
                         state,
@@ -178,6 +186,17 @@ class DataAnalystAgent(BaseAgent):
                         "EXPLORATION",
                         {"status": "DONE", "message": "Sentiment analysis complete", "task_id": "analyse_sentiment"},
                     )
+            else:
+                # No actual sentiment data — record unavailability if goal expected it
+                scope = state.get("scope_interpretation", {})
+                analysis_type = scope.get("analysis_type", "")
+                if "sentiment" in user_goal.lower() or "sentiment" in analysis_type.lower():
+                    analysis_results["sentiment_analysis"] = {
+                        "overall_sentiment": {"trend": "unavailable", "avg_score": None},
+                        "news_sentiment": {"count": 0, "avg_score": 0.0},
+                        "social_sentiment": {"count": 0, "avg_score": 0.0},
+                        "note": "No sentiment data available for analysis",
+                    }
 
             # Analyze on-chain signals if on-chain data available
             if (
@@ -228,6 +247,37 @@ class DataAnalystAgent(BaseAgent):
                     )
                     state["anomaly_summary"] = anomaly_result.get("summary", "")
 
+            # Correlation analysis — run when analysis_type mentions "correlation"
+            scope = state.get("scope_interpretation", {})
+            analysis_type = scope.get("analysis_type", "")
+            if (
+                "correlation" in analysis_type.lower()
+                or "correlation" in user_goal.lower()
+            ):
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "EXPLORATION",
+                    {"status": "ACTIVE", "message": "Computing correlations...", "task_id": "compute_correlations"},
+                )
+                # Build price DataFrame for correlation
+                price_data_list = retrieved_data.get("price_data", [])
+                corr_price_df = pd.DataFrame(price_data_list) if price_data_list else pd.DataFrame()
+                if not corr_price_df.empty and "last" in corr_price_df.columns:
+                    corr_price_df["close"] = corr_price_df["last"]
+
+                corr_sentiment = sentiment_data_raw if has_sentiment else None
+                correlation_results = perform_correlation_analysis(
+                    corr_price_df, sentiment_data=corr_sentiment
+                )
+                analysis_results["correlation_analysis"] = correlation_results
+                await self.emit_event(
+                    state,
+                    "status_update",
+                    "EXPLORATION",
+                    {"status": "DONE", "message": "Correlation analysis complete", "task_id": "compute_correlations"},
+                )
+
             # Generate insights summary
             insights = self._generate_insights(analysis_results, user_goal)
 
@@ -256,7 +306,7 @@ class DataAnalystAgent(BaseAgent):
             # Technical indicators
             if "technical_indicators" in analysis_results:
                 ti = analysis_results["technical_indicators"]
-                out_lines.append(f"### Technical Indicators")
+                out_lines.append("### Technical Indicators")
                 out_lines.append(f"- **Data points**: {ti.get('data_points', 0):,}")
                 out_lines.append(f"- **Indicators calculated**: {len(ti.get('columns', []))}")
                 latest = ti.get("latest_values", {})
@@ -276,11 +326,26 @@ class DataAnalystAgent(BaseAgent):
                 if price_eda:
                     out_lines.append("### Exploratory Data Analysis")
                     stats = price_eda.get("basic_stats", {})
+                    if not stats:
+                        # Fallback: flatten summary_statistics for 'close' or first column
+                        summary = price_eda.get("summary_statistics", {})
+                        shape = price_eda.get("shape", {})
+                        stats = {}
+                        if shape:
+                            stats["rows"] = shape.get("rows", "N/A")
+                            stats["columns"] = shape.get("columns", "N/A")
+                        for col_key in ("close", "last"):
+                            if col_key in summary:
+                                for metric, val in summary[col_key].items():
+                                    stats[f"{col_key}_{metric}"] = val
+                                break
                     if stats:
                         out_lines.append("| Metric | Value |")
                         out_lines.append("|--------|-------|")
-                        for k, v in list(stats.items())[:8]:
+                        for k, v in list(stats.items())[:12]:
                             out_lines.append(f"| {k} | {v:.4f} |" if isinstance(v, float) else f"| {k} | {v} |")
+                    else:
+                        out_lines.append("_No numeric statistics available._")
                     out_lines.append("")
 
             # Sentiment
@@ -313,6 +378,25 @@ class DataAnalystAgent(BaseAgent):
                 ci = analysis_results["catalyst_impact"]
                 out_lines.append("### Catalyst Impact")
                 out_lines.append(f"- Events analysed: {ci.get('events_analyzed', 0)}")
+                out_lines.append("")
+
+            # Correlation
+            if "correlation_analysis" in analysis_results:
+                ca = analysis_results["correlation_analysis"]
+                out_lines.append("### Correlation Analysis")
+                out_lines.append(f"- **Method**: {ca.get('method', 'pearson')}")
+                top = ca.get("top_correlations", [])
+                if top:
+                    out_lines.append("| Pair | r |")
+                    out_lines.append("|------|--:|")
+                    for pair in top[:5]:
+                        out_lines.append(f"| {pair['pair']} | {pair['r']:.4f} |")
+                psc = ca.get("price_sentiment_correlation", {})
+                if psc and psc.get("pearson_r") is not None:
+                    out_lines.append(f"- **Price–Sentiment Pearson r**: {psc['pearson_r']}")
+                    out_lines.append(f"- **Price–Sentiment Spearman r**: {psc.get('spearman_r', 'N/A')}")
+                elif psc.get("note"):
+                    out_lines.append(f"- {psc['note']}")
                 out_lines.append("")
 
             await self.emit_event(
