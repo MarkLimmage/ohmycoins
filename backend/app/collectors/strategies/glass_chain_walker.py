@@ -139,13 +139,23 @@ class GlassChainWalker(ICollector):
                     for payload in payloads:
                         resp = await client.post(rpc_url, json=payload)
                         resp.raise_for_status()
-                        results.append(resp.json())
+                        data = resp.json()
+                        if (
+                            not isinstance(data, dict)
+                            or "error" in data
+                            or "result" not in data
+                        ):
+                            raise ValueError(
+                                f"RPC error from {rpc_url}: {data.get('error', 'no result key') if isinstance(data, dict) else data}"
+                            )
+                        results.append(data)
                     logger.info("RPC calls succeeded via %s for %s", rpc_url, chain)
                     return results
             except (
                 httpx.ConnectError,
                 httpx.TimeoutException,
                 httpx.HTTPStatusError,
+                ValueError,
             ) as e:
                 logger.warning("RPC endpoint %s failed for %s: %s", rpc_url, chain, e)
                 last_error = e
