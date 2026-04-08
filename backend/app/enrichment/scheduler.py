@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
+import sqlalchemy as sa
 from sqlalchemy import and_
 from sqlmodel import Session, select
 
@@ -62,8 +63,24 @@ async def run_social_enrichment(session: Session) -> EnrichmentRun:
     # Run the generalized pipeline
     run = await pipeline.run(items=items, session=session, trigger="auto")
 
-    # Store EnrichmentRecord entries for processed items
-    _store_enrichment_records(items, enricher, session)
+    # Store EnrichmentRecord entries only for items that actually produced results.
+    # Query SentimentScore to find which source_ids got enriched (via raw_data->>'source_id').
+    item_ids = [str(item.id) for item in items]
+    result = session.execute(
+        sa.text(
+            "SELECT DISTINCT raw_data->>'source_id' "
+            "FROM sentiment_score "
+            "WHERE source = 'reddit_llm' "
+            "AND raw_data->>'source_id' = ANY(:ids)"
+        ),
+        {"ids": item_ids},
+    )
+    enriched_source_ids = {row[0] for row in result}
+
+    enriched_items = [
+        item for item in items if str(item.id) in enriched_source_ids
+    ]
+    _store_enrichment_records(enriched_items, enricher, session)
 
     return run
 
