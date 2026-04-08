@@ -24,7 +24,7 @@ class EnrichmentPipeline:
         self.enrichers = enrichers
 
     async def run(
-        self, items: list[NewsItem], session: Session, trigger: str = "auto"
+        self, items: list[Any], session: Session, trigger: str = "auto"
     ) -> EnrichmentRun:
         """
         Run all enrichers on items and store results.
@@ -73,7 +73,8 @@ class EnrichmentPipeline:
                         items_skipped += 1
 
                 except Exception as e:
-                    logger.error(f"Error enriching item {item.link}: {e}")
+                    item_id = getattr(item, "link", None) or getattr(item, "id", "?")
+                    logger.error(f"Error enriching item {item_id}: {e}")
                     items_failed += 1
 
             # Commit changes
@@ -115,7 +116,7 @@ class EnrichmentPipeline:
 
     def _store_results(
         self,
-        item: NewsItem,
+        item: Any,
         enricher_name: str,
         results: list[Any],
         session: Session,
@@ -123,8 +124,13 @@ class EnrichmentPipeline:
         """
         Store enrichment results in database.
 
-        Results are stored in NewsEnrichment table with flexible JSONB data.
+        For NewsItem: stores in NewsEnrichment table.
+        For other items: enrichers handle their own storage (e.g. SocialSentimentEnricher).
         """
+        # Only store in NewsEnrichment for NewsItem-linked results
+        if not isinstance(item, NewsItem):
+            return
+
         for result in results:
             try:
                 # Use savepoint to allow per-result rollback on unique constraint violation

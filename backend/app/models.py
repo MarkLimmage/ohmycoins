@@ -2257,3 +2257,34 @@ class EnrichmentRun(SQLModel, table=True):
     status: str = Field(max_length=20)  # "running", "completed", "failed"
     error_message: str | None = Field(default=None, sa_column=Column(sa.Text))
     trigger: str = Field(max_length=20)  # "auto", "manual"
+
+
+class EnrichmentRecord(SQLModel, table=True):
+    """Universal enrichment provenance tracking."""
+
+    __tablename__ = "enrichment_record"
+
+    id: int | None = Field(default=None, primary_key=True)
+    source_table: str = Field(max_length=50, nullable=False)
+    source_id: int = Field(nullable=False)
+    enricher_name: str = Field(max_length=50, nullable=False, index=True)
+    enrichment_type: str = Field(max_length=50, nullable=False)
+    data: dict | None = Field(default=None, sa_column=Column(postgresql.JSONB))
+    currencies: list[str] | None = Field(
+        default=None, sa_column=Column(postgresql.ARRAY(sa.String()))
+    )
+    confidence: float | None = Field(default=None)
+    enriched_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "source_table",
+            "source_id",
+            "enricher_name",
+            "enrichment_type",
+            name="uq_enrichment_record_source",
+        ),
+    )
