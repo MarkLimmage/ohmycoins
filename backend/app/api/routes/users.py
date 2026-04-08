@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,6 +23,7 @@ from app.models import (
     UserLLMCredentials,
     UserLLMCredentialsCreate,
     UserLLMCredentialsPublic,
+    UserLLMCredentialsUpdate,
     UserLLMCredentialsValidate,
     UserLLMCredentialsValidationResult,
     UserProfilePublic,
@@ -312,19 +314,27 @@ def create_llm_credentials(
     Credentials are encrypted before storage using AES-256.
     Multiple credentials can be stored (one per provider).
     """
-    # Check if user already has credentials for this provider
-    existing = session.exec(
-        select(UserLLMCredentials).where(
-            UserLLMCredentials.user_id == current_user.id,
-            UserLLMCredentials.provider == credentials_in.provider.lower(),
-            UserLLMCredentials.is_active,
+    # Check if user already has active credentials for this provider+model combo
+    provider_lower = credentials_in.provider.lower()
+    query = select(UserLLMCredentials).where(
+        UserLLMCredentials.user_id == current_user.id,
+        UserLLMCredentials.provider == provider_lower,
+        UserLLMCredentials.is_active,
+    )
+    if credentials_in.model_name:
+        query = query.where(
+            UserLLMCredentials.model_name == credentials_in.model_name
         )
-    ).first()
+    else:
+        query = query.where(
+            UserLLMCredentials.model_name.is_(None)  # type: ignore[union-attr]
+        )
+    existing = session.exec(query).first()
 
     if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"Active {credentials_in.provider} credentials already exist. Use PUT to update or DELETE first.",
+            detail=f"Active {credentials_in.provider} credentials for model '{credentials_in.model_name or 'default'}' already exist. Use PATCH to update or DELETE first.",
         )
 
     # Encrypt API key
@@ -475,6 +485,123 @@ def set_default_llm_credential(
     session.add(credential)
     session.commit()
     session.refresh(credential)
+
+    # Return with masked API key
+    try:
+        api_key = encryption_service.decrypt_api_key(credential.encrypted_api_key)
+        api_key_masked = encryption_service.mask_api_key(api_key)
+    except Exception as e:
+        logger.error(f"Failed to decrypt API key for masking: {e}")
+        api_key_masked = "****"
+
+    return UserLLMCredentialsPublic(
+        id=credential.id,
+        user_id=credential.user_id,
+        provider=credential.provider,
+        model_name=credential.model_name,
+        api_key_masked=api_key_masked,
+        is_default=credential.is_default,
+        is_active=credential.is_active,
+        last_validated_at=credential.last_validated_at,
+        created_at=credential.created_at,
+        updated_at=credential.updated_at,
+    )
+
+
+@router.patch(
+    "/me/llm-credentials/{credential_id}",
+    response_model=UserLLMCredentialsPublic,
+)
+def update_llm_credential(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    credential_id: uuid.UUID,
+    credentials_in: UserLLMCredentialsUpdate,
+) -> Any:
+    """
+    Update an existing LLM credential (BYOM feature).
+
+    Supports partial updates: model_name, api_key, is_default, is_active.
+    """
+    credential = session.get(UserLLMCredentials, credential_id)
+
+    if not credential or credential.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Credential not found")
+
+    if not credential.is_active:
+        raise HTTPException(
+            status_code=400, detail="Cannot update an inactive credential"
+        )
+
+    # If model_name is changing, validate uniqueness among active creds
+    if (
+        credentials_in.model_name is not None
+        and credentials_in.model_name != credential.model_name
+    ):
+        query = select(UserLLMCredentials).where(
+            UserLLMCredentials.user_id == current_user.id,
+            UserLLMCredentials.provider == credential.provider,
+            UserLLMCredentials.is_active,
+            UserLLMCredentials.id != credential_id,
+        )
+        if credentials_in.model_name:
+            query = query.where(
+                UserLLMCredentials.model_name == credentials_in.model_name
+            )
+        else:
+            query = query.where(
+                UserLLMCredentials.model_name.is_(None)  # type: ignore[union-attr]
+            )
+        conflict = session.exec(query).first()
+        if conflict:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Active {credential.provider} credentials for model '{credentials_in.model_name}' already exist.",
+            )
+        credential.model_name = credentials_in.model_name
+
+    # If api_key provided, re-encrypt
+    if credentials_in.api_key is not None:
+        try:
+            encrypted_api_key = encryption_service.encrypt_api_key(
+                credentials_in.api_key
+            )
+            credential.encrypted_api_key = encrypted_api_key
+        except Exception as e:
+            logger.error(f"Failed to encrypt API key: {e}")
+            raise HTTPException(status_code=500, detail="Failed to encrypt API key")
+
+    # Handle is_default
+    if credentials_in.is_default is not None:
+        if credentials_in.is_default:
+            # Unset any existing defaults
+            existing_defaults = session.exec(
+                select(UserLLMCredentials).where(
+                    UserLLMCredentials.user_id == current_user.id,
+                    UserLLMCredentials.is_default,
+                )
+            ).all()
+            for cred in existing_defaults:
+                cred.is_default = False
+                session.add(cred)
+        credential.is_default = credentials_in.is_default
+
+    # Handle is_active
+    if credentials_in.is_active is not None:
+        credential.is_active = credentials_in.is_active
+        if not credentials_in.is_active:
+            credential.is_default = False  # Can't be default if inactive
+
+    credential.updated_at = datetime.now(timezone.utc)
+    session.add(credential)
+    session.commit()
+    session.refresh(credential)
+
+    logger.info(
+        f"LLM credential updated for user {current_user.id}, "
+        f"provider={credential.provider}, credential_id={credential.id}"
+    )
 
     # Return with masked API key
     try:

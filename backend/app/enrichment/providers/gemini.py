@@ -33,11 +33,18 @@ def _extract_text(content: Any) -> str:
     (e.g. [{'type': 'text', 'text': '...', 'extras': {...}}]) rather
     than a plain string.  Handle both formats.
     """
+    if content is None:
+        return ""
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        parts = [p["text"] for p in content if isinstance(p, dict) and "text" in p]
+        parts = [
+            p["text"]
+            for p in content
+            if isinstance(p, dict) and p.get("type") == "text" and "text" in p
+        ]
         return "\n".join(parts)
+    logger.warning("Unexpected LLM content type: %s", type(content).__name__)
     return str(content)
 
 
