@@ -16,7 +16,7 @@ import aiohttp
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
 from app.core.config import HTTP_USER_AGENT
-from app.models import NewsSentiment
+from app.models import SocialSentiment
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +150,7 @@ class HumanReddit(ICollector):
         logger.info(f"Collecting posts from {len(subreddits)} subreddits")
 
         all_posts = []
+        seen_urls: set[str] = set()
 
         async with aiohttp.ClientSession() as session:
             headers = {"User-Agent": "OhMyCoins/1.0"}
@@ -188,6 +189,18 @@ class HumanReddit(ICollector):
                             title = post_data.get("title", "")
                             created_utc = post_data.get("created_utc")
 
+                            # Intra-run dedup by permalink
+                            permalink = post_data.get("permalink", "")
+                            post_url = (
+                                f"https://reddit.com{permalink}"
+                                if permalink
+                                else None
+                            )
+                            if post_url and post_url in seen_urls:
+                                continue
+                            if post_url:
+                                seen_urls.add(post_url)
+
                             # Parse publication timestamp
                             published_at = None
                             if created_utc:
@@ -204,21 +217,15 @@ class HumanReddit(ICollector):
                             # Extract cryptocurrencies mentioned
                             currencies = self._extract_currencies(title)
 
-                            # Create NewsSentiment record
-                            post_url = (
-                                f"https://reddit.com{post_data.get('permalink', '')}"
-                                if post_data.get("permalink")
-                                else None
-                            )
-
-                            data_point = NewsSentiment(
-                                title=title,
-                                source=f"r/{subreddit}",
-                                url=post_url,
-                                published_at=published_at,
+                            # Create SocialSentiment record
+                            data_point = SocialSentiment(
+                                platform="reddit",
+                                content=title,
+                                author=post_data.get("author"),
+                                score=post_data.get("score"),
                                 sentiment=sentiment,
-                                sentiment_score=None,  # Reddit doesn't have explicit sentiment scores
                                 currencies=currencies if currencies else None,
+                                posted_at=published_at,
                                 collected_at=datetime.now(timezone.utc),
                             )
 
