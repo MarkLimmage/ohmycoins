@@ -5,6 +5,7 @@ This collector fetches Total Value Locked (TVL), fees, and revenue data for
 DeFi protocols from the DeFiLlama API (free, no authentication required).
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -68,6 +69,11 @@ class GlassDefiLlama(ICollector):
                     "description": "Delay between requests in seconds",
                     "default": 0.1,
                 },
+                "total_timeout": {
+                    "type": "number",
+                    "description": "Total timeout for the entire collect() run in seconds",
+                    "default": 120,
+                },
             },
             "required": [],
         }
@@ -107,23 +113,44 @@ class GlassDefiLlama(ICollector):
         """Collect protocol fundamental data from DeFiLlama API."""
         protocols = config.get("protocols", self.MONITORED_PROTOCOLS)
         rate_limit_delay = config.get("rate_limit_delay", 0.1)
+        total_timeout = config.get("total_timeout", 120)
 
-        logger.info(f"Collecting data for {len(protocols)} protocols")
+        logger.info(f"Collecting data for {len(protocols)} protocols (timeout={total_timeout}s)")
 
-        all_data = []
+        all_data: list[Any] = []
+
+        try:
+            await asyncio.wait_for(
+                self._collect_all(protocols, rate_limit_delay, all_data),
+                timeout=total_timeout,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                f"DeFiLlama collection timed out after {total_timeout}s, "
+                f"returning {len(all_data)}/{len(protocols)} protocols"
+            )
+
+        logger.info(f"Collected {len(all_data)}/{len(protocols)} protocols")
+        return all_data
+
+    async def _collect_all(
+        self,
+        protocols: list[str],
+        rate_limit_delay: float,
+        all_data: list[Any],
+    ) -> None:
+        """Inner collection loop, separated so wait_for can wrap it."""
         base_url = "https://api.llama.fi"
 
         async with aiohttp.ClientSession() as session:
             for protocol_slug in protocols:
                 try:
-                    import asyncio
-
                     await asyncio.sleep(rate_limit_delay)
 
                     # Fetch protocol TVL data
                     async with session.get(
                         f"{base_url}/protocol/{protocol_slug}",
-                        timeout=aiohttp.ClientTimeout(total=30),
+                        timeout=aiohttp.ClientTimeout(total=10),
                     ) as resp:
                         if resp.status != 200:
                             logger.warning(
@@ -155,7 +182,7 @@ class GlassDefiLlama(ICollector):
                         await asyncio.sleep(rate_limit_delay)
                         async with session.get(
                             f"{base_url}/summary/fees/{protocol_slug}",
-                            timeout=aiohttp.ClientTimeout(total=30),
+                            timeout=aiohttp.ClientTimeout(total=10),
                         ) as resp:
                             if resp.status == 200:
                                 fees_data = await resp.json()
@@ -181,9 +208,6 @@ class GlassDefiLlama(ICollector):
                 except Exception as e:
                     logger.error(f"Failed to collect data for {protocol_slug}: {e}")
                     continue
-
-        logger.info(f"Collected {len(all_data)}/{len(protocols)} protocols")
-        return all_data
 
 
 # Register the collector
