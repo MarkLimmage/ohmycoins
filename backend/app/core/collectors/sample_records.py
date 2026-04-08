@@ -19,6 +19,7 @@ from app.models import (
     OnChainMetrics,
     PriceData5Min,
     ProtocolFundamentals,
+    SmartMoneyFlow,
     SocialSentiment,
 )
 
@@ -274,6 +275,18 @@ PLUGIN_DATA_MAP: dict[str, PluginDataConfig] = {
         data_type_label="Keyword Matches",
         source_filter="news_coindesk",
         source_column="source_collector",
+    ),
+    "glass_nansen": PluginDataConfig(
+        model=SmartMoneyFlow,
+        order_by="collected_at",
+        display_columns=[
+            "token",
+            "net_flow_usd",
+            "buying_wallet_count",
+            "selling_wallet_count",
+            "collected_at",
+        ],
+        data_type_label="Smart Money Flow",
     ),
 }
 
