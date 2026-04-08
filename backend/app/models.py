@@ -658,6 +658,12 @@ class SocialSentiment(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
     )
+    # Phase 1 Enrichment: deep conversation fields
+    body: str | None = Field(default=None, sa_column=Column(sa.Text))
+    comment_count: int | None = Field(default=None)
+    top_comments: dict[str, Any] | list[Any] | None = Field(
+        default=None, sa_column=Column(postgresql.JSONB)
+    )
 
     __table_args__ = (
         Index("ix_social_sentiment_platform_posted", "platform", "posted_at"),

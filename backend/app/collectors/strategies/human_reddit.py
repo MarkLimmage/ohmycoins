@@ -1,13 +1,17 @@
 """
 Reddit API collector plugin for community sentiment (Human Ledger).
 
-This collector fetches cryptocurrency discussions from Reddit to gauge
-community sentiment and trending topics.
+This collector fetches cryptocurrency discussions from Reddit, including
+post bodies and top comments, to provide rich conversation data for
+downstream sentiment enrichment.
+
+Supports OAuth2 app-only auth for higher rate limits, with graceful
+fallback to public API.
 """
 
 import asyncio
 import logging
-import re
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -15,16 +19,15 @@ import aiohttp
 
 from app.core.collectors.base import ICollector
 from app.core.collectors.registry import CollectorRegistry
-from app.core.config import HTTP_USER_AGENT
+from app.core.config import HTTP_USER_AGENT, settings
 from app.models import SocialSentiment
 
 logger = logging.getLogger(__name__)
 
 
 class HumanReddit(ICollector):
-    """Collector for cryptocurrency discussions from Reddit."""
+    """Collector for cryptocurrency discussions from Reddit with deep comment fetching."""
 
-    # Subreddits to monitor
     MONITORED_SUBREDDITS = [
         "CryptoCurrency",
         "Bitcoin",
@@ -33,44 +36,9 @@ class HumanReddit(ICollector):
         "altcoin",
     ]
 
-    # Sentiment keywords for basic sentiment analysis
-    BULLISH_KEYWORDS = [
-        "moon",
-        "bullish",
-        "pump",
-        "rally",
-        "surge",
-        "breakout",
-        "buy",
-        "long",
-        "hold",
-        "hodl",
-        "gem",
-        "undervalued",
-        "adoption",
-        "institutional",
-        "partnership",
-        "breakthrough",
-    ]
-
-    BEARISH_KEYWORDS = [
-        "crash",
-        "dump",
-        "bearish",
-        "short",
-        "sell",
-        "drop",
-        "decline",
-        "plunge",
-        "collapse",
-        "scam",
-        "rug",
-        "bear",
-        "overvalued",
-        "bubble",
-        "dead",
-        "fail",
-    ]
+    # OAuth token cache
+    _oauth_token: str | None = None
+    _oauth_token_expires: float = 0.0
 
     @property
     def name(self) -> str:
@@ -95,11 +63,6 @@ class HumanReddit(ICollector):
                     "description": "Number of posts to fetch per subreddit",
                     "default": 25,
                 },
-                "rate_limit_delay": {
-                    "type": "number",
-                    "description": "Delay between requests in seconds",
-                    "default": 2.0,
-                },
             },
             "required": [],
         }
@@ -109,25 +72,74 @@ class HumanReddit(ICollector):
             if not isinstance(config["subreddits"], list):
                 logger.error("Invalid config: 'subreddits' must be a list")
                 return False
-
         if "limit" in config:
             try:
                 int(config["limit"])
             except (ValueError, TypeError):
                 logger.error("Invalid config: 'limit' must be an integer")
                 return False
-
-        if "rate_limit_delay" in config:
-            try:
-                float(config["rate_limit_delay"])
-            except (ValueError, TypeError):
-                logger.error("Invalid config: 'rate_limit_delay' must be a number")
-                return False
-
         return True
 
+    def _has_oauth_credentials(self) -> bool:
+        return bool(settings.REDDIT_CLIENT_ID and settings.REDDIT_CLIENT_SECRET)
+
+    async def _get_oauth_token(self, session: aiohttp.ClientSession) -> str | None:
+        """Fetch or return cached Reddit OAuth2 app-only token."""
+        if self._oauth_token and time.monotonic() < self._oauth_token_expires:
+            return self._oauth_token
+
+        if not self._has_oauth_credentials():
+            return None
+
+        try:
+            auth = aiohttp.BasicAuth(
+                settings.REDDIT_CLIENT_ID,  # type: ignore[arg-type]
+                settings.REDDIT_CLIENT_SECRET or "",
+            )
+            data = {"grant_type": "client_credentials"}
+            headers = {"User-Agent": HTTP_USER_AGENT}
+            async with session.post(
+                "https://www.reddit.com/api/v1/access_token",
+                auth=auth,
+                data=data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status != 200:
+                    logger.warning(f"Reddit OAuth token request failed: {resp.status}")
+                    return None
+                body = await resp.json()
+                token = body.get("access_token")
+                expires_in = body.get("expires_in", 3600)
+                if token:
+                    self._oauth_token = token
+                    # Cache with 5-min safety margin
+                    self._oauth_token_expires = time.monotonic() + expires_in - 300
+                    logger.info("Reddit OAuth token acquired")
+                    return token
+                return None
+        except Exception as e:
+            logger.warning(f"Reddit OAuth token fetch failed: {e}")
+            return None
+
+    async def _rate_limited_sleep(
+        self, resp: aiohttp.ClientResponse | None, use_oauth: bool
+    ) -> None:
+        """Sleep for rate-limit-appropriate duration, respecting Retry-After."""
+        if resp is not None and resp.status == 429:
+            retry_after = resp.headers.get("Retry-After")
+            if retry_after:
+                try:
+                    wait = min(float(retry_after), 30.0)
+                    logger.warning(f"Rate limited, waiting {wait}s (Retry-After)")
+                    await asyncio.sleep(wait)
+                    return
+                except ValueError:
+                    pass
+        delay = 1.0 if use_oauth else 2.0
+        await asyncio.sleep(delay)
+
     async def test_connection(self, config: dict[str, Any]) -> bool:
-        """Test connectivity to Reddit API."""
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {"User-Agent": HTTP_USER_AGENT}
@@ -142,25 +154,37 @@ class HumanReddit(ICollector):
             return False
 
     async def collect(self, config: dict[str, Any]) -> list[Any]:
-        """Collect hot/trending posts from monitored subreddits."""
+        """Collect hot posts with bodies and top comments from monitored subreddits."""
         subreddits = config.get("subreddits", self.MONITORED_SUBREDDITS)
         limit = config.get("limit", 25)
-        rate_limit_delay = config.get("rate_limit_delay", 2.0)
 
         logger.info(f"Collecting posts from {len(subreddits)} subreddits")
 
-        all_posts = []
+        all_posts: list[SocialSentiment] = []
         seen_urls: set[str] = set()
 
         async with aiohttp.ClientSession() as session:
-            headers = {"User-Agent": HTTP_USER_AGENT}
+            oauth_token = await self._get_oauth_token(session)
+            use_oauth = oauth_token is not None
+
+            if use_oauth:
+                base_url = "https://oauth.reddit.com"
+                headers = {
+                    "User-Agent": HTTP_USER_AGENT,
+                    "Authorization": f"Bearer {oauth_token}",
+                }
+                logger.info("Using Reddit OAuth API (1 req/sec)")
+            else:
+                base_url = "https://www.reddit.com"
+                headers = {"User-Agent": HTTP_USER_AGENT}
+                logger.info("Using Reddit public API (2s delay)")
 
             for subreddit in subreddits:
                 try:
-                    await asyncio.sleep(rate_limit_delay)
+                    await self._rate_limited_sleep(None, use_oauth)
 
-                    url = f"https://www.reddit.com/r/{subreddit}/hot.json"
-                    params = {"limit": limit, "raw_json": 1}
+                    url = f"{base_url}/r/{subreddit}/hot.json"
+                    params: dict[str, int] = {"limit": limit, "raw_json": 1}
 
                     async with session.get(
                         url,
@@ -168,12 +192,14 @@ class HumanReddit(ICollector):
                         params=params,
                         timeout=aiohttp.ClientTimeout(total=30),
                     ) as resp:
+                        if resp.status == 429:
+                            await self._rate_limited_sleep(resp, use_oauth)
+                            continue
                         if resp.status != 200:
                             logger.warning(
                                 f"Failed to fetch r/{subreddit}: status {resp.status}"
                             )
                             continue
-
                         data = await resp.json()
 
                     if not data or "data" not in data or "children" not in data["data"]:
@@ -191,13 +217,12 @@ class HumanReddit(ICollector):
 
                             # Intra-run dedup by permalink
                             permalink = post_data.get("permalink", "")
-                            post_url = (
-                                f"https://reddit.com{permalink}" if permalink else None
-                            )
-                            if post_url and post_url in seen_urls:
+                            if not permalink:
                                 continue
-                            if post_url:
-                                seen_urls.add(post_url)
+                            post_url = f"https://reddit.com{permalink}"
+                            if post_url in seen_urls:
+                                continue
+                            seen_urls.add(post_url)
 
                             # Parse publication timestamp
                             published_at = None
@@ -209,22 +234,33 @@ class HumanReddit(ICollector):
                                 except Exception:
                                     pass
 
-                            # Analyze sentiment from title
-                            sentiment = self._analyze_sentiment(title)
+                            # Extract post body and comment count
+                            body = post_data.get("selftext") or None
+                            num_comments = post_data.get("num_comments", 0)
 
-                            # Extract cryptocurrencies mentioned
-                            currencies = self._extract_currencies(title)
+                            # Fetch top comments for posts that have them
+                            top_comments = None
+                            if num_comments and num_comments > 0:
+                                top_comments = await self._fetch_top_comments(
+                                    session,
+                                    base_url,
+                                    headers,
+                                    permalink,
+                                    use_oauth,
+                                )
 
-                            # Create SocialSentiment record
                             data_point = SocialSentiment(
                                 platform="reddit",
                                 content=title,
                                 author=post_data.get("author"),
                                 score=post_data.get("score"),
-                                sentiment=sentiment,
-                                currencies=currencies if currencies else None,
+                                sentiment=None,
+                                currencies=None,
                                 posted_at=published_at,
                                 collected_at=datetime.now(timezone.utc),
+                                body=body,
+                                comment_count=num_comments,
+                                top_comments=top_comments,
                             )
 
                             all_posts.append(data_point)
@@ -240,61 +276,72 @@ class HumanReddit(ICollector):
         logger.info(f"Collected {len(all_posts)} posts total")
         return all_posts
 
-    def _analyze_sentiment(self, text: str) -> str:
-        """Analyze sentiment from text using keyword matching."""
-        text_lower = text.lower()
+    async def _fetch_top_comments(
+        self,
+        session: aiohttp.ClientSession,
+        base_url: str,
+        headers: dict[str, str],
+        permalink: str,
+        use_oauth: bool,
+    ) -> list[dict[str, Any]] | None:
+        """Fetch top 10 comments by score for a post."""
+        try:
+            await self._rate_limited_sleep(None, use_oauth)
 
-        bullish_count = sum(
-            1 for keyword in self.BULLISH_KEYWORDS if keyword in text_lower
-        )
-        bearish_count = sum(
-            1 for keyword in self.BEARISH_KEYWORDS if keyword in text_lower
-        )
+            url = f"{base_url}{permalink}.json"
+            params = {"limit": 10, "sort": "best", "raw_json": 1}
 
-        if bullish_count > bearish_count and bullish_count > 0:
-            return "bullish"
-        elif bearish_count > bullish_count and bearish_count > 0:
-            return "bearish"
-        else:
-            return "neutral"
+            async with session.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=15),
+            ) as resp:
+                if resp.status == 429:
+                    await self._rate_limited_sleep(resp, use_oauth)
+                    return None
+                if resp.status != 200:
+                    logger.debug(
+                        f"Failed to fetch comments for {permalink}: {resp.status}"
+                    )
+                    return None
+                data = await resp.json()
 
-    def _extract_currencies(self, text: str) -> list[str]:
-        """Extract cryptocurrency symbols from text."""
-        # Common crypto symbols and full names
-        crypto_patterns = [
-            (r"\bBTC\b", "BTC"),
-            (r"\bBitcoin\b", "BTC"),
-            (r"\bETH\b", "ETH"),
-            (r"\bEthereum\b", "ETH"),
-            (r"\bADA\b", "ADA"),
-            (r"\bCardano\b", "ADA"),
-            (r"\bDOGE\b", "DOGE"),
-            (r"\bXRP\b", "XRP"),
-            (r"\bRipple\b", "XRP"),
-            (r"\bSOL\b", "SOL"),
-            (r"\bSolana\b", "SOL"),
-            (r"\bAVAX\b", "AVAX"),
-            (r"\bAvalanche\b", "AVAX"),
-            (r"\bPOLYGON\b", "POLYGON"),
-            (r"\bARB\b", "ARB"),
-            (r"\bArbitrum\b", "ARB"),
-            (r"\bOP\b", "OP"),
-            (r"\bOptimism\b", "OP"),
-            (r"\bLINK\b", "LINK"),
-            (r"\bChainlink\b", "LINK"),
-            (r"\bUNI\b", "UNI"),
-            (r"\bUniswap\b", "UNI"),
-            (r"\bAAVE\b", "AAVE"),
-            (r"\bCRV\b", "CRV"),
-            (r"\bCurve\b", "CRV"),
-        ]
+            # Reddit returns [post_listing, comments_listing]
+            if not isinstance(data, list) or len(data) < 2:
+                return None
 
-        found_cryptos = []
-        for pattern, symbol in crypto_patterns:
-            if re.search(pattern, text, re.IGNORECASE):
-                found_cryptos.append(symbol)
+            comments_listing = data[1]
+            if (
+                not comments_listing
+                or "data" not in comments_listing
+                or "children" not in comments_listing["data"]
+            ):
+                return None
 
-        return list(set(found_cryptos))  # Remove duplicates
+            comments = []
+            for child in comments_listing["data"]["children"]:
+                if child.get("kind") != "t1":
+                    continue
+                c_data = child.get("data", {})
+                comment_text = c_data.get("body", "")
+                if not comment_text:
+                    continue
+                comments.append(
+                    {
+                        "text": comment_text,
+                        "score": c_data.get("score", 0),
+                        "author": c_data.get("author", "[deleted]"),
+                    }
+                )
+
+            # Sort by score descending and take top 10
+            comments.sort(key=lambda c: c["score"], reverse=True)
+            return comments[:10] if comments else None
+
+        except Exception as e:
+            logger.debug(f"Failed to fetch comments for {permalink}: {e}")
+            return None
 
 
 CollectorRegistry.register(HumanReddit)
