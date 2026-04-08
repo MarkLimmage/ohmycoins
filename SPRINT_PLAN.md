@@ -1,4 +1,4 @@
-# Sprint: Sentiment Enrichment Pipeline
+# Sprint 2.61: BYOM Multi-Model & Enrichment Hardening
 
 **Version:** 1.0  
 **Date:** 2026-04-09  
@@ -6,47 +6,124 @@
 
 ## Objective
 
-Upgrade the Reddit collector to capture full conversations (post body + top comments), generalize the enrichment pipeline to process any text source (not just NewsItem), and use Gemini Flash for LLM-based coin detection and weighted sentiment scoring.
+Expand BYOM credential management to support multiple models per provider (e.g. gemini-3-flash-preview AND gemini-3.1-flash-lite-preview under one Google API key), add inline credential editing, and fix the enrichment scheduler phantom-record bug from Sprint 2.60.
 
 ## Background
 
-### Current State
-- Reddit collector (`human_reddit`) fetches **title only** from `/hot.json` (public, no OAuth)
-- Sentiment is keyword regex ("bullish"/"bearish") — high false-positive rate (e.g. `\bOP\b` matches "Optimism" on every Reddit post)
-- Coin detection is hardcoded regex against ~25 patterns — no link to tracked portfolio
-- Enrichment pipeline (`backend/app/enrichment/`) exists but is **NewsItem-only**: `IEnricher.can_enrich()` checks `isinstance(item, NewsItem)`, `EnrichmentPipeline.run()` is typed `list[NewsItem]`, results FK to `news_item.link`
-- Gemini provider (`enrichment/providers/gemini.py`) and LLM enricher exist but only process news titles+summaries
-- `SentimentScore` table exists (`asset`, `source`, `score` -1..1, `magnitude`, `raw_data` JSON, `timestamp`) — currently written by ingestion service only
-- Materialized views `mv_coin_sentiment_24h` and `mv_signal_summary` aggregate from `news_enrichment` only
-- `SocialSentiment` dedup now enforced via `UNIQUE(platform, content, posted_at)` constraint
+### Current State — BYOM Credential Management
+- **One active credential per provider per user** — enforced in application logic (`create_llm_credentials()` rejects if an active credential for the same provider exists)
+- **No edit endpoint** — `UserLLMCredentialsUpdate` model exists but no PATCH/PUT route uses it. Error message says "Use PUT to update" but only `PUT .../default` exists (sets default flag, not API key)
+- **Frontend is create-only** — `LLMCredentialForm.tsx` has no edit mode; user must delete and re-add to change API key or model
+- **No DB uniqueness constraint** — one-per-provider is app logic only; race conditions could create duplicates
+- **Model list outdated** — requirements reference gpt-4/gemini-1.5-pro/claude-3; current models are gpt-4o/gemini-3.1/claude-4
 
-### Target State
-- Reddit collector fetches post title + selftext + top N comments with engagement scores
-- Shared enrichment service processes Reddit, news, and future sources via unified `IEnricher` interface
-- Gemini Flash performs coin identification (replacing hardcoded regex) and conversation-level sentiment
-- Engagement weighting (upvotes, comment count) stored alongside raw data
-- Per-(source, coin) sentiment scores flow into `SentimentScore` for unified downstream consumption
-- Materialized views updated to include social sentiment signals
+### Current State — Enrichment Pipeline
+- `_store_enrichment_records()` in `scheduler.py` writes EnrichmentRecord for ALL items unconditionally after `pipeline.run()`, even when LLM calls fail
+- This caused 544 phantom records during first backfill attempt (items marked "processed" with no SentimentScore output)
+- `_extract_text()` helper added for langchain-google-genai 4.x list content — appears stable but needs hardening
 
-## Architecture Decisions
+### Key Files
+| File | Role |
+|------|------|
+| `backend/app/models.py` L353-460 | UserLLMCredentials model + CRUD schemas |
+| `backend/app/api/routes/users.py` L288-658 | BYOM API endpoints |
+| `frontend/src/routes/_layout/llm-settings.tsx` | Settings page route |
+| `frontend/src/components/Agent/LLMCredentialForm.tsx` | Create form |
+| `frontend/src/components/Agent/LLMCredentialList.tsx` | List + actions |
+| `frontend/src/client/types.gen.ts` L1213-1290 | Generated TS types |
+| `backend/app/enrichment/scheduler.py` | Enrichment scheduler (bug) |
+| `backend/app/enrichment/social_enricher.py` | Social sentiment enricher |
 
-### AD-1: Enrichment stays decoupled from collection
-Collectors collect raw data. Enrichment runs on a separate schedule against stored data. A Gemini outage doesn't prevent data collection, and enrichment can be re-run/re-prompted without re-scraping.
+## Workstream A: Backend — BYOM Multi-Model + Edit
 
-### AD-2: Generalize enrichment pipeline, don't fork it
-The existing `EnrichmentPipeline` and `IEnricher` interface are sound. They need widening (accept any model, not just `NewsItem`) rather than replacing. A parallel pipeline would fragment the codebase.
+### A1. Remove one-per-provider constraint
+- In `create_llm_credentials()` (users.py ~L327): change the duplicate check from `(user_id, provider, is_active)` to `(user_id, provider, model_name, is_active)`.
+  - Same provider + same model = reject (already exists)
+  - Same provider + different model = allow (multiple models per provider)
+- Add DB unique constraint: `UniqueConstraint('user_id', 'provider', 'model_name', name='uq_user_llm_cred_provider_model')` filtered to `is_active=True` rows only. If filtered unique isn't feasible in Alembic, use a partial unique index.
+- Alembic migration required.
 
-### AD-3: Results go to `SentimentScore`, not a new table
-`SentimentScore` (`asset`, `source`, `score`, `magnitude`, `raw_data`, `timestamp`) already exists and is the right schema. The `source` field distinguishes `"reddit_llm"` from `"news_llm"` from `"keyword"`. No new table needed.
+### A2. Add PATCH endpoint for credential editing
+- New route: `PATCH /api/v1/users/me/llm-credentials/{credential_id}`
+- Uses existing `UserLLMCredentialsUpdate` schema (already defined: `model_name`, `api_key`, `is_default`, `is_active`)
+- If `api_key` is provided: re-encrypt with current ENCRYPTION_KEY, update `encrypted_api_key`
+- If `model_name` is changed: validate uniqueness against `(user_id, provider, new_model_name, is_active=True)`
+- Update `updated_at` timestamp
+- Return `UserLLMCredentialsPublic`
+- Ownership check: credential must belong to `current_user`
 
-### AD-4: Reddit OAuth is a prerequisite
-Without OAuth, Reddit rate-limits to ~10 req/min for public JSON endpoints. Fetching comments for 125 posts = 130+ requests. Reddit OAuth (free, script-type app) gives 100 req/min authenticated. This must be done first or the collector will 429 constantly.
+### A3. Regenerate OpenAPI client
+- After backend changes, regenerate `frontend/src/client/` from updated OpenAPI spec
+- Verify new types appear: `UserLLMCredentialsUpdate`, `updateLlmCredential()` method
 
-### AD-5: Batch LLM calls to reduce cost
-Instead of 1 Gemini call per post, batch 5-10 posts per prompt. Reduces system prompt overhead and cuts cost by 3-5x. Target: <$1/day.
+## Workstream B: Frontend — Multi-Model UI
 
-### AD-6: Validate LLM coin extraction against tracked assets
-Don't blindly trust Gemini's coin identification. Cross-reference extracted symbols against a configurable coin list (from config or DB) to filter hallucinated tickers.
+### B1. Credential list grouped by provider
+- `LLMCredentialList.tsx`: group credentials by `provider` field
+- Each provider section: collapsible header with provider icon/name, expand to show all models
+- Each credential row: model name, masked API key, is_default badge, last_validated_at, actions
+
+### B2. Inline edit mode
+- Add "Edit" button to each credential row in `LLMCredentialList.tsx`
+- Clicking Edit: row expands into inline form (model_name field, optional new API key field, save/cancel)
+- Save calls `PATCH /api/v1/users/me/llm-credentials/{id}` with only changed fields
+- If API key changed: auto-validate via existing `validateLlmCredential()` before saving
+- On success: invalidate React Query cache `["llmCredentials"]`, collapse edit form
+
+### B3. Create form update
+- `LLMCredentialForm.tsx`: if user already has a credential for the selected provider, allow creation (remove "already exists" error handling)
+- Model name should be a required field (not optional) to distinguish multiple credentials per provider
+
+## Workstream C: Enrichment Bug Fixes
+
+### C1. Fix phantom EnrichmentRecord bug
+- In `scheduler.py`, `_store_enrichment_records()` currently writes records for ALL items
+- Fix: pass the pipeline run results to `_store_enrichment_records()` and only write records for items that produced at least one `EnrichmentResult`
+- Approach: `pipeline.run()` returns `EnrichmentRun` — but that's aggregate counts. Need to track per-item success.
+- Recommended: have `SocialSentimentEnricher.enrich()` return empty list `[]` on LLM failure (already does this). In `_store_enrichment_records()`, cross-reference against `SentimentScore` rows written in this session (query for source_id match with `source='reddit_llm'` and `timestamp >= run_start`)
+- Alternative: simpler — track enriched item IDs in the pipeline and pass to `_store_enrichment_records()`
+
+### C2. Harden _extract_text()
+- Add handling for nested content parts (e.g. thinking + text parts mixed)
+- Add logging when content type is unexpected
+- Guard against None/empty content
+
+## Parallelism Analysis
+
+```
+Workstream A (Backend BYOM)  ─────────────────►  merge
+Workstream C (Enrichment Fix) ────►  merge        │
+                                                    ├─► Integration
+Workstream B (Frontend BYOM)  ────────────────►  merge
+```
+
+- **A + C** can run in one backend worker (both modify backend, no file conflicts)
+- **B** runs in a separate frontend worker (depends on A3 OpenAPI regen)
+- Integration: B depends on A being merged first (needs new API endpoint + regenerated client)
+
+## Acceptance Criteria
+
+### BYOM Multi-Model
+- [ ] User can add gemini-3-flash-preview AND gemini-3.1-flash-lite-preview under same Google provider
+- [ ] User can add gpt-4o AND gpt-4o-mini under same OpenAI provider
+- [ ] Duplicate (same provider + same model) is still rejected
+- [ ] Editing API key re-encrypts and updates the credential
+- [ ] Editing model_name updates without requiring re-entry of API key
+- [ ] Frontend shows credentials grouped by provider
+- [ ] Frontend inline edit mode works for API key rotation
+
+### Enrichment Hardening
+- [ ] After a backfill where LLM fails for some items, only successfully-enriched items get EnrichmentRecord rows
+- [ ] Subsequent scheduler run picks up the failed items and retries them
+- [ ] `_extract_text()` handles list, string, and None content gracefully
+
+## Risk Register
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Frontend depends on backend PATCH endpoint | B blocked until A merged | Run A first, regen client, then spawn B |
+| Partial unique index not supported in all Alembic backends | Migration failure | Use application-level check as fallback, add normal unique constraint on `(user_id, provider, model_name)` |
+| Edit API key without re-validation could store invalid key | Enrichment fails silently | Enforce validation on API key change in PATCH endpoint |
 
 ---
 

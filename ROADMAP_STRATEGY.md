@@ -1,14 +1,12 @@
 # 🗺️ Roadmap & Execution Strategy: "The Lab"
 
-**Version:** 1.3.2  
+**Version:** 1.3.3  
 **Context:** This document outlines the strategic implementation phases for "The Lab" (Algo Development Module). Because this system involves stateful AI orchestration, isolated container execution, and real-time WebSockets, **strict adherence to the phase order is mandatory**.
 
-## 🔄 DIFF: v1.3.1 → v1.3.2
+## 🔄 DIFF: v1.3.2 → v1.3.3
 
-* [x] **Phases 0–6:** COMPLETE (baseline).
-* [x] **Phase 7 (Sprint 2.51):** COMPLETE — Initial v1.3 Conversational Scientific Grid.
-* [x] **Phase 7.1 (Sprint 2.52):** COMPLETE — v1.3.1 Enforcement. 6 Severity-A backend + 8 frontend violations remediated. Merged at `8efcab0`. 41 PASS / 0 FAIL / 6 SKIP.
-* [ ] **Phase 7.2 (Sprint 2.53+, NEW):** Stage-Row Architecture & Stale Protocol — Per-DSLC-stage 3-column rows, collapsible sidebar, session drawer, revision flow with stale cascade. 3 sub-phases (~2.5 sprints). See §Phase 7.2 below.
+* [x] **Phase 8 (Sprint 2.60):** COMPLETE — Sentiment Enrichment Pipeline. Reddit OAuth + deep collector, generalized enrichment pipeline, Gemini Flash batch analysis, 231 SentimentScore rows across 19 coins. Merged at `5f8a83d`.
+* [ ] **Phase 9 (Sprint 2.61, NEW):** BYOM Multi-Model & Enrichment Hardening — multiple models per provider, credential editing, phantom EnrichmentRecord bug fix.
 
 ---
 
@@ -202,9 +200,9 @@ The team must build from the core execution engine outward to the user interface
 
 ---
 
-## 🧪 Phase 8: Sentiment Enrichment Pipeline (Sprint 2.60)
+## 🧪 Phase 8: Sentiment Enrichment Pipeline (Sprint 2.60) ✅ COMPLETE
 
-**Status:** PLANNING  
+**Status:** COMPLETE — merged at `5f8a83d`, deployed 2026-04-09  
 **Objective:** Upgrade Reddit collector to capture full conversations, generalize the enrichment pipeline for multi-source LLM sentiment analysis via Gemini Flash.  
 **Full Plan:** See `SPRINT_PLAN.md` and `ENRICHMENT_CONTRACTS.md`.
 
@@ -214,6 +212,20 @@ The team must build from the core execution engine outward to the user interface
 
 * **Dependencies:** Independent of Phase 7.2 (Lab UI). Depends only on current main branch state.
 * **Estimated cost:** ~$12/month (Gemini Flash API).
+
+---
+
+## 🔧 Phase 9: BYOM Multi-Model & Enrichment Hardening (Sprint 2.61)
+
+**Status:** PLANNING  
+**Objective:** Expand BYOM credential management to support multiple models per provider, add credential editing, and harden the enrichment pipeline from Phase 8.
+
+* **Workstream A (Backend — BYOM Multi-Model):** Remove one-credential-per-provider constraint, add PATCH endpoint for credential editing (API key, model_name), add DB unique constraint on `(user_id, provider, model_name, is_active)`, update model list requirements for current 2026 models.
+* **Workstream B (Frontend — BYOM UI):** Multi-model credential list grouped by provider, inline edit mode for credentials (API key rotation, model change), provider-level expand/collapse.
+* **Workstream C (Enrichment Bug Fixes):** Fix `_store_enrichment_records()` writing phantom records on LLM failure — only write EnrichmentRecord for items that produced actual SentimentScore output. Harden `_extract_text()` for edge cases.
+
+* **Dependencies:** Phase 8 complete.
+* **Parallelism:** Workstreams A+C (Backend) can run in one worker. Workstream B (Frontend) can run in parallel.
 
 ---
 
