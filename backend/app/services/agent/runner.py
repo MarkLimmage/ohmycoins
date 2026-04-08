@@ -547,7 +547,7 @@ class AgentRunner:
                         elif next_node in ("report", "generate_report") and current_tracked_stage == "EXPLORATION":
                             description = "Exploration complete. Review the analysis results and approve to generate report."
 
-                        stage = _get_stage_from_step(next_node)
+                        stage = current_tracked_stage or _get_stage_from_step(next_node)
 
                         # Emit action_request
                         sequence_id += 1
