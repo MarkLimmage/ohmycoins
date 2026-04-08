@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Ordered fallback RPC endpoints per chain
 ETHEREUM_RPC_ENDPOINTS: list[str] = [
+    "https://eth.llamarpc.com",
     "https://cloudflare-eth.com",
     "https://eth.drpc.org",
     "https://rpc.ankr.com/eth",
