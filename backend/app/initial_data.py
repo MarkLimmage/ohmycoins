@@ -116,6 +116,18 @@ def seed_collectors(session: Session) -> None:
             "config": {},
             "status": "idle",
         },
+        {
+            "name": "NansenSmartMoney",
+            "description": "Smart money wallet flows from Nansen API",
+            "plugin_name": "glass_nansen",
+            "is_enabled": True,
+            "schedule_cron": "*/15 * * * *",
+            "config": {
+                "chains": ["ethereum"],
+                "tokens": ["ETH", "BTC", "SOL", "USDT", "USDC"],
+            },
+            "status": "idle",
+        },
     ]
 
     for seed_data in collectors_to_seed:
