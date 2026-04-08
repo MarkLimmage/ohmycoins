@@ -26,6 +26,21 @@ BATCH_SIZE = 5
 MAX_BATCH_SIZE = 10
 
 
+def _extract_text(content: Any) -> str:
+    """Extract text from LangChain response content.
+
+    langchain-google-genai 4.x returns content as a list of parts
+    (e.g. [{'type': 'text', 'text': '...', 'extras': {...}}]) rather
+    than a plain string.  Handle both formats.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = [p["text"] for p in content if isinstance(p, dict) and "text" in p]
+        return "\n".join(parts)
+    return str(content)
+
+
 class GeminiSentimentProvider(ISentimentProvider):
     """Gemini-based sentiment analysis using LLMFactory credentials."""
 
@@ -73,7 +88,7 @@ class GeminiSentimentProvider(ISentimentProvider):
         try:
             # Call Gemini LLM
             response = await self._llm.ainvoke(prompt)
-            content = (
+            content = _extract_text(
                 response.content if hasattr(response, "content") else str(response)
             )
 
@@ -201,7 +216,9 @@ Return ONLY the JSON object, no additional text."""
         prompt = self._build_batch_prompt(inputs)
 
         response = await self._llm.ainvoke(prompt)
-        content = response.content if hasattr(response, "content") else str(response)
+        content = _extract_text(
+            response.content if hasattr(response, "content") else str(response)
+        )
 
         return self._parse_batch_response(content, inputs)
 
