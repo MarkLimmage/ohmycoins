@@ -1,5 +1,6 @@
 import logging
 import random
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -230,12 +231,14 @@ class GlassChainWalker(ICollector):
                 metric_name="block_height",
                 metric_value=Decimal(block_height),
                 source="GlassChainWalker",
+                collected_at=datetime.now(timezone.utc),
             ),
             OnChainMetrics(
                 asset=chain.upper(),
                 metric_name="gas_price",
                 metric_value=gas_price,
                 source="GlassChainWalker",
+                collected_at=datetime.now(timezone.utc),
             ),
         ]
 
