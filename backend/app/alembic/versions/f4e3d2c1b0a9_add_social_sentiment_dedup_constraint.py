@@ -1,6 +1,6 @@
 """Add social_sentiment dedup unique constraint
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: f4e3d2c1b0a9
 Revises: d939ddf6ef1a
 Create Date: 2026-04-08 12:00:00.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a1b2c3d4e5f6'
+revision = 'f4e3d2c1b0a9'
 down_revision = 'd939ddf6ef1a'
 branch_labels = None
 depends_on = None
