@@ -661,6 +661,9 @@ class SocialSentiment(SQLModel, table=True):
 
     __table_args__ = (
         Index("ix_social_sentiment_platform_posted", "platform", "posted_at"),
+        sa.UniqueConstraint(
+            "platform", "content", "posted_at", name="uq_social_sentiment_dedup"
+        ),
     )
 
 
