@@ -115,7 +115,9 @@ class GlassDefiLlama(ICollector):
         rate_limit_delay = config.get("rate_limit_delay", 0.1)
         total_timeout = config.get("total_timeout", 120)
 
-        logger.info(f"Collecting data for {len(protocols)} protocols (timeout={total_timeout}s)")
+        logger.info(
+            f"Collecting data for {len(protocols)} protocols (timeout={total_timeout}s)"
+        )
 
         all_data: list[Any] = []
 

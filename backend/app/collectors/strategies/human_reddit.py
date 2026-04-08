@@ -192,9 +192,7 @@ class HumanReddit(ICollector):
                             # Intra-run dedup by permalink
                             permalink = post_data.get("permalink", "")
                             post_url = (
-                                f"https://reddit.com{permalink}"
-                                if permalink
-                                else None
+                                f"https://reddit.com{permalink}" if permalink else None
                             )
                             if post_url and post_url in seen_urls:
                                 continue
