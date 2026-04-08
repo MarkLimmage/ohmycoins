@@ -42,7 +42,7 @@ class GeminiSentimentProvider(ISentimentProvider):
         # Load active Google credential from database
         statement = select(UserLLMCredentials).where(
             UserLLMCredentials.provider == "google",
-            UserLLMCredentials.is_active is True,
+            UserLLMCredentials.is_active == True,  # noqa: E712
         )
         credential = self.session.exec(statement).first()
 
