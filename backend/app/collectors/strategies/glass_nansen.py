@@ -170,6 +170,7 @@ class GlassNansen(ICollector):
         )
 
         all_data: list[Any] = []
+        self._last_error: str | None = None
         try:
             await asyncio.wait_for(
                 self._collect_all(
@@ -183,6 +184,9 @@ class GlassNansen(ICollector):
                 TOTAL_TIMEOUT,
                 len(all_data),
             )
+
+        if not all_data and self._last_error:
+            raise RuntimeError(f"Nansen API error: {self._last_error}")
 
         logger.info("Collected %d smart money flow records", len(all_data))
         return all_data
@@ -295,11 +299,13 @@ class GlassNansen(ICollector):
                 return None
 
             if response.status_code in (401, 403):
+                error_msg = response.text
                 logger.error(
                     "Nansen API auth error (%d): %s",
                     response.status_code,
-                    response.text,
+                    error_msg,
                 )
+                self._last_error = f"HTTP {response.status_code}: {error_msg}"
                 return None
 
             logger.warning(
