@@ -189,6 +189,14 @@ class GlassChainWalker(ICollector):
                     },
                 ]
                 responses = await self._rpc_call_with_fallback(chain, config, payloads)
+                if "error" in responses[0] or "result" not in responses[0]:
+                    raise RuntimeError(
+                        f"RPC error for eth_blockNumber: {responses[0].get('error', 'no result key')}"
+                    )
+                if "error" in responses[1] or "result" not in responses[1]:
+                    raise RuntimeError(
+                        f"RPC error for eth_gasPrice: {responses[1].get('error', 'no result key')}"
+                    )
                 block_height = int(responses[0]["result"], 16)
                 gas_price_wei = int(responses[1]["result"], 16)
                 gas_price = Decimal(gas_price_wei) / Decimal(10**9)  # Convert to Gwei
@@ -198,6 +206,10 @@ class GlassChainWalker(ICollector):
                     {"jsonrpc": "2.0", "id": 1, "method": "getBlockHeight"},
                 ]
                 responses = await self._rpc_call_with_fallback(chain, config, payloads)
+                if "error" in responses[0] or "result" not in responses[0]:
+                    raise RuntimeError(
+                        f"RPC error for getBlockHeight: {responses[0].get('error', 'no result key')}"
+                    )
                 block_height = responses[0]["result"]
                 gas_price = Decimal("0.000005")  # Placeholder
 

@@ -153,7 +153,7 @@ class HumanReddit(ICollector):
         seen_urls: set[str] = set()
 
         async with aiohttp.ClientSession() as session:
-            headers = {"User-Agent": "OhMyCoins/1.0"}
+            headers = {"User-Agent": HTTP_USER_AGENT}
 
             for subreddit in subreddits:
                 try:
