@@ -49,6 +49,19 @@ def start_collection() -> None:
 
         # Start the scheduler
         orchestrator.start()
+
+        # Wire enrichment scheduler (*/30 — social sentiment LLM enrichment)
+        from apscheduler.triggers.cron import CronTrigger  # type: ignore
+
+        orchestrator.scheduler.add_job(
+            _run_social_enrichment_job,
+            trigger=CronTrigger.from_crontab("*/30 * * * *"),
+            id="enrichment_social_sentiment",
+            name="Enrichment/SocialSentiment",
+            replace_existing=True,
+        )
+        logger.info("Enrichment scheduler wired: social sentiment (*/30)")
+
         logger.info("Collection orchestrator started")
     except Exception as e:
         logger.error(f"Failed to start collection orchestrator: {str(e)}")
@@ -75,3 +88,21 @@ def get_collection_status() -> dict:
     """
     orchestrator = get_orchestrator()
     return orchestrator.get_health_status()
+
+
+async def _run_social_enrichment_job() -> None:
+    """APScheduler wrapper for the social sentiment enrichment pipeline."""
+    from sqlmodel import Session
+
+    from app.core.db import engine
+    from app.enrichment.scheduler import run_social_enrichment
+
+    try:
+        with Session(engine) as session:
+            run = await run_social_enrichment(session)
+            logger.info(
+                f"Social enrichment run: processed={run.items_processed}, "
+                f"enriched={run.items_enriched}, failed={run.items_failed}"
+            )
+    except Exception as e:
+        logger.error(f"Social enrichment job failed: {e}")
