@@ -32,7 +32,18 @@ MAX_RETRIES = 3
 class GlassNansen(ICollector):
     """Collector for smart money wallet flows from Nansen API."""
 
-    TRACKED_TOKENS = ["ETH", "BTC", "SOL", "USDT", "USDC"]
+    TRACKED_TOKENS = [
+        "LINK",
+        "ARKM",
+        "AAVE",
+        "PUFFER",
+        "BIO",
+        "CYBER",
+        "MAVIA",
+        "GEAR",
+        "REZ",
+        "DAO",
+    ]
 
     @property
     def name(self) -> str:
@@ -61,6 +72,7 @@ class GlassNansen(ICollector):
                     "items": {"type": "string"},
                     "description": "Token symbols to track",
                     "default": self.TRACKED_TOKENS,
+                    "examples": ["LINK", "ARKM", "AAVE", "PUFFER"],
                 },
                 "rate_limit_delay": {
                     "type": "number",
