@@ -11,6 +11,34 @@ from app.models import OnChainMetrics
 
 logger = logging.getLogger(__name__)
 
+# Ordered fallback RPC endpoints per chain
+ETHEREUM_RPC_ENDPOINTS: list[str] = [
+    "https://cloudflare-eth.com",
+    "https://eth.drpc.org",
+    "https://rpc.ankr.com/eth",
+    "https://ethereum-rpc.publicnode.com",
+]
+
+SOLANA_RPC_ENDPOINTS: list[str] = [
+    "https://api.mainnet-beta.solana.com",
+]
+
+CONNECTION_TIMEOUT_SECONDS = 10.0
+
+
+def _get_rpc_endpoints(chain: str, config: dict[str, Any]) -> list[str]:
+    """Build ordered list of RPC endpoints: custom first, then fallbacks."""
+    endpoints: list[str] = []
+    custom_url = config.get("rpc_url")
+    if custom_url:
+        endpoints.append(custom_url)
+
+    if chain == "ethereum":
+        endpoints.extend(url for url in ETHEREUM_RPC_ENDPOINTS if url not in endpoints)
+    elif chain == "solana":
+        endpoints.extend(url for url in SOLANA_RPC_ENDPOINTS if url not in endpoints)
+    return endpoints
+
 
 class GlassChainWalker(ICollector):
     @property
@@ -32,7 +60,7 @@ class GlassChainWalker(ICollector):
                     "enum": ["ethereum", "solana"],
                     "default": "ethereum",
                 },
-                "rpc_url": {"type": "string", "default": "https://eth.llamarpc.com"},
+                "rpc_url": {"type": "string"},
                 "mock_mode": {"type": "boolean", "default": False},
             },
             "required": ["chain"],
@@ -49,130 +77,144 @@ class GlassChainWalker(ICollector):
         if config.get("mock_mode", False):
             return True
 
-        rpc_url = config.get("rpc_url")
-        if not rpc_url:
+        chain = config.get("chain", "ethereum")
+        endpoints = _get_rpc_endpoints(chain, config)
+        if not endpoints:
             return False
 
-        try:
-            async with httpx.AsyncClient() as client:
-                if config["chain"] == "ethereum":
-                    payload = {
-                        "jsonrpc": "2.0",
-                        "method": "eth_blockNumber",
-                        "params": [],
-                        "id": 1,
-                    }
-                    response = await client.post(rpc_url, json=payload, timeout=5.0)
-                    response.raise_for_status()
-                    return True
-                elif config["chain"] == "solana":
-                    payload = {"jsonrpc": "2.0", "id": 1, "method": "getBlockHeight"}
-                    response = await client.post(rpc_url, json=payload, timeout=5.0)
-                    response.raise_for_status()
-                    return True
-        except Exception as e:
-            logger.error(f"Connection test failed: {e}")
-            return False
-        return False
-
-    async def collect(self, config: dict[str, Any]) -> list[Any]:
-        results = []
-        chain = config["chain"]
-        mock_mode = config.get("mock_mode", False)
-        rpc_url = config.get(
-            "rpc_url",
-            "https://eth.llamarpc.com"
-            if chain == "ethereum"
-            else "https://api.mainnet-beta.solana.com",
-        )
-
-        block_height = 0
-        gas_price = Decimal(0)
-
-        if mock_mode:
-            # Simulate plausible data
-            if chain == "ethereum":
-                block_height = 19000000 + random.randint(1, 1000)
-                gas_price = Decimal(random.uniform(10, 50))  # Gwei
-            else:  # solana
-                block_height = 200000000 + random.randint(1, 10000)
-                gas_price = Decimal(
-                    random.uniform(0.000005, 0.00001)
-                )  # SOL (lamports usually but let's say "price")
-        else:
+        for rpc_url in endpoints:
             try:
-                async with httpx.AsyncClient() as client:
+                timeout = httpx.Timeout(
+                    CONNECTION_TIMEOUT_SECONDS, connect=CONNECTION_TIMEOUT_SECONDS
+                )
+                async with httpx.AsyncClient(timeout=timeout) as client:
                     if chain == "ethereum":
-                        # Fetch Block Number
                         payload = {
                             "jsonrpc": "2.0",
                             "method": "eth_blockNumber",
                             "params": [],
                             "id": 1,
                         }
-                        resp = await client.post(rpc_url, json=payload, timeout=10.0)
-                        data = resp.json()
-                        block_height = int(data["result"], 16)
-
-                        # Fetch Gas Price
-                        payload_gas = {
-                            "jsonrpc": "2.0",
-                            "method": "eth_gasPrice",
-                            "params": [],
-                            "id": 1,
-                        }
-                        resp_gas = await client.post(
-                            rpc_url, json=payload_gas, timeout=10.0
-                        )
-                        data_gas = resp_gas.json()
-                        gas_price_wei = int(data_gas["result"], 16)
-                        gas_price = Decimal(gas_price_wei) / Decimal(
-                            10**9
-                        )  # Convert to Gwei
-
-                    elif chain == "solana":
-                        # Fetch Block Height
+                    else:
                         payload = {
                             "jsonrpc": "2.0",
                             "id": 1,
                             "method": "getBlockHeight",
                         }
-                        resp = await client.post(rpc_url, json=payload, timeout=10.0)
-                        data = resp.json()
-                        block_height = data["result"]
-
-                        # Solana doesn't have "gas price" in the same way, maybe use a fixed mock or fetch fees if possible
-                        # For now, let's just mock gas/fee or skip
-                        gas_price = Decimal(0.000005)  # Placeholder
-
+                    response = await client.post(rpc_url, json=payload)
+                    response.raise_for_status()
+                    logger.info("Connection test succeeded via %s", rpc_url)
+                    return True
+            except (
+                httpx.ConnectError,
+                httpx.TimeoutException,
+                httpx.HTTPStatusError,
+            ) as e:
+                logger.warning("Connection test failed for %s: %s", rpc_url, e)
+                continue
             except Exception as e:
-                logger.error(f"Failed to collect from {chain} RPC: {e}")
-                raise
+                logger.error("Unexpected error testing %s: %s", rpc_url, e)
+                continue
+        return False
 
-        # Create OnChainMetrics entries
-        # Need to know the field names in OnChainMetrics model.
-        # Using grep_search I saw:
-        # asset: str
-        # metric_name: str
-        # metric_value: Decimal
+    async def _rpc_call_with_fallback(
+        self, chain: str, config: dict[str, Any], payloads: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Execute one or more JSON-RPC calls against the endpoint list with fallback.
 
-        results.append(
+        Returns a list of response JSON dicts, one per payload.
+        Raises RuntimeError if all endpoints are exhausted.
+        """
+        endpoints = _get_rpc_endpoints(chain, config)
+        last_error: Exception | None = None
+
+        for rpc_url in endpoints:
+            try:
+                timeout = httpx.Timeout(
+                    CONNECTION_TIMEOUT_SECONDS, connect=CONNECTION_TIMEOUT_SECONDS
+                )
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    results: list[dict[str, Any]] = []
+                    for payload in payloads:
+                        resp = await client.post(rpc_url, json=payload)
+                        resp.raise_for_status()
+                        results.append(resp.json())
+                    logger.info("RPC calls succeeded via %s for %s", rpc_url, chain)
+                    return results
+            except (
+                httpx.ConnectError,
+                httpx.TimeoutException,
+                httpx.HTTPStatusError,
+            ) as e:
+                logger.warning("RPC endpoint %s failed for %s: %s", rpc_url, chain, e)
+                last_error = e
+                continue
+            except Exception as e:
+                logger.warning("Unexpected error from %s for %s: %s", rpc_url, chain, e)
+                last_error = e
+                continue
+
+        raise RuntimeError(
+            f"All RPC endpoints exhausted for {chain}. Last error: {last_error}"
+        )
+
+    async def collect(self, config: dict[str, Any]) -> list[Any]:
+        chain = config["chain"]
+        mock_mode = config.get("mock_mode", False)
+
+        block_height = 0
+        gas_price = Decimal(0)
+
+        if mock_mode:
+            if chain == "ethereum":
+                block_height = 19000000 + random.randint(1, 1000)
+                gas_price = Decimal(random.uniform(10, 50))  # Gwei
+            else:  # solana
+                block_height = 200000000 + random.randint(1, 10000)
+                gas_price = Decimal(random.uniform(0.000005, 0.00001))
+        else:
+            if chain == "ethereum":
+                payloads = [
+                    {
+                        "jsonrpc": "2.0",
+                        "method": "eth_blockNumber",
+                        "params": [],
+                        "id": 1,
+                    },
+                    {
+                        "jsonrpc": "2.0",
+                        "method": "eth_gasPrice",
+                        "params": [],
+                        "id": 2,
+                    },
+                ]
+                responses = await self._rpc_call_with_fallback(chain, config, payloads)
+                block_height = int(responses[0]["result"], 16)
+                gas_price_wei = int(responses[1]["result"], 16)
+                gas_price = Decimal(gas_price_wei) / Decimal(10**9)  # Convert to Gwei
+
+            elif chain == "solana":
+                payloads = [
+                    {"jsonrpc": "2.0", "id": 1, "method": "getBlockHeight"},
+                ]
+                responses = await self._rpc_call_with_fallback(chain, config, payloads)
+                block_height = responses[0]["result"]
+                gas_price = Decimal("0.000005")  # Placeholder
+
+        results = [
             OnChainMetrics(
                 asset=chain.upper(),
                 metric_name="block_height",
                 metric_value=Decimal(block_height),
                 source="GlassChainWalker",
-            )
-        )
-
-        results.append(
+            ),
             OnChainMetrics(
                 asset=chain.upper(),
                 metric_name="gas_price",
                 metric_value=gas_price,
                 source="GlassChainWalker",
-            )
-        )
+            ),
+        ]
 
         return results
 
