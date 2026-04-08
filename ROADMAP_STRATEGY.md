@@ -202,6 +202,21 @@ The team must build from the core execution engine outward to the user interface
 
 ---
 
+## 🧪 Phase 8: Sentiment Enrichment Pipeline (Sprint 2.60)
+
+**Status:** PLANNING  
+**Objective:** Upgrade Reddit collector to capture full conversations, generalize the enrichment pipeline for multi-source LLM sentiment analysis via Gemini Flash.  
+**Full Plan:** See `SPRINT_PLAN.md` and `ENRICHMENT_CONTRACTS.md`.
+
+* **Phase 1 (Engine Worker — parallel):** Reddit collector upgrade — OAuth integration, deep post+comment fetching, schema extension (`body`, `comment_count`, `top_comments` on `SocialSentiment`). Remove hardcoded regex sentiment/coin detection.
+* **Phase 2 (Graph Worker — parallel):** Generalized enrichment pipeline — widen `IEnricher` to accept any model type, new `EnrichmentRecord` table for universal provenance, `SocialSentimentEnricher` with batched Gemini Flash analysis, enrichment scheduler cron, materialized view updates.
+* **Phase 3 (Supervisor — sequential):** Integration merge, alembic merge migration, scheduler wiring, backfill existing data, production validation.
+
+* **Dependencies:** Independent of Phase 7.2 (Lab UI). Depends only on current main branch state.
+* **Estimated cost:** ~$12/month (Gemini Flash API).
+
+---
+
 ### 📋 Agentic Dev Team Instructions:
 
 1. Do not initiate work on a subsequent phase until the current phase's acceptance criteria (from `USER_STORIES.md`) are demonstrably met and tests are passing.
