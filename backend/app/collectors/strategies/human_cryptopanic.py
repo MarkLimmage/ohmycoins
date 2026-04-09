@@ -25,7 +25,7 @@ DEFAULT_CURRENCIES = "BTC,ETH,SOL,AVAX,LINK,AAVE,UNI,DOT,ADA,MATIC"
 class CryptoPanicCollector(ICollector):
     """Collector for community-voted crypto news from CryptoPanic."""
 
-    API_BASE = "https://cryptopanic.com/api/developer/v4/posts/"
+    API_BASE = "https://cryptopanic.com/api/developer/v2/posts/"
 
     @property
     def name(self) -> str:
@@ -144,9 +144,10 @@ class CryptoPanicCollector(ICollector):
                         except Exception:
                             pass
 
-                    # Extract currencies
+                    # Extract currencies (API v2 uses 'instruments' field)
+                    instruments = result.get("instruments") or result.get("currencies") or []
                     currency_list = [
-                        c["code"] for c in result.get("currencies", []) if c.get("code")
+                        c["code"] for c in instruments if c.get("code")
                     ]
 
                     # Extract votes
