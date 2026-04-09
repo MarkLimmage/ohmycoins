@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload plan
         if: github.event.inputs.terraform_action == 'apply' || github.event_name == 'push'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: tfplan-${{ github.event.inputs.environment || 'staging' }}
           path: infrastructure/terraform/environments/${{ github.event.inputs.environment || 'staging' }}/tfplan
