@@ -179,6 +179,7 @@ class Settings(BaseSettings):
     # Data collector API keys
     NEWSCATCHER_API_KEY: str | None = None
     NANSEN_API_KEY: str | None = None
+    CRYPTOPANIC_API_KEY: str | None = None
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

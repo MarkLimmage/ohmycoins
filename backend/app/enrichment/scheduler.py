@@ -30,20 +30,20 @@ async def run_social_enrichment(session: Session) -> EnrichmentRun:
     Schedule: */30 * * * * (every 30 min) — wired by Supervisor in Phase 3.
     """
     # Find unenriched SocialSentiment rows via NOT EXISTS subquery
-    enriched_subquery = (
-        select(EnrichmentRecord.source_id)
-        .where(
-            and_(
-                EnrichmentRecord.source_table == "social_sentiment",
-                EnrichmentRecord.enricher_name == "social_llm_sentiment",
-                EnrichmentRecord.enrichment_type == "sentiment",
-            )
+    enriched_subquery = select(EnrichmentRecord.source_id).where(
+        and_(
+            EnrichmentRecord.source_table == "social_sentiment",
+            EnrichmentRecord.enricher_name == "social_llm_sentiment",
+            EnrichmentRecord.enrichment_type == "sentiment",
         )
     )
 
     statement = (
         select(SocialSentiment)
         .where(SocialSentiment.id.notin_(enriched_subquery))  # type: ignore[union-attr]
+        .where(
+            SocialSentiment.platform != "cryptopanic"
+        )  # CryptoPanic has pre-computed sentiment from votes
         .order_by(SocialSentiment.collected_at.desc())  # type: ignore[union-attr]
         .limit(BATCH_LIMIT)
     )
@@ -77,9 +77,7 @@ async def run_social_enrichment(session: Session) -> EnrichmentRun:
     )
     enriched_source_ids = {row[0] for row in result}
 
-    enriched_items = [
-        item for item in items if str(item.id) in enriched_source_ids
-    ]
+    enriched_items = [item for item in items if str(item.id) in enriched_source_ids]
     _store_enrichment_records(enriched_items, enricher, session)
 
     return run
