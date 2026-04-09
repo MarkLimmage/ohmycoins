@@ -41,7 +41,7 @@ interface LLMCredentialFormProps {
 interface FormData {
   provider: string
   api_key: string
-  model_name?: string
+  model_name: string
   is_default: boolean
 }
 
@@ -138,7 +138,7 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
     const payload: UserLLMCredentialsCreate = {
       provider: data.provider,
       api_key: data.api_key,
-      model_name: data.model_name || undefined,
+      model_name: data.model_name,
       is_default: data.is_default,
     }
     createMutation.mutate(payload)
@@ -233,11 +233,16 @@ const LLMCredentialForm = ({ onCancel }: LLMCredentialFormProps) => {
             </Field>
 
             <Field
-              label="Model Name (Optional)"
-              helperText={`Leave empty to use default: ${getPlaceholderModel(selectedProvider)}`}
+              label="Model Name"
+              required
+              invalid={!!errors.model_name}
+              errorText={errors.model_name?.message}
+              helperText="e.g. gemini-3.1-flash-lite-preview, gpt-4o, claude-sonnet-4"
             >
               <Input
-                {...register("model_name")}
+                {...register("model_name", {
+                  required: "Model name is required",
+                })}
                 type="text"
                 placeholder={getPlaceholderModel(selectedProvider)}
               />

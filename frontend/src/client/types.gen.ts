@@ -93,6 +93,22 @@ export type AgentSessionMessagePublic = {
      */
     agent_name?: (string | null);
     /**
+     * JSON metadata for message
+     */
+    metadata_json?: (string | null);
+    /**
+     * Monotonic sequence ID within session
+     */
+    sequence_id?: (number | null);
+    /**
+     * Type of event (e.g. stream_chat, status_update)
+     */
+    event_type?: (string | null);
+    /**
+     * Processing stage (e.g. BUSINESS_UNDERSTANDING)
+     */
+    stage?: (string | null);
+    /**
      * Message creation timestamp
      */
     created_at: string;
@@ -265,6 +281,12 @@ export type AlertRuleUpdate = {
     enabled?: (boolean | null);
 };
 
+export type AlgorithmDataResponse = {
+    algorithm_id: string;
+    name: string;
+    state: string;
+};
+
 /**
  * User approval or rejection.
  */
@@ -348,7 +370,8 @@ export type Body_login_login_access_token = {
  * User selection from available choices.
  */
 export type ChoiceSelection = {
-    selected_model: string;
+    selected_model?: (string | null);
+    action?: string;
 };
 
 /**
@@ -472,6 +495,11 @@ export type HTTPValidationError = {
 
 export type Message = {
     message: string;
+};
+
+export type MessageCreate = {
+    content: string;
+    stage?: (string | null);
 };
 
 /**
@@ -940,6 +968,18 @@ export type PromoteArtifactRequest = {
     execution_frequency?: number;
 };
 
+export type PromotionRequest = {
+    mlflow_run_id: string;
+    algorithm_name: string;
+    signal_type: string;
+};
+
+export type PromotionResponse = {
+    status: string;
+    message: string;
+    data: AlgorithmDataResponse;
+};
+
 /**
  * Response model for realized P&L
  */
@@ -960,6 +1000,18 @@ export type RealizedPnLResponse = {
      * Total realized profit/loss
      */
     realized_pnl: number;
+};
+
+export type ResumeRequest = {
+    action?: (string | null);
+};
+
+export type ReviseRequest = {
+    instructions?: (string | null);
+};
+
+export type RevisionAccepted = {
+    revision_id: string;
 };
 
 export type RiskRuleCreate = {
@@ -1249,6 +1301,16 @@ export type UserLLMCredentialsPublic = {
 };
 
 /**
+ * Schema for updating user LLM credentials
+ */
+export type UserLLMCredentialsUpdate = {
+    model_name?: (string | null);
+    api_key?: (string | null);
+    is_default?: (boolean | null);
+    is_active?: (boolean | null);
+};
+
+/**
  * Schema for validating an API key before saving
  */
 export type UserLLMCredentialsValidate = {
@@ -1386,11 +1448,49 @@ export type AgentDeleteAgentSessionResponse = ({
     [key: string]: (string);
 });
 
+export type AgentResumeAgentSessionData = {
+    requestBody: ResumeRequest;
+    sessionId: string;
+};
+
+export type AgentResumeAgentSessionResponse = ({
+    [key: string]: (string);
+});
+
 export type AgentGetSessionMessagesData = {
     sessionId: string;
 };
 
 export type AgentGetSessionMessagesResponse = (Array<AgentSessionMessagePublic>);
+
+export type AgentCreateUserMessageData = {
+    requestBody: MessageCreate;
+    sessionId: string;
+};
+
+export type AgentCreateUserMessageResponse = (AgentSessionMessagePublic);
+
+export type AgentReviseStageData = {
+    requestBody: ReviseRequest;
+    sessionId: string;
+    stageId: string;
+};
+
+export type AgentReviseStageResponse = (RevisionAccepted);
+
+export type AgentRerunStageData = {
+    sessionId: string;
+    stageId: string;
+};
+
+export type AgentRerunStageResponse = (unknown);
+
+export type AgentKeepStaleStageData = {
+    sessionId: string;
+    stageId: string;
+};
+
+export type AgentKeepStaleStageResponse = (unknown);
 
 export type AgentGetSessionArtifactsData = {
     sessionId: string;
@@ -1405,6 +1505,12 @@ export type AgentCancelAgentSessionData = {
 export type AgentCancelAgentSessionResponse = ({
     [key: string]: (string);
 });
+
+export type AgentRehydrateSessionData = {
+    sessionId: string;
+};
+
+export type AgentRehydrateSessionResponse = (unknown);
 
 export type AgentGetClarificationsData = {
     sessionId: string;
@@ -1550,6 +1656,12 @@ export type AlertsListAlertLogResponse = (AlertLogsPublic);
 export type AlertsSendTestAlertResponse = ({
     [key: string]: unknown;
 });
+
+export type AlgorithmsPromoteAlgorithmData = {
+    requestBody: PromotionRequest;
+};
+
+export type AlgorithmsPromoteAlgorithmResponse = (PromotionResponse);
 
 export type AuditReadTradeAuditsData = {
     limit?: number;
@@ -2127,6 +2239,13 @@ export type UsersSetDefaultLlmCredentialData = {
 };
 
 export type UsersSetDefaultLlmCredentialResponse = (UserLLMCredentialsPublic);
+
+export type UsersUpdateLlmCredentialData = {
+    credentialId: string;
+    requestBody: UserLLMCredentialsUpdate;
+};
+
+export type UsersUpdateLlmCredentialResponse = (UserLLMCredentialsPublic);
 
 export type UsersDeleteLlmCredentialData = {
     credentialId: string;
