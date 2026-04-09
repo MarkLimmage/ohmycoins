@@ -8,18 +8,20 @@ import {
   Heading,
   HStack,
   Icon,
+  Input,
   Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
-import { FiTrash2 } from "react-icons/fi"
+import { FiCheck, FiEdit2, FiTrash2, FiX } from "react-icons/fi"
 import { SiAnthropic, SiGoogle, SiOpenai } from "react-icons/si"
 
 import {
   type ApiError,
   type UserLLMCredentialsPublic,
+  type UserLLMCredentialsUpdate,
   UsersService,
 } from "@/client"
 import {
@@ -66,7 +68,7 @@ const getProviderLabel = (provider: string) => {
 
 const LLMCredentialList = () => {
   const queryClient = useQueryClient()
-  const { showSuccessToast } = useCustomToast()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
   const [deleteTarget, setDeleteTarget] =
     useState<UserLLMCredentialsPublic | null>(null)
 
@@ -103,6 +105,76 @@ const LLMCredentialList = () => {
       handleError(err)
     },
   })
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editModelName, setEditModelName] = useState("")
+  const [editApiKey, setEditApiKey] = useState("")
+  const [isValidatingEdit, setIsValidatingEdit] = useState(false)
+
+  const startEditing = (credential: UserLLMCredentialsPublic) => {
+    setEditingId(credential.id)
+    setEditModelName(credential.model_name || "")
+    setEditApiKey("")
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditModelName("")
+    setEditApiKey("")
+    setIsValidatingEdit(false)
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      credentialId,
+      requestBody,
+    }: {
+      credentialId: string
+      requestBody: UserLLMCredentialsUpdate
+    }) => UsersService.updateLlmCredential({ credentialId, requestBody }),
+    onSuccess: () => {
+      showSuccessToast("Credential updated successfully.")
+      cancelEditing()
+      queryClient.invalidateQueries({ queryKey: ["llmCredentials"] })
+    },
+    onError: (err: ApiError) => {
+      handleError(err)
+    },
+  })
+
+  const handleSaveEdit = async (credential: UserLLMCredentialsPublic) => {
+    const requestBody: UserLLMCredentialsUpdate = {}
+    if (editModelName !== (credential.model_name || "")) {
+      requestBody.model_name = editModelName
+    }
+    if (editApiKey) {
+      setIsValidatingEdit(true)
+      try {
+        const result = await UsersService.validateLlmCredential({
+          requestBody: {
+            provider: credential.provider,
+            api_key: editApiKey,
+          },
+        })
+        if (!result.is_valid) {
+          showErrorToast(result.error_message || "API key validation failed")
+          return
+        }
+      } catch (err) {
+        handleError(err as ApiError)
+        return
+      } finally {
+        setIsValidatingEdit(false)
+      }
+      requestBody.api_key = editApiKey
+    }
+
+    if (Object.keys(requestBody).length === 0) {
+      cancelEditing()
+      return
+    }
+    updateMutation.mutate({ credentialId: credential.id, requestBody })
+  }
 
   const grouped = useMemo(() => {
     if (!credentials) return {}
@@ -183,63 +255,125 @@ const LLMCredentialList = () => {
                       borderWidth="1px"
                       borderRadius="md"
                     >
-                      <Flex justify="space-between" align="start" gap={4}>
-                        <VStack align="start" gap={1} flex={1}>
-                          <HStack>
-                            <Text fontWeight="medium">
-                              {credential.model_name || "Default model"}
+                      {editingId === credential.id ? (
+                        <VStack align="stretch" gap={3}>
+                          <Box>
+                            <Text fontSize="xs" fontWeight="medium" mb={1}>
+                              Model Name
                             </Text>
-                            {credential.is_default && (
-                              <Badge colorPalette="blue" variant="solid">
-                                Default
-                              </Badge>
-                            )}
-                          </HStack>
-                          <Text fontSize="xs" color="fg.muted">
-                            Key: {credential.api_key_masked}
-                          </Text>
-                          <HStack gap={3}>
-                            <Text fontSize="xs" color="fg.muted">
-                              Added:{" "}
-                              {new Date(
-                                credential.created_at,
-                              ).toLocaleDateString()}
+                            <Input
+                              size="sm"
+                              value={editModelName}
+                              onChange={(e) => setEditModelName(e.target.value)}
+                              placeholder="Model name"
+                            />
+                          </Box>
+                          <Box>
+                            <Text fontSize="xs" fontWeight="medium" mb={1}>
+                              New API Key (leave blank to keep current)
                             </Text>
-                            {credential.last_validated_at && (
-                              <Text fontSize="xs" color="fg.muted">
-                                Validated:{" "}
-                                {new Date(
-                                  credential.last_validated_at,
-                                ).toLocaleDateString()}
-                              </Text>
-                            )}
-                          </HStack>
-                        </VStack>
-
-                        <HStack gap={2}>
-                          {!credential.is_default && (
+                            <Input
+                              size="sm"
+                              type="password"
+                              value={editApiKey}
+                              onChange={(e) => setEditApiKey(e.target.value)}
+                              placeholder="Enter new API key to rotate"
+                              autoComplete="off"
+                            />
+                          </Box>
+                          <HStack gap={2} justify="flex-end">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() =>
-                                setDefaultMutation.mutate(credential.id)
+                              onClick={cancelEditing}
+                              disabled={
+                                updateMutation.isPending || isValidatingEdit
                               }
-                              loading={setDefaultMutation.isPending}
                             >
-                              Set Default
+                              <FiX />
+                              Cancel
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            colorPalette="red"
-                            onClick={() => setDeleteTarget(credential)}
-                          >
-                            <FiTrash2 />
-                            Delete
-                          </Button>
-                        </HStack>
-                      </Flex>
+                            <Button
+                              size="sm"
+                              variant="solid"
+                              colorPalette="blue"
+                              onClick={() => handleSaveEdit(credential)}
+                              loading={
+                                updateMutation.isPending || isValidatingEdit
+                              }
+                            >
+                              <FiCheck />
+                              Save
+                            </Button>
+                          </HStack>
+                        </VStack>
+                      ) : (
+                        <Flex justify="space-between" align="start" gap={4}>
+                          <VStack align="start" gap={1} flex={1}>
+                            <HStack>
+                              <Text fontWeight="medium">
+                                {credential.model_name || "Default model"}
+                              </Text>
+                              {credential.is_default && (
+                                <Badge colorPalette="blue" variant="solid">
+                                  Default
+                                </Badge>
+                              )}
+                            </HStack>
+                            <Text fontSize="xs" color="fg.muted">
+                              Key: {credential.api_key_masked}
+                            </Text>
+                            <HStack gap={3}>
+                              <Text fontSize="xs" color="fg.muted">
+                                Added:{" "}
+                                {new Date(
+                                  credential.created_at,
+                                ).toLocaleDateString()}
+                              </Text>
+                              {credential.last_validated_at && (
+                                <Text fontSize="xs" color="fg.muted">
+                                  Validated:{" "}
+                                  {new Date(
+                                    credential.last_validated_at,
+                                  ).toLocaleDateString()}
+                                </Text>
+                              )}
+                            </HStack>
+                          </VStack>
+
+                          <HStack gap={2}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEditing(credential)}
+                            >
+                              <FiEdit2 />
+                              Edit
+                            </Button>
+                            {!credential.is_default && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setDefaultMutation.mutate(credential.id)
+                                }
+                                loading={setDefaultMutation.isPending}
+                              >
+                                Set Default
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              colorPalette="red"
+                              onClick={() => setDeleteTarget(credential)}
+                            >
+                              <FiTrash2 />
+                              Delete
+                            </Button>
+                          </HStack>
+                        </Flex>
+                      )}
                     </Box>
                   ))}
                 </VStack>

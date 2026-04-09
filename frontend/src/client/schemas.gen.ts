@@ -168,6 +168,55 @@ export const AgentSessionMessagePublicSchema = {
             title: 'Agent Name',
             description: 'Name of the specific agent'
         },
+        metadata_json: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata Json',
+            description: 'JSON metadata for message'
+        },
+        sequence_id: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Sequence Id',
+            description: 'Monotonic sequence ID within session'
+        },
+        event_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Event Type',
+            description: 'Type of event (e.g. stream_chat, status_update)',
+            default: 'message'
+        },
+        stage: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Stage',
+            description: 'Processing stage (e.g. BUSINESS_UNDERSTANDING)'
+        },
         created_at: {
             type: 'string',
             format: 'date-time',
@@ -655,6 +704,26 @@ export const AlertRulesPublicSchema = {
     description: 'Collection response for alert rules.'
 } as const;
 
+export const AlgorithmDataResponseSchema = {
+    properties: {
+        algorithm_id: {
+            type: 'string',
+            title: 'Algorithm Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        state: {
+            type: 'string',
+            title: 'State'
+        }
+    },
+    type: 'object',
+    required: ['algorithm_id', 'name', 'state'],
+    title: 'AlgorithmDataResponse'
+} as const;
+
 export const ApprovalDecisionSchema = {
     properties: {
         approved: {
@@ -993,12 +1062,23 @@ export const Body_login_login_access_tokenSchema = {
 export const ChoiceSelectionSchema = {
     properties: {
         selected_model: {
-            type: 'string',
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Selected Model'
+        },
+        action: {
+            type: 'string',
+            title: 'Action',
+            default: 'PROMOTE_MODEL'
         }
     },
     type: 'object',
-    required: ['selected_model'],
     title: 'ChoiceSelection',
     description: 'User selection from available choices.'
 } as const;
@@ -1387,6 +1467,29 @@ export const MessageSchema = {
     type: 'object',
     required: ['message'],
     title: 'Message'
+} as const;
+
+export const MessageCreateSchema = {
+    properties: {
+        content: {
+            type: 'string',
+            title: 'Content'
+        },
+        stage: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Stage'
+        }
+    },
+    type: 'object',
+    required: ['content'],
+    title: 'MessageCreate'
 } as const;
 
 export const ModelInfoSchema = {
@@ -2346,6 +2449,45 @@ export const PromoteArtifactRequestSchema = {
     description: 'Request to promote an artifact to a Floor algorithm.'
 } as const;
 
+export const PromotionRequestSchema = {
+    properties: {
+        mlflow_run_id: {
+            type: 'string',
+            title: 'Mlflow Run Id'
+        },
+        algorithm_name: {
+            type: 'string',
+            title: 'Algorithm Name'
+        },
+        signal_type: {
+            type: 'string',
+            title: 'Signal Type'
+        }
+    },
+    type: 'object',
+    required: ['mlflow_run_id', 'algorithm_name', 'signal_type'],
+    title: 'PromotionRequest'
+} as const;
+
+export const PromotionResponseSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            title: 'Status'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        },
+        data: {
+            '$ref': '#/components/schemas/AlgorithmDataResponse'
+        }
+    },
+    type: 'object',
+    required: ['status', 'message', 'data'],
+    title: 'PromotionResponse'
+} as const;
+
 export const RealizedPnLResponseSchema = {
     properties: {
         is_loading: {
@@ -2376,6 +2518,54 @@ export const RealizedPnLResponseSchema = {
     required: ['realized_pnl'],
     title: 'RealizedPnLResponse',
     description: 'Response model for realized P&L'
+} as const;
+
+export const ResumeRequestSchema = {
+    properties: {
+        action: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Action'
+        }
+    },
+    type: 'object',
+    title: 'ResumeRequest'
+} as const;
+
+export const ReviseRequestSchema = {
+    properties: {
+        instructions: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Instructions'
+        }
+    },
+    type: 'object',
+    title: 'ReviseRequest'
+} as const;
+
+export const RevisionAcceptedSchema = {
+    properties: {
+        revision_id: {
+            type: 'string',
+            title: 'Revision Id'
+        }
+    },
+    type: 'object',
+    required: ['revision_id'],
+    title: 'RevisionAccepted'
 } as const;
 
 export const RiskRuleCreateSchema = {
@@ -3290,6 +3480,61 @@ export const UserLLMCredentialsPublicSchema = {
     required: ['provider', 'id', 'user_id', 'api_key_masked', 'last_validated_at', 'created_at', 'updated_at'],
     title: 'UserLLMCredentialsPublic',
     description: 'Schema for returning user LLM credentials via API (with masked API key)'
+} as const;
+
+export const UserLLMCredentialsUpdateSchema = {
+    properties: {
+        model_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Model Name'
+        },
+        api_key: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Api Key'
+        },
+        is_default: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Default'
+        },
+        is_active: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
+        }
+    },
+    type: 'object',
+    title: 'UserLLMCredentialsUpdate',
+    description: 'Schema for updating user LLM credentials'
 } as const;
 
 export const UserLLMCredentialsValidateSchema = {

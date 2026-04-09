@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AgentPromoteArtifactData, AgentPromoteArtifactResponse, AgentGetArtifactInfoData, AgentGetArtifactInfoResponse, AgentExplainArtifactData, AgentExplainArtifactResponse, AgentGetExplanationData, AgentGetExplanationResponse, AgentPredictWithArtifactData, AgentPredictWithArtifactResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, BacktestsCreateBacktestData, BacktestsCreateBacktestResponse, BacktestsListBacktestsData, BacktestsListBacktestsResponse, BacktestsGetBacktestData, BacktestsGetBacktestResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CollectorsGetChartDataData, CollectorsGetChartDataResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, EnrichmentTriggerEnrichmentData, EnrichmentTriggerEnrichmentResponse, EnrichmentGetEnrichmentStatsResponse, EnrichmentGetEnrichmentRunsData, EnrichmentGetEnrichmentRunsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, SignalsGetCoinSignalsData, SignalsGetCoinSignalsResponse, SignalsGetSignalSummaryResponse, SignalsGetSignalTrendsData, SignalsGetSignalTrendsResponse, SignalsGetSignalEntitiesData, SignalsGetSignalEntitiesResponse, SignalsRefreshViewsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetAvailableCoinsResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
+import type { AdminActivateEmergencyStopResponse, AdminClearEmergencyStopResponse, AdminGetEmergencyStopStatusResponse, AgentCreateAgentSessionData, AgentCreateAgentSessionResponse, AgentListAgentSessionsData, AgentListAgentSessionsResponse, AgentGetAgentSessionData, AgentGetAgentSessionResponse, AgentDeleteAgentSessionData, AgentDeleteAgentSessionResponse, AgentResumeAgentSessionData, AgentResumeAgentSessionResponse, AgentGetSessionMessagesData, AgentGetSessionMessagesResponse, AgentCreateUserMessageData, AgentCreateUserMessageResponse, AgentReviseStageData, AgentReviseStageResponse, AgentRerunStageData, AgentRerunStageResponse, AgentKeepStaleStageData, AgentKeepStaleStageResponse, AgentGetSessionArtifactsData, AgentGetSessionArtifactsResponse, AgentCancelAgentSessionData, AgentCancelAgentSessionResponse, AgentRehydrateSessionData, AgentRehydrateSessionResponse, AgentGetClarificationsData, AgentGetClarificationsResponse, AgentProvideClarificationsData, AgentProvideClarificationsResponse, AgentGetChoicesData, AgentGetChoicesResponse, AgentSelectChoiceData, AgentSelectChoiceResponse, AgentGetPendingApprovalsData, AgentGetPendingApprovalsResponse, AgentApproveRequestData, AgentApproveRequestResponse, AgentGetOverridePointsEndpointData, AgentGetOverridePointsEndpointResponse, AgentApplyOverrideData, AgentApplyOverrideResponse, AgentDownloadArtifactData, AgentDownloadArtifactResponse, AgentDeleteArtifactData, AgentDeleteArtifactResponse, AgentGetArtifactStatsResponse, AgentPromoteArtifactData, AgentPromoteArtifactResponse, AgentGetArtifactInfoData, AgentGetArtifactInfoResponse, AgentExplainArtifactData, AgentExplainArtifactResponse, AgentGetExplanationData, AgentGetExplanationResponse, AgentPredictWithArtifactData, AgentPredictWithArtifactResponse, AlertsListAlertRulesData, AlertsListAlertRulesResponse, AlertsCreateAlertRuleData, AlertsCreateAlertRuleResponse, AlertsUpdateAlertRuleData, AlertsUpdateAlertRuleResponse, AlertsDeleteAlertRuleData, AlertsDeleteAlertRuleResponse, AlertsListAlertLogData, AlertsListAlertLogResponse, AlertsSendTestAlertResponse, AlgorithmsPromoteAlgorithmData, AlgorithmsPromoteAlgorithmResponse, AuditReadTradeAuditsData, AuditReadTradeAuditsResponse, AuditCreateTradeAuditData, AuditCreateTradeAuditResponse, BacktestsCreateBacktestData, BacktestsCreateBacktestResponse, BacktestsListBacktestsData, BacktestsListBacktestsResponse, BacktestsGetBacktestData, BacktestsGetBacktestResponse, CollectorsListPluginsResponse, CollectorsListInstancesResponse, CollectorsCreateInstanceData, CollectorsCreateInstanceResponse, CollectorsGetInstanceData, CollectorsGetInstanceResponse, CollectorsUpdateInstanceData, CollectorsUpdateInstanceResponse, CollectorsPatchInstanceData, CollectorsPatchInstanceResponse, CollectorsDeleteInstanceData, CollectorsDeleteInstanceResponse, CollectorsToggleInstanceData, CollectorsToggleInstanceResponse, CollectorsTriggerInstanceData, CollectorsTriggerInstanceResponse, CollectorsRunInstanceData, CollectorsRunInstanceResponse, CollectorsGetSampleRecordsEndpointData, CollectorsGetSampleRecordsEndpointResponse, CollectorsGetStatsData, CollectorsGetStatsResponse, CollectorsGetVolumeStatsData, CollectorsGetVolumeStatsResponse, CollectorsGetActivityStatsResponse, CollectorsGetSummaryStatsResponse, CollectorsGetChartDataData, CollectorsGetChartDataResponse, CredentialsGetCredentialsResponse, CredentialsUpdateCredentialsData, CredentialsUpdateCredentialsResponse, CredentialsCreateCredentialsData, CredentialsCreateCredentialsResponse, CredentialsDeleteCredentialsResponse, CredentialsValidateCredentialsResponse, EnrichmentTriggerEnrichmentData, EnrichmentTriggerEnrichmentResponse, EnrichmentGetEnrichmentStatsResponse, EnrichmentGetEnrichmentRunsData, EnrichmentGetEnrichmentRunsResponse, FloorPauseAlgorithmData, FloorPauseAlgorithmResponse, FloorResumeAlgorithmData, FloorResumeAlgorithmResponse, FloorStopAlgorithmData, FloorStopAlgorithmResponse, FloorEmergencyStopResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MockGetMockLedgerDataData, MockGetMockLedgerDataResponse, MockGetMockAgentMessagesData, MockGetMockAgentMessagesResponse, MockTriggerMockSafetyActionData, MockTriggerMockSafetyActionResponse, PnlGetPnlSummaryData, PnlGetPnlSummaryResponse, PnlGetPnlByAlgorithmData, PnlGetPnlByAlgorithmResponse, PnlGetPnlByCoinData, PnlGetPnlByCoinResponse, PnlGetHistoricalPnlData, PnlGetHistoricalPnlResponse, PnlGetRealizedPnlData, PnlGetRealizedPnlResponse, PnlGetUnrealizedPnlData, PnlGetUnrealizedPnlResponse, PrivateCreateUserData, PrivateCreateUserResponse, PromotionsRequestPromotionData, PromotionsRequestPromotionResponse, PromotionsListPromotionsData, PromotionsListPromotionsResponse, PromotionsGetPromotionData, PromotionsGetPromotionResponse, PromotionsReviewPromotionData, PromotionsReviewPromotionResponse, RiskReadRiskRulesData, RiskReadRiskRulesResponse, RiskCreateRiskRuleData, RiskCreateRiskRuleResponse, RiskUpdateRiskRuleData, RiskUpdateRiskRuleResponse, RiskDeleteRiskRuleData, RiskDeleteRiskRuleResponse, RiskGetKillSwitchStatusResponse, RiskSetKillSwitchData, RiskSetKillSwitchResponse, RiskReadAuditLogsData, RiskReadAuditLogsResponse, SignalsGetCoinSignalsData, SignalsGetCoinSignalsResponse, SignalsGetSignalSummaryResponse, SignalsGetSignalTrendsData, SignalsGetSignalTrendsResponse, SignalsGetSignalEntitiesData, SignalsGetSignalEntitiesResponse, SignalsRefreshViewsResponse, TradingPlaceOrderData, TradingPlaceOrderResponse, TradingReadOrdersData, TradingReadOrdersResponse, TradingCancelOrderData, TradingCancelOrderResponse, TradingReadPositionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserProfileResponse, UsersUpdateUserProfileData, UsersUpdateUserProfileResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UsersListLlmCredentialsResponse, UsersCreateLlmCredentialsData, UsersCreateLlmCredentialsResponse, UsersSetDefaultLlmCredentialData, UsersSetDefaultLlmCredentialResponse, UsersUpdateLlmCredentialData, UsersUpdateLlmCredentialResponse, UsersDeleteLlmCredentialData, UsersDeleteLlmCredentialResponse, UsersValidateLlmCredentialData, UsersValidateLlmCredentialResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, UtilsGetAvailableCoinsResponse, UtilsGetPriceDataData, UtilsGetPriceDataResponse } from './types.gen';
 
 export class AdminService {
     /**
@@ -178,6 +178,39 @@ export class AgentService {
     }
     
     /**
+     * Resume Agent Session
+     * Resume a paused agent session (HITL).
+     *
+     * Args:
+     * session_id: ID of the session
+     * request: Action to perform (approve/reject)
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Resume confirmation
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns string Successful Response
+     * @throws ApiError
+     */
+    public static resumeAgentSession(data: AgentResumeAgentSessionData): CancelablePromise<AgentResumeAgentSessionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/resume',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
      * Get Session Messages
      * Get all messages for an agent session.
      *
@@ -202,6 +235,119 @@ export class AgentService {
             url: '/api/v1/lab/agent/sessions/{session_id}/messages',
             path: {
                 session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create User Message
+     * Send a message to the agent session.
+     * Assigns monotonic sequence_id and persists to EventLedger.
+     *
+     * Args:
+     * session_id: ID of the session
+     * message: Message content
+     * db: Database session
+     * current_user: Currently authenticated user
+     *
+     * Returns:
+     * Created message with assigned sequence_id
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns AgentSessionMessagePublic Successful Response
+     * @throws ApiError
+     */
+    public static createUserMessage(data: AgentCreateUserMessageData): CancelablePromise<AgentCreateUserMessageResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/messages',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Revise Stage
+     * Initiate a revision of a completed stage.
+     *
+     * Emits revision_start event, marks downstream stages as STALE,
+     * and re-invokes the agent runner for the target stage.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.stageId
+     * @param data.requestBody
+     * @returns RevisionAccepted Successful Response
+     * @throws ApiError
+     */
+    public static reviseStage(data: AgentReviseStageData): CancelablePromise<AgentReviseStageResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/stages/{stage_id}/revise',
+            path: {
+                session_id: data.sessionId,
+                stage_id: data.stageId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Rerun Stage
+     * Re-run a stale stage with revised upstream context.
+     *
+     * Emits ACTIVE status_update and invokes the runner.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.stageId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static rerunStage(data: AgentRerunStageData): CancelablePromise<AgentRerunStageResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/stages/{stage_id}/rerun',
+            path: {
+                session_id: data.sessionId,
+                stage_id: data.stageId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Keep Stale Stage
+     * Accept stale results as-is for a stage.
+     *
+     * Emits COMPLETE status_update clearing the stale status.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.stageId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static keepStaleStage(data: AgentKeepStaleStageData): CancelablePromise<AgentKeepStaleStageResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/lab/agent/sessions/{session_id}/stages/{stage_id}/keep-stale',
+            path: {
+                session_id: data.sessionId,
+                stage_id: data.stageId
             },
             errors: {
                 422: 'Validation Error'
@@ -264,6 +410,28 @@ export class AgentService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/lab/agent/sessions/{session_id}/cancel',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Rehydrate Session
+     * Rehydrate a session state for the frontend.
+     * Returns the event ledger for reconstruction.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static rehydrateSession(data: AgentRehydrateSessionData): CancelablePromise<AgentRehydrateSessionResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lab/agent/sessions/{session_id}/rehydrate',
             path: {
                 session_id: data.sessionId
             },
@@ -792,6 +960,28 @@ export class AlertsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/alerts/test'
+        });
+    }
+}
+
+export class AlgorithmsService {
+    /**
+     * Promote Algorithm
+     * Promote an algorithm from Lab (MLflow Run) to Floor (Algorithm Registry).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns PromotionResponse Successful Response
+     * @throws ApiError
+     */
+    public static promoteAlgorithm(data: AlgorithmsPromoteAlgorithmData): CancelablePromise<AlgorithmsPromoteAlgorithmResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/algorithms/promote',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
         });
     }
 }
@@ -2595,6 +2785,32 @@ export class UsersService {
             path: {
                 credential_id: data.credentialId
             },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Llm Credential
+     * Update an existing LLM credential (BYOM feature).
+     *
+     * Supports partial updates: model_name, api_key, is_default, is_active.
+     * @param data The data for the request.
+     * @param data.credentialId
+     * @param data.requestBody
+     * @returns UserLLMCredentialsPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateLlmCredential(data: UsersUpdateLlmCredentialData): CancelablePromise<UsersUpdateLlmCredentialResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/users/me/llm-credentials/{credential_id}',
+            path: {
+                credential_id: data.credentialId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
