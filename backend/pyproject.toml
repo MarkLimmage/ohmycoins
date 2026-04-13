@@ -30,7 +30,7 @@ dependencies = [
     # Phase 3: Agentic Data Science dependencies
     "mlflow>=3.11.1", # Phase 4: Model Deployment (CVE-2026-0545 fix)
     "langchain>=0.3.0",
-    "langchain-openai>=0.2.0",
+    "langchain-openai>=1.1.12",
     "langchain-google-genai>=2.0.0", # BYOM: Google Gemini support (Sprint 2.8)
     "langchain-anthropic>=0.3.0", # BYOM: Anthropic Claude support (Sprint 2.9)
     "langgraph>=0.2.0",
