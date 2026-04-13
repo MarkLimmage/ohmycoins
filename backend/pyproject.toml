@@ -25,7 +25,7 @@ dependencies = [
     "apscheduler<4.0.0,>=3.10.4",
     "cryptography<47.0.0,>=42.0.4",
     # Phase 2.5: Comprehensive Data Collection
-    "aiohttp<4.0.0,>=3.9.0",
+    "aiohttp>=3.13.5,<4.0.0",
     "beautifulsoup4<5.0.0,>=4.12.0",
     # Phase 3: Agentic Data Science dependencies
     "mlflow>=3.11.1", # Phase 4: Model Deployment (CVE-2026-0545 fix)
