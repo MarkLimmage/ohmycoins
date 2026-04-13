@@ -357,7 +357,7 @@ services:
       - default
 
   mlflow:
-    image: python:3.10-slim
+    image: python:3.14-slim
     container_name: mlflow
     restart: always
     dns:
